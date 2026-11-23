@@ -7,7 +7,7 @@ Imports System.Windows.Forms
 
 ''' <summary>
 ''' The loading screen at start: 1. checks for a LocalMind update (and installs it), 2. updates the model list,
-''' 3. loads the interface, 4. loads the chat model — then shows the main window.
+''' 3. loads the interface — then shows the main window. The chat model is loaded only when it is needed.
 ''' </summary>
 Public Class StartupContext
     Inherits ApplicationContext
@@ -82,21 +82,7 @@ Public Class StartupContext
         Await Within(main.LoadDone.Task, 90)
         _splash.Done(2)
 
-        ' 4. chat model
-        _splash.Begin(3)
-        Try
-            Dim m = If(s.Backend = BackendKind.BuiltIn AndAlso AppCore.Engine.IsInstalled(),
-                       AppCore.Library.All().FirstOrDefault(Function(x) x.DisplayName = s.LastModel), Nothing)
-            If m IsNot Nothing Then
-                _splash.Detail(m.DisplayName)
-                Dim ok = Await Within(AppCore.Engine.EnsureModelAsync(m, CancellationToken.None), 120)
-                _splash.Done(3, If(ok, m.DisplayName, Localizer.T("continues in the background")))
-            Else
-                _splash.Done(3, Localizer.T("no model yet"))
-            End If
-        Catch ex As Exception
-            _splash.Done(3, Localizer.T("will load with the first message"))
-        End Try
+        ' the chat model is not loaded here: it loads with the first message (no memory used until then)
         Await Task.Delay(250)
         MainForm = main
         main.Opacity = 1
@@ -109,9 +95,9 @@ End Class
 Public Class SplashForm
     Inherits Form
 
-    Private ReadOnly _steps As String() = {"Checking for updates", "Updating the model list", "Loading the interface", "Loading the model"}
-    Private ReadOnly _state(3) As Integer          ' 0 waiting, 1 running, 2 done
-    Private ReadOnly _notes(3) As String
+    Private ReadOnly _steps As String() = {"Checking for updates", "Updating the model list", "Loading the interface"}
+    Private ReadOnly _state(2) As Integer          ' 0 waiting, 1 running, 2 done
+    Private ReadOnly _notes(2) As String
     Private _detail As String = ""
     Private _sub As Integer
     Private _current As Integer
@@ -121,7 +107,7 @@ Public Class SplashForm
     Public Sub New()
         FormBorderStyle = FormBorderStyle.None
         StartPosition = FormStartPosition.CenterScreen
-        Size = New Size(560, 360)
+        Size = New Size(560, 330)
         BackColor = Theme.CPanel
         ShowInTaskbar = True
         Text = "LocalMind"
@@ -130,7 +116,7 @@ Public Class SplashForm
             Icon = Theme.AppIcon()
         Catch
         End Try
-        For i = 0 To 3
+        For i = 0 To _steps.Length - 1
             _steps(i) = Localizer.T(_steps(i))
         Next
         AddHandler _spin.Tick, Sub()
@@ -198,8 +184,8 @@ Public Class SplashForm
         End Using
         TextRenderer.DrawText(g, Localizer.T("Private AI on your PC") & "  ·  " & Application.ProductVersion.Split("+"c)(0), Theme.UiFont, New Point(95, 66), Theme.CDim)
 
-        Dim y = 112
-        For i = 0 To 3
+        Dim y = 122
+        For i = 0 To _steps.Length - 1
             Dim glyph As String, col As Color
             Select Case _state(i)
                 Case 2 : glyph = "✔" : col = Theme.CGood
@@ -214,10 +200,10 @@ Public Class SplashForm
             y += 34
         Next
 
-        ' progress bar: 25% per step, plus the progress inside the running step
+        ' progress bar: one part per step, plus the progress inside the running step
         Dim doneSteps = _state.Count(Function(x) x = 2)
         Dim running = If(_state(_current) = 1, If(_sub > 0, _sub / 100.0, 0.35 + 0.15 * Math.Sin(_tick / 6.0)), 0)
-        Dim pct = Math.Min(1.0, (doneSteps + Math.Max(0, running)) / 4.0)
+        Dim pct = Math.Min(1.0, (doneSteps + Math.Max(0, running)) / _steps.Length)
         Dim bar As New Rectangle(34, Height - 70, Width - 68, 8)
         Using p = Theme.Rounded(bar, 4), b As New SolidBrush(Theme.CRaised) : g.FillPath(b, p) : End Using
         If pct > 0.01 Then

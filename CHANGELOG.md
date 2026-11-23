@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.14.3
+
+### Changed
+- LocalMind no longer loads the chat model into memory when it starts. The loading screen checks for updates,
+  updates the model list and loads the interface. The model loads with your first message, or when you pick a model
+  yourself. A refresh of the model list no longer loads a model either.
+
 ## 2.14.2
 
 ### Fixed

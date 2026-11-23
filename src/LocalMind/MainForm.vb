@@ -415,16 +415,24 @@ Public Class MainForm
         Dim idx = -1
         If Not String.IsNullOrEmpty(wanted) Then idx = cmbModels.Items.IndexOf(wanted)
         If idx < 0 AndAlso cmbModels.Items.Count > 0 Then idx = 0
-        If idx >= 0 Then cmbModels.SelectedIndex = idx
+        _fillingModels = True
+        Try
+            If idx >= 0 Then cmbModels.SelectedIndex = idx
+        Finally
+            _fillingModels = False
+        End Try
         If _session IsNot Nothing AndAlso _session.Messages.Count = 0 Then ShowEmptyState()
     End Function
+
+    ''' <summary>True while the list is refilled (not a choice of the user: nothing is loaded).</summary>
+    Private _fillingModels As Boolean
 
     Private Sub SaveModelSelection(sender As Object, e As EventArgs)
         If cmbModels.SelectedItem IsNot Nothing Then Settings.LastModel = cmbModels.SelectedItem.ToString()
         AppCore.SaveSettings()
         If _session IsNot Nothing AndAlso _session.Messages.Count = 0 Then ShowEmptyState()
-        ' Warm up: start loading the model now so the first answer is quicker.
-        If Settings.Backend = BackendKind.BuiltIn AndAlso Not _isGenerating Then
+        ' Warm up when the user picks a model, so the first answer is quicker (never at start or on a list refresh).
+        If Settings.Backend = BackendKind.BuiltIn AndAlso Not _isGenerating AndAlso Not _fillingModels Then
             Dim m = AppCore.Library.FindByName(Settings.LastModel)
             If m IsNot Nothing AndAlso AppCore.Engine.IsInstalled() Then
                 Task.Run(Async Function()

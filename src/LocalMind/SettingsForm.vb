@@ -136,7 +136,7 @@ Public Class SettingsForm
                                  End Sub
         AddHandler cmbTheme.SelectedIndexChanged, Sub() swatch.Invalidate()
         Row(t, "Preview", swatch)
-        chkSplash = New CheckBox() With {.Text = "Show the loading screen at start (updates, model list, loading the model)", .Checked = _s.ShowStartupScreen, .AutoSize = True}
+        chkSplash = New CheckBox() With {.Text = "Show the loading screen at start (updates, model list)", .Checked = _s.ShowStartupScreen, .AutoSize = True}
         Row(t, "Start", chkSplash)
     End Sub
 
