@@ -54,8 +54,15 @@ jobs:
               Shot "models-best"
               $ws.SendKeys('Qwen3.8-27B-Uncensored:iq4_xs'); Start-Sleep -Seconds 4
               Shot "models-search"
-              $ws.SendKeys('^{TAB}'); Start-Sleep 1; $ws.SendKeys('^{TAB}'); Start-Sleep 1; $ws.SendKeys('^{TAB}'); Start-Sleep -Seconds 6
+              Stop-Process -Id $p.Id -Force; Start-Sleep 2
+              $env:LOCALMIND_MODELS_TAB = 'media'
+              $p = Start-Process publish/LocalMind.exe -PassThru
+              Start-Sleep -Seconds 20
+              $null = $ws.AppActivate($p.Id); Start-Sleep 1
+              $ws.SendKeys('^m'); Start-Sleep -Seconds 15
               Shot "models-media"
+              $env:LOCALMIND_MODELS_TAB = ''
+
             }
             Stop-Process -Id $p.Id -Force
             Start-Sleep -Seconds 2

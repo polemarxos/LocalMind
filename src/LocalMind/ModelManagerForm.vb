@@ -113,6 +113,8 @@ Public Class ModelManagerForm
             Dim tabMedia As New TabPage(Localizer.T("🎨 Pictures & video"))
             tabMedia.Controls.Add(New MediaModelsPanel())
             tabs.TabPages.Add(tabMedia)
+            ' (screenshot checks open this tab directly)
+            If Environment.GetEnvironmentVariable("LOCALMIND_MODELS_TAB") = "media" Then tabs.SelectedTab = tabMedia
         End If
         Theme.StyleTabs(tabs)
         AddHandler tabs.SelectedIndexChanged, Sub() If tabs.SelectedIndex = 1 Then RefreshInstalled()
