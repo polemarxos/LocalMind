@@ -108,6 +108,12 @@ Public Class ModelManagerForm
         Dim tabCatalog As New TabPage("Get models")
         Dim tabInstalled As New TabPage("Installed")
         tabs.TabPages.AddRange({tabCatalog, tabInstalled})
+        If AppCore.Settings.EnableImages Then
+            ' picture, picture-editing and video models
+            Dim tabMedia As New TabPage(Localizer.T("🎨 Pictures & video"))
+            tabMedia.Controls.Add(New MediaModelsPanel())
+            tabs.TabPages.Add(tabMedia)
+        End If
         Theme.StyleTabs(tabs)
         AddHandler tabs.SelectedIndexChanged, Sub() If tabs.SelectedIndex = 1 Then RefreshInstalled()
 

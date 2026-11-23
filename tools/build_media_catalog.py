@@ -394,6 +394,45 @@ recipe(id="ltx-2.3-distilled", name="LTX-2.3 distilled (video + sound)", kind="v
               dict(role="llm", **GEMMA3_12B),
               dict(role="embeddings-connectors", **one(LTX, r"text_encoders/ltx-2\.3-22b-distilled_embeddings_connectors"))])
 
+# ── more base models (also templates for community models) ─────────────────
+recipe(id="flux1-dev", name="FLUX.1 dev", kind="image", family="FLUX.1",
+       about="The classic high-quality FLUX.1 (20 steps). Base of hundreds of community models.",
+       input="optional", steps=20, cfg=1.0, width=1024, height=1024,
+       tasks=["create","restyle","inpaint"],
+       variants=variants_list(gguf_variants("city96/FLUX.1-dev-gguf")),
+       parts=[dict(role="vae", **AE_FLUX1), dict(role="clip_l", **CLIP_L), dict(role="t5xxl", **T5XXL)])
+recipe(id="wan2.1-t2v-14b", name="Wan 2.1 T2V 14B (video)", kind="video", family="Wan",
+       about="Text-to-video with the 14B Wan 2.1 model. GPU 12 GB+ (or more RAM).",
+       steps=20, cfg=5.0, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, fps=16,
+       tasks=["create"],
+       speed=speed("⚡ Lightx2v · 4 steps", 4, 1.0, [lora("lightx2v/Wan2.1-Distill-Loras", r"wan2\.1_t2v_14b_lora_rank64_lightx2v_4step\.safetensors$", "speed-wan21-14b-lightx2v-4step")]),
+       variants=variants_list(gguf_variants("city96/Wan2.1-T2V-14B-gguf")),
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+CLIP_VISION_H = one("Comfy-Org/Wan_2.1_ComfyUI_repackaged", r"clip_vision/clip_vision_h\.safetensors$")
+for res, h, w in (("480p", 480, 832), ("720p", 720, 1280)):
+    recipe(id=f"wan2.1-i2v-14b-{res}", name=f"Wan 2.1 I2V 14B {res.upper()} (video)", kind="video", family="Wan",
+           about=f"Animate a photo with the 14B Wan 2.1 image-to-video model ({res.upper()}). GPU 12 GB+.",
+           steps=20, cfg=5.0, flowShift=3, width=w, height=h, frames=33, negative=WAN_NEG, fps=16, input="required",
+           tasks=["animate"],
+           speed=speed("⚡ Lightx2v · 4 steps", 4, 1.0, [lora("lightx2v/Wan2.1-Distill-Loras", r"wan2\.1_i2v_lora_rank64_lightx2v_4step\.safetensors$", "speed-wan21-i2v-14b-lightx2v-4step")]),
+           variants=variants_list(gguf_variants(f"city96/Wan2.1-I2V-14B-{res.upper()}-gguf")),
+           parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5), dict(role="clip_vision", **CLIP_VISION_H)] if CLIP_VISION_H else [])
+
+# ── community models from Hugging Face (copy a family's settings) ───────────
+import media_auto
+used = set()
+for r in R:
+    for v in r["variants"]:
+        used.add(v["repo"])
+for r in R:     # popularity of the hand-made ones, for sorting
+    try:
+        r["dl"] = media_auto._get(f"https://huggingface.co/api/models/{r['variants'][0]['repo']}?expand[]=downloads")["data"].get("downloads", 0)
+    except Exception:
+        r["dl"] = 0
+    r["repo"] = r["variants"][0]["repo"]
+if os.environ.get("NO_AUTO") != "1":
+    R.extend(media_auto.build(R, used))
+
 dest = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "LocalMind", "Resources", "media_catalog.json")
 json.dump(R, open(dest, "w"), ensure_ascii=False, indent=1)
 print(len(R), "recipes ->", dest, file=sys.stderr)

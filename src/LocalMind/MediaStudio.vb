@@ -96,6 +96,12 @@ Public Class MediaRecipe
     <JsonProperty("speed")> Public Property Speed As MediaSpeed
     ''' <summary>No content filter; listed under "🔓 Uncensored" and kept out of the default list.</summary>
     <JsonProperty("uncensored")> Public Property Uncensored As Boolean
+    ''' <summary>Hugging Face downloads (popularity, for sorting).</summary>
+    <JsonProperty("dl")> Public Property Downloads As Long
+    ''' <summary>Where the model comes from (Hugging Face repo).</summary>
+    <JsonProperty("repo")> Public Property Repo As String
+    ''' <summary>A community model found on Hugging Face (settings copied from its family).</summary>
+    <JsonProperty("auto")> Public Property Auto As Boolean
     ''' <summary>Text put in front of every prompt (e.g. Pony's quality tags).</summary>
     <JsonProperty("prefix")> Public Property Prefix As String
     ''' <summary>LoRAs that are part of the model (always downloaded and applied).</summary>
@@ -251,12 +257,42 @@ Public Module MediaStudio
     ''' A file may already be on disk under an older folder name (Hugging Face renames repos, e.g.
     ''' Wan_2.1_ComfyUI_repackaged → Wan-2.1). Find it by name and size and move it, instead of downloading it again.
     ''' </summary>
+    Private _fileIndex As Dictionary(Of String, List(Of String))
+    Private _fileIndexTime As DateTime
+    Private ReadOnly _fileIndexLock As New Object()
+
+    ''' <summary>Files under a folder by name (rebuilt at most every few seconds).</summary>
+    Private Function FilesNamed(root As String, name As String) As List(Of String)
+        SyncLock _fileIndexLock
+            If _fileIndex Is Nothing OrElse (DateTime.Now - _fileIndexTime).TotalSeconds > 5 Then
+                _fileIndex = New Dictionary(Of String, List(Of String))(StringComparer.OrdinalIgnoreCase)
+                For Each scanDir In {Folder, LoraLibrary.Folder}.Distinct()
+                    If Not Directory.Exists(scanDir) Then Continue For
+                    For Each f In Directory.EnumerateFiles(scanDir, "*", SearchOption.AllDirectories)
+                        Dim n = Path.GetFileName(f)
+                        Dim l As List(Of String) = Nothing
+                        If Not _fileIndex.TryGetValue(n, l) Then
+                            l = New List(Of String)
+                            _fileIndex(n) = l
+                        End If
+                        l.Add(f)
+                    Next
+                Next
+                _fileIndexTime = DateTime.Now
+            End If
+            Dim hit As List(Of String) = Nothing
+            If Not _fileIndex.TryGetValue(name, hit) Then Return New List(Of String)
+            Return hit.Where(Function(x) x.StartsWith(root, StringComparison.OrdinalIgnoreCase)).ToList()
+        End SyncLock
+    End Function
+
     Private Sub Relocate(f As MediaFile, target As String)
         Try
             Dim name = Path.GetFileName(target)
             Dim root = If(TypeOf f Is MediaLora, LoraLibrary.Folder, Folder)
             If Not Directory.Exists(root) Then Return
-            For Each c In Directory.EnumerateFiles(root, name, SearchOption.AllDirectories)
+            For Each c In FilesNamed(root, name)
+                If Not File.Exists(c) Then Continue For
                 If c.Equals(target, StringComparison.OrdinalIgnoreCase) Then Continue For
                 If f.Size > 0 AndAlso ConvRotFix.OriginalLength(c) <> f.Size Then Continue For
                 Directory.CreateDirectory(Path.GetDirectoryName(target))
@@ -400,6 +436,8 @@ Public Module MediaStudio
     ''' <summary>Default Studio list: recipes whose best variant runs entirely on this GPU.</summary>
     Public Function BestForGpu(hw As HardwareInfo, Optional uncensored As Boolean = False) As List(Of MediaRecipe)
         Return Recipes().Where(Function(r)
+                                   ' community models only when popular (or already downloaded)
+                                   If r.Auto AndAlso r.Downloads < 2000 AndAlso InstalledVariant(r) Is Nothing Then Return False
                                    If r.Uncensored <> uncensored AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" Then Return False
                                    Dim v = PickVariant(r, hw)
                                    Dim f = Fit(r, v, hw)

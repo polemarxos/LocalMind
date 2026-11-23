@@ -576,8 +576,33 @@ Module HarnessMain
             pl.RemoveAll(Function(x) x.Name.Contains("Chef"))
             ps.Save(pl)
             Check(Not ps.Load().Any(Function(x) x.Name.Contains("Chef")), "a deleted built-in persona does not come back")
+            ' Many more picture and video models
+            Dim sw2 = Diagnostics.Stopwatch.StartNew()
+            Dim allMedia = MediaStudio.Recipes()
+            Dim installedCount = allMedia.Where(Function(r) MediaStudio.InstalledVariant(r) IsNot Nothing).Count()
+            Dim t1 = sw2.Elapsed.TotalSeconds
+            Dim bestMedia = MediaStudio.BestForGpu(Hw(16, 32))
+            Check(allMedia.Count >= 700, "picture & video models: about 25x more", $"{allMedia.Count} models ({allMedia.Where(Function(r) r.IsVideo).Count()} video, {allMedia.Where(Function(r) r.Uncensored).Count()} uncensored), {installedCount} installed, checked in {t1:0.0} s")
+            Check(t1 < 5, "checking what is installed stays fast", $"{t1:0.00} s")
+            Check(allMedia.Where(Function(r) r.Auto).All(Function(r) r.Variants.Count > 0 AndAlso Not String.IsNullOrEmpty(r.Family)), "every community model has files and a family")
+            Check(allMedia.Any(Function(r) r.Variants.Any(Function(v) v.Path.Contains("qwen_image_edit_2511_int8_convrot"))) AndAlso
+                  allMedia.Any(Function(r) r.Variants.Any(Function(v) v.Path.ToLowerInvariant().Contains("krea2-turbo-int8"))), "ConvRot models like qwen_image_edit_2511 and Krea2-Turbo are listed")
+            Check(bestMedia.Count >= 20 AndAlso bestMedia.Count < 400, "Studio 'best for my GPU' stays a short list", bestMedia.Count & " models")
             Dim msg = Await ChatAgent.MakeVideoAsync("a cat", Nothing, Sub(t) Return, CancellationToken.None)
             Check(msg.Contains("video model"), "no video model yet: a helpful note instead of an error", msg)
+        End If
+
+        If only = "community" Then
+            Console.WriteLine("== A community model (downloaded and used like the hand-made ones)")
+            Dim r = MediaStudio.Recipes().First(Function(x) x.Id = "hf-gsdf-counterfeit-v2-5")
+            Dim v = r.Variants(0)
+            Await MediaStudio.DownloadAsync(r, v, Sub(p, t) Return, CancellationToken.None)
+            Check(MediaStudio.InstalledVariant(r) IsNot Nothing, "downloaded", MediaStudio.LocalPath(v))
+            Dim req As New MediaStudio.GenerateRequest With {.Recipe = r, .Variant = v, .Prompt = "a red apple on a wooden table", .Negative = r.Negative,
+                .Width = 256, .Height = 256, .Steps = 6, .Cfg = r.Cfg, .Seed = 3}
+            Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) Return, CancellationToken.None)
+            Check(IO.File.Exists(out) AndAlso New IO.FileInfo(out).Length > 10000, "picture made with a community SD 1.5 model", out)
+            If IO.File.Exists(out) Then IO.File.Copy(out, "/tmp/community-test.png", True)
         End If
 
         If only = "docs" Then
