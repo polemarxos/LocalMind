@@ -565,6 +565,17 @@ Module HarnessMain
             Dim live = Await ModelCatalog.FetchLiveAsync(CancellationToken.None)
             Check(live.Count >= 6000, "live list from Hugging Face", $"{live.Count} models in {sw.Elapsed.TotalSeconds:0} s: " &
                   String.Join(", ", live.GroupBy(Function(x) x.Author).OrderByDescending(Function(g) g.Count()).Select(Function(g) $"{g.Key} {g.Count()}")))
+            ' Personas: built-ins are added once, user personas are kept
+            Dim ps As New PersonaService()
+            If IO.File.Exists(ps.FilePath) Then IO.File.Delete(ps.FilePath)
+            Dim seenFile = IO.Path.Combine(IO.Path.GetDirectoryName(ps.FilePath), "personas-builtin.json")
+            If IO.File.Exists(seenFile) Then IO.File.Delete(seenFile)
+            IO.File.WriteAllText(ps.FilePath, "[{""Name"":""Helpful Assistant"",""SystemPrompt"":""x""},{""Name"":""My own"",""SystemPrompt"":""y""}]")
+            Dim pl = ps.Load()
+            Check(pl.Count = PersonaService.BuiltIns().Count + 1 AndAlso pl.Any(Function(x) x.Name = "My own"), "built-in personas added, own ones kept, no duplicate assistant", pl.Count & " personas")
+            pl.RemoveAll(Function(x) x.Name.Contains("Chef"))
+            ps.Save(pl)
+            Check(Not ps.Load().Any(Function(x) x.Name.Contains("Chef")), "a deleted built-in persona does not come back")
             Dim msg = Await ChatAgent.MakeVideoAsync("a cat", Nothing, Sub(t) Return, CancellationToken.None)
             Check(msg.Contains("video model"), "no video model yet: a helpful note instead of an error", msg)
         End If

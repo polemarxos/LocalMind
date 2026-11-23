@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.7.3
+
+### New
+- **28 ready-made personas** (pick them in the Persona box): Straight to the point, Ελληνικός βοηθός, Simple Teacher,
+  Tutor, Writing Editor, Email Writer, Translator, Storyteller, Copywriter, Social Media Manager, Senior Programmer,
+  Code Reviewer, Data & Excel Helper, PC & Windows Helper, Planner, Business Advisor, Brainstorm Partner,
+  Devil's Advocate, Chef, Fitness Coach, Travel Planner, Language Partner, Game Master, Picture Prompt Writer,
+  Video Prompt Writer, Song Lyricist, Frank & Unfiltered and more. Your own personas are kept; new built-in ones
+  arrive with updates, and ones you delete don't come back.
+
+### Fixes
+- After an automatic update the status bar keeps saying the new version is installed (it said "Everything is up to date").
+- Checked on Windows: an old LocalMind updates itself to the latest release within about a minute of starting,
+  and shows 🔄 Restart to update.
+
 ## 2.7.2
 
 ### New

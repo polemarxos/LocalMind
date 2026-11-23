@@ -84,7 +84,8 @@ Partial Class MainForm
         End If
 
         AppCore.SaveSettings()
-        SetStatus(Localizer.T("Everything is up to date"))
+        ' Don't overwrite the "LocalMind … is installed" message.
+        If _updatedExe Is Nothing Then SetStatus(Localizer.T("Everything is up to date"))
         If manual Then
             BeginInvoke(Sub() Localizer.Box(Me, Localizer.T("Everything is up to date.") &
                                             If(report.Count > 0, vbCrLf & vbCrLf & String.Join(vbCrLf, report), ""),
