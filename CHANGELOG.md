@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.2.0
+
+### New
+- **Chat with your documents:** in Tools → My documents, add folders or files (PDF, Word, text, Markdown, HTML, code…)
+  and press *Index now*. Turn on **📚 Docs** and answers use your files and cite them, for example "[1] report.pdf, p. 3".
+  A small embedding model (EmbeddingGemma, 318 MB) is downloaded on first use. It understands meaning across
+  languages, so a Greek question finds English notes.
+- **Web search:** turn on **🌐 Web** for current information with linked sources. DuckDuckGo needs no key and falls back
+  to Wikipedia automatically. Brave Search (free key) and SearXNG are also supported (Settings → Web & voice).
+- **Voice input:** **🎤 Speak** records your microphone, and Whisper turns it into text offline. It uses large-v3-turbo
+  on NVIDIA GPUs and small elsewhere, and the language is detected automatically, Greek included.
+- **Read aloud:** 🔊 Read under each answer, or Tools → Read answers aloud. Uses Windows voices and switches
+  to a Greek voice for Greek text.
+- The phone page has 📚 and 🌐 switches too.
+
 ## 2.1.0
 
 ### New

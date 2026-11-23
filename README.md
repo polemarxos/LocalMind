@@ -21,6 +21,8 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 - **Chat features:** personas, thinking/reasoning view, images (vision models), PDF and text attachments,
   paste and drag-and-drop, chat search and folders, a prompt library, Markdown export and import,
   code highlighting with copy buttons, and math formulas.
+- **Chat with your documents:** point LocalMind at your folders, and answers cite the file and page.
+- **Web search** with sources, **voice input** (Whisper, offline) and **read aloud**.
 - **Quick ask from anywhere:** press **Ctrl+Alt+Space** to ask a question without opening the main window.
   LocalMind waits in the system tray.
 - **Speed test:** see how fast each model runs on your PC.
