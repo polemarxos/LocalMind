@@ -41,7 +41,7 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 - **Only what you want:** on first start choose chat only, or add pictures & video and/or music & voice.
 - **Hands-free:** talk to the AI and hear the answer (in your own cloned voice if you like). The AI can also draw,
   make videos, compose and search the web by itself when you ask ("generate me a video of…").
-- **Auto-update** from GitHub Releases.
+- **Updates itself:** LocalMind, its AI engines and the model list stay up to date automatically.
 - **Other servers:** you can also connect to any OpenAI-compatible server (LM Studio, vLLM,
   or another PC running LocalMind).
 

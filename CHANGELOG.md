@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.7.0
+
+### New look
+- **Cleaner, easier main window:**
+  - Top bar holds only what the AI is (model, persona) and the big features (🎨 Pictures & video, 🎵 Music & voice, 📱 Use on phone).
+  - Everything about the next message sits in one **message box**: 📎 Attach (document, picture or any file),
+    📝 Prompts, and clear on/off options 💭 Think first, 🌐 Web search, 📚 My documents, 🖼 Picture mode.
+  - Send turns into Stop while the AI writes; Talk, speak, retry and clear sit next to it.
+  - Every button explains itself when you point at it.
+- **Welcome screen:** three simple steps on first start; once a model is ready, one-click ideas
+  (write, explain, summarize, make a picture, a video or a song).
+- Modern dark theme everywhere: dark title bars, menus, drop-down lists and scrollbars; calmer status bar; tidy sidebar.
+- The window fits small screens, and the top bar and message options shorten their names on narrow windows.
+
+### Automatic updates for everything
+- **LocalMind installs its own updates** in the background and uses them from the next start
+  (or press 🔄 Restart to update). You can turn it off in Tools → Settings → Chat → Updates.
+- The AI engines (llama.cpp, stable-diffusion.cpp, whisper.cpp, FFmpeg) and the model list are checked every day
+  and updated when the AI is idle.
+- Help → **Update everything now**.
+
 ## 2.6.1
 
 ### New

@@ -125,7 +125,7 @@ Public Module Theme
         c.BackColor = CBack
         c.ForeColor = CText
         If TypeOf c Is TextBox Then CType(c, TextBox).BorderStyle = BorderStyle.FixedSingle
-        If TypeOf c Is ComboBox Then CType(c, ComboBox).FlatStyle = FlatStyle.Flat
+        If TypeOf c Is ComboBox Then DarkCombo(CType(c, ComboBox))
     End Sub
 
     Public Sub StyleGrid(g As DataGridView)
