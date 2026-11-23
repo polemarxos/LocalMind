@@ -86,6 +86,7 @@ Public Class StudioForm
     Private _videoPath, _maskPath As String
     Private _cts As CancellationTokenSource
     Private txtSearch As TextBox
+    Private _galleryButtons As Button()
     Private chkFavs, chkIdle, chkSleep As CheckBox
 
     <Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Sequential)>
@@ -295,7 +296,8 @@ Public Class StudioForm
                                           End If
                                       End Using
                                   End Sub
-        genBar.Controls.AddRange({btnGenerate, btnStop, lblQueue, btnFilm, btnFolder})
+        genBar.Controls.AddRange({btnGenerate, btnStop, lblQueue})
+        _galleryButtons = {btnFilm, btnFolder}
         form.Controls.Add(txtPrompt, 0, 0) : form.Controls.Add(slotPanel, 1, 0)
         form.Controls.Add(txtNeg, 0, 1) : form.SetColumnSpan(txtNeg, 2)
         form.Controls.Add(opts, 0, 2) : form.SetColumnSpan(opts, 2)
@@ -320,6 +322,10 @@ Public Class StudioForm
         Dim tip As New ToolTip()
         tip.SetToolTip(chkIdle, Localizer.T("Jobs wait until nobody has used the PC for 5 minutes, then run one after another (e.g. overnight)."))
         histBar.Controls.AddRange({txtSearch, chkFavs, chkIdle, chkSleep})
+        For Each gb In _galleryButtons
+            gb.Margin = New Padding(6, 0, 0, 0)
+            histBar.Controls.Add(gb)
+        Next
         right.Controls.Add(histBar)
         Dim searchTimer As New System.Windows.Forms.Timer() With {.Interval = 400}
         AddHandler searchTimer.Tick, Sub()

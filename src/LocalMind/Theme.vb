@@ -311,6 +311,26 @@ Public Module Theme
         End If
         st.Primary = primary
         st.Danger = danger
+        FitButton(b)
+    End Sub
+
+    ''' <summary>Auto-sized buttons are always wide enough for icon + text (measured with the real font).</summary>
+    Private Sub FitButton(b As Button)
+        Static hooked As New Runtime.CompilerServices.ConditionalWeakTable(Of Button, Object)()
+        Dim fit = Sub()
+                      If Not b.AutoSize Then Return
+                      Dim parts = Icons.Split(b.Text)
+                      Dim w = TextRenderer.MeasureText(parts.After, b.Font, New Size(2000, 100), TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix).Width
+                      Dim need = b.Padding.Horizontal + 22 + If(parts.Glyph IsNot Nothing, 16 + If(parts.After.Length > 0, 7, 0), 0) + w
+                      If b.MinimumSize.Width <> need Then b.MinimumSize = New Size(need, b.MinimumSize.Height)
+                  End Sub
+        fit()
+        Dim dummy As Object = Nothing
+        If Not hooked.TryGetValue(b, dummy) Then
+            hooked.Add(b, New Object())
+            AddHandler b.TextChanged, Sub() fit()
+            AddHandler b.FontChanged, Sub() fit()
+        End If
     End Sub
 
     Private Sub PaintButton(b As Button, st As ButtonLook, g As Graphics)
@@ -342,7 +362,7 @@ Public Module Theme
         Dim parts = Icons.Split(b.Text)
         Dim flags = TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.EndEllipsis Or
                     If(b.UseMnemonic, TextFormatFlags.Default, TextFormatFlags.NoPrefix)
-        Dim area = New Rectangle(b.Padding.Left + 4, 0, b.Width - b.Padding.Horizontal - 8, b.Height)
+        Dim area = New Rectangle(b.Padding.Left + 2, 0, b.Width - b.Padding.Horizontal - 4, b.Height)
         Dim iconW = If(parts.Glyph IsNot Nothing, 16, 0)
         Dim gap = If(parts.Glyph IsNot Nothing AndAlso parts.After.Length > 0, 7, 0)
         Dim textSize = If(parts.After.Length > 0, TextRenderer.MeasureText(g, parts.After, b.Font, area.Size, flags), Size.Empty)
@@ -448,7 +468,66 @@ Public Module Theme
     End Sub
 
     ''' <summary>Simple dark tab control that owner-draws its headers.</summary>
+    ''' <summary>
+    ''' Paints a tab control's whole header strip and frame itself after Windows draws it, so there are no white or
+    ''' boxy borders: a flat strip, a soft highlight for the chosen tab and an accent line under it.
+    ''' </summary>
+    Private Class TabPainter
+        Inherits NativeWindow
+        Private ReadOnly _t As TabControl
+        Public Sub New(t As TabControl)
+            _t = t
+            If t.IsHandleCreated Then AssignHandle(t.Handle)
+            AddHandler t.HandleCreated, Sub() AssignHandle(t.Handle)
+            AddHandler t.HandleDestroyed, Sub() ReleaseHandle()
+            AddHandler t.SelectedIndexChanged, Sub() t.Invalidate()
+        End Sub
+        Protected Overrides Sub WndProc(ByRef m As Message)
+            MyBase.WndProc(m)
+            If m.Msg = &HF AndAlso Not _t.IsDisposed Then
+                Try
+                    Using g = Graphics.FromHwnd(_t.Handle)
+                        Paint(g)
+                    End Using
+                Catch
+                End Try
+            End If
+        End Sub
+        Private Sub Paint(g As Graphics)
+            Dim disp = _t.DisplayRectangle
+            Dim headerH = Math.Max(0, disp.Top - 4)
+            Dim back = If(_t.Parent?.BackColor, CPanel)
+            Using b As New SolidBrush(back)
+                g.FillRectangle(b, 0, 0, _t.Width, headerH + 2)
+                ' the frame Windows draws around the page
+                g.FillRectangle(b, 0, headerH, disp.Left, _t.Height)
+                g.FillRectangle(b, disp.Right, headerH, _t.Width - disp.Right, _t.Height)
+                g.FillRectangle(b, 0, disp.Bottom, _t.Width, _t.Height - disp.Bottom)
+                g.FillRectangle(b, 0, headerH, _t.Width, disp.Top - headerH)
+            End Using
+            Using p As New Pen(CBorder)
+                g.DrawLine(p, 0, headerH + 1, _t.Width, headerH + 1)
+            End Using
+            For i = 0 To _t.TabCount - 1
+                Dim r = _t.GetTabRect(i)
+                r = New Rectangle(r.X, 2, r.Width, headerH - 2)
+                Dim selected = i = _t.SelectedIndex
+                If selected Then
+                    Using b As New SolidBrush(ThemePresets.Mix(back, CText, 0.05))
+                        g.FillRectangle(b, r.X + 2, r.Y, r.Width - 4, r.Height)
+                    End Using
+                    Using b As New SolidBrush(CAccent)
+                        g.FillRectangle(b, r.X + 12, headerH - 2, r.Width - 24, 3)
+                    End Using
+                End If
+                DrawIconText(g, _t.TabPages(i).Text, If(selected, BoldFont, UiFont), r, If(selected, CText, CDim), True)
+            Next
+        End Sub
+    End Class
+    Private ReadOnly _tabPainters As New List(Of TabPainter)
+
     Public Sub StyleTabs(t As TabControl)
+        _tabPainters.Add(New TabPainter(t))
         t.DrawMode = TabDrawMode.OwnerDrawFixed
         t.SizeMode = TabSizeMode.Fixed
         t.ItemSize = New Size(190, 38)
@@ -657,6 +736,13 @@ Public Module Theme
                     e.Graphics.FillPath(b, path)
                 End Using
                 e.Graphics.SmoothingMode = SmoothingMode.Default
+            End If
+        End Sub
+
+        Protected Overrides Sub InitializeItem(item As ToolStripItem)
+            MyBase.InitializeItem(item)
+            If Icons.Split(item.Text).Glyph IsNot Nothing AndAlso Not item.IsOnDropDown Then
+                item.Padding = New Padding(item.Padding.Left, item.Padding.Top, item.Padding.Right + 10, item.Padding.Bottom)
             End If
         End Sub
 

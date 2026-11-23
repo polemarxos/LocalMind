@@ -194,7 +194,9 @@ Public Class ModelManagerForm
         btnDownload = Theme.MakeButton("⬇  Download selected (0)", primary:=True)
         btnDownload.Font = Theme.BoldFont
         Dim btnNone = Theme.MakeButton("Clear selection")
-        Dim hint = Theme.MakeLabel("Tick models, keep quant on Auto, press Download. Green = fits in VRAM · amber = runs with CPU help · name:quant picks a quant (e.g. :iq4_xs) · Ctrl+Enter = search all of Hugging Face", dim_:=True)
+        Dim hint = Theme.MakeLabel("Tick models and press Download · green = fits in VRAM · amber = uses RAM too", dim_:=True)
+        Dim hintTip As New ToolTip()
+        hintTip.SetToolTip(hint, Localizer.T("Keep the quant on Auto (the best that fits). Type name:quant to pick one (e.g. :iq4_xs). Ctrl+Enter searches all of Hugging Face."))
         AddHandler btnDownload.Click, Sub() DownloadSelected()
         AddHandler btnNone.Click, Sub()
                                       _checked.Clear()
