@@ -46,6 +46,15 @@ jobs:
             $p = Start-Process publish/LocalMind.exe -PassThru
             Start-Sleep -Seconds 25
             Shot "main-$case"
+            if ($case -eq 'en-model') {
+              # Model Manager, with an Ollama-style search
+              $ws = New-Object -ComObject WScript.Shell
+              $null = $ws.AppActivate($p.Id); Start-Sleep 1
+              $ws.SendKeys('^m'); Start-Sleep -Seconds 12
+              Shot "models-best"
+              $ws.SendKeys('Qwen3.8-27B-Uncensored:iq4_xs'); Start-Sleep -Seconds 4
+              Shot "models-search"
+            }
             Stop-Process -Id $p.Id -Force
             Start-Sleep -Seconds 2
           }

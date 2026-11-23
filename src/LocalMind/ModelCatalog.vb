@@ -75,7 +75,7 @@ Public Class CatalogEntry
 
     <JsonIgnore> Public ReadOnly Property IsUncensored As Boolean
         Get
-            Return Regex.IsMatch(If(Name, ""), "uncensored|abliterated|heretic", RegexOptions.IgnoreCase)
+            Return Regex.IsMatch(If(Name, ""), "uncensored|uncencored|abliterated|heretic|nsfw", RegexOptions.IgnoreCase)
         End Get
     End Property
 
@@ -133,7 +133,26 @@ End Class
 
 Public Module ModelCatalog
 
-    Public ReadOnly TrustedAuthors As String() = {"unsloth", "bartowski", "lmstudio-community", "ggml-org"}
+    ''' <summary>
+    ''' Where the model list comes from: GGUF quantizers and AI labs on Hugging Face, best first
+    ''' (the same model from an earlier source wins). Pages of 1000 models, and the minimum downloads
+    ''' for a model to be listed. Kept in step with tools/build_catalog.py.
+    ''' </summary>
+    Public ReadOnly Sources As (Author As String, Pages As Integer, MinDownloads As Integer)() = {
+        ("unsloth", 1, 0), ("bartowski", 3, 0), ("lmstudio-community", 1, 0), ("ggml-org", 1, 0),
+        ("Qwen", 1, 0), ("google", 1, 0), ("mistralai", 1, 0), ("microsoft", 1, 0), ("ibm-granite", 1, 0),
+        ("LiquidAI", 1, 0), ("nvidia", 1, 0), ("NousResearch", 1, 0), ("openbmb", 1, 0), ("allenai", 1, 0),
+        ("tiiuae", 1, 0), ("internlm", 1, 0), ("HuggingFaceTB", 1, 0), ("zai-org", 1, 0), ("janhq", 1, 0),
+        ("Menlo", 1, 0), ("huihui-ai", 1, 0), ("mlabonne", 1, 0),
+        ("MaziyarPanahi", 1, 100), ("QuantFactory", 1, 100), ("mradermacher", 3, 100), ("second-state", 1, 100),
+        ("Mungert", 1, 100), ("TheBloke", 1, 100), ("DavidAU", 1, 100), ("TheDrummer", 1, 50), ("Lewdiculous", 1, 100),
+        ("gabriellarson", 1, 100), ("prithivMLmods", 1, 100), ("DevQuasar", 1, 100), ("tensorblock", 1, 100),
+        ("RichardErkhov", 2, 100)}
+
+    ''' <summary>Sources up to mlabonne are the main quantizers and AI labs.</summary>
+    Public Const TopTierCount As Integer = 22
+
+    Public ReadOnly TrustedAuthors As String() = Sources.Select(Function(s) s.Author.ToLowerInvariant()).ToArray()
 
     ''' <summary>Approximate bits per weight of common llama.cpp quantizations (incl. overhead).</summary>
     Public ReadOnly QuantBits As New Dictionary(Of String, Double)(StringComparer.OrdinalIgnoreCase) From {
@@ -272,10 +291,12 @@ Public Module ModelCatalog
         Dim cpuOnly = hw.VramBytes = 0
         ' Uncensored fine-tunes are a separate list (never mixed into the normal picks) and are
         ' much less downloaded than the originals, so they get a lower popularity bar.
-        Dim minDownloads = If(uncensored, 1000, 20000)
+        Dim minDownloads = If(uncensored, 1000, 5000)
         Dim cutoff = DateTime.Today.AddMonths(If(uncensored, -36, -18)).ToString("yyyy-MM-dd")
         Dim pool = all.Where(Function(e)
                                  If e.Params <= 0 OrElse e.IsUncensored <> uncensored Then Return False
+                                 ' The normal picks come from the main quantizers and AI labs (not community fine-tunes).
+                                 If Not uncensored AndAlso Array.IndexOf(TrustedAuthors, If(e.Author, "").ToLowerInvariant()) >= TopTierCount Then Return False
                                  If e.Downloads < minDownloads Then Return False
                                  If Not String.IsNullOrEmpty(e.Updated) AndAlso String.CompareOrdinal(e.Updated, cutoff) < 0 Then Return False
                                  Dim q = AutoQuant(e, hw, ctx)
@@ -296,8 +317,8 @@ Public Module ModelCatalog
         ' Keep the top 2 per architecture × size bucket (removes near-duplicate uploads and old versions).
         Dim bucket = Function(e As CatalogEntry) If(e.Arch, "") & "|" & e.SizeClass & "|" & If(e.IsVision, "v", "") & If(e.IsCoder, "c", "")
         Dim best = pool.GroupBy(bucket).
-                        SelectMany(Function(g) g.OrderByDescending(score).Take(If(uncensored, 3, 2))).
-                        OrderByDescending(score).Take(60).
+                        SelectMany(Function(g) g.OrderByDescending(score).Take(If(uncensored, 6, 4))).
+                        OrderByDescending(score).Take(If(uncensored, 200, 300)).
                         Select(Function(e) e.Repo)
         Return New HashSet(Of String)(best, StringComparer.OrdinalIgnoreCase)
     End Function
@@ -378,9 +399,30 @@ Public Module ModelCatalog
     Private Const Expand As String = "&expand[]=gguf&expand[]=downloads&expand[]=pipeline_tag&expand[]=tags&expand[]=likes&expand[]=lastModified"
 
     ''' <summary>Downloads the current top GGUF chat models from trusted quantizers.</summary>
-    Public Async Function FetchLiveAsync(ct As CancellationToken, Optional perAuthor As Integer = 300) As Task(Of List(Of CatalogEntry))
-        Dim tasks = TrustedAuthors.Select(Function(a) FetchJsonAsync(
-            $"https://huggingface.co/api/models?author={a}&filter=gguf&sort=downloads&limit={perAuthor}{Expand}", ct)).ToList()
+    Public Async Function FetchLiveAsync(ct As CancellationToken, Optional perAuthor As Integer = 1000) As Task(Of List(Of CatalogEntry))
+        ' A few at a time: Hugging Face rate-limits bursts.
+        Dim gate As New SemaphoreSlim(3)
+        Dim tasks = Sources.Select(Async Function(src)
+                                       Await gate.WaitAsync(ct)
+                                       Try
+                                           Dim all As New List(Of JToken)
+                                           Dim url = $"https://huggingface.co/api/models?author={src.Author}&filter=gguf&sort=downloads&limit={Math.Min(1000, perAuthor)}{Expand}"
+                                           For page = 1 To src.Pages
+                                               Dim res = Await FetchPageAsync(url, ct)
+                                               If res.Items Is Nothing Then Exit For
+                                               all.AddRange(res.Items.Where(Function(m) src.MinDownloads = 0 OrElse If(m("downloads")?.ToObject(Of Long?)(), 0L) >= src.MinDownloads))
+                                               If res.NextUrl Is Nothing Then Exit For
+                                               url = res.NextUrl
+                                           Next
+                                           Return New JArray(all)
+                                       Catch ex As OperationCanceledException When ct.IsCancellationRequested
+                                           Throw
+                                       Catch
+                                           Return New JArray()
+                                       Finally
+                                           gate.Release()
+                                       End Try
+                                   End Function).ToList()
         Dim arrays = Await Task.WhenAll(tasks)
         Dim list = Dedupe(arrays.SelectMany(Function(a) ParseEntries(a)))
         If list.Count > 50 Then
@@ -394,6 +436,30 @@ Public Module ModelCatalog
         Dim url = $"https://huggingface.co/api/models?search={Uri.EscapeDataString(query)}&filter=gguf&sort=downloads&limit=100{Expand}"
         Dim arr = Await FetchJsonAsync(url, ct)
         Return ParseEntries(arr).OrderByDescending(Function(e) e.Downloads).ToList()
+    End Function
+
+    ''' <summary>One page of the Hugging Face model list (retries when rate-limited) and the next page's address.</summary>
+    Private Async Function FetchPageAsync(url As String, ct As CancellationToken) As Task(Of (Items As JArray, NextUrl As String))
+        For attempt = 1 To 5
+            Using cts = CancellationTokenSource.CreateLinkedTokenSource(ct)
+                cts.CancelAfter(TimeSpan.FromSeconds(90))
+                Using resp = Await Downloader.Http.GetAsync(url, cts.Token)
+                    If CInt(resp.StatusCode) = 429 OrElse CInt(resp.StatusCode) >= 500 Then
+                        Await Task.Delay(TimeSpan.FromSeconds(10 * attempt), ct)
+                        Continue For
+                    End If
+                    If Not resp.IsSuccessStatusCode Then Return (Nothing, Nothing)
+                    Dim nextUrl As String = Nothing
+                    Dim links As IEnumerable(Of String) = Nothing
+                    If resp.Headers.TryGetValues("Link", links) Then
+                        Dim m = Regex.Match(String.Join(",", links), "<([^>]+)>;\s*rel=.next.")
+                        If m.Success Then nextUrl = m.Groups(1).Value
+                    End If
+                    Return (JArray.Parse(Await resp.Content.ReadAsStringAsync(cts.Token)), nextUrl)
+                End Using
+            End Using
+        Next
+        Return (Nothing, Nothing)
     End Function
 
     Private Async Function FetchJsonAsync(url As String, ct As CancellationToken) As Task(Of JArray)
@@ -416,7 +482,7 @@ Public Module ModelCatalog
             Dim low = id.ToLowerInvariant()
             If params < 100000000L Then Continue For
             If NonChatArch.Contains(arch) OrElse NonChatPipe.Contains(pipe) Then Continue For
-            If {"test-", "models-moved", "embed", "reranker", "-mtp-gguf", "tts", "whisper", "imatrix"}.Any(Function(x) low.Contains(x)) Then Continue For
+            If {"test-", "models-moved", "embed", "reranker", "-mtp-gguf", "-mtp", "tts", "whisper", "imatrix-dataset", "stable-diffusion", "flux", "qwen-image", "sdxl"}.Any(Function(x) low.Contains(x)) Then Continue For
 
             Dim tags = If(TryCast(m("tags"), JArray)?.Select(Function(t) t.ToString()).ToList(), New List(Of String))
             Dim keep = {"moe", "conversational", "image-text-to-text", "any-to-any", "reasoning", "code", "uncensored", "abliterated"}
@@ -445,10 +511,35 @@ Public Module ModelCatalog
         Return If(s.Length >= 10, s.Substring(0, 10), s)
     End Function
 
+    ''' <summary>
+    ''' Splits an Ollama-style name: "Qwen3.8-27B-Uncensored:iq4_xs" → ("Qwen3.8-27B-Uncensored", "IQ4_XS").
+    ''' Also accepts "hf.co/bartowski/Some-Model-GGUF:Q4_K_M" and "ollama run …".
+    ''' </summary>
+    Public Function SplitQuery(text As String) As (Name As String, Quant As String)
+        Dim t = If(text, "").Trim()
+        t = Regex.Replace(t, "^(ollama\s+(run|pull)\s+)", "", RegexOptions.IgnoreCase)
+        t = Regex.Replace(t, "^(https?://)?(hf\.co|huggingface\.co)/", "", RegexOptions.IgnoreCase)
+        Dim i = t.LastIndexOf(":"c)
+        If i > 0 AndAlso i < t.Length - 1 Then
+            Dim q = t.Substring(i + 1).Trim().ToUpperInvariant()
+            If Regex.IsMatch(q, "^(UD-)?(I?Q\d(_[A-Z0-9]+)*|BF16|F16|F32|MXFP4(_MOE)?)$") Then Return (t.Substring(0, i).Trim(), q)
+        End If
+        Return (t, Nothing)
+    End Function
+
     Public Function NormalizeName(repo As String) As String
-        Dim n = repo.Split("/"c).Last()
-        n = Regex.Replace(n, "-GGUF$", "", RegexOptions.IgnoreCase)
-        If repo.StartsWith("bartowski/", StringComparison.OrdinalIgnoreCase) AndAlso n.Contains("_") Then n = n.Split({"_"c}, 2)(1)
+        Dim parts = repo.Split({"/"c}, 2)
+        Dim author = parts(0).ToLowerInvariant()
+        Dim n = parts.Last()
+        n = Regex.Replace(n, "(-GGUF-IQ-Imatrix|-GGUF|_GGUF)$", "", RegexOptions.IgnoreCase)
+        n = Regex.Replace(n, "-i1$", "")
+        If author = "richarderkhov" AndAlso n.Contains("_-_") Then
+            n = n.Substring(n.IndexOf("_-_") + 3)
+        ElseIf (author = "bartowski" OrElse author = "tensorblock") AndAlso n.Contains("_") Then
+            n = n.Split({"_"c}, 2)(1)
+        ElseIf author = "devquasar" AndAlso n.Contains(".") Then
+            n = n.Split({"."c}, 2)(1)
+        End If
         Return n
     End Function
 

@@ -79,7 +79,7 @@ Module HarnessMain
                 Dim best = ModelCatalog.BestThatFit(emb, h, 16384)
                 Dim sample = emb.Where(Function(e) best.Contains(e.Repo)).OrderByDescending(Function(e) e.Params).Take(6).Select(Function(e) $"{e.Name}[{ModelCatalog.AutoQuant(e, h, 16384)}]")
                 Dim allFit = emb.Where(Function(e) best.Contains(e.Repo)).All(Function(e) prof.Item1 = 0 OrElse ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, ModelCatalog.AutoQuant(e, h, 16384)), h, 16384) = FitLevel.Fits)
-                Check(best.Count >= 5 AndAlso best.Count <= 60 AndAlso allFit, $"{prof.Item1:0}GB VRAM: {best.Count} shown", "largest: " & String.Join(", ", sample))
+                Check(best.Count >= 5 AndAlso best.Count <= 400 AndAlso allFit, $"{prof.Item1:0}GB VRAM: {best.Count} shown", "largest: " & String.Join(", ", sample))
             Next
 
             For Each vram In {8.0, 16.0}
@@ -543,6 +543,28 @@ Module HarnessMain
                 Dim got = ChatAgent.RequestedTool(c.Item1, tl)
                 Check(got = c.Item2, $"'{c.Item1}' → {If(c.Item2, "normal answer")}", If(got, "(none)"))
             Next
+            ' Bigger model list, Ollama-style names
+            Dim emb2 = ModelCatalog.LoadEmbedded()
+            Check(emb2.Count >= 6000, "model list is about 10x bigger", emb2.Count & " models")
+            For Each c In {("Qwen3.8-27B-Uncensored:iq4_xs", "Qwen3.8-27B-Uncensored", "IQ4_XS"),
+                           ("hf.co/bartowski/Some-Model-GGUF:Q4_K_M", "bartowski/Some-Model-GGUF", "Q4_K_M"),
+                           ("ollama run gemma-4-12b-it:q8_0", "gemma-4-12b-it", "Q8_0"),
+                           ("qwen coder", "qwen coder", CStr(Nothing))}
+                Dim sq = ModelCatalog.SplitQuery(c.Item1)
+                Check(sq.Name = c.Item2 AndAlso sq.Quant = c.Item3, $"'{c.Item1}' → {sq.Name} + {If(sq.Quant, "Auto")}")
+            Next
+            Check(emb2.Any(Function(e) e.Repo.Contains("Qwen3.8-27B-Uncensored")), "Qwen3.8-27B-Uncensored is in the list")
+            For Each c In {("mradermacher/Foo-7B-i1-GGUF", "Foo-7B"), ("RichardErkhov/org_-_Bar-8B-gguf", "Bar-8B"),
+                           ("DevQuasar/Qwen.Qwen3-8B-GGUF", "Qwen3-8B"), ("Lewdiculous/L3-8B-Stheno-v3.2-GGUF-IQ-Imatrix", "L3-8B-Stheno-v3.2")}
+                Check(ModelCatalog.NormalizeName(c.Item1) = c.Item2, $"name of {c.Item1}", ModelCatalog.NormalizeName(c.Item1))
+            Next
+            Dim h16b = Hw(16, 32)
+            Dim best16 = ModelCatalog.BestThatFit(emb2, h16b, 16384)
+            Check(best16.Count >= 150, "16 GB GPU: many more best picks", best16.Count & " models")
+            Dim sw = Diagnostics.Stopwatch.StartNew()
+            Dim live = Await ModelCatalog.FetchLiveAsync(CancellationToken.None)
+            Check(live.Count >= 6000, "live list from Hugging Face", $"{live.Count} models in {sw.Elapsed.TotalSeconds:0} s: " &
+                  String.Join(", ", live.GroupBy(Function(x) x.Author).OrderByDescending(Function(g) g.Count()).Select(Function(g) $"{g.Key} {g.Count()}")))
             Dim msg = Await ChatAgent.MakeVideoAsync("a cat", Nothing, Sub(t) Return, CancellationToken.None)
             Check(msg.Contains("video model"), "no video model yet: a helpful note instead of an error", msg)
         End If

@@ -4,6 +4,7 @@ Imports System.Diagnostics
 Imports System.Drawing
 Imports System.IO
 Imports System.Linq
+Imports System.Text.RegularExpressions
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
@@ -51,7 +52,9 @@ Public Class ModelManagerForm
     Private lblInstalledInfo As Label
     Private gridDl As DataGridView
 
-    Private Shared ReadOnly QuantChoices As String() = {"Auto", "Q8_0", "Q6_K", "Q5_K_M", "Q4_K_M", "IQ4_XS", "Q3_K_M", "IQ3_XXS", "Q2_K"}
+    Private Shared ReadOnly QuantChoices As String() = {"Auto", "Q8_0", "Q6_K", "Q5_K_M", "Q5_K_S", "Q4_K_M", "Q4_K_S", "IQ4_XS", "IQ4_NL",
+                                                         "Q4_0", "Q3_K_L", "Q3_K_M", "IQ3_M", "IQ3_XXS", "Q2_K", "IQ2_M", "BF16"}
+
 
     Public Sub New()
         Text = "Model Manager"
@@ -117,8 +120,9 @@ Public Class ModelManagerForm
     End Sub
 
     Private Sub BuildCatalogTab(page As TabPage)
-        Dim bar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 40, .WrapContents = False, .Padding = New Padding(4, 4, 4, 0)}
-        txtFilter = New TextBox() With {.Width = 230, .PlaceholderText = "Search models (e.g. qwen, coder, gemma)…", .Margin = New Padding(3, 6, 3, 3)}
+        Dim bar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                                               .WrapContents = True, .Padding = New Padding(4, 4, 4, 2)}
+        txtFilter = New TextBox() With {.Width = 260, .PlaceholderText = "Search, e.g. qwen coder or Qwen3.8-27B-Uncensored:iq4_xs", .Margin = New Padding(3, 6, 3, 3)}
         Theme.StyleInput(txtFilter)
         cmbCategory = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 170, .Margin = New Padding(3, 6, 3, 3)}
         cmbCategory.Items.AddRange({"All categories", "💬 General chat", "👁 Vision (images)", "🧠 Reasoning / thinking",
@@ -130,7 +134,7 @@ Public Class ModelManagerForm
         cmbSort.Items.AddRange({"Most popular", "Most liked", "Newest", "Smallest first", "Largest first", "Name"})
         cmbSort.SelectedIndex = 0
         Theme.StyleInput(cmbSort)
-        cmbShow = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 230, .Margin = New Padding(3, 6, 3, 3)}
+        cmbShow = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 215, .Margin = New Padding(3, 6, 3, 3)}
         cmbShow.Items.AddRange({"★ Best that fit my GPU", "Everything that runs on this PC", "All models (show everything)"}.Select(Function(x) Localizer.T(x)).ToArray())
         cmbShow.SelectedIndex = 0
         Theme.StyleInput(cmbShow)
@@ -166,7 +170,7 @@ Public Class ModelManagerForm
         btnDownload = Theme.MakeButton("⬇  Download selected (0)", primary:=True)
         btnDownload.Font = Theme.BoldFont
         Dim btnNone = Theme.MakeButton("Clear selection")
-        Dim hint = Theme.MakeLabel("Tick models, keep quant on Auto, press Download. Green = fits in VRAM · amber = runs with CPU help · Ctrl+Enter in search = Hugging Face search", dim_:=True)
+        Dim hint = Theme.MakeLabel("Tick models, keep quant on Auto, press Download. Green = fits in VRAM · amber = runs with CPU help · name:quant picks a quant (e.g. :iq4_xs) · Ctrl+Enter = search all of Hugging Face", dim_:=True)
         AddHandler btnDownload.Click, Sub() DownloadSelected()
         AddHandler btnNone.Click, Sub()
                                       _checked.Clear()
@@ -358,7 +362,9 @@ Public Class ModelManagerForm
     End Function
 
     Private Async Function SearchHubAsync() As Task
-        Dim q = txtFilter.Text.Trim()
+        Dim q = ModelCatalog.SplitQuery(txtFilter.Text).Name
+        If q.Contains("/"c) Then q = q.Split("/"c).Last()
+        q = Regex.Replace(q, "-GGUF$", "", RegexOptions.IgnoreCase)
         If _searchResults IsNot Nothing AndAlso q.Length = 0 Then
             _searchResults = Nothing
             btnHub.Text = "🔍 Search all of Hugging Face"
@@ -390,7 +396,8 @@ Public Class ModelManagerForm
     Private Sub ApplyFilter(Optional ignoreText As Boolean = False)
         Dim ctx = AppCore.Settings.ContextSize
         Dim src As IEnumerable(Of CatalogEntry) = If(_searchResults, _entries)
-        Dim q = If(ignoreText OrElse _searchResults IsNot Nothing, "", txtFilter.Text.Trim())
+        Dim query = ModelCatalog.SplitQuery(txtFilter.Text)
+        Dim q = If(ignoreText OrElse _searchResults IsNot Nothing, "", query.Name)
 
         If q.Length > 0 Then
             Dim words = q.ToLowerInvariant().Split(" "c, StringSplitOptions.RemoveEmptyEntries)
@@ -413,7 +420,8 @@ Public Class ModelManagerForm
             Case 13 : src = src.Where(Function(e) AppCore.Library.HasRepo(e.Repo))
         End Select
 
-        If _searchResults Is Nothing Then
+        ' Typing a name searches all models, not only the best ones for this GPU.
+        If _searchResults Is Nothing AndAlso q.Length = 0 Then
             Select Case cmbShow.SelectedIndex
                 Case 0   ' best that fully fit in VRAM (default)
                     ' The Uncensored category has its own best list; the normal one never contains them.
@@ -462,6 +470,28 @@ Public Class ModelManagerForm
             rows.Add(r)
         Next
         grid.Rows.AddRange(rows.ToArray())
+        ' "name:quant" → pre-select that quant (and tick the model when it is the only match).
+        If query.Quant IsNot Nothing Then
+            For Each r As DataGridViewRow In grid.Rows
+                Dim cell = CType(r.Cells(4), DataGridViewComboBoxCell)
+                If Not cell.Items.Contains(query.Quant) Then
+                    cell.Items.Clear()
+                    cell.Items.AddRange(QuantChoices)
+                    cell.Items.Add(query.Quant)
+                End If
+                cell.Value = query.Quant
+                Dim e = TryCast(r.Tag, CatalogEntry)
+                If e IsNot Nothing Then
+                    _quantChoice(e.Repo) = query.Quant
+                    FillFitCells(r, e)
+                End If
+            Next
+            If grid.Rows.Count = 1 Then
+                grid.Rows(0).Cells(0).Value = True
+                Dim e0 = TryCast(grid.Rows(0).Tag, CatalogEntry)
+                If e0 IsNot Nothing Then _checked.Add(e0.Repo)
+            End If
+        End If
         grid.ResumeLayout()
         _suppressGridEvents = False
         UpdateDownloadButton()
