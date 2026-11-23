@@ -22,7 +22,27 @@ End Class
 
 Public Class MediaPart
     Inherits MediaFile
-    <JsonProperty("role")> Public Property Role As String     ' vae | llm | t5xxl | clip_l
+    <JsonProperty("role")> Public Property Role As String     ' vae | llm | llm_vision | t5xxl | clip_l | audio-vae | embeddings-connectors
+    ''' <summary>Only needed for editing (e.g. the vision part of the text encoder); downloaded on first edit.</summary>
+    <JsonProperty("edit")> Public Property Edit As Boolean
+End Class
+
+''' <summary>A LoRA file stored in Models\Loras under a fixed name (e.g. a Lightning speed LoRA).</summary>
+Public Class MediaLora
+    Inherits MediaFile
+    <JsonProperty("name")> Public Property Name As String
+    <JsonProperty("high")> Public Property High As Boolean     ' applies to the high-noise expert (Wan 2.2 A14B)
+    <JsonProperty("weight")> Public Property Weight As Double = 1.0
+End Class
+
+''' <summary>Turbo / Lightning mode: a distillation LoRA with its own steps and CFG.</summary>
+Public Class MediaSpeed
+    <JsonProperty("label")> Public Property Label As String
+    <JsonProperty("steps")> Public Property Steps As Integer
+    <JsonProperty("highSteps")> Public Property HighSteps As Integer
+    <JsonProperty("cfg")> Public Property Cfg As Double
+    <JsonProperty("extra")> Public Property Extra As String
+    <JsonProperty("loras")> Public Property Loras As New List(Of MediaLora)()
 End Class
 
 Public Class MediaVariant
@@ -66,6 +86,12 @@ Public Class MediaRecipe
     <JsonProperty("negative")> Public Property Negative As String
     <JsonProperty("sampler")> Public Property Sampler As String
     <JsonProperty("input")> Public Property Input As String     ' none | optional | required
+    ''' <summary>create, restyle, edit, combine, inpaint, animate, video-edit, upscale</summary>
+    <JsonProperty("tasks")> Public Property Tasks As New List(Of String)()
+    <JsonProperty("refs")> Public Property Refs As Integer       ' reference pictures for edit / combine
+    <JsonProperty("extra")> Public Property Extra As String     ' extra sd-cli arguments
+    <JsonProperty("fps")> Public Property Fps As Integer
+    <JsonProperty("speed")> Public Property Speed As MediaSpeed
     <JsonProperty("variants")> Public Property Variants As New List(Of MediaVariant)()
     <JsonProperty("parts")> Public Property Parts As New List(Of MediaPart)()
 
@@ -75,12 +101,15 @@ Public Class MediaRecipe
         End Get
     End Property
 
-    ''' <summary>FLUX.2 / Qwen-Image edit with a reference image (-r); others use img2img / first frame (-i).</summary>
-    <JsonIgnore> Public ReadOnly Property InputIsReference As Boolean
+    <JsonIgnore> Public ReadOnly Property IsUpscaler As Boolean
         Get
-            Return Family = "FLUX.2" OrElse Family = "Qwen-Image"
+            Return Kind = "upscale"
         End Get
     End Property
+
+    Public Function Can(task As String) As Boolean
+        Return Tasks IsNot Nothing AndAlso Tasks.Contains(task)
+    End Function
 
     Public Overrides Function ToString() As String
         Return Name
@@ -91,15 +120,98 @@ Public Module MediaStudio
 
     Private _recipes As List(Of MediaRecipe)
 
+    Private _catalogJson As String
+
     Public Function Recipes() As List(Of MediaRecipe)
         If _recipes Is Nothing Then
-            Using s = Assembly.GetExecutingAssembly().GetManifestResourceStream("media_catalog.json")
-                Using r As New StreamReader(s)
-                    _recipes = JsonConvert.DeserializeObject(Of List(Of MediaRecipe))(r.ReadToEnd())
+            If _catalogJson Is Nothing Then
+                Using s = Assembly.GetExecutingAssembly().GetManifestResourceStream("media_catalog.json")
+                    Using r As New StreamReader(s)
+                        _catalogJson = r.ReadToEnd()
+                    End Using
                 End Using
-            End Using
+            End If
+            Dim list = JsonConvert.DeserializeObject(Of List(Of MediaRecipe))(_catalogJson)
+            list.AddRange(UserRecipes(list))
+            _recipes = list
         End If
         Return _recipes
+    End Function
+
+    '──────────────── your own checkpoints (e.g. from Civitai) ────────────────
+    Public Class UserModel
+        Public Property Id As String
+        Public Property Name As String
+        ''' <summary>Built-in recipe it is based on (supplies VAE, text encoder, settings).</summary>
+        Public Property Template As String
+        ''' <summary>File name inside Models\Images\civitai.</summary>
+        Public Property File As String
+        Public Property Size As Long
+        ''' <summary>checkpoint (all-in-one, e.g. SD 1.5 / SDXL) or safetensors / gguf (diffusion model only).</summary>
+        Public Property Format As String
+        Public Property BaseModel As String
+        Public Property Steps As Integer
+        Public Property Cfg As Double
+        Public Property Extra As String
+        Public Property Source As String
+    End Class
+
+    Private ReadOnly Property UserModelsFile As String
+        Get
+            Return Path.Combine(AppPaths.Roaming, "user_models.json")
+        End Get
+    End Property
+
+    Public ReadOnly Property UserModelFolder As String
+        Get
+            Dim d = Path.Combine(Folder, "civitai")
+            Directory.CreateDirectory(d)
+            Return d
+        End Get
+    End Property
+
+    Public Function LoadUserModels() As List(Of UserModel)
+        Try
+            If File.Exists(UserModelsFile) Then Return If(JsonConvert.DeserializeObject(Of List(Of UserModel))(File.ReadAllText(UserModelsFile)), New List(Of UserModel)())
+        Catch
+        End Try
+        Return New List(Of UserModel)()
+    End Function
+
+    Public Sub SaveUserModels(list As List(Of UserModel))
+        File.WriteAllText(UserModelsFile, JsonConvert.SerializeObject(list, Formatting.Indented))
+        _recipes = Nothing          ' rebuild the model list with the change
+    End Sub
+
+    Public Sub AddUserModel(m As UserModel)
+        Dim list = LoadUserModels()
+        list.RemoveAll(Function(x) x.File.Equals(m.File, StringComparison.OrdinalIgnoreCase))
+        If String.IsNullOrEmpty(m.Id) Then m.Id = "user-" & Guid.NewGuid().ToString("N").Substring(0, 8)
+        list.Add(m)
+        SaveUserModels(list)
+    End Sub
+
+    ''' <summary>Each of your checkpoints becomes a model in the studio, built from its family's recipe.</summary>
+    Private Function UserRecipes(catalog As List(Of MediaRecipe)) As List(Of MediaRecipe)
+        Dim result As New List(Of MediaRecipe)()
+        For Each u In LoadUserModels()
+            Dim t = catalog.FirstOrDefault(Function(x) x.Id = u.Template)
+            If t Is Nothing Then Continue For
+            Dim r = JsonConvert.DeserializeObject(Of MediaRecipe)(JsonConvert.SerializeObject(t))
+            r.Id = u.Id
+            r.Name = "⭐ " & u.Name
+            r.About = Localizer.T("Your model") & $" ({u.BaseModel}" & If(String.IsNullOrEmpty(u.Source), "", ", " & u.Source) & "). " &
+                      Localizer.T("Uses the VAE and text encoder of") & " " & t.Name & "."
+            If u.Steps > 0 Then r.Steps = u.Steps
+            If u.Cfg > 0 Then r.Cfg = u.Cfg
+            If u.Extra IsNot Nothing Then r.Extra = u.Extra
+            r.Variants = New List(Of MediaVariant) From {
+                New MediaVariant With {.Label = If(u.Format = "checkpoint", "Checkpoint", "Model"), .Format = u.Format, .Repo = "local", .Path = u.File, .Size = u.Size}}
+            ' An all-in-one checkpoint brings its own text encoder; keep only a separate VAE if the template has one.
+            If u.Format = "checkpoint" Then r.Parts = r.Parts.Where(Function(p) p.Role = "vae").ToList()
+            result.Add(r)
+        Next
+        Return result
     End Function
 
     '──────────────── files on disk ────────────────
@@ -121,18 +233,26 @@ Public Module MediaStudio
     End Property
 
     Public Function LocalPath(f As MediaFile) As String
+        If f.Repo = "local" Then Return Path.Combine(UserModelFolder, f.Path)
+        Dim l = TryCast(f, MediaLora)
+        If l IsNot Nothing Then Return Path.Combine(LoraLibrary.Folder, l.Name & Path.GetExtension(l.Path))
         Return Path.Combine(Folder, f.Repo.Replace("/", "__"), IO.Path.GetFileName(f.Path))
     End Function
 
-    Private Function IsPresent(f As MediaFile) As Boolean
+    Public Function SpeedReady(r As MediaRecipe) As Boolean
+        Return r.Speed IsNot Nothing AndAlso r.Speed.Loras.All(AddressOf IsPresent)
+    End Function
+
+    Public Function IsPresent(f As MediaFile) As Boolean
         Dim p = LocalPath(f)
         Return File.Exists(p) AndAlso (f.Size <= 0 OrElse ConvRotFix.OriginalLength(p) = f.Size)
     End Function
 
-    Public Function FilesFor(r As MediaRecipe, v As MediaVariant) As List(Of MediaFile)
+    Public Function FilesFor(r As MediaRecipe, v As MediaVariant, Optional forEdit As Boolean = False, Optional withSpeed As Boolean = False) As List(Of MediaFile)
         Dim l As New List(Of MediaFile) From {v}
         If v.High IsNot Nothing Then l.Add(v.High)
-        l.AddRange(r.Parts)
+        l.AddRange(r.Parts.Where(Function(p) forEdit OrElse Not p.Edit))
+        If withSpeed AndAlso r.Speed IsNot Nothing Then l.AddRange(r.Speed.Loras)
         Return l
     End Function
 
@@ -144,12 +264,13 @@ Public Module MediaStudio
         Return r.Variants.Where(Function(v) IsInstalled(r, v)).OrderByDescending(Function(v) v.Total).FirstOrDefault()
     End Function
 
-    Public Function BytesToDownload(r As MediaRecipe, v As MediaVariant) As Long
-        Return FilesFor(r, v).Where(Function(f) Not IsPresent(f)).Sum(Function(f) f.Size)
+    Public Function BytesToDownload(r As MediaRecipe, v As MediaVariant, Optional withSpeed As Boolean = False) As Long
+        Return FilesFor(r, v, False, withSpeed).Where(Function(f) Not IsPresent(f)).Sum(Function(f) f.Size)
     End Function
 
-    Public Async Function DownloadAsync(r As MediaRecipe, v As MediaVariant, progress As Action(Of Integer, String), ct As CancellationToken) As Task
-        Dim todo = FilesFor(r, v).Where(Function(f) Not IsPresent(f)).ToList()
+    Public Async Function DownloadAsync(r As MediaRecipe, v As MediaVariant, progress As Action(Of Integer, String), ct As CancellationToken,
+                                        Optional forEdit As Boolean = False, Optional withSpeed As Boolean = False) As Task
+        Dim todo = FilesFor(r, v, forEdit, withSpeed).Where(Function(f) Not IsPresent(f)).ToList()
         Dim total = Math.Max(1L, todo.Sum(Function(f) f.Size))
         Dim before As Long = 0
         For Each f In todo
@@ -171,9 +292,16 @@ Public Module MediaStudio
 
     ''' <summary>Deletes the downloaded variant (shared parts used by another installed model are kept).</summary>
     Public Sub DeleteVariant(r As MediaRecipe, v As MediaVariant)
+        If r.Id.StartsWith("user-") Then
+            Dim list = LoadUserModels()
+            list.RemoveAll(Function(x) x.Id = r.Id)
+            Try : File.Delete(LocalPath(v)) : Catch : End Try
+            SaveUserModels(list)
+            Return
+        End If
         Dim keep = Recipes().Where(Function(x) x IsNot r).SelectMany(Function(x) x.Variants.Where(Function(y) IsInstalled(x, y)).SelectMany(Function(y) FilesFor(x, y))).
                    Select(Function(f) LocalPath(f)).ToHashSet(StringComparer.OrdinalIgnoreCase)
-        For Each f In FilesFor(r, v)
+        For Each f In FilesFor(r, v, True)
             Dim p = LocalPath(f)
             If Not keep.Contains(p) AndAlso File.Exists(p) Then File.Delete(p)
             If Not keep.Contains(p) AndAlso File.Exists(ConvRotFix.MarkerPath(p)) Then File.Delete(ConvRotFix.MarkerPath(p))
@@ -182,6 +310,7 @@ Public Module MediaStudio
 
     '──────────────── fit to this PC ────────────────
     Private Function Overhead(r As MediaRecipe) As Long
+        If r.IsUpscaler Then Return 512L * 1024 * 1024
         Return CLng(If(r.IsVideo, 5.0, 2.5) * 1024 * 1024 * 1024)
     End Function
 
@@ -246,6 +375,16 @@ Public Module MediaStudio
         Public Property Seed As Long = -1
         Public Property Frames As Integer
         Public Property InputImage As String
+        ''' <summary>create, restyle, edit, combine, inpaint, animate, video-edit, upscale (empty = guess from inputs).</summary>
+        Public Property Task As String
+        Public Property InputImages As New List(Of String)()
+        Public Property MaskImage As String
+        Public Property InputVideo As String
+        Public Property Strength As Double = 0.75
+        ''' <summary>Use the model's Turbo / Lightning LoRA (its steps and CFG must already be in Steps / Cfg).</summary>
+        Public Property Fast As Boolean
+        ''' <summary>The user's own LoRAs to apply (their trigger words are added to the prompt).</summary>
+        Public Property Loras As New List(Of UserLora)()
     End Class
 
     Private _proc As Process
@@ -265,37 +404,97 @@ Public Module MediaStudio
                            End Sub, ct)
         End If
 
-        Dim out = Path.Combine(OutputFolder, $"{DateTime.Now:yyyyMMdd-HHmmss}-{r.Id}" & If(r.IsVideo, ".webm", ".png"))
+        ' Inputs and task
+        Dim imgs = req.InputImages.Where(Function(f) Not String.IsNullOrEmpty(f) AndAlso File.Exists(f)).ToList()
+        If imgs.Count = 0 AndAlso Not String.IsNullOrEmpty(req.InputImage) AndAlso File.Exists(req.InputImage) Then imgs.Add(req.InputImage)
+        Dim job = If(String.IsNullOrEmpty(req.Task), GuessTask(r, imgs.Count > 0, Not String.IsNullOrEmpty(req.MaskImage), Not String.IsNullOrEmpty(req.InputVideo)), req.Task)
+        Dim usesRefs = (job = "edit" OrElse job = "combine") AndAlso r.Refs > 0
+        If usesRefs AndAlso FilesFor(r, v, True).Any(Function(f) Not IsPresent(f)) Then
+            Await DownloadAsync(r, v, progress, ct, forEdit:=True)       ' e.g. the vision part needed for editing
+        End If
+
+        Dim isVideoOut = r.IsVideo
+        Dim stamp = $"{DateTime.Now:yyyyMMdd-HHmmss}-{r.Id}"
+        Dim out = Path.Combine(OutputFolder, stamp & If(isVideoOut, ".webm", ".png"))
         Dim a As New StringBuilder()
-        If r.IsVideo Then a.Append("-M vid_gen ")
-        If v.Format = "checkpoint" Then
-            a.Append($"-m {Q(LocalPath(v))} ")
+        Dim framesDir As String = Nothing
+
+        If r.IsUpscaler Then
+            If imgs.Count = 0 Then Throw New Exception(Localizer.T("Choose a picture to enlarge first."))
+            a.Append($"-M upscale --upscale-model {Q(LocalPath(v))} -i {Q(imgs(0))} ")
         Else
-            a.Append($"--diffusion-model {Q(LocalPath(v))} ")
-            If v.High IsNot Nothing Then a.Append($"--high-noise-diffusion-model {Q(LocalPath(v.High))} ")
-        End If
-        For Each p In r.Parts
-            a.Append($"--{p.Role} {Q(LocalPath(p))} ")
-        Next
-        a.Append($"-p {Q(req.Prompt)} ")
-        If Not String.IsNullOrWhiteSpace(req.Negative) Then a.Append($"-n {Q(req.Negative)} ")
-        a.Append(FormattableString.Invariant($"--cfg-scale {req.Cfg} --steps {req.Steps} --sampling-method {If(r.Sampler, "euler")} "))
-        If r.HighSteps > 0 Then a.Append($"--high-noise-steps {r.HighSteps} ")
-        If r.FlowShift > 0 Then a.Append(FormattableString.Invariant($"--flow-shift {r.FlowShift} "))
-        a.Append($"-W {req.Width} -H {req.Height} --seed {req.Seed} ")
-        If r.IsVideo Then a.Append($"--video-frames {Math.Max(1, req.Frames)} ")
-        If Not String.IsNullOrEmpty(req.InputImage) AndAlso File.Exists(req.InputImage) Then
-            If r.InputIsReference AndAlso Not r.IsVideo Then
-                a.Append($"-r {Q(req.InputImage)} ")
+            If r.IsVideo Then a.Append("-M vid_gen ")
+            If v.Format = "checkpoint" Then
+                a.Append($"-m {Q(LocalPath(v))} ")
             Else
-                a.Append($"-i {Q(req.InputImage)} ")
-                If Not r.IsVideo Then a.Append("--strength 0.75 ")
+                a.Append($"--diffusion-model {Q(LocalPath(v))} ")
+                If v.High IsNot Nothing Then a.Append($"--high-noise-diffusion-model {Q(LocalPath(v.High))} ")
             End If
+            For Each p In r.Parts.Where(Function(x) Not x.Edit OrElse usesRefs)
+                a.Append($"--{p.Role} {Q(LocalPath(p))} ")
+            Next
+            ' LoRAs: the user's own (with trigger words) and the Turbo / Lightning one.
+            Dim prompt = req.Prompt
+            Dim tags As New StringBuilder()
+            Dim speedOn = req.Fast AndAlso r.Speed IsNot Nothing
+            If speedOn Then
+                If Not SpeedReady(r) Then
+                    progress?.Invoke(0, "Downloading the speed-up LoRA…")
+                    Await DownloadAsync(r, v, progress, ct, withSpeed:=True)
+                End If
+                For Each l In r.Speed.Loras
+                    tags.Append(FormattableString.Invariant($"<lora:{If(l.High, "|high_noise|", "")}{l.Name}:{l.Weight}>"))
+                Next
+            End If
+            For Each u In req.Loras.Where(Function(x) x IsNot Nothing AndAlso File.Exists(x.FullPath))
+                If Not String.IsNullOrWhiteSpace(u.Triggers) AndAlso prompt.IndexOf(u.Triggers.Trim(), StringComparison.OrdinalIgnoreCase) < 0 Then
+                    prompt = u.Triggers.Trim().TrimEnd(","c) & ", " & prompt
+                End If
+                tags.Append(FormattableString.Invariant($"<lora:{u.Name}:{u.Weight}>"))
+                If v.High IsNot Nothing Then tags.Append(FormattableString.Invariant($"<lora:|high_noise|{u.Name}:{u.Weight}>"))
+            Next
+            If tags.Length > 0 Then a.Append($"--lora-model-dir {Q(LoraLibrary.Folder)} ")
+            a.Append($"-p {Q(prompt & tags.ToString())} ")
+            If Not String.IsNullOrWhiteSpace(req.Negative) Then a.Append($"-n {Q(req.Negative)} ")
+            a.Append(FormattableString.Invariant($"--cfg-scale {req.Cfg} --steps {req.Steps} --sampling-method {If(r.Sampler, "euler")} "))
+            Dim highSteps = If(speedOn AndAlso r.Speed.HighSteps > 0, r.Speed.HighSteps, r.HighSteps)
+            If highSteps > 0 Then a.Append($"--high-noise-steps {highSteps} ")
+            If r.FlowShift > 0 Then a.Append(FormattableString.Invariant($"--flow-shift {r.FlowShift} "))
+            a.Append($"-W {req.Width} -H {req.Height} --seed {req.Seed} ")
+            If r.IsVideo Then
+                a.Append($"--video-frames {Math.Max(1, req.Frames)} ")
+                If r.Fps > 0 Then a.Append($"--fps {r.Fps} ")
+            End If
+            Dim extra = If(speedOn AndAlso Not String.IsNullOrWhiteSpace(r.Speed.Extra), r.Speed.Extra, r.Extra)
+            If Not String.IsNullOrWhiteSpace(extra) Then a.Append(extra.Trim() & " ")
+
+            Select Case job
+                Case "edit", "combine"
+                    For Each f In imgs.Take(Math.Max(1, r.Refs))
+                        a.Append($"-r {Q(f)} ")
+                    Next
+                Case "inpaint"
+                    If imgs.Count = 0 OrElse String.IsNullOrEmpty(req.MaskImage) Then Throw New Exception(Localizer.T("Paint the area to change first."))
+                    a.Append($"-i {Q(imgs(0))} --mask {Q(req.MaskImage)} ")
+                    a.Append(FormattableString.Invariant($"--strength {Math.Clamp(req.Strength, 0.05, 1.0)} "))
+                Case "restyle"
+                    If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} " & FormattableString.Invariant($"--strength {Math.Clamp(req.Strength, 0.05, 1.0)} "))
+                Case "animate"
+                    If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} ")
+                Case "video-edit"
+                    If String.IsNullOrEmpty(req.InputVideo) OrElse Not File.Exists(req.InputVideo) Then Throw New Exception(Localizer.T("Choose a video to edit first."))
+                    progress?.Invoke(0, "Reading the video…")
+                    framesDir = Await VideoTools.ExtractFramesAsync(req.InputVideo, If(r.Fps > 0, r.Fps, 16), req.Width, req.Height,
+                                                                   Math.Max(1, req.Frames), Sub(t) progress?.Invoke(0, t), ct)
+                    a.Append($"--control-video {Q(framesDir)} ")
+                    If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} ")
+                    a.Append(FormattableString.Invariant($"--vace-strength {Math.Clamp(req.Strength, 0.1, 2.0)} "))
+            End Select
+            ' Memory: keep parts in RAM and move them to the GPU as needed; tile the VAE on smaller GPUs.
+            If FilesFor(r, v).Sum(Function(f) f.Size) > hw.VramBytes * 0.85 OrElse r.IsVideo Then a.Append("--offload-to-cpu ")
+            If hw.VramGB < 12 Then a.Append("--vae-tiling ")
+            If pkg.Flavor = "cuda12" Then a.Append("--diffusion-fa ")
         End If
-        ' Memory: keep parts in RAM and move them to the GPU as needed; tile the VAE on smaller GPUs.
-        If FilesFor(r, v).Sum(Function(f) f.Size) > hw.VramBytes * 0.85 OrElse r.IsVideo Then a.Append("--offload-to-cpu ")
-        If hw.VramGB < 12 Then a.Append("--vae-tiling ")
-        If pkg.Flavor = "cuda12" Then a.Append("--diffusion-fa ")
         a.Append($"-o {Q(out)} -v")
 
         ' Make room on the GPU: the chat model is unloaded when both would not fit, and reloads on the next message.
@@ -310,7 +509,8 @@ Public Module MediaStudio
                 .UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardOutput = True, .RedirectStandardError = True,
                 .WorkingDirectory = Path.GetDirectoryName(exe), .StandardOutputEncoding = Encoding.UTF8, .StandardErrorEncoding = Encoding.UTF8}
             Dim stepRx As New Regex("(\d+)/(\d+)\s*-\s*([\d.]+)\s*(s/it|it/s)")
-            Dim totalSteps = req.Steps + If(r.HighSteps > 0, r.HighSteps, 0)
+            Dim hsTotal = If(req.Fast AndAlso r.Speed IsNot Nothing AndAlso r.Speed.HighSteps > 0, r.Speed.HighSteps, r.HighSteps)
+            Dim totalSteps = req.Steps + If(hsTotal > 0, hsTotal, 0)
             Dim stage = 0
             Dim lastI = 0
             Dim onLine = Sub(line As String)
@@ -323,9 +523,9 @@ Public Module MediaStudio
                                  Dim i = CInt(m.Groups(1).Value), n = CInt(m.Groups(2).Value)
                                  If i < lastI Then stage += 1   ' second expert (Wan A14B)
                                  lastI = i
-                                 Dim doneSteps = If(stage > 0 AndAlso r.HighSteps > 0, r.HighSteps + i, i)
-                                 Dim pct = CInt(Math.Min(97, doneSteps * 95 / Math.Max(1, If(r.HighSteps > 0, totalSteps, n))))
-                                 progress?.Invoke(pct, $"Step {doneSteps}/{If(r.HighSteps > 0, totalSteps, n)} · {m.Groups(3).Value} {m.Groups(4).Value}")
+                                 Dim doneSteps = If(stage > 0 AndAlso hsTotal > 0, hsTotal + i, i)
+                                 Dim pct = CInt(Math.Min(97, doneSteps * 95 / Math.Max(1, If(hsTotal > 0, totalSteps, n))))
+                                 progress?.Invoke(pct, $"Step {doneSteps}/{If(hsTotal > 0, totalSteps, n)} · {m.Groups(3).Value} {m.Groups(4).Value}")
                              ElseIf line.Contains("decod", StringComparison.OrdinalIgnoreCase) Then
                                  progress?.Invoke(97, If(r.IsVideo, "Decoding video…", "Decoding image…"))
                              ElseIf line.Contains("loading", StringComparison.OrdinalIgnoreCase) AndAlso lastI = 0 Then
@@ -355,9 +555,23 @@ Public Module MediaStudio
             End If
         Finally
             lease?.Dispose()
+            If framesDir IsNot Nothing Then Try : Directory.Delete(framesDir, True) : Catch : End Try
         End Try
         progress?.Invoke(100, "Done")
         Return out
+    End Function
+
+    ''' <summary>What to do when the caller did not say: decided by the inputs and what the model can do.</summary>
+    Public Function GuessTask(r As MediaRecipe, hasImage As Boolean, hasMask As Boolean, hasVideo As Boolean) As String
+        If r.IsUpscaler Then Return "upscale"
+        If hasVideo AndAlso r.Can("video-edit") Then Return "video-edit"
+        If hasImage AndAlso hasMask AndAlso r.Can("inpaint") Then Return "inpaint"
+        If hasImage Then
+            If r.IsVideo Then Return "animate"
+            If r.Can("edit") Then Return "edit"
+            If r.Can("restyle") Then Return "restyle"
+        End If
+        Return "create"
     End Function
 
     Private Function Q(s As String) As String

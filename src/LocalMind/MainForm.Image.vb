@@ -13,6 +13,7 @@ Imports Newtonsoft.Json
 Partial Class MainForm
 
     Private _btnImage As ToolStripButton
+    Private _miImageChat As ToolStripMenuItem
 
     Private Sub BuildImageUi(btnStudio As ToolStripButton, miStudio As ToolStripMenuItem)
         _btnImage = New ToolStripButton("🖼 Image") With {.CheckOnClick = True,
@@ -28,6 +29,7 @@ Partial Class MainForm
                                              End Sub
 
         Dim miImage As New ToolStripMenuItem("Image in chat")
+        _miImageChat = miImage
         AddHandler miImage.DropDownOpening, Sub() FillImageMenu(miImage)
         miImage.DropDownItems.Add("-")   ' placeholder so the arrow shows
         menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 1, miImage)
@@ -36,7 +38,7 @@ Partial Class MainForm
     Private Sub FillImageMenu(mi As ToolStripMenuItem)
         mi.DropDownItems.Clear()
         Dim current = ChatImageRecipe()
-        Dim installed = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
+        Dim installed = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
         If installed.Count = 0 Then
             mi.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("(no image model downloaded)")) With {.Enabled = False})
         End If
@@ -77,12 +79,15 @@ Partial Class MainForm
     End Sub
 
     ''' <summary>The chosen image model if downloaded, otherwise the best downloaded image model.</summary>
-    Private Function ChatImageRecipe() As MediaRecipe
-        Dim all = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
+    Private Function ChatImageRecipe(Optional withPhoto As Boolean = False) As MediaRecipe
+        ' With a photo: a model that edits (best) or restyles; without: one that creates.
+        Dim all = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).
+                  Where(Function(r) If(withPhoto, r.Can("edit") OrElse r.Can("restyle"), r.Can("create"))).ToList()
         Dim chosen = all.FirstOrDefault(Function(r) r.Id = Settings.ChatImageModel)
         If chosen IsNot Nothing Then Return chosen
         Dim hw = HardwareInfo.Current()
-        Return all.OrderBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.InstalledVariant(r), hw) = FitLevel.Fits, 0, 1)).
+        Return all.OrderBy(Function(r) If(withPhoto AndAlso r.Can("edit"), 0, 1)).
+                   ThenBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.InstalledVariant(r), hw) = FitLevel.Fits, 0, 1)).
                    ThenBy(Function(r) r.Steps).FirstOrDefault()
     End Function
 
@@ -91,9 +96,14 @@ Partial Class MainForm
         "subject, setting, style, lighting, composition. Keep every detail the user asked for, including any text " &
         "that must appear in the picture (keep that text exactly). Reply with the prompt only, no quotes, at most 80 words."
 
+    Private Const EditWriter As String =
+        "You translate picture-editing instructions for an image editor. Rewrite the user's request as one short, clear English " &
+        "instruction describing only the change (for example 'make the sky orange at sunset'). Keep any text that must appear exactly. " &
+        "Reply with the instruction only, no quotes."
+
     Private Async Function GenerateImageAsync(text As String, userMsg As ChatMessage) As Task
         If _isGenerating Then Return
-        Dim r = ChatImageRecipe()
+        Dim r = ChatImageRecipe(userMsg.Images.Count > 0)
         If r Is Nothing Then
             _btnImage.Checked = False
             Return
@@ -123,11 +133,12 @@ Partial Class MainForm
         Dim sw = Diagnostics.Stopwatch.StartNew()
         Try
             ' 1) Let the chat model write a better prompt (it is loaded anyway for chat).
+            Dim editing = userMsg.Images.Count > 0
             If Settings.ImproveImagePrompt AndAlso Not String.IsNullOrWhiteSpace(_session.Model) AndAlso text.Length > 0 Then
                 status("Writing the image prompt…")
                 Try
                     Dim payload As New List(Of ChatMessage) From {
-                        New ChatMessage With {.Role = "system", .Content = PromptWriter},
+                        New ChatMessage With {.Role = "system", .Content = If(editing, EditWriter, PromptWriter)},
                         New ChatMessage With {.Role = "user", .Content = text}}
                     Dim opts As New ChatRequestOptions With {.Model = _session.Model, .Temperature = 0.6, .MaxTokens = 300, .EnableThinking = False}
                     Dim backend = AppCore.Backend
@@ -149,10 +160,14 @@ Partial Class MainForm
             End If
 
             ' 3) Free the GPU (handled inside GenerateAsync) and draw.
+            Dim fast = Settings.MediaFast AndAlso r.Speed IsNot Nothing
+            Dim job = MediaStudio.GuessTask(r, inputFile IsNot Nothing, False, False)
             Dim req As New MediaStudio.GenerateRequest With {
-                .Recipe = r, .Variant = v, .Prompt = prompt, .Negative = r.Negative,
+                .Recipe = r, .Variant = v, .Prompt = prompt, .Negative = r.Negative, .Task = job,
                 .Width = If(r.Width > 0, r.Width, 1024), .Height = If(r.Height > 0, r.Height, 1024),
-                .Steps = r.Steps, .Cfg = r.Cfg, .Seed = Random.Shared.Next(1, Integer.MaxValue), .InputImage = inputFile}
+                .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast,
+                .Seed = Random.Shared.Next(1, Integer.MaxValue), .InputImage = inputFile, .Strength = 0.6,
+                .Loras = LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()}
             Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status(If(p > 0, $"{t}  ({p}%)", t)), ct)
             Dim url = "https://outputs.localmind/" & Uri.EscapeDataString(Path.GetFileName(out))
             content = $"![{EscapeAlt(prompt)}]({url})" & vbCrLf & vbCrLf &

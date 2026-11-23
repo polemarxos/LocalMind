@@ -30,6 +30,12 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 - **Image & video studio:** make pictures and short videos offline with Z-Image, FLUX.2 klein, Qwen-Image, Krea 2,
   Anima, SDXL and Wan 2.x. You get GGUF and **INT8 ConvRot** versions, picked to fit your VRAM.
   Or switch on **🖼 Image** in the chat: the chat model unloads to free the GPU, and the picture appears in the conversation.
+- **Edit pictures and videos:** describe a change, paint an area, combine pictures, enlarge 4×, restyle your own videos.
+  ⚡ Lightning/Turbo LoRAs make most models 4–8 step fast.
+- **LoRAs and Civitai:** use your own LoRAs (trigger words added automatically) or search Civitai and install
+  LoRAs and checkpoints with one click.
+- **Music & voice:** songs with vocals, speech in 23 languages (Greek too), and voice cloning from a short recording.
+- **Only what you want:** on first start choose chat only, or add pictures & video and/or music & voice.
 - **Auto-update** from GitHub Releases.
 - **Other backends:** you can also connect to Ollama or any OpenAI-compatible server (LM Studio, vLLM,
   or another PC running LocalMind).

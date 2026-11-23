@@ -1,0 +1,179 @@
+[
+ {
+  "id": "chatterbox-ml",
+  "name": "Chatterbox Multilingual",
+  "kind": "voice",
+  "about": "Natural speech in 23 languages, Greek included. Clones a voice from a short recording.",
+  "model": {
+   "repo": "ggml-org/chatterbox-GGUF",
+   "path": "chatterbox-Q8_0.gguf",
+   "size": 558520640
+  },
+  "mmproj": {
+   "repo": "ggml-org/chatterbox-GGUF",
+   "path": "mmproj-chatterbox-F16.gguf",
+   "size": 595185120
+  },
+  "clone": true,
+  "langs": [
+   "ar",
+   "da",
+   "de",
+   "el",
+   "en",
+   "es",
+   "fi",
+   "fr",
+   "he",
+   "hi",
+   "it",
+   "ja",
+   "ko",
+   "ms",
+   "nl",
+   "no",
+   "pl",
+   "pt",
+   "ru",
+   "sv",
+   "sw",
+   "tr",
+   "zh"
+  ],
+  "transcript": false,
+  "design": false
+ },
+ {
+  "id": "chatterbox-turbo",
+  "name": "Chatterbox Turbo (English)",
+  "kind": "voice",
+  "about": "Fast, expressive English speech with voice cloning.",
+  "model": {
+   "repo": "ggml-org/chatterbox-turbo-GGUF",
+   "path": "chatterbox-turbo-Q8_0.gguf",
+   "size": 481791712
+  },
+  "mmproj": {
+   "repo": "ggml-org/chatterbox-turbo-GGUF",
+   "path": "mmproj-chatterbox-turbo-F16.gguf",
+   "size": 555371392
+  },
+  "clone": true,
+  "langs": [
+   "en"
+  ],
+  "transcript": false,
+  "design": false
+ },
+ {
+  "id": "qwen3-tts",
+  "name": "Qwen3-TTS 1.7B",
+  "kind": "voice",
+  "about": "Very close voice cloning (give the words of the recording for best results). 10 languages: en, zh, de, it, pt, es, ja, ko, fr, ru.",
+  "model": {
+   "repo": "ggml-org/Qwen3-TTS-12Hz-1.7B-Base-GGUF",
+   "path": "Qwen3-TTS-12Hz-1.7B-Base-Q8_0.gguf",
+   "size": 1847874400
+  },
+  "mmproj": {
+   "repo": "ggml-org/Qwen3-TTS-12Hz-1.7B-Base-GGUF",
+   "path": "mmproj-Qwen3-TTS-12Hz-1.7B-Base-Q8_0.gguf",
+   "size": 446422912
+  },
+  "clone": true,
+  "langs": [
+   "en",
+   "zh",
+   "de",
+   "it",
+   "pt",
+   "es",
+   "ja",
+   "ko",
+   "fr",
+   "ru"
+  ],
+  "transcript": true,
+  "design": false
+ },
+ {
+  "id": "voxcpm2",
+  "name": "VoxCPM2",
+  "kind": "voice",
+  "about": "Clones voices, or designs a new voice from a description like (a calm older man). 48 kHz audio.",
+  "model": {
+   "repo": "ggml-org/VoxCPM2-GGUF",
+   "path": "VoxCPM2-Q8_0.gguf",
+   "size": 1565764064
+  },
+  "mmproj": {
+   "repo": "ggml-org/VoxCPM2-GGUF",
+   "path": "mmproj-VoxCPM2-BF16.gguf",
+   "size": 2007741504
+  },
+  "clone": true,
+  "langs": [],
+  "transcript": false,
+  "design": true
+ },
+ {
+  "id": "s2-pro",
+  "name": "Fish Audio S2 Pro",
+  "kind": "voice",
+  "about": "Top-quality speech and cloning; several speakers and cues like [laughing] or [whisper]. Needs 8 GB+ VRAM.",
+  "model": {
+   "repo": "ggml-org/s2-pro-GGUF",
+   "path": "s2-pro-Q8_0.gguf",
+   "size": 4290962464
+  },
+  "mmproj": {
+   "repo": "ggml-org/s2-pro-GGUF",
+   "path": "mmproj-s2-pro-BF16.gguf",
+   "size": 2045798720
+  },
+  "clone": true,
+  "langs": [],
+  "transcript": true,
+  "design": false
+ },
+ {
+  "id": "yue2-3b",
+  "name": "YuE2 3B (songs)",
+  "kind": "music",
+  "about": "Full songs with vocals and instruments from a style and lyrics, 48 kHz stereo, up to 6 minutes.",
+  "model": {
+   "repo": "ggml-org/YuE2-3B-GGUF",
+   "path": "YuE2-3B-Q8_0.gguf",
+   "size": 2308515712
+  },
+  "mmproj": {
+   "repo": "ggml-org/YuE2-3B-GGUF",
+   "path": "mmproj-YuE2-3B-BF16.gguf",
+   "size": 3104474688
+  },
+  "clone": false,
+  "langs": [],
+  "transcript": false,
+  "design": false
+ },
+ {
+  "id": "minimax-music3",
+  "name": "MiniMax Music 3 (songs)",
+  "kind": "music",
+  "about": "High-quality songs with vocals from a description and lyrics, 44.1 kHz stereo. Needs 16 GB+ VRAM or lots of RAM.",
+  "model": {
+   "repo": "ggml-org/MiniMax-Music3-GGUF",
+   "path": "MiniMax-Music3-Q8_0.gguf",
+   "size": 9129107840
+  },
+  "mmproj": {
+   "repo": "ggml-org/MiniMax-Music3-GGUF",
+   "path": "mmproj-MiniMax-Music3-BF16.gguf",
+   "size": 6639652832
+  },
+  "clone": false,
+  "langs": [],
+  "transcript": false,
+  "design": false
+ }
+]

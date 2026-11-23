@@ -9,44 +9,73 @@ Imports System.Windows.Forms
 Imports Microsoft.Web.WebView2.Core
 Imports Microsoft.Web.WebView2.WinForms
 
-''' <summary>Image & video studio: pick a model that fits the GPU, download it, describe, generate.</summary>
+''' <summary>
+''' Image & video studio: choose what to do (create, edit, paint an area, combine, restyle, enlarge, video…),
+''' pick a model that fits the GPU, download it, describe, generate.
+''' </summary>
 Public Class StudioForm
     Inherits Form
 
+    ''' <summary>Task id, menu label, and whether it works on video models.</summary>
+    Private Shared ReadOnly TaskList As (Id As String, Label As String, Video As Boolean)() = {
+        ("create", "✨ Create a picture", False),
+        ("edit", "✏ Edit a picture (describe the change)", False),
+        ("inpaint", "🖌 Change part of a picture (paint the area)", False),
+        ("combine", "🧩 Combine pictures", False),
+        ("restyle", "🎨 Restyle a picture", False),
+        ("upscale", "🔍 Enlarge a picture (4×)", False),
+        ("create", "🎬 Create a video", True),
+        ("animate", "🎞 Animate a picture", True),
+        ("video-edit", "✂ Edit / restyle a video", True)}
+
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
-    Private ReadOnly cmbShow, cmbKind, cmbVariant, cmbSize As ComboBox
+    Private ReadOnly cmbShow, cmbTask, cmbVariant, cmbSize As ComboBox
     Private ReadOnly grid As DataGridView
-    Private ReadOnly lblAbout, lblStatus As Label
-    Private ReadOnly btnDownload, btnDelete, btnGenerate, btnInput, btnClearInput As Button
+    Private ReadOnly lblAbout, lblStatus, lblStrength, lblVideo, lblFrames As Label
+    Private ReadOnly btnDownload, btnDelete, btnGenerate, btnVideo, btnMask, btnLoras As Button
+    Private ReadOnly chkFast As CheckBox
     Private ReadOnly prg As ProgressBar
     Private ReadOnly txtPrompt, txtNeg As TextBox
-    Private ReadOnly numSteps, numCfg, numSeed, numFrames As NumericUpDown
-    Private ReadOnly picInput As PictureBox
+    Private ReadOnly numSteps, numCfg, numSeed, numFrames, numStrength As NumericUpDown
+    Private ReadOnly slots(2) As PictureBox
+    Private ReadOnly slotPanel As FlowLayoutPanel
     Private ReadOnly preview As WebView2
     Private ReadOnly gallery As ListView
     Private ReadOnly thumbs As New ImageList() With {.ImageSize = New Size(96, 96), .ColorDepth = ColorDepth.Depth32Bit}
-    Private _inputPath As String
+    Private ReadOnly _inputs(2) As String
+    Private _videoPath, _maskPath As String
     Private _cts As CancellationTokenSource
-    Private _previewReady As Boolean
+    Private _previewReady, _loadingRecipe As Boolean
 
     Public Sub New()
         Text = "Image & video studio"
-        Size = New Size(1400, 900)
-        MinimumSize = New Size(1100, 700)
+        Size = New Size(1420, 920)
+        MinimumSize = New Size(1150, 720)
         StartPosition = FormStartPosition.CenterParent
         Theme.ApplyForm(Me)
 
-        '──── left: models ────
-        Dim left As New Panel() With {.Dock = DockStyle.Left, .Width = 470, .Padding = New Padding(8), .BackColor = Theme.CRaised}
+        '──── left: task + models ────
+        Dim left As New Panel() With {.Dock = DockStyle.Left, .Width = 480, .Padding = New Padding(8), .BackColor = Theme.CRaised}
         Dim filt As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 36}
-        cmbShow = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 230}
+        cmbTask = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
+        cmbTask.Items.AddRange(TaskList.Select(Function(t) CObj(Localizer.T(t.Label))).ToArray())
+        cmbTask.SelectedIndex = 0
+        cmbShow = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 190}
         cmbShow.Items.AddRange({Localizer.T("★ Best for my GPU"), Localizer.T("All models (show everything)")})
         cmbShow.SelectedIndex = 0
-        cmbKind = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 190}
-        cmbKind.Items.AddRange({Localizer.T("Images & video"), Localizer.T("Images"), Localizer.T("Video")})
-        cmbKind.SelectedIndex = 0
-        Theme.StyleInput(cmbShow) : Theme.StyleInput(cmbKind)
-        filt.Controls.AddRange({cmbShow, cmbKind})
+        Theme.StyleInput(cmbShow) : Theme.StyleInput(cmbTask)
+        Dim btnCivitai = Theme.MakeButton("🌐 More on Civitai…")
+        filt.Height = 74
+        filt.Controls.AddRange({cmbTask, cmbShow, btnCivitai})
+        AddHandler btnCivitai.Click, Sub()
+                                         Using f As New CivitaiForm(checkpoints:=True, family:=SelectedRecipe()?.Family)
+                                             f.ShowDialog(Me)
+                                             If f.InstalledSomething Then
+                                                 FillGrid()
+                                                 UpdateLoraButton()
+                                             End If
+                                         End Using
+                                     End Sub
 
         grid = New DataGridView() With {.Dock = DockStyle.Fill, .ReadOnly = True}
         Theme.StyleGrid(grid)
@@ -55,12 +84,12 @@ Public Class StudioForm
         grid.Columns.Add("best", "Best for you")
         grid.Columns.Add("fit", "On this PC")
         grid.Columns(0).AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-        grid.Columns(1).Width = 55
-        grid.Columns(2).Width = 120
+        grid.Columns(1).Width = 45
+        grid.Columns(2).Width = 130
         grid.Columns(3).Width = 130
 
-        Dim detail As New Panel() With {.Dock = DockStyle.Bottom, .Height = 190, .Padding = New Padding(0, 8, 0, 0)}
-        lblAbout = New Label() With {.Dock = DockStyle.Top, .Height = 58, .ForeColor = Theme.CDim}
+        Dim detail As New Panel() With {.Dock = DockStyle.Bottom, .Height = 200, .Padding = New Padding(0, 8, 0, 0)}
+        lblAbout = New Label() With {.Dock = DockStyle.Top, .Height = 64, .ForeColor = Theme.CDim}
         cmbVariant = New ComboBox() With {.Dock = DockStyle.Top, .DropDownStyle = ComboBoxStyle.DropDownList}
         Theme.StyleInput(cmbVariant)
         Dim dlBar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 40}
@@ -78,42 +107,73 @@ Public Class StudioForm
         left.Controls.Add(filt)
         left.Controls.Add(detail)
 
-        '──── right: create ────
+        '──── right: inputs, prompt, settings ────
         Dim right As New Panel() With {.Dock = DockStyle.Fill, .Padding = New Padding(10)}
-        Dim form As New TableLayoutPanel() With {.Dock = DockStyle.Top, .Height = 250, .ColumnCount = 2}
+        Dim form As New TableLayoutPanel() With {.Dock = DockStyle.Top, .Height = 296, .ColumnCount = 2}
         form.ColumnStyles.Add(New ColumnStyle(SizeType.Percent, 100))
-        form.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 150))
-        txtPrompt = New TextBox() With {.Dock = DockStyle.Fill, .Multiline = True, .ScrollBars = ScrollBars.Vertical, .Height = 90,
-                                        .Font = New Font("Segoe UI", 10.5!), .PlaceholderText = "Describe the image or video (English works best)…"}
+        form.ColumnStyles.Add(New ColumnStyle(SizeType.Absolute, 300))
+        txtPrompt = New TextBox() With {.Dock = DockStyle.Fill, .Multiline = True, .ScrollBars = ScrollBars.Vertical,
+                                        .Font = New Font("Segoe UI", 10.5!)}
         txtNeg = New TextBox() With {.Dock = DockStyle.Fill, .PlaceholderText = "Negative prompt (things to avoid) — optional"}
         Theme.StyleInput(txtPrompt) : Theme.StyleInput(txtNeg)
-        picInput = New PictureBox() With {.Dock = DockStyle.Fill, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Theme.CBack, .Height = 90}
-        Dim opts As New FlowLayoutPanel() With {.Dock = DockStyle.Fill, .Height = 70, .WrapContents = True}
-        cmbSize = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 150}
+
+        ' Up to three input pictures: click to choose, right-click to remove, or drop files on them.
+        slotPanel = New FlowLayoutPanel() With {.Dock = DockStyle.Fill, .WrapContents = False}
+        For i = 0 To 2
+            Dim k = i
+            slots(i) = New PictureBox() With {.Size = New Size(92, 92), .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Theme.CBack,
+                                              .BorderStyle = BorderStyle.FixedSingle, .Cursor = Cursors.Hand, .Margin = New Padding(2), .AllowDrop = True}
+            AddHandler slots(i).MouseUp, Sub(s, e)
+                                             If e.Button = MouseButtons.Right Then SetInput(k, Nothing) Else PickInput(k)
+                                         End Sub
+            AddHandler slots(i).Paint, Sub(s, e)
+                                           If slots(k).Image Is Nothing Then
+                                               TextRenderer.DrawText(e.Graphics, If(k = 0, Localizer.T("🖼 Choose picture"), "+"), Font, slots(k).ClientRectangle, Theme.CDim,
+                                                                     TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.WordBreak)
+                                           End If
+                                       End Sub
+            AddHandler slots(i).DragEnter, Sub(s, e) e.Effect = If(e.Data.GetDataPresent(DataFormats.FileDrop), DragDropEffects.Copy, DragDropEffects.None)
+            AddHandler slots(i).DragDrop, Sub(s, e)
+                                              Dim files = CType(e.Data.GetData(DataFormats.FileDrop), String())
+                                              If files?.Length > 0 Then SetInput(k, files(0))
+                                          End Sub
+            slotPanel.Controls.Add(slots(i))
+        Next
+
+        Dim opts As New FlowLayoutPanel() With {.Dock = DockStyle.Fill, .WrapContents = True}
+        cmbSize = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 120}
         Theme.StyleInput(cmbSize)
-        numSteps = New NumericUpDown() With {.Minimum = 1, .Maximum = 150, .Width = 60}
-        numCfg = New NumericUpDown() With {.Minimum = 0, .Maximum = 20, .DecimalPlaces = 1, .Increment = 0.5D, .Width = 60}
-        numSeed = New NumericUpDown() With {.Minimum = -1, .Maximum = Integer.MaxValue, .Value = -1, .Width = 110}
-        numFrames = New NumericUpDown() With {.Minimum = 1, .Maximum = 161, .Increment = 4, .Width = 60}
-        For Each n In {numSteps, numCfg, numSeed, numFrames}
+        numSteps = New NumericUpDown() With {.Minimum = 1, .Maximum = 150, .Width = 55}
+        numCfg = New NumericUpDown() With {.Minimum = 0, .Maximum = 20, .DecimalPlaces = 1, .Increment = 0.5D, .Width = 55}
+        numSeed = New NumericUpDown() With {.Minimum = -1, .Maximum = Integer.MaxValue, .Value = -1, .Width = 100}
+        numFrames = New NumericUpDown() With {.Minimum = 1, .Maximum = 241, .Increment = 4, .Width = 55}
+        numStrength = New NumericUpDown() With {.Minimum = 0.05D, .Maximum = 2D, .DecimalPlaces = 2, .Increment = 0.05D, .Value = 0.75D, .Width = 60}
+        For Each n In {numSteps, numCfg, numSeed, numFrames, numStrength}
             Theme.StyleInput(n)
         Next
-        btnInput = Theme.MakeButton("🖼 Input image…")
-        btnClearInput = Theme.MakeButton("✕")
+        lblStrength = Theme.MakeLabel("Strength")
+        lblFrames = Theme.MakeLabel("Frames")
+        chkFast = New CheckBox() With {.Text = "⚡ Fast", .AutoSize = True, .ForeColor = Theme.CText, .Checked = AppCore.Settings.MediaFast,
+                                       .Margin = New Padding(8, 6, 4, 0)}
+        btnLoras = Theme.MakeButton("🧩 LoRAs")
+        btnMask = Theme.MakeButton("🖌 Paint area…")
+        btnVideo = Theme.MakeButton("🎞 Choose video…")
+        lblVideo = Theme.MakeLabel("")
         opts.Controls.AddRange({Theme.MakeLabel("Size"), cmbSize, Theme.MakeLabel("Steps"), numSteps, Theme.MakeLabel("CFG"), numCfg,
-                                Theme.MakeLabel("Seed"), numSeed, Theme.MakeLabel("Frames"), numFrames, btnInput, btnClearInput})
-        Dim genBar As New FlowLayoutPanel() With {.Dock = DockStyle.Fill, .Height = 44}
+                                Theme.MakeLabel("Seed"), numSeed, lblFrames, numFrames, lblStrength, numStrength,
+                                chkFast, btnLoras, btnMask, btnVideo, lblVideo})
+        Dim genBar As New FlowLayoutPanel() With {.Dock = DockStyle.Fill}
         btnGenerate = Theme.MakeButton("🎨 Generate", primary:=True, width:=160)
         btnGenerate.Font = Theme.BoldFont
         Dim btnFolder = Theme.MakeButton("📁 Open output folder")
         genBar.Controls.AddRange({btnGenerate, btnFolder})
-        form.Controls.Add(txtPrompt, 0, 0) : form.Controls.Add(picInput, 1, 0)
+        form.Controls.Add(txtPrompt, 0, 0) : form.Controls.Add(slotPanel, 1, 0)
         form.Controls.Add(txtNeg, 0, 1) : form.SetColumnSpan(txtNeg, 2)
         form.Controls.Add(opts, 0, 2) : form.SetColumnSpan(opts, 2)
         form.Controls.Add(genBar, 0, 3) : form.SetColumnSpan(genBar, 2)
-        form.RowStyles.Add(New RowStyle(SizeType.Absolute, 96))
+        form.RowStyles.Add(New RowStyle(SizeType.Absolute, 100))
         form.RowStyles.Add(New RowStyle(SizeType.Absolute, 30))
-        form.RowStyles.Add(New RowStyle(SizeType.Absolute, 74))
+        form.RowStyles.Add(New RowStyle(SizeType.Absolute, 112))
         form.RowStyles.Add(New RowStyle(SizeType.Absolute, 46))
 
         preview = New WebView2() With {.Dock = DockStyle.Fill, .DefaultBackgroundColor = Theme.CBack}
@@ -128,25 +188,48 @@ Public Class StudioForm
 
         '──── events ────
         AddHandler cmbShow.SelectedIndexChanged, Sub() FillGrid()
-        AddHandler cmbKind.SelectedIndexChanged, Sub() FillGrid()
+        AddHandler cmbTask.SelectedIndexChanged, Sub()
+                                                    FillGrid()
+                                                    UpdateTaskUi()
+                                                End Sub
         AddHandler grid.SelectionChanged, Sub() ShowRecipe()
         AddHandler cmbVariant.SelectedIndexChanged, Sub() UpdateButtons()
         AddHandler btnDownload.Click, Async Sub() Await DownloadAsync()
         AddHandler btnDelete.Click, Sub() DeleteSelected()
         AddHandler btnGenerate.Click, Async Sub() Await GenerateAsync()
         AddHandler btnFolder.Click, Sub() ModelManagerForm.OpenFolder(MediaStudio.OutputFolder)
-        AddHandler btnInput.Click, Sub() PickInput()
-        AddHandler btnClearInput.Click, Sub() SetInput(Nothing)
+        AddHandler chkFast.CheckedChanged, Sub()
+                                               AppCore.Settings.MediaFast = chkFast.Checked
+                                               AppCore.SaveSettings()
+                                               If Not _loadingRecipe Then ApplyStepDefaults()
+                                           End Sub
+        AddHandler btnLoras.Click, Sub()
+                                       Dim r = SelectedRecipe()
+                                       Using f As New LoraForm(r?.Family, r?.Name)
+                                           f.ShowDialog(Me)
+                                       End Using
+                                       UpdateLoraButton()
+                                   End Sub
+        AddHandler btnMask.Click, Sub() PaintMask()
+        AddHandler btnVideo.Click, Sub() PickVideo()
         AddHandler gallery.SelectedIndexChanged, Sub()
                                                      If gallery.SelectedItems.Count > 0 Then ShowOutput(CStr(gallery.SelectedItems(0).Tag))
                                                  End Sub
         AddHandler gallery.ItemActivate, Sub()
                                              If gallery.SelectedItems.Count > 0 Then ModelManagerForm.OpenUrl(CStr(gallery.SelectedItems(0).Tag))
                                          End Sub
+
         Dim galleryMenu As New ContextMenuStrip()
         Dim miUse = galleryMenu.Items.Add(Localizer.T("Use as input"))
         AddHandler miUse.Click, Sub()
-                                    If gallery.SelectedItems.Count > 0 Then SetInput(CStr(gallery.SelectedItems(0).Tag))
+                                    If gallery.SelectedItems.Count = 0 Then Return
+                                    Dim f = CStr(gallery.SelectedItems(0).Tag)
+                                    If IsVideoFile(f) Then
+                                        SetVideo(f)
+                                    Else
+                                        Dim free = Array.FindIndex(_inputs, Function(x) x Is Nothing)
+                                        SetInput(If(free < 0, 0, free), f)
+                                    End If
                                 End Sub
         Dim miCopy = galleryMenu.Items.Add(Localizer.T("Copy image"))
         AddHandler miCopy.Click, Sub()
@@ -158,12 +241,27 @@ Public Class StudioForm
                                          End Using
                                      End If
                                  End Sub
+        Dim miMp4 = galleryMenu.Items.Add(Localizer.T("Save video as MP4"))
+        AddHandler miMp4.Click, Async Sub()
+                                    If gallery.SelectedItems.Count = 0 Then Return
+                                    Dim f = CStr(gallery.SelectedItems(0).Tag)
+                                    If Not f.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) Then Return
+                                    Try
+                                        lblStatus.Text = Localizer.T("Converting to MP4…")
+                                        Dim mp4 = Await VideoTools.ToMp4Async(f, Sub(t) BeginInvoke(Sub() lblStatus.Text = Localizer.T(t)), CancellationToken.None)
+                                        lblStatus.Text = Localizer.T("Saved") & ": " & Path.GetFileName(mp4)
+                                        ModelManagerForm.OpenFolder(Path.GetDirectoryName(mp4))
+                                    Catch ex As Exception
+                                        lblStatus.Text = "⚠ " & ex.Message
+                                    End Try
+                                End Sub
         gallery.ContextMenuStrip = galleryMenu
     End Sub
 
     Protected Overrides Async Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
         FillGrid()
+        UpdateTaskUi()
         LoadGallery()
         Try
             Dim env = Await CoreWebView2Environment.CreateAsync(Nothing, AppPaths.WebViewFolder)
@@ -176,6 +274,51 @@ Public Class StudioForm
         End Try
     End Sub
 
+    '──────────────── task ────────────────
+    Private Function CurrentTask() As (Id As String, Label As String, Video As Boolean)
+        Return TaskList(Math.Max(0, cmbTask.SelectedIndex))
+    End Function
+
+    ''' <summary>Shows only the inputs and settings the chosen task uses.</summary>
+    Private Sub UpdateTaskUi()
+        Dim t = CurrentTask().Id
+        Dim r = SelectedRecipe()
+        Dim maxPics = PicturesFor(t, r)
+        For i = 0 To 2
+            slots(i).Visible = i < maxPics
+        Next
+        slotPanel.Visible = maxPics > 0
+        btnMask.Visible = t = "inpaint"
+        btnMask.Text = If(_maskPath IsNot Nothing, Localizer.T("🖌 Area painted ✔"), Localizer.T("🖌 Paint area…"))
+        btnVideo.Visible = t = "video-edit"
+        lblVideo.Visible = t = "video-edit"
+        lblStrength.Visible = t = "inpaint" OrElse t = "restyle" OrElse t = "video-edit"
+        numStrength.Visible = lblStrength.Visible
+        If t = "inpaint" Then numStrength.Value = 1D Else If t = "restyle" Then numStrength.Value = 0.6D Else If t = "video-edit" Then numStrength.Value = 1D
+        Dim isVideo = CurrentTask().Video
+        lblFrames.Visible = isVideo : numFrames.Visible = isVideo
+        Dim upscale = t = "upscale"
+        For Each c As Control In {numSteps, numCfg, numSeed, cmbSize, txtNeg, chkFast, btnLoras}
+            c.Enabled = Not upscale
+        Next
+        txtPrompt.Enabled = Not upscale
+        txtPrompt.PlaceholderText = Localizer.T(If(t = "edit" OrElse t = "inpaint", "Describe the change, e.g. 'make it night' or 'replace the car with a horse'…",
+                                                If(t = "combine", "Say how to combine them, e.g. 'the person from picture 1 sitting in the room from picture 2'…",
+                                                If(t = "video-edit", "Describe the new look of the video, e.g. 'oil painting style'…",
+                                                If(t = "upscale", "(no description needed)", "Describe the picture or video (English works best)…")))))
+        btnGenerate.Text = Localizer.T(If(upscale, "🔍 Enlarge", "🎨 Generate"))
+    End Sub
+
+    ''' <summary>How many input pictures a task takes.</summary>
+    Private Shared Function PicturesFor(t As String, r As MediaRecipe) As Integer
+        Select Case t
+            Case "combine" : Return Math.Max(2, Math.Min(3, If(r?.Refs, 3)))
+            Case "edit", "inpaint", "restyle", "upscale", "animate" : Return 1
+            Case "video-edit" : Return 1          ' optional reference picture (e.g. a character)
+            Case Else : Return 0
+        End Select
+    End Function
+
     '──────────────── model list ────────────────
     Private Function SelectedRecipe() As MediaRecipe
         Return If(grid.CurrentRow Is Nothing, Nothing, TryCast(grid.CurrentRow.Tag, MediaRecipe))
@@ -183,25 +326,32 @@ Public Class StudioForm
 
     Private Sub FillGrid()
         Dim list = If(cmbShow.SelectedIndex = 0, MediaStudio.BestForGpu(_hw), MediaStudio.Recipes())
-        If cmbKind.SelectedIndex = 1 Then list = list.Where(Function(r) Not r.IsVideo).ToList()
-        If cmbKind.SelectedIndex = 2 Then list = list.Where(Function(r) r.IsVideo).ToList()
+        Dim t = CurrentTask()
+        list = list.Where(Function(r) r.Can(t.Id) AndAlso (r.IsUpscaler OrElse r.IsVideo = t.Video)).ToList()
         grid.Rows.Clear()
         For Each r In list
             Dim v = MediaStudio.PickVariant(r, _hw)
             Dim fit = MediaStudio.Fit(r, v, _hw)
             Dim installed = MediaStudio.InstalledVariant(r)
-            Dim i = grid.Rows.Add(If(installed IsNot Nothing, "✔ ", "") & r.Name, If(r.IsVideo, "🎬", "🖼"),
+            Dim i = grid.Rows.Add(If(installed IsNot Nothing, "✔ ", "") & r.Name & If(r.Speed IsNot Nothing, " ⚡", ""),
+                                  If(r.IsVideo, "🎬", If(r.IsUpscaler, "🔍", "🖼")),
                                   $"{v.Label} · {Downloader.FormatBytes(v.Total)}", ModelCatalog.FitText(fit, _hw.VramBytes = 0))
             grid.Rows(i).Tag = r
             grid.Rows(i).Cells(3).Style.ForeColor = ModelManagerForm.FitColor(fit)
         Next
-        If grid.Rows.Count = 0 Then lblAbout.Text = Localizer.T("No model fits fully on this GPU — choose 'All models' to see options that use system RAM.")
+        If grid.Rows.Count = 0 Then
+            lblAbout.Text = Localizer.T("No model for this task fits fully on this GPU — choose 'All models' to see options that use system RAM.")
+            cmbVariant.Items.Clear()
+            btnGenerate.Enabled = False
+            btnDownload.Enabled = False
+        End If
     End Sub
 
     Private Sub ShowRecipe()
         Dim r = SelectedRecipe()
         If r Is Nothing Then Return
-        lblAbout.Text = r.About & If(r.Input = "required", "  " & Localizer.T("(needs an input image)"), "")
+        _loadingRecipe = True
+        lblAbout.Text = r.About & If(r.Speed IsNot Nothing, "  ⚡ " & Localizer.T("Fast mode") & ": " & r.Speed.Label, "")
         cmbVariant.Items.Clear()
         Dim pick = MediaStudio.PickVariant(r, _hw)
         Dim installed = MediaStudio.InstalledVariant(r)
@@ -211,21 +361,45 @@ Public Class StudioForm
         Dim sel = If(installed, pick)
         cmbVariant.SelectedIndex = r.Variants.IndexOf(sel)
 
-        ' Model defaults
         cmbSize.Items.Clear()
         Dim sizes = If(r.IsVideo, {"832×480", "480×832", "640×640", "1280×704", "704×1280"},
                                   {"1024×1024", "1152×896", "896×1152", "1344×768", "768×1344", "768×768", "1536×1024"})
         cmbSize.Items.AddRange(sizes)
         Dim def = $"{r.Width}×{r.Height}"
+        If r.Width > 0 AndAlso Not cmbSize.Items.Contains(def) Then cmbSize.Items.Insert(0, def)
         cmbSize.SelectedItem = If(cmbSize.Items.Contains(def), def, sizes(0))
-        numSteps.Value = Math.Max(1, r.Steps)
-        numCfg.Value = CDec(Math.Min(20, r.Cfg))
-        numFrames.Value = Math.Max(1, r.Frames)
-        numFrames.Enabled = r.IsVideo
+        numFrames.Value = Math.Max(1, Math.Min(numFrames.Maximum, Math.Max(1, r.Frames)))
         txtNeg.Text = If(r.IsVideo, "", r.Negative)   ' Wan uses its own built-in negative unless the user types one
-        btnInput.Enabled = r.Input <> "none"
+        chkFast.Visible = r.Speed IsNot Nothing
+        ApplyStepDefaults()
+        _loadingRecipe = False
+        UpdateTaskUi()
+        UpdateLoraButton()
         UpdateButtons()
     End Sub
+
+    ''' <summary>Steps and CFG of the model, or of its Turbo / Lightning LoRA when ⚡ Fast is on.</summary>
+    Private Sub ApplyStepDefaults()
+        Dim r = SelectedRecipe()
+        If r Is Nothing Then Return
+        Dim fast = chkFast.Checked AndAlso r.Speed IsNot Nothing
+        numSteps.Value = Math.Max(1, If(fast, r.Speed.Steps, r.Steps))
+        numCfg.Value = CDec(Math.Min(20, If(fast, r.Speed.Cfg, r.Cfg)))
+    End Sub
+
+    Private Sub UpdateLoraButton()
+        Dim r = SelectedRecipe()
+        If r Is Nothing OrElse r.IsUpscaler Then
+            btnLoras.Text = Localizer.T("🧩 LoRAs")
+            Return
+        End If
+        Dim n = ActiveLoras(r).Count
+        btnLoras.Text = Localizer.T("🧩 LoRAs") & If(n > 0, $" ({n})", "")
+    End Sub
+
+    Private Function ActiveLoras(r As MediaRecipe) As List(Of UserLora)
+        Return LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()
+    End Function
 
     Private Class VariantItem
         Public ReadOnly V As MediaVariant
@@ -249,8 +423,9 @@ Public Class StudioForm
         Dim v = SelectedVariant()
         If r Is Nothing OrElse v Is Nothing Then Return
         Dim installed = MediaStudio.IsInstalled(r, v)
+        Dim fast = chkFast.Checked AndAlso r.Speed IsNot Nothing
         btnDownload.Enabled = Not installed AndAlso _cts Is Nothing
-        btnDownload.Text = If(installed, Localizer.T("✔ Downloaded"), Localizer.T("⬇ Download") & $" ({Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v))})")
+        btnDownload.Text = If(installed, Localizer.T("✔ Downloaded"), Localizer.T("⬇ Download") & $" ({Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v, fast))})")
         btnDelete.Enabled = installed AndAlso _cts Is Nothing
         btnGenerate.Enabled = installed OrElse _cts IsNot Nothing
     End Sub
@@ -265,7 +440,7 @@ Public Class StudioForm
             Await MediaStudio.DownloadAsync(r, v, Sub(p, t) BeginInvoke(Sub()
                                                                             prg.Value = Math.Max(0, Math.Min(100, p))
                                                                             lblStatus.Text = t
-                                                                        End Sub), _cts.Token)
+                                                                        End Sub), _cts.Token, withSpeed:=chkFast.Checked)
             lblStatus.Text = Localizer.T("Ready — write a description and press Generate.")
         Catch ex As OperationCanceledException
             lblStatus.Text = Localizer.T("Download cancelled (it resumes next time).")
@@ -297,23 +472,59 @@ Public Class StudioForm
         ShowRecipe()
     End Sub
 
-    '──────────────── input image ────────────────
-    Private Sub PickInput()
+    '──────────────── inputs ────────────────
+    Private Shared Function IsVideoFile(f As String) As Boolean
+        Dim e = Path.GetExtension(f).ToLowerInvariant()
+        Return {".webm", ".mp4", ".mov", ".mkv", ".avi", ".m4v", ".gif"}.Contains(e)
+    End Function
+
+    Private Sub PickInput(i As Integer)
         Using d As New OpenFileDialog() With {.Filter = "Images|*.png;*.jpg;*.jpeg;*.webp;*.bmp"}
-            If d.ShowDialog(Me) = DialogResult.OK Then SetInput(d.FileName)
+            If d.ShowDialog(Me) = DialogResult.OK Then SetInput(i, d.FileName)
         End Using
     End Sub
 
-    Private Sub SetInput(path As String)
-        _inputPath = path
-        Dim old = picInput.Image
-        picInput.Image = Nothing
+    Private Sub SetInput(i As Integer, path As String)
+        _inputs(i) = path
+        If i = 0 Then _maskPath = Nothing        ' a new picture needs a new painted area
+        Dim old = slots(i).Image
+        slots(i).Image = Nothing
         old?.Dispose()
-        If path IsNot Nothing AndAlso File.Exists(path) AndAlso Not path.EndsWith(".webm") Then
-            Using fs As New FileStream(path, FileMode.Open, FileAccess.Read)
-                picInput.Image = Image.FromStream(fs)
-            End Using
+        If path IsNot Nothing AndAlso File.Exists(path) AndAlso Not IsVideoFile(path) Then
+            Try
+                Using fs As New FileStream(path, FileMode.Open, FileAccess.Read)
+                    slots(i).Image = New Bitmap(Image.FromStream(fs))
+                End Using
+            Catch
+                _inputs(i) = Nothing
+            End Try
         End If
+        slots(i).Invalidate()
+        UpdateTaskUi()
+    End Sub
+
+    Private Sub PaintMask()
+        If _inputs(0) Is Nothing Then
+            PickInput(0)
+            If _inputs(0) Is Nothing Then Return
+        End If
+        Using f As New MaskEditorForm(_inputs(0), _maskPath)
+            If f.ShowDialog(Me) = DialogResult.OK Then _maskPath = f.MaskPath
+        End Using
+        UpdateTaskUi()
+    End Sub
+
+    Private Sub PickVideo()
+        Using d As New OpenFileDialog() With {.Filter = "Videos|*.mp4;*.mov;*.mkv;*.webm;*.avi;*.m4v;*.gif"}
+            If d.ShowDialog(Me) = DialogResult.OK Then SetVideo(d.FileName)
+        End Using
+    End Sub
+
+    Private Sub SetVideo(f As String)
+        _videoPath = f
+        lblVideo.Text = If(f Is Nothing, "", "🎞 " & Path.GetFileName(f))
+        Dim i = Array.FindIndex(TaskList, Function(t) t.Id = "video-edit")
+        If cmbTask.SelectedIndex <> i Then cmbTask.SelectedIndex = i
     End Sub
 
     '──────────────── generate ────────────────
@@ -326,23 +537,60 @@ Public Class StudioForm
         Dim r = SelectedRecipe()
         Dim v = SelectedVariant()
         If r Is Nothing OrElse v Is Nothing Then Return
-        If String.IsNullOrWhiteSpace(txtPrompt.Text) Then
+        Dim t = CurrentTask().Id
+        Dim pics = _inputs.Where(Function(x) x IsNot Nothing).ToList()
+        If t <> "upscale" AndAlso String.IsNullOrWhiteSpace(txtPrompt.Text) Then
             txtPrompt.Focus()
             Return
         End If
-        If r.Input = "required" AndAlso String.IsNullOrEmpty(_inputPath) Then
-            Localizer.Box(Me, "This model animates a picture — choose an input image first.", "Input image")
-            Return
+        Select Case t
+            Case "edit", "restyle", "upscale", "inpaint"
+                If pics.Count = 0 Then
+                    Localizer.Box(Me, "Choose the picture first (click the picture box).", "Picture")
+                    Return
+                End If
+            Case "combine"
+                If pics.Count < 2 Then
+                    Localizer.Box(Me, "Choose at least two pictures to combine.", "Pictures")
+                    Return
+                End If
+            Case "animate"
+                If pics.Count = 0 AndAlso r.Input = "required" Then
+                    Localizer.Box(Me, "This model animates a picture — choose an input image first.", "Input image")
+                    Return
+                End If
+            Case "video-edit"
+                If String.IsNullOrEmpty(_videoPath) Then
+                    PickVideo()
+                    If String.IsNullOrEmpty(_videoPath) Then Return
+                End If
+        End Select
+        If t = "inpaint" AndAlso _maskPath Is Nothing Then
+            PaintMask()
+            If _maskPath Is Nothing Then Return
         End If
-        Dim wh = cmbSize.SelectedItem.ToString().Split("×"c)
-        Dim req As New MediaStudio.GenerateRequest With {
-            .Recipe = r, .Variant = v, .Prompt = txtPrompt.Text.Trim(),
-            .Negative = If(String.IsNullOrWhiteSpace(txtNeg.Text), If(r.IsVideo, r.Negative, ""), txtNeg.Text.Trim()),
-            .Width = CInt(wh(0)), .Height = CInt(wh(1)), .Steps = CInt(numSteps.Value), .Cfg = CDbl(numCfg.Value),
-            .Seed = CLng(numSeed.Value), .Frames = CInt(numFrames.Value), .InputImage = _inputPath}
 
-        ' Free VRAM: the chat model and image model can't both sit on a small GPU.
-        If AppCore.Engine.CurrentModel IsNot Nothing AndAlso AppCore.Engine.ActiveRequests = 0 Then Await AppCore.Engine.StopAsync()
+        Dim wh = cmbSize.SelectedItem.ToString().Split("×"c)
+        Dim w = CInt(wh(0)), h = CInt(wh(1))
+        If (t = "edit" OrElse t = "inpaint" OrElse t = "restyle") AndAlso pics.Count > 0 Then
+            ' Keep the picture's shape: same aspect ratio as the input, about the chosen size, multiples of 16.
+            Try
+                Using img = Image.FromFile(pics(0))
+                    Dim area = CDbl(w) * h
+                    Dim k = Math.Sqrt(area / (CDbl(img.Width) * img.Height))
+                    w = Math.Max(256, CInt(Math.Round(img.Width * k / 16)) * 16)
+                    h = Math.Max(256, CInt(Math.Round(img.Height * k / 16)) * 16)
+                End Using
+            Catch
+            End Try
+        End If
+        Dim req As New MediaStudio.GenerateRequest With {
+            .Recipe = r, .Variant = v, .Task = t, .Prompt = txtPrompt.Text.Trim(),
+            .Negative = If(String.IsNullOrWhiteSpace(txtNeg.Text), If(r.IsVideo, r.Negative, ""), txtNeg.Text.Trim()),
+            .Width = w, .Height = h, .Steps = CInt(numSteps.Value), .Cfg = CDbl(numCfg.Value),
+            .Seed = CLng(numSeed.Value), .Frames = CInt(numFrames.Value), .InputImages = pics, .MaskImage = _maskPath,
+            .InputVideo = _videoPath, .Strength = CDbl(numStrength.Value),
+            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = If(r.IsUpscaler, New List(Of UserLora)(), ActiveLoras(r))}
 
         _cts = New CancellationTokenSource()
         btnGenerate.Text = Localizer.T("■ Stop")
@@ -350,10 +598,10 @@ Public Class StudioForm
         btnDelete.Enabled = False
         Dim sw = Diagnostics.Stopwatch.StartNew()
         Try
-            Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) BeginInvoke(Sub()
-                                                                                    prg.Value = Math.Max(0, Math.Min(100, p))
-                                                                                    lblStatus.Text = Localizer.T(t)
-                                                                                End Sub), _cts.Token)
+            Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, tx) BeginInvoke(Sub()
+                                                                                     prg.Value = Math.Max(0, Math.Min(100, p))
+                                                                                     lblStatus.Text = Localizer.T(tx)
+                                                                                 End Sub), _cts.Token)
             lblStatus.Text = Localizer.T("Done") & $" · {sw.Elapsed.TotalSeconds:0}s · {Path.GetFileName(out)}"
             AddToGallery(out, 0)
             ShowOutput(out)
@@ -364,7 +612,7 @@ Public Class StudioForm
             Localizer.Box(Me, ex.Message, "Generation failed", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Finally
             _cts = Nothing
-            btnGenerate.Text = Localizer.T("🎨 Generate")
+            UpdateTaskUi()
             UpdateButtons()
         End Try
     End Function
@@ -377,8 +625,10 @@ Public Class StudioForm
 
     Private Sub ShowOutput(path As String)
         Dim url = "https://outputs.localmind/" & Uri.EscapeDataString(IO.Path.GetFileName(path))
-        If path.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) Then
+        If IsVideoFile(path) Then
             ShowHtml($"<video src='{url}' controls autoplay loop style='max-width:100%;max-height:100%'></video>")
+        ElseIf path.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) Then
+            ShowHtml($"<audio src='{url}' controls autoplay></audio>")
         Else
             ShowHtml($"<img src='{url}' style='max-width:100%;max-height:100%;object-fit:contain'>")
         End If
@@ -387,7 +637,7 @@ Public Class StudioForm
     Private Sub LoadGallery()
         gallery.Items.Clear()
         thumbs.Images.Clear()
-        Dim files = Directory.GetFiles(MediaStudio.OutputFolder).Where(Function(f) f.EndsWith(".png") OrElse f.EndsWith(".webm")).
+        Dim files = Directory.GetFiles(MediaStudio.OutputFolder).Where(Function(f) f.EndsWith(".png") OrElse f.EndsWith(".webm") OrElse f.EndsWith(".mp4")).
                     OrderByDescending(Function(f) File.GetCreationTime(f)).Take(80)
         For Each f In files
             AddToGallery(f, -1)
@@ -422,7 +672,8 @@ Public Class StudioForm
         Catch
             Return
         End Try
-        Dim it As New ListViewItem(IO.Path.GetFileNameWithoutExtension(path).Substring(0, Math.Min(15, IO.Path.GetFileNameWithoutExtension(path).Length)), key) With {.Tag = path}
+        Dim nm = IO.Path.GetFileNameWithoutExtension(path)
+        Dim it As New ListViewItem(nm.Substring(0, Math.Min(15, nm.Length)), key) With {.Tag = path}
         If index < 0 Then gallery.Items.Add(it) Else gallery.Items.Insert(index, it)
     End Sub
 

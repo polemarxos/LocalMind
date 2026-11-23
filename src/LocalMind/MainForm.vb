@@ -209,6 +209,13 @@ Public Class MainForm
             Return
         End If
 
+        If Not Settings.FeaturesAsked Then
+            Using f As New FeaturesForm()
+                f.ShowDialog(Me)
+            End Using
+            ApplyFeatures()
+        End If
+
         If Not Settings.FirstRunDone Then
             Settings.FirstRunDone = True
             AppCore.SaveSettings()
@@ -1231,6 +1238,7 @@ Public Class MainForm
             If f.ShowDialog(Me) <> DialogResult.OK Then Return
         End Using
         RegisterQuickAskHotkey()
+        ApplyFeatures()
         _isFirstConnectionCheck = True
         Await RefreshModelsKeepSelectionAsync()
         Await CheckConnectionNowAsync()

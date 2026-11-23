@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.5.0
+
+### New
+- **Choose what LocalMind does:** on first start (and in Settings → Chat → Extra abilities) pick *Chat only*,
+  *Pictures & video* and/or *Music & voice*. Abilities that are off are hidden and download nothing.
+- **Picture editing** in the studio — pick a task at the top:
+  - *Edit a picture*: describe the change ("make it night", "remove the car"). New dedicated editors:
+    **Qwen-Image Edit 2511** (GGUF + INT8 ConvRot) and **FLUX.1 Kontext**; FLUX.2 klein and Qwen-Image 2.1 edit too.
+  - *Change part of a picture*: paint the area with a brush, only that part changes.
+  - *Combine pictures*: up to 3 reference pictures ("the person from picture 1 in the room from picture 2").
+  - *Restyle* and *Enlarge 4×* (Real-ESRGAN, 4x-UltraSharp, anime upscaler).
+- **Video editing:** restyle or change your own video (MP4, MOV, MKV…) while keeping its motion, with
+  **Wan VACE** 1.3B / 14B / Wan 2.2 VACE Fun A14B. Also **LTX-2.3** (video *with sound*). Save results as MP4.
+- **⚡ Fast mode everywhere:** Lightning / Turbo / LCM / CausVid speed-up LoRAs are added automatically for SDXL,
+  SD 1.5, Qwen-Image (2.1, 2512, Edit 2511), FLUX.1 Kontext and all Wan video models (4–8 steps instead of 20–50).
+- **Your LoRAs:** 🧩 LoRAs in the studio. Add files or drop them in `Models\Loras`; the model family and
+  **trigger words** are read from the file and can be edited; trigger words are added to your prompt automatically.
+- **Civitai:** search civitai.com (or civitai.red, 18+) for LoRAs and checkpoints by model family, see previews,
+  install with one click. LoRAs go to `Models\Loras` with their trigger words; checkpoints (SDXL / Pony /
+  Illustrious, SD 1.5, FLUX, Z-Image, Qwen-Image, Krea 2, Anima) appear in the studio as ⭐ models.
+  An optional Civitai API key enables downloads that need an account.
+- **Music & voice studio** (🎵), using the same llama.cpp engine:
+  - Speech in 23 languages including **Greek** (Chatterbox Multilingual), plus Qwen3-TTS, VoxCPM2 (voice design),
+    Fish Audio S2 Pro and Chatterbox Turbo.
+  - **Voice cloning** from a short recording (record with 🎤 or pick a file; Whisper can write the words for you).
+  - **Songs with vocals** from a style and lyrics: YuE2 3B and MiniMax Music 3.
+- Stable Diffusion 1.5 added (runs on 4 GB GPUs).
+- 🖼 Image in chat: an attached photo is now edited (or restyled) instead of ignored; uses your LoRAs and ⚡ Fast.
+
 ## 2.4.0
 
 ### New

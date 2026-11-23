@@ -48,16 +48,51 @@ Partial Class MainForm
         Dim miStudio As New ToolStripMenuItem("Image & video studio…")
         AddHandler miStudio.Click, Sub() OpenStudio()
         menuTools.DropDownItems.Insert(0, miStudio)
-        Dim btnStudio As New ToolStripButton("🎨 Create") With {.ToolTipText = "Create images and videos (Image & video studio)"}
+        Dim btnStudio As New ToolStripButton("🎨 Create") With {.ToolTipText = "Create and edit pictures and videos (Image & video studio)"}
         AddHandler btnStudio.Click, Sub() OpenStudio()
         toolTop.Items.Insert(toolTop.Items.IndexOf(_btnWeb) + 1, btnStudio)
+        _btnStudio = btnStudio
+        _miStudio = miStudio
         BuildImageUi(btnStudio, miStudio)
+        _miAudio = New ToolStripMenuItem("Music & voice studio…")
+        AddHandler _miAudio.Click, Sub() OpenAudio()
+        menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 2, _miAudio)
+        _btnAudio = New ToolStripButton("🎵 Music & voice") With {.ToolTipText = "Make songs, speech and cloned voices"}
+        AddHandler _btnAudio.Click, Sub() OpenAudio()
+        toolTop.Items.Insert(toolTop.Items.IndexOf(btnStudio) + 1, _btnAudio)
+        ApplyFeatures()
         Dim miCompare As New ToolStripMenuItem("Compare models…")
         AddHandler miCompare.Click, Sub() OpenCompare()
         menuTools.DropDownItems.Insert(0, miCompare)
         menuTools.DropDownItems.Insert(0, New ToolStripSeparator())
         menuTools.DropDownItems.Insert(0, _miAutoRead)
         menuTools.DropDownItems.Insert(0, miDocs)
+    End Sub
+
+    Private _btnStudio, _btnAudio As ToolStripButton
+    Private _miStudio, _miAudio As ToolStripMenuItem
+    Private _audio As AudioForm
+
+    ''' <summary>Shows only the abilities the user chose (Settings → Chat → Extra abilities).</summary>
+    Private Sub ApplyFeatures()
+        If _btnStudio Is Nothing Then Return
+        Dim img = Settings.EnableImages, aud = Settings.EnableAudio
+        _btnStudio.Visible = img
+        _miStudio.Visible = img
+        _btnImage.Visible = img
+        _miImageChat.Visible = img
+        If Not img Then _btnImage.Checked = False
+        _btnAudio.Visible = aud
+        _miAudio.Visible = aud
+    End Sub
+
+    Private Sub OpenAudio()
+        If _audio Is Nothing OrElse _audio.IsDisposed Then
+            _audio = New AudioForm()
+            _audio.Show(Me)
+        Else
+            _audio.Activate()
+        End If
     End Sub
 
     Private _studio As StudioForm

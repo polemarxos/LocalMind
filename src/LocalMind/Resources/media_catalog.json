@@ -10,11 +10,19 @@
   "width": 1024,
   "height": 1024,
   "input": "optional",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
   "negative": "",
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q2_K",
@@ -76,7 +84,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/z_image_turbo",
+    "repo": "Comfy-Org/Z-Image-Turbo",
     "path": "split_files/vae/ae.safetensors",
     "size": 335304388
    },
@@ -94,16 +102,24 @@
   "kind": "image",
   "family": "Z-Image",
   "about": "Higher-quality, more controllable Z-Image (slower: 28 steps, uses negative prompts).",
+  "input": "optional",
   "steps": 28,
   "cfg": 5.0,
   "width": 1024,
   "height": 1024,
   "negative": "blurry, low quality, watermark",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
-  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q2_K",
@@ -221,7 +237,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/z_image_turbo",
+    "repo": "Comfy-Org/Z-Image-Turbo",
     "path": "split_files/vae/ae.safetensors",
     "size": 335304388
    },
@@ -244,11 +260,20 @@
   "width": 1024,
   "height": 1024,
   "input": "optional",
+  "tasks": [
+   "create",
+   "edit",
+   "combine",
+   "inpaint"
+  ],
+  "refs": 3,
   "negative": "",
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q4_0",
@@ -268,7 +293,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/flux2-dev",
+    "repo": "Comfy-Org/Flux-2-Dev",
     "path": "split_files/vae/flux2-vae.safetensors",
     "size": 336213556
    },
@@ -291,11 +316,20 @@
   "width": 1024,
   "height": 1024,
   "input": "optional",
+  "tasks": [
+   "create",
+   "edit",
+   "combine",
+   "inpaint"
+  ],
+  "refs": 3,
   "negative": "",
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q4_0",
@@ -322,7 +356,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/flux2-dev",
+    "repo": "Comfy-Org/Flux-2-Dev",
     "path": "split_files/vae/flux2-vae.safetensors",
     "size": 336213556
    },
@@ -345,11 +379,37 @@
   "width": 1024,
   "height": 1024,
   "input": "optional",
+  "tasks": [
+   "create",
+   "edit",
+   "combine",
+   "inpaint"
+  ],
+  "refs": 3,
+  "speed": {
+   "label": "⚡ Lightning · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-qwen-image-2.1-lightning-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Qwen-Image-2.1-Lightning",
+     "path": "pytorch_lora_weights.safetensors",
+     "size": 67144280
+    }
+   ]
+  },
   "negative": "",
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q2_K",
@@ -420,6 +480,13 @@
     "repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
     "path": "Qwen3VL-8B-Instruct-Q4_K_M.gguf",
     "size": 5027784800
+   },
+   {
+    "role": "llm_vision",
+    "edit": true,
+    "repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+    "path": "mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf",
+    "size": 752289728
    }
   ]
  },
@@ -429,16 +496,24 @@
   "kind": "image",
   "family": "Qwen-Image",
   "about": "Fast Qwen-Image 2.1 (8 steps) with the same excellent text rendering.",
+  "input": "optional",
   "steps": 8,
   "cfg": 1.0,
   "width": 1024,
   "height": 1024,
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
   "negative": "",
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
-  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "INT8 ConvRot",
@@ -469,16 +544,41 @@
   "kind": "image",
   "family": "Qwen-Image",
   "about": "Large 20B Qwen-Image release: rich detail and layouts. Needs a big GPU or offloading.",
+  "input": "optional",
   "steps": 20,
   "cfg": 2.5,
   "flowShift": 3,
   "width": 1024,
   "height": 1024,
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-qwen-image-2512-lightning-8step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Qwen-Image-2512-Lightning",
+     "path": "Qwen-Image-2512-Lightning-8steps-V1.0-bf16.safetensors",
+     "size": 849608296
+    }
+   ]
+  },
   "negative": "",
   "sampler": "euler",
   "frames": 0,
   "highSteps": 0,
-  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q2_K",
@@ -596,7 +696,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+    "repo": "Comfy-Org/Qwen-Image",
     "path": "split_files/vae/qwen_image_vae.safetensors",
     "size": 253806246
    },
@@ -614,16 +714,24 @@
   "kind": "image",
   "family": "Krea",
   "about": "Aesthetic, photographic Krea 2 in few steps.",
+  "input": "optional",
   "steps": 8,
   "cfg": 1.0,
   "width": 1024,
   "height": 1024,
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
   "negative": "",
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
-  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q3_K_M",
@@ -678,7 +786,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "repo": "Comfy-Org/Wan-2.1",
     "path": "split_files/vae/wan_2.1_vae.safetensors",
     "size": 253815318
    },
@@ -696,16 +804,24 @@
   "kind": "image",
   "family": "Anima",
   "about": "Anime and illustration style model. Small and fast.",
+  "input": "optional",
   "steps": 30,
   "cfg": 6.0,
   "width": 1024,
   "height": 1024,
   "negative": "worst quality, low quality, blurry",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
-  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q3_K_L",
@@ -795,7 +911,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+    "repo": "Comfy-Org/Qwen-Image",
     "path": "split_files/vae/qwen_image_vae.safetensors",
     "size": 253806246
    },
@@ -813,16 +929,24 @@
   "kind": "image",
   "family": "FLUX.1",
   "about": "Classic fast FLUX.1 (4 steps), Apache-2.0 licensed.",
+  "input": "optional",
   "steps": 4,
   "cfg": 1.0,
   "width": 1024,
   "height": 1024,
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
   "negative": "",
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
-  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "Q2_K",
@@ -905,7 +1029,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/z_image_turbo",
+    "repo": "Comfy-Org/Z-Image-Turbo",
     "path": "split_files/vae/ae.safetensors",
     "size": 335304388
    },
@@ -935,10 +1059,35 @@
   "height": 1024,
   "negative": "blurry, low quality, deformed",
   "input": "optional",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "--scheduler sgm_uniform",
+   "loras": [
+    {
+     "name": "speed-sdxl-lightning-8step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "ByteDance/SDXL-Lightning",
+     "path": "sdxl_lightning_8step_lora.safetensors",
+     "size": 393854592
+    }
+   ]
+  },
   "sampler": "euler",
   "flowShift": 0,
   "frames": 0,
   "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
   "variants": [
    {
     "label": "FP16",
@@ -958,6 +1107,493 @@
   ]
  },
  {
+  "id": "sd15",
+  "name": "Stable Diffusion 1.5",
+  "kind": "image",
+  "family": "SD1.5",
+  "about": "The classic small model: runs on almost any PC (4 GB GPU). Thousands of styles and LoRAs on Civitai.",
+  "steps": 25,
+  "cfg": 7.0,
+  "width": 512,
+  "height": 512,
+  "negative": "blurry, low quality, deformed",
+  "input": "optional",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "speed": {
+   "label": "⚡ LCM · 6 steps",
+   "steps": 6,
+   "highSteps": 0,
+   "cfg": 1.5,
+   "extra": "--sampling-method lcm",
+   "loras": [
+    {
+     "name": "speed-sd15-lcm",
+     "high": false,
+     "weight": 1.0,
+     "repo": "latent-consistency/lcm-lora-sdv1-5",
+     "path": "pytorch_lora_weights.safetensors",
+     "size": 134621556
+    }
+   ]
+  },
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "variants": [
+   {
+    "label": "FP32",
+    "format": "checkpoint",
+    "repo": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+    "path": "v1-5-pruned-emaonly.safetensors",
+    "size": 4265146304
+   }
+  ],
+  "parts": []
+ },
+ {
+  "id": "qwen-image-edit-2511",
+  "name": "Qwen-Image Edit 2511",
+  "kind": "image",
+  "family": "Qwen-Image-Edit",
+  "about": "The strongest 'describe the change' editor: change objects, clothes, text, style or background while keeping the rest. Combines up to 3 pictures.",
+  "steps": 20,
+  "cfg": 2.5,
+  "flowShift": 3,
+  "width": 1024,
+  "height": 1024,
+  "input": "required",
+  "tasks": [
+   "edit",
+   "combine",
+   "inpaint"
+  ],
+  "refs": 3,
+  "speed": {
+   "label": "⚡ Lightning · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-qwen-image-edit-2511-lightning-8step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Qwen-Image-Edit-2511-Lightning",
+     "path": "Qwen-Image-Edit-2511-Lightning-8steps-V1.0-bf16.safetensors",
+     "size": 849608296
+    }
+   ]
+  },
+  "negative": "",
+  "sampler": "euler",
+  "frames": 0,
+  "highSteps": 0,
+  "extra": "",
+  "fps": 0,
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q2_K.gguf",
+    "size": 7736355424
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q3_K_S.gguf",
+    "size": 9274468960
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q3_K_M.gguf",
+    "size": 9920805472
+   },
+   {
+    "label": "Q3_K_L",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q3_K_L.gguf",
+    "size": 10581408352
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q4_0.gguf",
+    "size": 11852773984
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q4_K_S.gguf",
+    "size": 12466227808
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q4_K_M.gguf",
+    "size": 12842830432
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q4_1.gguf",
+    "size": 12843678304
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q5_K_S.gguf",
+    "size": 14381017696
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q5_0.gguf",
+    "size": 14400813664
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q5_1.gguf",
+    "size": 15391717984
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q5_K_M.gguf",
+    "size": 15395662432
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q6_K.gguf",
+    "size": 17947757152
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "cardamonnl/Qwen-Image-Edit-2511-int8-convrot",
+    "path": "qwen_image_edit_2511_int8_convrot.safetensors",
+    "size": 20555752311
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-Q8_0.gguf",
+    "size": 22354590304
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-BF16.gguf",
+    "size": 40872114784
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-Edit-2511-GGUF",
+    "path": "qwen-image-edit-2511-F16.gguf",
+    "size": 40872114784
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Qwen-Image",
+    "path": "split_files/vae/qwen_image_vae.safetensors",
+    "size": 253806246
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "llm_vision",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "mmproj-F16.gguf",
+    "size": 1354163040
+   }
+  ]
+ },
+ {
+  "id": "flux1-kontext",
+  "name": "FLUX.1 Kontext (edit)",
+  "kind": "image",
+  "family": "FLUX.1-Kontext",
+  "about": "Edits a picture from a short instruction ('make it winter', 'remove the logo'). Runs on 6 GB GPUs.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "input": "required",
+  "extra": "--guidance 2.5",
+  "tasks": [
+   "edit"
+  ],
+  "refs": 1,
+  "speed": {
+   "label": "⚡ Turbo · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "--guidance 3.5",
+   "loras": [
+    {
+     "name": "speed-flux1-turbo-alpha-8step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "alimama-creative/FLUX.1-Turbo-Alpha",
+     "path": "diffusion_pytorch_model.safetensors",
+     "size": 694082424
+    }
+   ]
+  },
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "fps": 0,
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q2_K.gguf",
+    "size": 4023690528
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q3_K_S.gguf",
+    "size": 5225604384
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q3_K_M.gguf",
+    "size": 5368489248
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q4_0.gguf",
+    "size": 6797337888
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q4_K_S.gguf",
+    "size": 6797337888
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q4_K_M.gguf",
+    "size": 6931817760
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q4_1.gguf",
+    "size": 7536977184
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q5_0.gguf",
+    "size": 8276616480
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q5_K_S.gguf",
+    "size": 8276616480
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q5_K_M.gguf",
+    "size": 8419501344
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q5_1.gguf",
+    "size": 9016255776
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q6_K.gguf",
+    "size": 9848349984
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/FLUX.1-Kontext-dev-GGUF",
+    "path": "flux1-kontext-dev-Q8_0.gguf",
+    "size": 12714452256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "clip_l",
+    "repo": "comfyanonymous/flux_text_encoders",
+    "path": "clip_l.safetensors",
+    "size": 246144152
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/t5-v1_1-xxl-encoder-gguf",
+    "path": "t5-v1_1-xxl-encoder-Q8_0.gguf",
+    "size": 5061584064
+   }
+  ]
+ },
+ {
+  "id": "upscale-realesrgan",
+  "name": "Real-ESRGAN 4× (photos)",
+  "kind": "upscale",
+  "family": "ESRGAN",
+  "about": "Makes photos 4× bigger and sharper. Small and fast.",
+  "steps": 1,
+  "cfg": 0,
+  "width": 0,
+  "height": 0,
+  "input": "required",
+  "tasks": [
+   "upscale"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "variants": [
+   {
+    "label": "4×",
+    "format": "esrgan",
+    "repo": "lllyasviel/Annotators",
+    "path": "RealESRGAN_x4plus.pth",
+    "size": 67040989
+   }
+  ],
+  "parts": []
+ },
+ {
+  "id": "upscale-ultrasharp",
+  "name": "4x-UltraSharp",
+  "kind": "upscale",
+  "family": "ESRGAN",
+  "about": "Crisp 4× enlargement for photos and renders.",
+  "steps": 1,
+  "cfg": 0,
+  "width": 0,
+  "height": 0,
+  "input": "required",
+  "tasks": [
+   "upscale"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "variants": [
+   {
+    "label": "4×",
+    "format": "esrgan",
+    "repo": "lokCX/4x-Ultrasharp",
+    "path": "4x-UltraSharp.pth",
+    "size": 66961958
+   }
+  ],
+  "parts": []
+ },
+ {
+  "id": "upscale-anime",
+  "name": "Real-ESRGAN 4× (anime)",
+  "kind": "upscale",
+  "family": "ESRGAN",
+  "about": "4× enlargement tuned for anime and drawings.",
+  "steps": 1,
+  "cfg": 0,
+  "width": 0,
+  "height": 0,
+  "input": "required",
+  "tasks": [
+   "upscale"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "variants": [
+   {
+    "label": "4×",
+    "format": "esrgan",
+    "repo": "amd/realesrgan-x4plus-anime-6b",
+    "path": "RealESRGAN_x4plus_anime_6B.pth",
+    "size": 17938799
+   }
+  ],
+  "parts": []
+ },
+ {
   "id": "wan2.2-ti2v-5b",
   "name": "Wan 2.2 TI2V 5B (video)",
   "kind": "video",
@@ -971,8 +1607,15 @@
   "frames": 33,
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "fps": 16,
   "sampler": "euler",
   "highSteps": 0,
+  "refs": 0,
+  "extra": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -1069,7 +1712,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+    "repo": "Comfy-Org/Wan-2.2",
     "path": "split_files/vae/wan2.2_vae.safetensors",
     "size": 1409400960
    },
@@ -1094,14 +1737,37 @@
   "height": 480,
   "frames": 33,
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "tasks": [
+   "create"
+  ],
+  "fps": 16,
+  "speed": {
+   "label": "⚡ CausVid · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan21-1.3b-causvid",
+     "high": false,
+     "weight": 1.0,
+     "repo": "Kijai/WanVideo_comfy",
+     "path": "Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32.safetensors",
+     "size": 91233416
+    }
+   ]
+  },
   "sampler": "euler",
   "highSteps": 0,
   "input": "none",
+  "refs": 0,
+  "extra": "",
   "variants": [
    {
     "label": "FP16",
     "format": "safetensors",
-    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "repo": "Comfy-Org/Wan-2.1",
     "path": "split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors",
     "size": 2838303560
    }
@@ -1109,7 +1775,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "repo": "Comfy-Org/Wan-2.1",
     "path": "split_files/vae/wan_2.1_vae.safetensors",
     "size": 253815318
    },
@@ -1136,7 +1802,38 @@
   "frames": 33,
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "none",
+  "tasks": [
+   "create"
+  ],
+  "fps": 16,
+  "speed": {
+   "label": "⚡ Lightning · 4+4 steps",
+   "steps": 4,
+   "highSteps": 4,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-t2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_low_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    },
+    {
+     "name": "speed-wan22-t2v-high-4step",
+     "high": true,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_high_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    }
+   ]
+  },
   "sampler": "euler",
+  "refs": 0,
+  "extra": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -1324,7 +2021,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "repo": "Comfy-Org/Wan-2.1",
     "path": "split_files/vae/wan_2.1_vae.safetensors",
     "size": 253815318
    },
@@ -1351,7 +2048,38 @@
   "frames": 33,
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "required",
+  "tasks": [
+   "animate"
+  ],
+  "fps": 16,
+  "speed": {
+   "label": "⚡ Lightning · 4+4 steps",
+   "steps": 4,
+   "highSteps": 4,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-i2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+     "size": 739472104
+    },
+    {
+     "name": "speed-wan22-i2v-high-4step",
+     "high": true,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+     "size": 634645944
+    }
+   ]
+  },
   "sampler": "euler",
+  "refs": 0,
+  "extra": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -1513,7 +2241,7 @@
   "parts": [
    {
     "role": "vae",
-    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "repo": "Comfy-Org/Wan-2.1",
     "path": "split_files/vae/wan_2.1_vae.safetensors",
     "size": 253815318
    },
@@ -1522,6 +2250,572 @@
     "repo": "city96/umt5-xxl-encoder-gguf",
     "path": "umt5-xxl-encoder-Q8_0.gguf",
     "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "wan2.1-vace-1.3b",
+  "name": "Wan 2.1 VACE 1.3B (video edit)",
+  "kind": "video",
+  "family": "Wan-VACE",
+  "about": "Restyle or change a video you give it, keeping its motion. Also makes video from a character picture. Fits 8 GB GPUs.",
+  "steps": 20,
+  "cfg": 6.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "fps": 16,
+  "tasks": [
+   "video-edit",
+   "animate",
+   "create"
+  ],
+  "speed": {
+   "label": "⚡ CausVid · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan21-1.3b-causvid",
+     "high": false,
+     "weight": 1.0,
+     "repo": "Kijai/WanVideo_comfy",
+     "path": "Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32.safetensors",
+     "size": 91233416
+    }
+   ]
+  },
+  "sampler": "euler",
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "variants": [
+   {
+    "label": "FP16",
+    "format": "safetensors",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/diffusion_models/wan2.1_vace_1.3B_fp16.safetensors",
+    "size": 4309519800
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "wan2.1-vace-14b",
+  "name": "Wan 2.1 VACE 14B (video edit)",
+  "kind": "video",
+  "family": "Wan-VACE",
+  "about": "High-quality video editing and restyling, keeping the motion of your video. GPU 12 GB+.",
+  "steps": 20,
+  "cfg": 6.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "fps": 16,
+  "tasks": [
+   "video-edit",
+   "animate",
+   "create"
+  ],
+  "speed": {
+   "label": "⚡ Lightx2v · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan21-14b-lightx2v-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.1-Distill-Loras",
+     "path": "wan2.1_t2v_14b_lora_rank64_lightx2v_4step.safetensors",
+     "size": 631344264
+    }
+   ]
+  },
+  "sampler": "euler",
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "variants": [
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q3_K_S.gguf",
+    "size": 7844059040
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q4_0.gguf",
+    "size": 10327095200
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q4_K_S.gguf",
+    "size": 10552539040
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q4_1.gguf",
+    "size": 11183323040
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q4_K_M.gguf",
+    "size": 11639453600
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q5_K_S.gguf",
+    "size": 12251887520
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q5_0.gguf",
+    "size": 12464224160
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q5_K_M.gguf",
+    "size": 13037336480
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q5_1.gguf",
+    "size": 13320452000
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q6_K.gguf",
+    "size": 14522587040
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-Q8_0.gguf",
+    "size": 18663274400
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-BF16.gguf",
+    "size": 34691741600
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.1_14B_VACE-GGUF",
+    "path": "Wan2.1_14B_VACE-F16.gguf",
+    "size": 34691741600
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "wan2.2-vace-fun-a14b",
+  "name": "Wan 2.2 VACE Fun A14B (video edit)",
+  "kind": "video",
+  "family": "Wan-VACE",
+  "about": "Best-quality video editing with the two Wan 2.2 experts. Needs lots of RAM; GPU 16 GB+.",
+  "steps": 10,
+  "highSteps": 8,
+  "cfg": 3.5,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "fps": 16,
+  "tasks": [
+   "video-edit",
+   "animate"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 4+4 steps",
+   "steps": 4,
+   "highSteps": 4,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-t2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_low_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    },
+    {
+     "name": "speed-wan22-t2v-high-4step",
+     "high": true,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_high_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    }
+   ]
+  },
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "variants": [
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q3_K_S.gguf",
+    "size": 7844059040,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q3_K_S.gguf",
+     "size": 7844059040
+    },
+    "size_total": 15688118080
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q3_K_M.gguf",
+    "size": 8636061600,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q3_K_M.gguf",
+     "size": 8636061600
+    },
+    "size_total": 17272123200
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q4_0.gguf",
+    "size": 10327095200,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q4_0.gguf",
+     "size": 10327095200
+    },
+    "size_total": 20654190400
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q4_K_S.gguf",
+    "size": 10552539040,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q4_K_S.gguf",
+     "size": 10552539040
+    },
+    "size_total": 21105078080
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q4_K_M.gguf",
+    "size": 11639453600,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q4_K_M.gguf",
+     "size": 11639453600
+    },
+    "size_total": 23278907200
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q5_K_S.gguf",
+    "size": 12251887520,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q5_K_S.gguf",
+     "size": 12251887520
+    },
+    "size_total": 24503775040
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q5_0.gguf",
+    "size": 12464224160,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q5_0.gguf",
+     "size": 12464224160
+    },
+    "size_total": 24928448320
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q5_K_M.gguf",
+    "size": 13037336480,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q5_K_M.gguf",
+     "size": 13037336480
+    },
+    "size_total": 26074672960
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q6_K.gguf",
+    "size": 14522587040,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q6_k.gguf",
+     "size": 14522587040
+    },
+    "size_total": 29045174080
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-VACE-Fun-A14B-low-noise-Q8_0.gguf",
+    "size": 18663274400,
+    "high": {
+     "repo": "QuantStack/Wan2.2-VACE-Fun-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-VACE-Fun-A14B-high-noise-Q8_0.gguf",
+     "size": 18663274400
+    },
+    "size_total": 37326548800
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "ltx-2.3-distilled",
+  "name": "LTX-2.3 distilled (video + sound)",
+  "kind": "video",
+  "family": "LTX",
+  "about": "Fast 22B video model that also creates matching sound. Text or picture to video, 24 fps. GPU 12 GB+ and 32 GB RAM.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q2_K.gguf",
+    "size": 7935826976
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q3_K_S.gguf",
+    "size": 9741626400
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q3_K_M.gguf",
+    "size": 10629508128
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_0.gguf",
+    "size": 12716211232
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_K_S.gguf",
+    "size": 12961578016
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_1.gguf",
+    "size": 13758266400
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_K_M.gguf",
+    "size": 14194441248
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_K_S.gguf",
+    "size": 15043591200
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_0.gguf",
+    "size": 15286860832
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_K_M.gguf",
+    "size": 15930424352
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_1.gguf",
+    "size": 16328916000
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q6_K.gguf",
+    "size": 17774906400
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q8_0.gguf",
+    "size": 22755540000
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-BF16.gguf",
+    "size": 42035412000
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-F16.gguf",
+    "size": 42035412000
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
+    "size": 2312144712
    }
   ]
  }

@@ -148,7 +148,7 @@ Public Class ModelLibrary
     End Sub
 
     ''' <summary>Models\Embeddings, Models\Voice and Models\Images hold non-chat models.</summary>
-    Public Shared ReadOnly HelperFolders As String() = {"Embeddings", "Voice", "Images"}
+    Public Shared ReadOnly HelperFolders As String() = {"Embeddings", "Voice", "Images", "Loras", "Audio"}
 
     Private Shared Function IsHelperPath(root As String, f As String) As Boolean
         Dim rel = Path.GetRelativePath(root, f)

@@ -8,7 +8,18 @@ app only offers files that exist, with their real sizes.
 """
 import json, os, re, sys, urllib.request
 
+_canon = {}
+def canonical(repo):
+    """Hugging Face renames repos (with a redirect); store the current name."""
+    if repo not in _canon:
+        try:
+            _canon[repo] = json.load(urllib.request.urlopen(f"https://huggingface.co/api/models/{repo}", timeout=60))["id"]
+        except Exception:
+            _canon[repo] = repo
+    return _canon[repo]
+
 def tree(repo):
+    repo = canonical(repo)
     url = f"https://huggingface.co/api/models/{repo}/tree/main?recursive=true"
     try:
         data = json.load(urllib.request.urlopen(url, timeout=60))
@@ -28,7 +39,7 @@ def one(repo, pattern):
     rx = re.compile(pattern, re.I)
     for f in files(repo):
         if rx.search(f["path"]):
-            return {"repo": repo, "path": f["path"], "size": f.get("lfs", {}).get("size", f.get("size", 0))}
+            return {"repo": canonical(repo), "path": f["path"], "size": f.get("lfs", {}).get("size", f.get("size", 0))}
     print(f"  ! missing {repo} :: {pattern}", file=sys.stderr)
     return None
 
@@ -47,11 +58,19 @@ def gguf_variants(repo, folder=None, include=None):
         label = m.group(1).upper()
         if label in ("F32",): continue
         size = f.get("lfs", {}).get("size", f.get("size", 0))
-        out[label] = {"repo": repo, "path": p, "size": size}
+        out[label] = {"repo": canonical(repo), "path": p, "size": size}
     return out
 
 def variants_list(d, fmt="gguf"):
     return [dict(label=k, format=fmt, **v) for k, v in d.items()]
+
+def lora(repo, pattern, name, high=False, weight=1.0):
+    f = one(repo, pattern)
+    return dict(name=name, high=high, weight=weight, **f) if f else None
+
+def speed(label, steps, cfg, loras, high_steps=0, extra=""):
+    loras = [l for l in loras if l]
+    return dict(label=label, steps=steps, highSteps=high_steps, cfg=cfg, extra=extra, loras=loras) if loras else None
 
 # ── shared parts ────────────────────────────────────────────────────────────
 AE_FLUX1 = one("Comfy-Org/z_image_turbo", r"vae/ae\.safetensors$")
@@ -60,6 +79,9 @@ QWEN3_4B = one("unsloth/Qwen3-4B-GGUF", r"Qwen3-4B-Q4_K_M\.gguf$")
 QWEN3_8B = one("unsloth/Qwen3-8B-GGUF", r"Qwen3-8B-Q4_K_M\.gguf$")
 FLUX2_VAE = one("Comfy-Org/flux2-dev", r"vae/.*\.safetensors$")
 QWEN3VL_8B = one("Qwen/Qwen3-VL-8B-Instruct-GGUF", r"Q4_K_M\.gguf$")
+QWEN3VL_8B_VISION = one("Qwen/Qwen3-VL-8B-Instruct-GGUF", r"mmproj-Qwen3VL-8B-Instruct-Q8_0\.gguf$")
+QWEN25VL_7B_VISION = one("unsloth/Qwen2.5-VL-7B-Instruct-GGUF", r"^mmproj-F16\.gguf$")
+GEMMA3_12B = one("unsloth/gemma-3-12b-it-qat-GGUF", r"gemma-3-12b-it-qat-UD-Q4_K_XL\.gguf$")
 QWEN3VL_4B = one("Qwen/Qwen3-VL-4B-Instruct-GGUF", r"Q4_K_M\.gguf$")
 QI21_VAE = one("Comfy-Org/Qwen-Image-2.1", r"vae/qwen_image_2\.1_vae_bf16\.safetensors$")
 QI_VAE = one("Comfy-Org/Qwen-Image_ComfyUI", r"vae/qwen_image_vae\.safetensors$")
@@ -91,6 +113,11 @@ def recipe(**k):
     k.setdefault("frames", 0)
     k.setdefault("highSteps", 0)
     k.setdefault("input", "none")       # none | optional | required
+    k.setdefault("tasks", ["create"])   # create restyle edit combine inpaint animate video-edit upscale
+    k.setdefault("refs", 0)             # how many reference pictures edit/combine accepts
+    k.setdefault("extra", "")           # extra sd-cli arguments
+    k.setdefault("fps", 0)
+    if k.get("speed") is None: k.pop("speed", None)
     k["variants"] = sorted(v, key=lambda x: x["size"])
     k["parts"] = parts
     R.append(k)
@@ -99,76 +126,139 @@ def recipe(**k):
 recipe(id="z-image-turbo", name="Z-Image Turbo", kind="image", family="Z-Image",
        about="Fast photorealistic images in 8 steps, great text rendering. Best all-rounder for most GPUs.",
        steps=8, cfg=1.0, width=1024, height=1024, input="optional",
+       tasks=["create","restyle","inpaint"],
        variants=variants_list(gguf_variants("leejet/Z-Image-Turbo-GGUF")) + convrot(CONV, r"z_image_turbo_int8_convrot"),
        parts=[dict(role="vae", **AE_FLUX1), dict(role="llm", **QWEN3_4B_INSTR)])
 recipe(id="z-image", name="Z-Image (base)", kind="image", family="Z-Image",
        about="Higher-quality, more controllable Z-Image (slower: 28 steps, uses negative prompts).",
-       steps=28, cfg=5.0, width=1024, height=1024, negative="blurry, low quality, watermark",
+       input="optional", steps=28, cfg=5.0, width=1024, height=1024, negative="blurry, low quality, watermark",
+       tasks=["create","restyle","inpaint"],
        variants=variants_list(gguf_variants("unsloth/Z-Image-GGUF")),
        parts=[dict(role="vae", **AE_FLUX1), dict(role="llm", **QWEN3_4B_INSTR)])
 recipe(id="flux2-klein-4b", name="FLUX.2 klein 4B", kind="image", family="FLUX.2",
        about="Small, very fast FLUX.2 (4 steps). Text-to-image and image editing. Good on 6–8 GB.",
        steps=4, cfg=1.0, width=1024, height=1024, input="optional",
+       tasks=["create","edit","combine","inpaint"], refs=3,
        variants=variants_list(gguf_variants("leejet/FLUX.2-klein-4B-GGUF")),
        parts=[dict(role="vae", **FLUX2_VAE) if FLUX2_VAE else None, dict(role="llm", **QWEN3_4B)])
 recipe(id="flux2-klein-9b", name="FLUX.2 klein 9B", kind="image", family="FLUX.2",
        about="Sharper FLUX.2 (4 steps) with editing. INT8 ConvRot gives near-full quality at half the size.",
        steps=4, cfg=1.0, width=1024, height=1024, input="optional",
+       tasks=["create","edit","combine","inpaint"], refs=3,
        variants=variants_list(gguf_variants("leejet/FLUX.2-klein-9B-GGUF")) + convrot(CONV, r"flux-2-klein-9b_int8_convrot"),
        parts=[dict(role="vae", **FLUX2_VAE) if FLUX2_VAE else None, dict(role="llm", **QWEN3_8B)])
 recipe(id="qwen-image-2.1", name="Qwen-Image 2.1", kind="image", family="Qwen-Image",
        about="Top prompt following and perfect text in images (English, Chinese…). Supports editing.",
        steps=20, cfg=6.0, width=1024, height=1024, input="optional",
+       tasks=["create","edit","combine","inpaint"], refs=3,
+       speed=speed("⚡ Lightning · 4 steps", 4, 1.0, [lora("lightx2v/Qwen-Image-2.1-Lightning", r"^pytorch_lora_weights\.safetensors$", "speed-qwen-image-2.1-lightning-4step")]),
        variants=variants_list(gguf_variants("leejet/Qwen-Image-2.1-GGUF", include=r"^(?!.*turbo)")) +
                 convrot("Comfy-Org/Qwen-Image-2.1", r"diffusion_models/qwen_image_2\.1_int8_convrot"),
-       parts=[dict(role="vae", **QI21_VAE), dict(role="llm", **QWEN3VL_8B)])
+       parts=[dict(role="vae", **QI21_VAE), dict(role="llm", **QWEN3VL_8B), dict(role="llm_vision", edit=True, **QWEN3VL_8B_VISION)])
 recipe(id="qwen-image-2.1-turbo", name="Qwen-Image 2.1 Turbo", kind="image", family="Qwen-Image",
        about="Fast Qwen-Image 2.1 (8 steps) with the same excellent text rendering.",
-       steps=8, cfg=1.0, width=1024, height=1024,
+       input="optional", steps=8, cfg=1.0, width=1024, height=1024,
+       tasks=["create","restyle","inpaint"],
        variants=variants_list(gguf_variants("leejet/Qwen-Image-2.1-GGUF", include=r"turbo")) +
                 convrot("Comfy-Org/Qwen-Image-2.1", r"diffusion_models/qwen_image_2\.1_turbo_int8_convrot"),
        parts=[dict(role="vae", **QI21_VAE), dict(role="llm", **QWEN3VL_8B)])
 recipe(id="qwen-image-2512", name="Qwen-Image 2512", kind="image", family="Qwen-Image",
        about="Large 20B Qwen-Image release: rich detail and layouts. Needs a big GPU or offloading.",
-       steps=20, cfg=2.5, flowShift=3, width=1024, height=1024,
+       input="optional", steps=20, cfg=2.5, flowShift=3, width=1024, height=1024,
+       tasks=["create","restyle","inpaint"],
+       speed=speed("⚡ Lightning · 8 steps", 8, 1.0, [lora("lightx2v/Qwen-Image-2512-Lightning", r"Qwen-Image-2512-Lightning-8steps-V1\.0-bf16\.safetensors$", "speed-qwen-image-2512-lightning-8step")]),
        variants=variants_list(gguf_variants("unsloth/Qwen-Image-2512-GGUF")) + convrot(CONV, r"qwen-image-2512-int8-ConvRot"),
        parts=[dict(role="vae", **QI_VAE), dict(role="llm", **QWEN25VL_7B)])
 recipe(id="krea2-turbo", name="Krea 2 Turbo", kind="image", family="Krea",
        about="Aesthetic, photographic Krea 2 in few steps.",
-       steps=8, cfg=1.0, width=1024, height=1024,
+       input="optional", steps=8, cfg=1.0, width=1024, height=1024,
+       tasks=["create","restyle","inpaint"],
        variants=variants_list(gguf_variants("realrebelai/KREA-2_GGUFs", folder="TURBO")) + convrot(CONV, r"Krea2-Turbo-int8-ConvRot"),
        parts=[dict(role="vae", **WAN21_VAE), dict(role="llm", **QWEN3VL_4B)])
 recipe(id="anima", name="Anima (anime)", kind="image", family="Anima",
        about="Anime and illustration style model. Small and fast.",
-       steps=30, cfg=6.0, width=1024, height=1024, negative="worst quality, low quality, blurry",
+       input="optional", steps=30, cfg=6.0, width=1024, height=1024, negative="worst quality, low quality, blurry",
+       tasks=["create","restyle","inpaint"],
        variants=variants_list(gguf_variants("Bedovyy/Anima-GGUF")) + convrot(CONV, r"anima-preview3-base-int8-ConvRot"),
        parts=[dict(role="vae", **QI_VAE), dict(role="llm", **QWEN3_06B_BASE)])
 recipe(id="flux1-schnell", name="FLUX.1 schnell", kind="image", family="FLUX.1",
        about="Classic fast FLUX.1 (4 steps), Apache-2.0 licensed.",
-       steps=4, cfg=1.0, width=1024, height=1024,
+       input="optional", steps=4, cfg=1.0, width=1024, height=1024,
+       tasks=["create","restyle","inpaint"],
        variants=variants_list(gguf_variants("city96/FLUX.1-schnell-gguf")),
        parts=[dict(role="vae", **AE_FLUX1), dict(role="clip_l", **CLIP_L), dict(role="t5xxl", **T5XXL)])
 sdxl = one("stabilityai/stable-diffusion-xl-base-1.0", r"^sd_xl_base_1\.0\.safetensors$")
 recipe(id="sdxl", name="Stable Diffusion XL", kind="image", family="SDXL",
        about="The classic SDXL base model. Runs on 6 GB GPUs; huge community of styles.",
        steps=30, cfg=7.0, width=1024, height=1024, negative="blurry, low quality, deformed", input="optional",
+       tasks=["create","restyle","inpaint"],
+       speed=speed("⚡ Lightning · 8 steps", 8, 1.0, [lora("ByteDance/SDXL-Lightning", r"^sdxl_lightning_8step_lora\.safetensors$", "speed-sdxl-lightning-8step")], extra="--scheduler sgm_uniform"),
        variants=[dict(label="FP16", format="checkpoint", **sdxl)] if sdxl else [],
        parts=[dict(role="vae", **SDXL_VAE)])
+
+sd15 = one("stable-diffusion-v1-5/stable-diffusion-v1-5", r"^v1-5-pruned-emaonly\.safetensors$")
+recipe(id="sd15", name="Stable Diffusion 1.5", kind="image", family="SD1.5",
+       about="The classic small model: runs on almost any PC (4 GB GPU). Thousands of styles and LoRAs on Civitai.",
+       steps=25, cfg=7.0, width=512, height=512, negative="blurry, low quality, deformed", input="optional",
+       tasks=["create","restyle","inpaint"],
+       speed=speed("⚡ LCM · 6 steps", 6, 1.5, [lora("latent-consistency/lcm-lora-sdv1-5", r"^pytorch_lora_weights\.safetensors$", "speed-sd15-lcm")], extra="--sampling-method lcm"),
+       variants=[dict(label="FP32", format="checkpoint", **sd15)] if sd15 else [],
+       parts=[])
+
+# ── dedicated picture editors ───────────────────────────────────────────────
+recipe(id="qwen-image-edit-2511", name="Qwen-Image Edit 2511", kind="image", family="Qwen-Image-Edit",
+       about="The strongest 'describe the change' editor: change objects, clothes, text, style or background while keeping the rest. Combines up to 3 pictures.",
+       steps=20, cfg=2.5, flowShift=3, width=1024, height=1024, input="required",
+       tasks=["edit","combine","inpaint"], refs=3,
+       speed=speed("⚡ Lightning · 8 steps", 8, 1.0, [lora("lightx2v/Qwen-Image-Edit-2511-Lightning", r"Qwen-Image-Edit-2511-Lightning-8steps-V1\.0-bf16\.safetensors$", "speed-qwen-image-edit-2511-lightning-8step")]),
+       variants=variants_list(gguf_variants("unsloth/Qwen-Image-Edit-2511-GGUF")) +
+                convrot("cardamonnl/Qwen-Image-Edit-2511-int8-convrot", r"^qwen_image_edit_2511_int8_convrot\.safetensors$"),
+       parts=[dict(role="vae", **QI_VAE), dict(role="llm", **QWEN25VL_7B), dict(role="llm_vision", **QWEN25VL_7B_VISION)])
+recipe(id="flux1-kontext", name="FLUX.1 Kontext (edit)", kind="image", family="FLUX.1-Kontext",
+       about="Edits a picture from a short instruction ('make it winter', 'remove the logo'). Runs on 6 GB GPUs.",
+       steps=20, cfg=1.0, width=1024, height=1024, input="required", extra="--guidance 2.5",
+       tasks=["edit"], refs=1,
+       speed=speed("⚡ Turbo · 8 steps", 8, 1.0, [lora("alimama-creative/FLUX.1-Turbo-Alpha", r"^diffusion_pytorch_model\.safetensors$", "speed-flux1-turbo-alpha-8step")], extra="--guidance 3.5"),
+       variants=variants_list(gguf_variants("QuantStack/FLUX.1-Kontext-dev-GGUF")),
+       parts=[dict(role="vae", **AE_FLUX1), dict(role="clip_l", **CLIP_L), dict(role="t5xxl", **T5XXL)])
+
+# ── upscalers (ESRGAN) ──────────────────────────────────────────────────────
+def upscaler(rid, name, about, repo, pattern):
+    f = one(repo, pattern)
+    if f:
+        recipe(id=rid, name=name, kind="upscale", family="ESRGAN", about=about, steps=1, cfg=0, width=0, height=0,
+               input="required", tasks=["upscale"], variants=[dict(label="4×", format="esrgan", **f)], parts=[])
+upscaler("upscale-realesrgan", "Real-ESRGAN 4× (photos)", "Makes photos 4× bigger and sharper. Small and fast.",
+         "lllyasviel/Annotators", r"^RealESRGAN_x4plus\.pth$")
+upscaler("upscale-ultrasharp", "4x-UltraSharp", "Crisp 4× enlargement for photos and renders.",
+         "lokCX/4x-Ultrasharp", r"^4x-UltraSharp\.pth$")
+upscaler("upscale-anime", "Real-ESRGAN 4× (anime)", "4× enlargement tuned for anime and drawings.",
+         "amd/realesrgan-x4plus-anime-6b", r"RealESRGAN_x4plus_anime_6B\.pth$")
 
 # ── video ───────────────────────────────────────────────────────────────────
 recipe(id="wan2.2-ti2v-5b", name="Wan 2.2 TI2V 5B (video)", kind="video", family="Wan",
        about="Text or image to video on mid-range GPUs. ~2 s clips at 832×480.",
        steps=20, cfg=6.0, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input="optional",
+       tasks=["create","animate"], fps=16,
        variants=variants_list(gguf_variants("QuantStack/Wan2.2-TI2V-5B-GGUF")),
        parts=[dict(role="vae", **WAN22_VAE), dict(role="t5xxl", **UMT5)])
 w13 = one("Comfy-Org/Wan_2.1_ComfyUI_repackaged", r"diffusion_models/wan2\.1_t2v_1\.3B_fp16\.safetensors$")
 recipe(id="wan2.1-t2v-1.3b", name="Wan 2.1 T2V 1.3B (video)", kind="video", family="Wan",
        about="Smallest video model: short clips even on 8 GB GPUs.",
        steps=20, cfg=6.0, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG,
+       tasks=["create"], fps=16,
+       speed=speed("⚡ CausVid · 8 steps", 8, 1.0, [lora("Kijai/WanVideo_comfy", r"^Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32\.safetensors$", "speed-wan21-1.3b-causvid")]),
        variants=[dict(label="FP16", format="safetensors", **w13)] if w13 else [],
        parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
 
-def wan_a14b(rid, name, about, repo, conv_hi, conv_lo, input_mode):
+WAN22_T2V_SPEED = lambda: speed("⚡ Lightning · 4+4 steps", 4, 1.0, [
+    lora("lightx2v/Wan2.2-Distill-Loras", r"wan2\.2_t2v_A14b_low_noise_lora_rank64_lightx2v_4step", "speed-wan22-t2v-low-4step"),
+    lora("lightx2v/Wan2.2-Distill-Loras", r"wan2\.2_t2v_A14b_high_noise_lora_rank64_lightx2v_4step", "speed-wan22-t2v-high-4step", high=True)], high_steps=4)
+WAN22_I2V_SPEED = lambda: speed("⚡ Lightning · 4+4 steps", 4, 1.0, [
+    lora("lightx2v/Wan2.2-Distill-Loras", r"wan2\.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step", "speed-wan22-i2v-low-4step"),
+    lora("lightx2v/Wan2.2-Distill-Loras", r"wan2\.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step", "speed-wan22-i2v-high-4step", high=True)], high_steps=4)
+
+def wan_a14b(rid, name, about, repo, conv_hi, conv_lo, input_mode, tasks, spd=None):
     lo = gguf_variants(repo, folder="LowNoise")
     hi = gguf_variants(repo, folder="HighNoise")
     v = []
@@ -179,16 +269,87 @@ def wan_a14b(rid, name, about, repo, conv_hi, conv_lo, input_mode):
     if ch and cl:
         v.append(dict(label="INT8 ConvRot", format="convrot", **cl, high=ch, size_total=ch["size"] + cl["size"]))
     recipe(id=rid, name=name, kind="video", family="Wan", about=about,
-           steps=10, highSteps=8, cfg=3.5, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input=input_mode,
+           steps=10, highSteps=8, cfg=3.5, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input=input_mode, tasks=tasks, fps=16, speed=spd,
            variants=v, parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
 
 wan_a14b("wan2.2-t2v-a14b", "Wan 2.2 T2V A14B (video)", "Best-quality text-to-video (two 14B experts). Needs lots of RAM; GPU 12 GB+.",
-         "QuantStack/Wan2.2-T2V-A14B-GGUF", r"wan2\.2_t2v_high_int8_ConvRot", r"wan2\.2_t2v_low_int8_ConvRot", "none")
+         "QuantStack/Wan2.2-T2V-A14B-GGUF", r"wan2\.2_t2v_high_int8_ConvRot", r"wan2\.2_t2v_low_int8_ConvRot", "none", ["create"], WAN22_T2V_SPEED())
 wan_a14b("wan2.2-i2v-a14b", "Wan 2.2 I2V A14B (video)", "Animate a photo into a video clip (two 14B experts). GPU 12 GB+.",
-         "QuantStack/Wan2.2-I2V-A14B-GGUF", r"^diffusion_models/wan2\.2_i2v_high_int8_convrot", r"^diffusion_models/wan2\.2_i2v_low_int8_convrot", "required")
+         "QuantStack/Wan2.2-I2V-A14B-GGUF", r"^diffusion_models/wan2\.2_i2v_high_int8_convrot", r"^diffusion_models/wan2\.2_i2v_low_int8_convrot", "required", ["animate"], WAN22_I2V_SPEED())
+
+# ── video editing (Wan VACE) and LTX-2.3 ────────────────────────────────────
+vace13 = one("Comfy-Org/Wan-2.1", r"diffusion_models/wan2\.1_vace_1\.3B_fp16\.safetensors$")
+recipe(id="wan2.1-vace-1.3b", name="Wan 2.1 VACE 1.3B (video edit)", kind="video", family="Wan-VACE",
+       about="Restyle or change a video you give it, keeping its motion. Also makes video from a character picture. Fits 8 GB GPUs.",
+       steps=20, cfg=6.0, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input="optional", fps=16,
+       tasks=["video-edit","animate","create"],
+       speed=speed("⚡ CausVid · 8 steps", 8, 1.0, [lora("Kijai/WanVideo_comfy", r"^Wan21_CausVid_bidirect2_T2V_1_3B_lora_rank32\.safetensors$", "speed-wan21-1.3b-causvid")]),
+       variants=[dict(label="FP16", format="safetensors", **vace13)] if vace13 else [],
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+recipe(id="wan2.1-vace-14b", name="Wan 2.1 VACE 14B (video edit)", kind="video", family="Wan-VACE",
+       about="High-quality video editing and restyling, keeping the motion of your video. GPU 12 GB+.",
+       steps=20, cfg=6.0, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input="optional", fps=16,
+       tasks=["video-edit","animate","create"],
+       speed=speed("⚡ Lightx2v · 4 steps", 4, 1.0, [lora("lightx2v/Wan2.1-Distill-Loras", r"wan2\.1_t2v_14b_lora_rank64_lightx2v_4step\.safetensors$", "speed-wan21-14b-lightx2v-4step")]),
+       variants=variants_list(gguf_variants("QuantStack/Wan2.1_14B_VACE-GGUF")),
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+vlo = gguf_variants("QuantStack/Wan2.2-VACE-Fun-A14B-GGUF", folder="LowNoise")
+vhi = gguf_variants("QuantStack/Wan2.2-VACE-Fun-A14B-GGUF", folder="HighNoise")
+recipe(id="wan2.2-vace-fun-a14b", name="Wan 2.2 VACE Fun A14B (video edit)", kind="video", family="Wan-VACE",
+       about="Best-quality video editing with the two Wan 2.2 experts. Needs lots of RAM; GPU 16 GB+.",
+       steps=10, highSteps=8, cfg=3.5, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input="optional", fps=16,
+       tasks=["video-edit","animate"], speed=WAN22_T2V_SPEED(),
+       variants=[dict(label=k, format="gguf", **vlo[k], high=vhi[k], size_total=vlo[k]["size"] + vhi[k]["size"]) for k in vlo if k in vhi],
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+LTX = "unsloth/LTX-2.3-GGUF"
+recipe(id="ltx-2.3-distilled", name="LTX-2.3 distilled (video + sound)", kind="video", family="LTX",
+       about="Fast 22B video model that also creates matching sound. Text or picture to video, 24 fps. GPU 12 GB+ and 32 GB RAM.",
+       steps=8, cfg=1.0, width=1280, height=704, frames=97, input="optional", fps=24,
+       negative="worst quality, low quality, blurry, distorted, artifacts",
+       tasks=["create","animate"],
+       variants=variants_list(gguf_variants(LTX, folder="distilled-1.1/", include=r"^(?!.*UD-)")),
+       parts=[dict(role="vae", **one(LTX, r"vae/ltx-2\.3-22b-distilled_video_vae")),
+              dict(role="audio-vae", **one(LTX, r"vae/ltx-2\.3-22b-distilled_audio_vae")),
+              dict(role="llm", **GEMMA3_12B),
+              dict(role="embeddings-connectors", **one(LTX, r"text_encoders/ltx-2\.3-22b-distilled_embeddings_connectors"))])
 
 dest = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "LocalMind", "Resources", "media_catalog.json")
 json.dump(R, open(dest, "w"), ensure_ascii=False, indent=1)
 print(len(R), "recipes ->", dest, file=sys.stderr)
+# ── voice & music (llama.cpp llama-tts) ─────────────────────────────────────
+A = []
+def audio(id, name, kind, about, repo, model, mmproj, clone=False, langs=None, transcript=False, design=False):
+    m, mm = one(repo, model), one(repo, mmproj)
+    if not (m and mm):
+        print("  ! skip", id, file=sys.stderr); return
+    A.append(dict(id=id, name=name, kind=kind, about=about, model=m, mmproj=mm, clone=clone,
+                  langs=langs or [], transcript=transcript, design=design))
+CB_LANGS = ["ar","da","de","el","en","es","fi","fr","he","hi","it","ja","ko","ms","nl","no","pl","pt","ru","sv","sw","tr","zh"]
+audio("chatterbox-ml", "Chatterbox Multilingual", "voice",
+      "Natural speech in 23 languages, Greek included. Clones a voice from a short recording.",
+      "ggml-org/chatterbox-GGUF", r"^chatterbox-Q8_0\.gguf$", r"^mmproj-chatterbox-F16\.gguf$", clone=True, langs=CB_LANGS)
+audio("chatterbox-turbo", "Chatterbox Turbo (English)", "voice",
+      "Fast, expressive English speech with voice cloning.",
+      "ggml-org/chatterbox-turbo-GGUF", r"^chatterbox-turbo-Q8_0\.gguf$", r"^mmproj-chatterbox-turbo-F16\.gguf$", clone=True, langs=["en"])
+audio("qwen3-tts", "Qwen3-TTS 1.7B", "voice",
+      "Very close voice cloning (give the words of the recording for best results). 10 languages: en, zh, de, it, pt, es, ja, ko, fr, ru.",
+      "ggml-org/Qwen3-TTS-12Hz-1.7B-Base-GGUF", r"Base-Q8_0\.gguf$", r"^mmproj-.*-Q8_0\.gguf$", clone=True,
+      langs=["en","zh","de","it","pt","es","ja","ko","fr","ru"], transcript=True)
+audio("voxcpm2", "VoxCPM2", "voice",
+      "Clones voices, or designs a new voice from a description like (a calm older man). 48 kHz audio.",
+      "ggml-org/VoxCPM2-GGUF", r"^VoxCPM2-Q8_0\.gguf$", r"^mmproj-VoxCPM2-BF16\.gguf$", clone=True, design=True)
+audio("s2-pro", "Fish Audio S2 Pro", "voice",
+      "Top-quality speech and cloning; several speakers and cues like [laughing] or [whisper]. Needs 8 GB+ VRAM.",
+      "ggml-org/s2-pro-GGUF", r"^s2-pro-Q8_0\.gguf$", r"^mmproj-s2-pro-BF16\.gguf$", clone=True, transcript=True)
+audio("yue2-3b", "YuE2 3B (songs)", "music",
+      "Full songs with vocals and instruments from a style and lyrics, 48 kHz stereo, up to 6 minutes.",
+      "ggml-org/YuE2-3B-GGUF", r"^YuE2-3B-Q8_0\.gguf$", r"^mmproj-YuE2-3B-BF16\.gguf$")
+audio("minimax-music3", "MiniMax Music 3 (songs)", "music",
+      "High-quality songs with vocals from a description and lyrics, 44.1 kHz stereo. Needs 16 GB+ VRAM or lots of RAM.",
+      "ggml-org/MiniMax-Music3-GGUF", r"^MiniMax-Music3-Q8_0\.gguf$", r"^mmproj-MiniMax-Music3-BF16\.gguf$")
+adest = os.path.join(os.path.dirname(dest), "audio_catalog.json")
+json.dump(A, open(adest, "w"), ensure_ascii=False, indent=1)
+print(len(A), "voice/music models ->", adest, file=sys.stderr)
+
 for r in R:
     print(f"{r['id']:22} {len(r['variants']):2} variants  {', '.join(v['label'] for v in r['variants'])}  parts={[p['role'] for p in r['parts']]}")

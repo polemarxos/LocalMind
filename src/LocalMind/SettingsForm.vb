@@ -22,7 +22,7 @@ Public Class SettingsForm
     Private prgInstall As ProgressBar
     Private txtModels As TextBox
     Private numCtx, numSlots, numIdle, numMinCtx As NumericUpDown
-    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray As CheckBox
+    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio As CheckBox
     Private cmbLang As ComboBox
     Private txtHotkey As TextBox
     Private cmbNgl, cmbKv, cmbSpeed As ComboBox
@@ -259,6 +259,10 @@ Public Class SettingsForm
         cmbLang.Items.AddRange({"auto (Windows)", "English", "Ελληνικά"})
         cmbLang.SelectedIndex = Math.Max(0, Array.IndexOf({"auto", "en", "el"}, If(_s.Language, "auto")))
         Row(t, "Interface language", cmbLang)
+        chkImages = New CheckBox() With {.Text = "🎨 Pictures & video (create, edit, enlarge, video editing)", .Checked = _s.EnableImages, .AutoSize = True}
+        chkAudio = New CheckBox() With {.Text = "🎵 Music & voice (songs, speech, voice cloning)", .Checked = _s.EnableAudio, .AutoSize = True}
+        Row(t, "Extra abilities", chkImages, "Off = hidden, and nothing for it is downloaded")
+        Row(t, "", chkAudio)
         chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates at startup", .Checked = _s.CheckForUpdates, .AutoSize = True}
         Row(t, "Updates", chkUpdates)
         chkMinTray = New CheckBox() With {.Text = "Minimize to the system tray", .Checked = _s.MinimizeToTray, .AutoSize = True}
@@ -335,6 +339,9 @@ Public Class SettingsForm
         _s.AutoContext = chkAutoCtx.Checked
         _s.MinAutoContext = CInt(numMinCtx.Value)
         _s.CheckForUpdates = chkUpdates.Checked
+        _s.EnableImages = chkImages.Checked
+        _s.EnableAudio = chkAudio.Checked
+        _s.FeaturesAsked = True
         Dim newLang = {"auto", "en", "el"}(Math.Max(0, cmbLang.SelectedIndex))
         If newLang <> If(_s.Language, "auto") Then
             _s.Language = newLang

@@ -43,6 +43,18 @@ Public Class AppSettings
     ''' <summary>Image model used by the 🎨 Image switch in chat (recipe id; empty = best installed).</summary>
     Public Property ChatImageModel As String = ""
     Public Property ImproveImagePrompt As Boolean = True
+    ''' <summary>Optional abilities. When off, their buttons are hidden and nothing for them is ever downloaded.</summary>
+    Public Property EnableImages As Boolean = False
+    Public Property EnableAudio As Boolean = False
+    ''' <summary>The "which abilities do you want?" question was answered.</summary>
+    Public Property FeaturesAsked As Boolean = False
+    ''' <summary>Use Turbo / Lightning LoRAs when a model has one.</summary>
+    Public Property MediaFast As Boolean = True
+    ''' <summary>Civitai API key (optional; some downloads need a signed-in account).</summary>
+    Public Property CivitaiApiKey As String = ""
+    ''' <summary>Search civitai.red (full catalogue, 18+) instead of civitai.com.</summary>
+    Public Property CivitaiRed As Boolean = False
+    Public Property CivitaiRedConfirmed As Boolean = False
     Public Property HuggingFaceToken As String = ""
     Public Property VerifyDownloads As Boolean = True
     Public Property AutoResumeDownloads As Boolean = True

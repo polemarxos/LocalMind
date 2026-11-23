@@ -29,6 +29,11 @@ LlamaEngine ── llama-server.exe (127.0.0.1:random port)
 | `MarkdownRenderer.vb` | Markdig (raw HTML disabled) plus the chat view's HTML, CSS and JS shell. |
 | `ModelManagerForm.vb`, `SettingsForm.vb`, `LanForm.vb`, `Theme.vb` | User interface. |
 | `MediaStudio.vb`, `StudioForm.vb` | Image & video studio. Recipes come from `Resources/media_catalog.json` (built by `tools/build_media_catalog.py`). Each recipe lists variants (GGUF quants, INT8 ConvRot safetensors) plus shared parts (VAE, text encoder). `PickVariant` / `BestForGpu` choose by VRAM and prefer ConvRot on NVIDIA cards with compute capability 7.5 or higher. Generation runs stable-diffusion.cpp `sd-cli` from `Engine\sd\<flavor>` and reads step progress from its output. |
+| `ConvRotFix.vb`, `VideoTools.vb` | Fills in the missing ConvRot group size; FFmpeg (downloaded to `Engine\ffmpeg`) reads input videos into frames and converts WebM to MP4. |
+| `LoraLibrary.vb`, `LoraForm.vb`, `MaskEditorForm.vb` | Your LoRAs in `Models\Loras` (family and trigger words from safetensors metadata, `Data\loras.json`); the brush for inpainting masks. Speed LoRAs (`speed-…`) live in the same folder. |
+| `Civitai.vb`, `CivitaiForm.vb` | Civitai REST API (civitai.com / civitai.red): search LoRAs and checkpoints by base model, install LoRAs with trigger words, register checkpoints as user models (`Data\user_models.json`) built on a catalog recipe. |
+| `AudioStudio.vb`, `AudioForm.vb` | Speech, voice cloning and songs with llama.cpp `llama-tts` (Chatterbox, Qwen3-TTS, VoxCPM2, Fish S2 Pro, YuE2, MiniMax Music 3). Catalog: `Resources/audio_catalog.json`. |
+| `FeaturesForm.vb` | First-start choice of abilities (chat only / pictures & video / music & voice). |
 | `Knowledge.vb`, `WebSearch.vb`, `Voice.vb` | Document index (embeddings + cosine search), web search providers, Whisper voice input and SAPI read-aloud. |
 
 ## Choosing a quantization

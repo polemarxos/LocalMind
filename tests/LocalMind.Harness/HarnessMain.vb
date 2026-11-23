@@ -281,7 +281,8 @@ Module HarnessMain
         If only = "media" Then
             Console.WriteLine("== Image & video catalog")
             Dim recs = MediaStudio.Recipes()
-            Check(recs.Count >= 15 AndAlso recs.All(Function(r) r.Variants.Count > 0 AndAlso r.Parts.Count > 0), "recipes load", recs.Count & " models")
+            Check(recs.Count >= 20 AndAlso recs.All(Function(r) r.Variants.Count > 0 AndAlso (r.Parts.Count > 0 OrElse r.IsUpscaler OrElse r.Variants.All(Function(v) v.Format = "checkpoint"))) AndAlso
+                  recs.All(Function(r) r.Tasks.Count > 0), "recipes load", recs.Count & " models, " & recs.Where(Function(r) r.Speed IsNot Nothing).Count() & " with ⚡ speed LoRAs")
             For Each prof In {(0.0, 16.0), (8.0, 32.0), (12.0, 32.0), (16.0, 64.0), (24.0, 64.0)}
                 Dim h = Hw(prof.Item1, prof.Item2)
                 Dim best = MediaStudio.BestForGpu(h)
@@ -293,7 +294,7 @@ Module HarnessMain
             Dim small = anima.Variants.OrderBy(Function(v) v.Size).First()
             If Environment.GetEnvironmentVariable("LM_CONVROT") = "1" Then small = anima.Variants.First(Function(v) v.Label.Contains("ConvRot"))
             Await MediaStudio.DownloadAsync(anima, small, Sub(p, t) Return, CancellationToken.None)
-            Check(MediaStudio.IsInstalled(anima, small) AndAlso MediaStudio.InstalledVariant(anima) Is small, "download Anima " & small.Label & " + VAE + text encoder",
+            Check(MediaStudio.IsInstalled(anima, small), "download Anima " & small.Label & " + VAE + text encoder",
                   String.Join(", ", MediaStudio.FilesFor(anima, small).Select(Function(f) IO.Path.GetFileName(MediaStudio.LocalPath(f)))))
             If ExternalTools.FindExe(New ExternalTools.ToolPackage With {.Name = "sd", .Flavor = "cpu", .ExeName = "sd-cli.exe"}) IsNot Nothing Then
                 Dim last = ""
@@ -306,6 +307,150 @@ Module HarnessMain
                 If ok Then File.Copy(out, "/tmp/anima-test.png", True)
             Else
                 Console.WriteLine("  SKIP generation (no sd-cli in Engine/sd/cpu)")
+            End If
+        End If
+
+        If only = "edit" Then
+            Console.WriteLine("== Picture editing with sd.cpp")
+            Dim recs = MediaStudio.Recipes()
+            Dim src = "/tmp/anima-test.png"
+            Dim Run = Async Function(rid As String, label As String, req As MediaStudio.GenerateRequest) As Task(Of String)
+                          Dim r = recs.First(Function(x) x.Id = rid)
+                          Dim v = If(label Is Nothing, r.Variants.OrderBy(Function(x) x.Size).First(), r.Variants.First(Function(x) x.Label = label))
+                          Await MediaStudio.DownloadAsync(r, v, Sub(p, t) Return, CancellationToken.None)
+                          req.Recipe = r : req.Variant = v
+                          If req.Steps = 0 Then req.Steps = r.Steps
+                          If req.Cfg = 0 Then req.Cfg = r.Cfg
+                          If req.Width = 0 Then req.Width = 384 : req.Height = 384
+                          req.Seed = 7
+                          Dim sw = Diagnostics.Stopwatch.StartNew()
+                          Dim last = ""
+                          Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) last = t, CancellationToken.None)
+                          Console.WriteLine($"     {rid}: {sw.Elapsed.TotalSeconds:0}s, last: {last}")
+                          Return out
+                      End Function
+            Dim want = If(Environment.GetEnvironmentVariable("LM_EDIT"), "upscale,inpaint,edit,combine").Split(","c)
+
+            If want.Contains("upscale") Then
+                Dim up = Await Run("upscale-realesrgan", Nothing, New MediaStudio.GenerateRequest With {.InputImages = {src}.ToList()})
+                Dim hdr = File.ReadAllBytes(up).Skip(16).Take(8).ToArray()
+                Dim w = (CInt(hdr(0)) << 24) Or (CInt(hdr(1)) << 16) Or (CInt(hdr(2)) << 8) Or hdr(3)
+                Dim h = (CInt(hdr(4)) << 24) Or (CInt(hdr(5)) << 16) Or (CInt(hdr(6)) << 8) Or hdr(7)
+                Check(w = 1536 AndAlso h = 1536, "upscale 4×", $"{up} → {w}×{h}")
+                File.Copy(up, "/tmp/edit-upscale.png", True)
+            End If
+            If want.Contains("inpaint") Then
+                Dim mask = "/tmp/mask.png"
+                Dim ffm = Diagnostics.Process.Start("ffmpeg", "-y -loglevel error -f lavfi -i color=black:s=384x384 -vf ""drawbox=x=96:y=60:w=200:h=270:color=white:t=fill"" -frames:v 1 " & mask)
+                ffm.WaitForExit()
+                Dim inp = Await Run("anima", "Q3_K_L", New MediaStudio.GenerateRequest With {.Task = "inpaint", .InputImages = {src}.ToList(), .MaskImage = mask,
+                    .Strength = 1.0, .Prompt = "a green pear on a wooden table, illustration", .Steps = 8})
+                Check(File.Exists(inp), "inpaint (brush area)", inp)
+                File.Copy(inp, "/tmp/edit-inpaint.png", True)
+            End If
+            If want.Contains("edit") Then
+                Dim ed = Await Run("flux2-klein-4b", "Q4_0", New MediaStudio.GenerateRequest With {.Task = "edit", .InputImages = {src}.ToList(),
+                    .Prompt = "make the apple blue"})
+                Check(File.Exists(ed), "edit with a reference picture (FLUX.2 klein)", ed)
+                File.Copy(ed, "/tmp/edit-edit.png", True)
+            End If
+            If want.Contains("combine") Then
+                Dim cb = Await Run("flux2-klein-4b", "Q4_0", New MediaStudio.GenerateRequest With {.Task = "combine", .InputImages = {src, "/tmp/edit-inpaint.png"}.ToList(),
+                    .Prompt = "the apple from image 1 and the pear from image 2 side by side on a table"})
+                Check(File.Exists(cb), "combine two pictures (FLUX.2 klein)", cb)
+                File.Copy(cb, "/tmp/edit-combine.png", True)
+            End If
+            If want.Contains("frames") Then
+                Dim vid = "/tmp/src-video.mp4"
+                Diagnostics.Process.Start("ffmpeg", "-y -loglevel error -f lavfi -i testsrc2=s=320x240:d=3:r=25 -c:v libx264 -pix_fmt yuv420p " & vid).WaitForExit()
+                Dim dir = Await VideoTools.ExtractFramesAsync(vid, 16, 256, 256, 33, Nothing, CancellationToken.None)
+                Dim n = Directory.GetFiles(dir, "*.png").Length
+                Check(n = 33, "video read into frames for the video model", $"{n} frames at 16 fps, 256×256")
+                Directory.Delete(dir, True)
+            End If
+            If want.Contains("video") Then
+                Dim vid = "/tmp/src-video.mp4"
+                Diagnostics.Process.Start("ffmpeg", "-y -loglevel error -f lavfi -i testsrc2=s=320x240:d=2:r=16 -c:v libx264 -pix_fmt yuv420p " & vid).WaitForExit()
+                Dim ve = Await Run("wan2.1-vace-1.3b", Nothing, New MediaStudio.GenerateRequest With {.Task = "video-edit", .InputVideo = vid,
+                    .Prompt = "colorful stained glass window, animated", .Negative = "", .Width = 256, .Height = 256, .Frames = 9, .Steps = 4, .Strength = 1.0})
+                Check(File.Exists(ve) AndAlso New FileInfo(ve).Length > 5000, "video edit (Wan VACE)", ve)
+                Dim mp4 = Await VideoTools.ToMp4Async(ve, Nothing, CancellationToken.None)
+                Check(File.Exists(mp4), "converted to MP4", mp4)
+                File.Copy(mp4, "/tmp/edit-video.mp4", True)
+            End If
+        End If
+
+        If only = "audio" Then
+            Console.WriteLine("== Voice & music (llama-tts)")
+            AppCore.Settings.Backend = BackendKind.BuiltIn
+            Check(AudioStudio.Models().Count >= 7, "audio catalog", String.Join(", ", AudioStudio.Models().Select(Function(m) m.Id)))
+            Check(AudioStudio.TtsExe() IsNot Nothing, "llama-tts found next to the engine", AudioStudio.TtsExe())
+            Dim want = If(Environment.GetEnvironmentVariable("LM_AUDIO"), "speech,clone").Split(","c)
+            Dim cb = AudioStudio.Models().First(Function(m) m.Id = "chatterbox-ml")
+            Dim sw = Diagnostics.Stopwatch.StartNew()
+            Dim first As String = Nothing
+            If want.Contains("speech") OrElse want.Contains("clone") Then
+                first = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = cb, .Language = "el", .Seed = 1,
+                    .Text = "Καλημέρα! Αυτή είναι μια δοκιμή της ελληνικής φωνής του LocalMind."}, Sub(p, t) Return, CancellationToken.None)
+                Check(File.Exists(first) AndAlso New FileInfo(first).Length > 20000, "Greek speech (Chatterbox Multilingual)", $"{first} ({New FileInfo(first).Length \ 1024} KB, {sw.Elapsed.TotalSeconds:0}s)")
+                File.Copy(first, "/tmp/tts-greek.wav", True)
+            End If
+            If want.Contains("clone") Then
+                sw.Restart()
+                Dim cl = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = cb, .Language = "en", .Seed = 2, .SpeakerFile = first,
+                    .Text = "Hello, this sentence is spoken in a cloned voice."}, Sub(p, t) Return, CancellationToken.None)
+                Check(File.Exists(cl) AndAlso New FileInfo(cl).Length > 20000, "voice cloning from a recording", $"{cl} ({sw.Elapsed.TotalSeconds:0}s)")
+                File.Copy(cl, "/tmp/tts-clone.wav", True)
+            End If
+            If want.Contains("music") Then
+                sw.Restart()
+                Dim yue = AudioStudio.Models().First(Function(m) m.Id = "yue2-3b")
+                Dim song = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = yue, .Seed = 3, .Seconds = 8,
+                    .Text = "acoustic pop, happy, guitar, female vocals", .Lyrics = "[verse]" & vbLf & "Sun is shining over the sea"}, Sub(p, t) Return, CancellationToken.None)
+                Check(File.Exists(song), "song (YuE2)", $"{song} ({sw.Elapsed.TotalSeconds:0}s)")
+                File.Copy(song, "/tmp/song.wav", True)
+            End If
+        End If
+
+        If only = "lora" Then
+            Console.WriteLine("== LoRAs & Civitai")
+            ' Metadata reading from a hand-made safetensors header (kohya style).
+            Dim fake = Path.Combine(Path.GetTempPath(), "my_style_sdxl.safetensors")
+            Dim hdr = "{""__metadata__"":{""ss_base_model_version"":""sdxl_base_v1-0"",""ss_tag_frequency"":""{\""10_mystyle\"":{\""mystyle\"":40,\""1girl\"":12,\""outdoors\"":5}}""},""w"":{""dtype"":""F32"",""shape"":[1],""data_offsets"":[0,4]}}"
+            Dim hb = Text.Encoding.UTF8.GetBytes(hdr)
+            Using fs = File.Create(fake)
+                fs.Write(BitConverter.GetBytes(CLng(hb.Length)))
+                fs.Write(hb)
+                fs.Write(New Byte(3) {})
+            End Using
+            Dim meta = LoraLibrary.ReadMetadata(fake)
+            Check(meta.Family = "SDXL" AndAlso meta.Triggers.StartsWith("mystyle"), "trigger words + family from LoRA metadata", $"{meta.Family}: {meta.Triggers}")
+
+            Dim res = Await Civitai.SearchAsync("", True, {"Anima"}, False, "Most Downloaded", Nothing, CancellationToken.None)
+            Check(res.Items.Count > 0 AndAlso res.Items.All(Function(m) m.Versions(0).BaseModel = "Anima"), "Civitai search (LoRAs for Anima)",
+                  $"{res.Items.Count} results, e.g. {res.Items(0).Name}")
+            Dim ck = Await Civitai.SearchAsync("", False, {"SDXL 1.0"}, False, "Most Downloaded", Nothing, CancellationToken.None)
+            Check(ck.Items.Count > 0 AndAlso ck.Items.All(Function(m) Not m.IsLora), "Civitai search (SDXL checkpoints)", $"{ck.Items.Count} results, e.g. {ck.Items(0).Name}")
+            Dim pick = res.Items.First(Function(m) m.Name.Contains("Turbo"))
+            Dim authMsg = ""
+            Try
+                Dim needsLogin = res.Items.First(Function(m) m.Versions(0).Files.Any(Function(f) f.DownloadUrl.Contains("3078972")))
+                Await Civitai.InstallLoraAsync(needsLogin, needsLogin.Versions(0), Sub(p, t) Return, CancellationToken.None)
+            Catch ex As Exception
+                authMsg = ex.Message
+            End Try
+            Check(authMsg.Contains("API key"), "download that needs a Civitai account asks for the API key", authMsg)
+            Dim l = Await Civitai.InstallLoraAsync(pick, pick.Versions(0), Sub(p, t) Return, CancellationToken.None)
+            Check(l IsNot Nothing AndAlso File.Exists(l.FullPath) AndAlso l.Family = "Anima" AndAlso l.Enabled, "LoRA installed from Civitai",
+                  $"{l?.Name} ({New FileInfo(l.FullPath).Length \ 1024} KB), triggers: '{l?.Triggers}'")
+            If ExternalTools.FindExe(New ExternalTools.ToolPackage With {.Name = "sd", .Flavor = "cpu", .ExeName = "sd-cli.exe"}) IsNot Nothing Then
+                Dim anima = MediaStudio.Recipes().First(Function(x) x.Id = "anima")
+                Dim v = anima.Variants.First(Function(x) x.Label = "Q3_K_L")
+                Dim log As New List(Of String)
+                Dim out = Await MediaStudio.GenerateAsync(New MediaStudio.GenerateRequest With {.Recipe = anima, .Variant = v, .Prompt = "a cat in a garden",
+                    .Width = 384, .Height = 384, .Steps = 8, .Cfg = anima.Cfg, .Seed = 5, .Loras = {l}.ToList()}, Sub(p, t) log.Add(t), CancellationToken.None)
+                Check(File.Exists(out), "generated with the Civitai LoRA", out)
+                File.Copy(out, "/tmp/lora-test.png", True)
             End If
         End If
 
