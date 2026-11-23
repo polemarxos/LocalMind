@@ -61,6 +61,8 @@ Public Class StudioForm
     Private cmbVoice As ComboBox
     Private chkSharper, chkSmooth As CheckBox
     Private _audioPath As String
+    Private lblSize, lblSteps, lblCfg, lblSeed, lblPictures, lblStyle As Label
+    Private btnImprove, btnDescribe As Button
     Private ReadOnly _voiceNames As New List(Of String)
     Private _fillingVoices As Boolean
     Private _running As Boolean
@@ -203,14 +205,16 @@ Public Class StudioForm
         btnMask = Theme.MakeButton("🖌 Paint area…")
         btnVideo = Theme.MakeButton("🎞 Choose video…")
         lblVideo = Theme.MakeLabel("")
-        opts.Controls.AddRange({Theme.MakeLabel("Size"), cmbSize, Theme.MakeLabel("Steps"), numSteps, Theme.MakeLabel("CFG"), numCfg,
-                                Theme.MakeLabel("Seed"), numSeed, Theme.MakeLabel("Pictures"), numCount, Theme.MakeLabel("Style"), cmbStyle,
+        lblSize = Theme.MakeLabel("Size") : lblSteps = Theme.MakeLabel("Steps") : lblCfg = Theme.MakeLabel("CFG")
+        lblSeed = Theme.MakeLabel("Seed") : lblPictures = Theme.MakeLabel("Pictures") : lblStyle = Theme.MakeLabel("Style")
+        opts.Controls.AddRange({lblSize, cmbSize, lblSteps, numSteps, lblCfg, numCfg,
+                                lblSeed, numSeed, lblPictures, numCount, lblStyle, cmbStyle,
                                 lblFrames, numFrames, lblStrength, numStrength, chkFast, btnLoras, btnMask, btnVideo, lblVideo})
         btnCast = Theme.MakeButton(Localizer.T("🎭 Cast…"))
         lblCast = Theme.MakeLabel("", dim_:=True)
         AddHandler btnCast.Click, Sub() PickCast()
         opts.Controls.AddRange({btnCast, lblCast})
-        txtSay = New TextBox() With {.Width = 360, .PlaceholderText = Localizer.T("Words to say (any language)…")}
+        txtSay = New TextBox() With {.Width = 300, .PlaceholderText = Localizer.T("Words to say (any language)…")}
         Theme.StyleInput(txtSay)
         cmbVoice = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 200}
         Theme.StyleInput(cmbVoice)
@@ -246,10 +250,10 @@ Public Class StudioForm
         btnGenerate = Theme.MakeButton("🎨 Generate", primary:=True, width:=160)
         btnGenerate.Font = Theme.BoldFont
         Dim btnFolder = Theme.MakeButton("📁 Open output folder")
-        Dim btnDescribe = Theme.MakeButton("📝 Describe picture")
+        btnDescribe = Theme.MakeButton("📝 Describe picture")
         AddHandler btnDescribe.Click, Async Sub() Await DescribeAsync()
         genBar.Controls.Add(btnDescribe)
-        Dim btnImprove = Theme.MakeButton(Localizer.T("✨ Improve prompt"))
+        btnImprove = Theme.MakeButton(Localizer.T("✨ Improve prompt"))
         AddHandler btnImprove.Click, Async Sub() Await ImprovePromptAsync(btnImprove)
         genBar.Controls.Add(btnImprove)
         btnStop = Theme.MakeButton("■ Stop")
@@ -496,6 +500,14 @@ Public Class StudioForm
         txtSay.Visible = t = "talk" AndAlso Not UsesRecording()
         cmbVoice.Visible = t = "talk"
         chkSharper.Visible = t = "enhance" : chkSmooth.Visible = t = "enhance"
+        ' only the settings a task uses (keeps the options on screen)
+        Dim enhance = t = "enhance"
+        For Each c As Control In {lblSize, cmbSize, lblSteps, numSteps, lblCfg, numCfg, lblSeed, numSeed, lblStyle, cmbStyle, btnLoras, btnCast, lblCast, btnImprove}
+            c.Visible = Not enhance
+        Next
+        chkFast.Visible = Not enhance AndAlso r IsNot Nothing AndAlso r.Speed IsNot Nothing
+        lblPictures.Visible = Not CurrentTask().Video : numCount.Visible = lblPictures.Visible
+        btnDescribe.Visible = Not CurrentTask().Video OrElse t = "storyboard" OrElse t = "talk"
         Dim usesControl = (t = "layout" OrElse t = "outline") AndAlso r IsNot Nothing AndAlso r.Parts.Any(Function(p) p.Control)
         lblStrength.Visible = t = "inpaint" OrElse t = "restyle" OrElse t = "video-edit" OrElse usesControl
         numStrength.Visible = lblStrength.Visible
