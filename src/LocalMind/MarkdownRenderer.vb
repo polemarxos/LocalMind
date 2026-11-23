@@ -1,4 +1,4 @@
-Imports System.IO
+﻿Imports System.IO
 Imports System.Reflection
 Imports System.Text
 Imports System.Text.RegularExpressions
@@ -105,26 +105,40 @@ Public Module MarkdownRenderer
         sb.AppendLine("  html, body { margin: 0; padding: 0; height: 100%; }")
         sb.AppendLine("  body {")
         sb.AppendLine("    font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;")
-        sb.AppendLine("    background: #1e1e1e; color: #d4d4d4;")
+        sb.AppendLine("    background: #18181b; color: #e4e4e7;")
         sb.AppendLine("    font-size: 14.5px; line-height: 1.65;")
         sb.AppendLine("    -webkit-font-smoothing: antialiased;")
         sb.AppendLine("  }")
-        sb.AppendLine("  #chatBody { padding: 16px 22px 60px 22px; max-width: 1100px; margin: 0 auto; }")
-        sb.AppendLine("  #empty { color:#666; text-align:center; margin-top:18vh; font-size:15px; }")
-        sb.AppendLine("  #empty b { color:#9cdcfe; font-size:20px; display:block; margin-bottom:8px; }")
+        sb.AppendLine("  #chatBody { padding: 20px 28px 40px 28px; max-width: 980px; margin: 0 auto; }")
+        sb.AppendLine("  #empty { color:#a1a1aa; text-align:center; margin-top:10vh; font-size:15px; }")
+        sb.AppendLine("  #empty b { color:#fafafa; font-size:20px; display:block; margin-bottom:8px; }")
+        sb.AppendLine("  #empty .logo { width:56px; height:56px; border-radius:16px; margin:0 auto 14px auto; background:linear-gradient(135deg,#7c3aed,#2563eb 55%,#06b6d4); display:flex; align-items:center; justify-content:center; font-size:28px; color:#fff; }")
+        sb.AppendLine("  #empty h1 { color:#fafafa; font-size:26px; font-weight:600; margin:0 0 6px 0; }")
+        sb.AppendLine("  #empty .sub { color:#a1a1aa; margin-bottom:26px; }")
+        sb.AppendLine("  #empty .steps { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin:0 auto; max-width:760px; }")
+        sb.AppendLine("  #empty .step { flex:1 1 200px; background:#222327; border:1px solid #34363b; border-radius:12px; padding:14px 16px; text-align:left; }")
+        sb.AppendLine("  #empty .step .n { display:inline-block; width:22px; height:22px; border-radius:11px; background:#2563eb; color:#fff; text-align:center; font-size:12px; line-height:22px; margin-right:8px; font-weight:600; }")
+        sb.AppendLine("  #empty .step .t { color:#fafafa; font-weight:600; }")
+        sb.AppendLine("  #empty .step .d { color:#a1a1aa; font-size:13px; margin-top:6px; }")
+        sb.AppendLine("  #empty .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; max-width:760px; margin:0 auto; }")
+        sb.AppendLine("  #empty .card { background:#222327; border:1px solid #34363b; border-radius:12px; padding:12px 14px; text-align:left; cursor:pointer; transition:background .12s,border-color .12s; }")
+        sb.AppendLine("  #empty .card:hover { background:#2a2b31; border-color:#2563eb; }")
+        sb.AppendLine("  #empty .card .t { color:#fafafa; font-weight:600; font-size:14px; }")
+        sb.AppendLine("  #empty .card .d { color:#a1a1aa; font-size:12.5px; margin-top:3px; }")
+        sb.AppendLine("  #empty .hint { color:#71717a; font-size:12.5px; margin-top:22px; }")
         sb.AppendLine("  .msg { margin-bottom: 20px; }")
         sb.AppendLine("  .msg.user { display: flex; justify-content: flex-end; }")
         sb.AppendLine("  .msg.user > div { max-width: 78%; }")
         sb.AppendLine("  .msg.user .bubble {")
-        sb.AppendLine("    background: #0e639c; color: #fff; padding: 10px 15px;")
-        sb.AppendLine("    border-radius: 14px 14px 2px 14px;")
+        sb.AppendLine("    background: #2563eb; color: #fff; padding: 10px 15px;")
+        sb.AppendLine("    border-radius: 16px 16px 4px 16px;")
         sb.AppendLine("    white-space: pre-wrap; word-wrap: break-word;")
         sb.AppendLine("  }")
         sb.AppendLine("  .thumbs { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; margin-bottom:6px; }")
         sb.AppendLine("  .thumbs img { max-height: 140px; max-width: 220px; border-radius: 8px; border:1px solid #333; margin:0; cursor:zoom-in; }")
         sb.AppendLine("  .msg.assistant .bubble {")
-        sb.AppendLine("    background: #252526; padding: 14px 18px;")
-        sb.AppendLine("    border-radius: 14px 14px 14px 2px; border: 1px solid #333;")
+        sb.AppendLine("    background: #222327; padding: 14px 18px;")
+        sb.AppendLine("    border-radius: 16px 16px 16px 4px; border: 1px solid #34363b;")
         sb.AppendLine("    max-width: 96%; overflow-wrap: break-word;")
         sb.AppendLine("  }")
         sb.AppendLine("  .msg .role { font-size: 11px; color: #888; margin-bottom: 6px; letter-spacing: .3px; text-transform: uppercase; }")
@@ -227,6 +241,7 @@ Public Module MarkdownRenderer
   function body() { return document.getElementById('chatBody'); }
   function clearAll() { body().innerHTML = ''; stick = true; }
   function showEmpty(html) { body().innerHTML = '<div id=""empty"">' + html + '</div>'; }
+  function usePrompt(el) { try { window.chrome.webview.postMessage({ type: 'prompt', text: el.getAttribute('data-p') }); } catch (e) {} }
   function removeEmpty() { var e = document.getElementById('empty'); if (e) e.remove(); }
   function zoom(src) { document.getElementById('lightboxImg').src = src; document.getElementById('lightbox').style.display = 'flex'; }
 

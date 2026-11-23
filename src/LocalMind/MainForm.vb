@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.Drawing
@@ -128,6 +128,8 @@ Public Class MainForm
         AddHandler Me.DragEnter, AddressOf Files_DragEnter
         AddHandler Me.DragDrop, AddressOf Files_DragDrop
 
+        miNewChat.ShortcutKeys = Keys.Control Or Keys.N
+        ApplyModernLayout()
         Localizer.Apply(Me)
         If _tray?.ContextMenuStrip IsNot Nothing Then
             For Each it As ToolStripItem In _tray.ContextMenuStrip.Items
@@ -531,6 +533,12 @@ Public Class MainForm
     Private Sub OnWebMessage(sender As Object, e As CoreWebView2WebMessageReceivedEventArgs)
         Try
             Dim obj = JObject.Parse(e.WebMessageAsJson)
+            If obj("type")?.ToString() = "prompt" Then
+                txtInput.Text = obj("text")?.ToString()
+                txtInput.SelectionStart = txtInput.TextLength
+                txtInput.Focus()
+                Return
+            End If
             If obj("type")?.ToString() = "speak" Then
                 SpeakAnswer(obj("text")?.ToString())
                 Return
@@ -553,17 +561,38 @@ Public Class MainForm
 
     Private Sub ShowEmptyState()
         If webChat.CoreWebView2 Is Nothing Then Return
+        Dim enc = Function(s As String) System.Net.WebUtility.HtmlEncode(Localizer.T(s))
         Dim html As String
         If cmbModels.Items.Count = 0 Then
             If Settings.Backend = BackendKind.BuiltIn Then
-                html = "<b>No models yet</b>Click <b style='display:inline;font-size:inherit'>⬇ Get models</b> in the toolbar (Ctrl+M).<br>" &
-                       "Press ★ Recommend for my PC, then Download — that's it."
+                ' First start: three plain steps.
+                Dim stepHtml = Function(n As Integer, t As String, d As String) $"<div class='step'><span class='n'>{n}</span><span class='t'>{enc(t)}</span><div class='d'>{enc(d)}</div></div>"
+                html = "<div class='logo'>✦</div><h1>" & enc("Welcome to LocalMind") & "</h1>" &
+                       "<div class='sub'>" & enc("Your private AI. Everything runs on this PC — nothing is sent to the internet.") & "</div>" &
+                       "<div class='steps'>" &
+                       stepHtml(1, "Get a model", "Click ⬇ Get models at the top, press ★ Recommend for my PC, then Download.") &
+                       stepHtml(2, "Choose it", "When the download finishes, pick the model in the Model box at the top.") &
+                       stepHtml(3, "Start chatting", "Type your message in the box below and press Ctrl+Enter.") &
+                       "</div>"
             Else
-                html = "<b>No models found</b>Check the connection in Tools → Settings."
+                html = "<b>" & enc("No models found") & "</b>" & enc("Check the connection in Tools → Settings.")
             End If
         Else
-            html = "<b>" & System.Net.WebUtility.HtmlEncode(If(cmbModels.SelectedItem?.ToString(), "")) & "</b>" &
-                   "Type a message and press Ctrl+Enter.<br>Paste or drop images and files to attach them."
+            ' Ready: a few ideas to start with (click one to put it in the message box).
+            Dim card = Function(t As String, d As String, p As String) $"<div class='card' data-p='{System.Net.WebUtility.HtmlEncode(Localizer.T(p))}' onclick='usePrompt(this)'><div class='t'>{enc(t)}</div><div class='d'>{enc(d)}</div></div>"
+            Dim cards As New Text.StringBuilder()
+            cards.Append(card("✍️ Write", "an email, a post, a story…", "Write a friendly email to "))
+            cards.Append(card("💡 Explain", "anything, simply", "Explain in simple words: "))
+            cards.Append(card("📄 Summarize", "a document — attach it first", "Summarize the attached document in 5 bullet points."))
+            If Settings.EnableImages Then
+                cards.Append(card("🖼 Make a picture", "just describe it", "Generate an image of "))
+                cards.Append(card("🎬 Make a video", "a short clip from words or a photo", "Generate a video of "))
+            End If
+            If Settings.EnableAudio Then cards.Append(card("🎵 Make a song", "lyrics and music", "Make a song about "))
+            html = "<div class='logo'>✦</div><h1>" & enc("How can I help?") & "</h1>" &
+                   "<div class='sub'>" & enc("Model") & ": " & System.Net.WebUtility.HtmlEncode(If(cmbModels.SelectedItem?.ToString(), "")) & "</div>" &
+                   "<div class='cards'>" & cards.ToString() & "</div>" &
+                   "<div class='hint'>" & enc("Ctrl+Enter sends · paste or drop pictures and files to attach them") & "</div>"
         End If
         webChat.ExecuteScriptAsync($"showEmpty({JsonConvert.SerializeObject(html)});")
     End Sub
@@ -1202,7 +1231,7 @@ Public Class MainForm
         Dim chip As New Label() With {
             .Text = "  " & If(item.IsImage, "🖼 ", "📄 ") & Path.GetFileName(item.Path) & "  ✕  ",
             .AutoSize = True, .Padding = New Padding(6, 4, 6, 4), .Margin = New Padding(2),
-            .BackColor = Color.FromArgb(60, 60, 60), .ForeColor = Color.FromArgb(220, 220, 220),
+            .BackColor = Theme.CControl, .ForeColor = Theme.CText,
             .Font = New Font("Segoe UI", 8.5!), .Cursor = Cursors.Hand
         }
         AddHandler chip.Click, Sub()

@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Windows.Forms
 
 Public Module Program
@@ -8,6 +8,7 @@ Public Module Program
         Application.SetHighDpiMode(HighDpiMode.SystemAware)
         Application.EnableVisualStyles()
         Application.SetCompatibleTextRenderingDefault(False)
+        Theme.Install()
         Application.Run(New MainForm())
     End Sub
 End Module

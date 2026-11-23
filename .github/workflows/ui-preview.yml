@@ -1,0 +1,49 @@
+name: UI preview
+
+# Builds the app, starts it on a Windows runner and saves screenshots (English and Greek)
+# as an artifact, so the look can be checked without a Windows PC.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish
+        run: dotnet publish src/LocalMind/LocalMind.vbproj -c Release -r win-x64 -p:PublishSingleFile=true -o publish
+      - name: Screenshots
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          New-Item -ItemType Directory -Force shots | Out-Null
+          function Shot($name) {
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            $g = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("shots/$name.png")
+            $g.Dispose(); $bmp.Dispose()
+          }
+          foreach ($lang in @('en', 'el')) {
+            Remove-Item -Recurse -Force publish/Data -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Force publish/Data | Out-Null
+            @{ FeaturesAsked = $true; FirstRunDone = $true; EnableImages = $true; EnableAudio = $true;
+               CheckForUpdates = $false; AutoUpdateEngines = $false; Language = $lang } |
+              ConvertTo-Json | Set-Content -Encoding utf8 publish/Data/settings.json
+            $p = Start-Process publish/LocalMind.exe -PassThru
+            Start-Sleep -Seconds 25
+            Shot "main-$lang"
+            Stop-Process -Id $p.Id -Force
+            Start-Sleep -Seconds 2
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ui-preview
+          path: shots/
