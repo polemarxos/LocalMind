@@ -346,7 +346,12 @@ Public Class LlamaEngine
 
         Dim args As New StringBuilder()
         args.Append($"-m ""{model.MainFile}"" --host 127.0.0.1 --port {_port}")
-        args.Append($" -c {s.ContextSize * slots} -np {slots} --no-webui")
+        If s.AutoContext Then
+            ' llama.cpp picks the biggest context that still fits in VRAM (never below the minimum).
+            args.Append($" --fit-ctx {Math.Max(2048, s.MinAutoContext) * slots} -np {slots} --no-webui")
+        Else
+            args.Append($" -c {s.ContextSize * slots} -np {slots} --no-webui")
+        End If
         If Not String.IsNullOrEmpty(model.MmprojFile) AndAlso File.Exists(model.MmprojFile) Then
             args.Append($" --mmproj ""{model.MmprojFile}""")
         End If
@@ -413,7 +418,26 @@ Public Class LlamaEngine
         Loop
 
         Touch()
-        SetState(EngineState.Ready, model.DisplayName & $" loaded in {sw.Elapsed.TotalSeconds:0.0}s")
+        _LoadedContext = Await ReadContextAsync(slots)
+        _LastLoadSeconds = sw.Elapsed.TotalSeconds
+        SetState(EngineState.Ready, model.DisplayName & $" loaded in {sw.Elapsed.TotalSeconds:0.0}s" &
+                 If(_LoadedContext > 0, $" · {_LoadedContext \ 1024}K context", ""))
+    End Function
+
+    ''' <summary>Context per chat actually chosen by the engine (from /props).</summary>
+    Public ReadOnly Property LoadedContext As Integer
+    Public ReadOnly Property LastLoadSeconds As Double
+
+    Private Async Function ReadContextAsync(slots As Integer) As Task(Of Integer)
+        Try
+            Using cts As New CancellationTokenSource(3000)
+                Dim o = JObject.Parse(Await OpenAiCompatService.Http.GetStringAsync(BaseUrl & "/props", cts.Token))
+                Dim n = o("default_generation_settings")?("n_ctx")?.ToObject(Of Integer?)()
+                Return If(n, 0)
+            End Using
+        Catch
+            Return 0
+        End Try
     End Function
 
     Private Shared Function FriendlyHint(log As String) As String

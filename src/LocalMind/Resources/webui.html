@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>LocalMind</title>
 <link rel="stylesheet" href="/assets/hljs.css">
+<link rel="stylesheet" href="/assets/katex.css">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #1e1e1e; color: #d4d4d4;
@@ -45,6 +46,7 @@
   .meta { font-size: 12px; color: #777; margin-top: 4px; display: flex; gap: 10px; align-items: center; }
   .meta button { background: #333; border: 1px solid #444; border-radius: 5px; font-size: 12px; padding: 1px 8px; }
   .err { color: #f48771; }
+  div.math { overflow-x: auto; margin: 8px 0; }
   .empty { text-align: center; color: #777; margin-top: 20vh; }
   .empty b { display: block; color: #9cdcfe; font-size: 20px; margin-bottom: 6px; }
   footer { background: #252526; border-top: 1px solid #333; padding: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
@@ -124,6 +126,7 @@
 </form></div>
 
 <script src="/assets/hljs.js"></script>
+<script src="/assets/katex.js"></script>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
@@ -253,6 +256,7 @@
     var t = a.el.querySelector('.think');
     if (thinkingHtml) { t.hidden = false; t.open = false; t.querySelector('summary').textContent = '💭 Thinking'; t.querySelector('.tbody').innerHTML = thinkingHtml; t.querySelector('.tbody').style.whiteSpace = 'normal'; }
     else t.hidden = true;
+    renderMath(b); if (thinkingHtml) renderMath(t);
     b.querySelectorAll('pre').forEach(function (pre) {
       var code = pre.querySelector('code');
       if (code && window.hljs) try { hljs.highlightElement(code); } catch (e) {}
@@ -263,6 +267,13 @@
     var cb = document.createElement('button'); cb.textContent = 'Copy'; cb.onclick = function () { copy(b.innerText, cb); }; m.appendChild(cb);
     if (meta) { var s = document.createElement('span'); s.textContent = meta; m.appendChild(s); }
     scrollDown();
+  }
+  function renderMath(root) {
+    if (!window.katex) return;
+    root.querySelectorAll('.math').forEach(function (el) {
+      var tex = el.textContent.trim().replace(/^\\\(|\\\)$/g, '').replace(/^\\\[|\\\]$/g, '').trim();
+      try { katex.render(tex, el, { displayMode: el.tagName === 'DIV', throwOnError: false }); } catch (e) {}
+    });
   }
   function copy(text, btn) {
     function ok() { var o = btn.textContent; btn.textContent = '✓'; setTimeout(function () { btn.textContent = o; }, 1000); }

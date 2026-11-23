@@ -1,6 +1,7 @@
 Imports System.IO
 Imports System.Reflection
 Imports System.Text
+Imports System.Text.RegularExpressions
 Imports Markdig
 
 Public Module MarkdownRenderer
@@ -19,7 +20,31 @@ Public Module MarkdownRenderer
 
     Public Function ToHtml(md As String) As String
         If md Is Nothing Then Return ""
-        Return Markdown.ToHtml(md, Pipeline)
+        Return Markdown.ToHtml(NormalizeMath(md), Pipeline)
+    End Function
+
+    Private ReadOnly CodeSplit As New Regex("(```[\s\S]*?(?:```|$)|`[^`\n]+`)", RegexOptions.Compiled)
+    Private ReadOnly DisplayMath As New Regex("\\\[([\s\S]+?)\\\]", RegexOptions.Compiled)
+    Private ReadOnly InlineMath As New Regex("\\\(([\s\S]+?)\\\)", RegexOptions.Compiled)
+
+    ''' <summary>
+    ''' Models usually write LaTeX as \( … \) and \[ … \]. In Markdown "\(" is just an escaped
+    ''' bracket, so convert them to $…$ / $$…$$ (outside code) for the math extension + KaTeX.
+    ''' </summary>
+    Public Function NormalizeMath(md As String) As String
+        If md.IndexOf("\(", StringComparison.Ordinal) < 0 AndAlso md.IndexOf("\[", StringComparison.Ordinal) < 0 Then Return md
+        Dim parts = CodeSplit.Split(md)
+        Dim sb As New StringBuilder(md.Length + 32)
+        For Each part In parts
+            If part.StartsWith("`") Then
+                sb.Append(part)
+            Else
+                Dim t = DisplayMath.Replace(part, Function(m) vbLf & "$$" & vbLf & m.Groups(1).Value.Trim() & vbLf & "$$" & vbLf)
+                t = InlineMath.Replace(t, Function(m) "$" & m.Groups(1).Value.Trim() & "$")
+                sb.Append(t)
+            End If
+        Next
+        Return sb.ToString()
     End Function
 
     Public Function BalanceFences(md As String) As String
@@ -59,6 +84,9 @@ Public Module MarkdownRenderer
         ' highlight.js is embedded in the exe → syntax highlighting works offline.
         sb.AppendLine("<style>" & ReadResource("hljs-dark.min.css") & "</style>")
         sb.AppendLine("<script>" & ReadResource("hljs.min.js") & "</script>")
+        ' KaTeX (fonts inlined) → formulas render offline.
+        sb.AppendLine("<style>" & ReadResource("katex.min.css") & "</style>")
+        sb.AppendLine("<script>" & ReadResource("katex.min.js") & "</script>")
         sb.AppendLine("<style>")
         sb.AppendLine("  * { box-sizing: border-box; }")
         sb.AppendLine("  html, body { margin: 0; padding: 0; height: 100%; }")
@@ -143,7 +171,8 @@ Public Module MarkdownRenderer
         sb.AppendLine("  img { max-width: 100%; border-radius: 6px; margin: 8px 0; }")
         sb.AppendLine("  .cursor-inline::after { content: '\25CA'; animation: blink 1s steps(2) infinite; color: #4ea1ff; margin-left: 2px; }")
         sb.AppendLine("  @keyframes blink { 50% { opacity: 0; } }")
-        sb.AppendLine("  .waiting { color:#888; font-style:italic; }")
+        sb.AppendLine("  .waiting { color:#888; font-style:italic; }
+  .katex { font-size: 1.08em; } div.math { overflow-x: auto; overflow-y: hidden; margin: 10px 0; }")
         sb.AppendLine("  #lightbox { position:fixed; inset:0; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; z-index:9; cursor:zoom-out; }")
         sb.AppendLine("  #lightbox img { max-width:95%; max-height:95%; }")
         ' ---- thinking panel ----
@@ -266,7 +295,18 @@ Public Module MarkdownRenderer
     try { document.execCommand('copy'); } catch (e) {}
     document.body.removeChild(ta);
   }
+  // Render $…$ / $$…$$ produced by Markdig's math extension with KaTeX.
+  function renderMath(root) {
+    if (!window.katex) return;
+    root.querySelectorAll('.math').forEach(function (el) {
+      if (el.getAttribute('data-done')) return;
+      var tex = el.textContent.trim(), display = el.tagName === 'DIV';
+      tex = tex.replace(/^\\\(|\\\)$/g, '').replace(/^\\\[|\\\]$/g, '').trim();
+      try { katex.render(tex, el, { displayMode: display, throwOnError: false, output: 'html' }); el.setAttribute('data-done', '1'); } catch (e) {}
+    });
+  }
   function decorate(b) {
+    renderMath(b);
     b.querySelectorAll('pre').forEach(function (pre) {
       var codeEl = pre.querySelector('code');
       if (codeEl && window.hljs) { try { hljs.highlightElement(codeEl); } catch (e) {} }
@@ -285,7 +325,7 @@ Public Module MarkdownRenderer
     if (thinkingHtml) {
       var panel = ensureThinkingPanel(id);
       if (panel) {
-        var tb = document.getElementById(id + '-thinking-body'); if (tb) tb.innerHTML = thinkingHtml;
+        var tb = document.getElementById(id + '-thinking-body'); if (tb) { tb.innerHTML = thinkingHtml; renderMath(tb); }
         panel.open = false;
         var s = panel.querySelector('summary'); if (s) s.textContent = '💭 Thinking (click to expand)';
       }

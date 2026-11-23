@@ -16,10 +16,12 @@
     <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="../../src/LocalMind/ChatBackend.vb;../../src/LocalMind/ModelCatalog.vb;../../src/LocalMind/Downloader.vb;../../src/LocalMind/ModelLibrary.vb;../../src/LocalMind/SettingsService.vb;../../src/LocalMind/Models.vb;../../src/LocalMind/HardwareInfo.vb;../../src/LocalMind/LlamaEngine.vb;../../src/LocalMind/OpenAiCompatService.vb;../../src/LocalMind/OllamaService.vb;../../src/LocalMind/HistoryService.vb;../../src/LocalMind/PersonaService.vb;../../src/LocalMind/AppCore.vb;../../src/LocalMind/LanServer.vb;../../src/LocalMind/MarkdownRenderer.vb;../../src/LocalMind/DownloadManager.vb;../../src/LocalMind/DocumentService.vb" />
+    <Compile Include="../../src/LocalMind/ChatBackend.vb;../../src/LocalMind/ModelCatalog.vb;../../src/LocalMind/Downloader.vb;../../src/LocalMind/ModelLibrary.vb;../../src/LocalMind/SettingsService.vb;../../src/LocalMind/Models.vb;../../src/LocalMind/HardwareInfo.vb;../../src/LocalMind/LlamaEngine.vb;../../src/LocalMind/OpenAiCompatService.vb;../../src/LocalMind/OllamaService.vb;../../src/LocalMind/HistoryService.vb;../../src/LocalMind/PersonaService.vb;../../src/LocalMind/AppCore.vb;../../src/LocalMind/LanServer.vb;../../src/LocalMind/MarkdownRenderer.vb;../../src/LocalMind/DownloadManager.vb;../../src/LocalMind/DocumentService.vb;../../src/LocalMind/Updater.vb;../../src/LocalMind/SpeedTest.vb" />
     <EmbeddedResource Include="../../src/LocalMind/Resources/hljs.min.js" LogicalName="hljs.min.js" />
     <EmbeddedResource Include="../../src/LocalMind/Resources/hljs-dark.min.css" LogicalName="hljs-dark.min.css" />
     <EmbeddedResource Include="../../src/LocalMind/Resources/webui.html" LogicalName="webui.html" />
+    <EmbeddedResource Include="../../src/LocalMind/Resources/katex.min.js" LogicalName="katex.min.js" />
+    <EmbeddedResource Include="../../src/LocalMind/Resources/katex.min.css" LogicalName="katex.min.css" />
     <EmbeddedResource Include="../../src/LocalMind/Resources/catalog.json" LogicalName="catalog.json" />
   </ItemGroup>
 </Project>

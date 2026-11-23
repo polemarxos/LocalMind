@@ -252,17 +252,23 @@ Public Class ModelManagerForm
         Dim btnImport = Theme.MakeButton("➕ Import GGUF file…")
         Dim btnRescan = Theme.MakeButton("⟳ Rescan")
         Dim btnUse = Theme.MakeButton("Use in chat", primary:=True)
+        Dim btnSpeed = Theme.MakeButton("⚡ Speed test")
         lblInstalledInfo = Theme.MakeLabel("", dim_:=True)
-        bar.Controls.AddRange({btnUse, btnDelete, btnOpen, btnImport, btnRescan, lblInstalledInfo})
+        bar.Controls.AddRange({btnUse, btnSpeed, btnDelete, btnOpen, btnImport, btnRescan, lblInstalledInfo})
+        AddHandler btnSpeed.Click, Async Sub() Await RunSpeedTestsAsync(btnSpeed)
 
         lstInstalled = New ListView() With {.Dock = DockStyle.Fill}
         Theme.StyleListView(lstInstalled)
-        lstInstalled.Columns.Add("Model", 420)
-        lstInstalled.Columns.Add("Quant", 100)
-        lstInstalled.Columns.Add("Size", 90)
-        lstInstalled.Columns.Add("Vision", 60)
-        lstInstalled.Columns.Add("Source", 280)
-        lstInstalled.Columns.Add("Added", 110)
+        lstInstalled.MultiSelect = True
+        lstInstalled.Columns.Add("Model", 360)
+        lstInstalled.Columns.Add("Quant", 95)
+        lstInstalled.Columns.Add("Size", 80)
+        lstInstalled.Columns.Add("Vision", 55)
+        lstInstalled.Columns.Add("Speed", 85)
+        lstInstalled.Columns.Add("Reading", 90)
+        lstInstalled.Columns.Add("Load", 60)
+        lstInstalled.Columns.Add("Context", 70)
+        lstInstalled.Columns.Add("Source", 240)
 
         AddHandler btnDelete.Click, AddressOf DeleteInstalled
         AddHandler btnOpen.Click, Sub()
@@ -711,8 +717,12 @@ Public Class ModelManagerForm
             it.SubItems.Add(If(m.Quant, ""))
             it.SubItems.Add(Downloader.FormatBytes(m.SizeBytes))
             it.SubItems.Add(If(m.IsVision, "👁 yes", ""))
+            Dim sp = SpeedTest.GetResult(m)
+            it.SubItems.Add(If(sp IsNot Nothing, $"{sp.GenTokensPerSecond:0.0} tok/s", "—"))
+            it.SubItems.Add(If(sp IsNot Nothing, $"{sp.PromptTokensPerSecond:0} tok/s", ""))
+            it.SubItems.Add(If(sp IsNot Nothing, $"{sp.LoadSeconds:0.0}s", ""))
+            it.SubItems.Add(If(sp IsNot Nothing AndAlso sp.ContextTokens > 0, $"{sp.ContextTokens \ 1024}K", ""))
             it.SubItems.Add(If(m.Repo, Path.GetFileName(m.MainFile)))
-            it.SubItems.Add(m.DownloadedAt.ToString("yyyy-MM-dd"))
             lstInstalled.Items.Add(it)
         Next
         lstInstalled.EndUpdate()
@@ -724,6 +734,35 @@ Public Class ModelManagerForm
         End Try
         lblInstalledInfo.Text = $"{AppCore.Library.All().Count} models · {Downloader.FormatBytes(AppCore.Library.TotalSize())}{free}"
     End Sub
+
+    ''' <summary>Benchmarks the selected models (or all) one after another.</summary>
+    Private Async Function RunSpeedTestsAsync(btn As Button) As Task
+        If AppCore.Settings.Backend <> BackendKind.BuiltIn Then
+            MessageBox.Show(Me, "The speed test uses the built-in engine (Tools → Settings → Backend).", "Speed test")
+            Return
+        End If
+        Dim models = lstInstalled.SelectedItems.Cast(Of ListViewItem)().Select(Function(i) CType(i.Tag, LocalModel)).ToList()
+        If models.Count = 0 Then models = AppCore.Library.All()
+        If models.Count = 0 Then Return
+        If models.Count > 1 AndAlso MessageBox.Show(Me, $"Test {models.Count} models? Each one is loaded once (this can take a few minutes).",
+                                                    "Speed test", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then Return
+        btn.Enabled = False
+        Try
+            Dim i = 0
+            For Each m In models
+                i += 1
+                lblInstalledInfo.Text = $"Testing {i}/{models.Count}: {m.DisplayName}…"
+                Try
+                    Dim r = Await SpeedTest.RunAsync(m, CancellationToken.None)
+                Catch ex As Exception
+                    MessageBox.Show(Me, m.DisplayName & ": " & ex.Message, "Speed test", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                End Try
+                RefreshInstalled()
+            Next
+        Finally
+            btn.Enabled = True
+        End Try
+    End Function
 
     Private Function SelectedInstalled() As LocalModel
         If lstInstalled.SelectedItems.Count = 0 Then Return Nothing

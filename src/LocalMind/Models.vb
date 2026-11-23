@@ -23,6 +23,8 @@ Public Class ChatSession
     Public Property UpdatedAt As DateTime = DateTime.Now
     Public Property Model As String
     Public Property PersonaName As String
+    ''' <summary>Folder shown in the chat list (empty = no folder).</summary>
+    Public Property Folder As String
     Public Property Messages As List(Of ChatMessage) = New List(Of ChatMessage)()
 
     <OnDeserialized>

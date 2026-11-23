@@ -179,6 +179,12 @@ Public Class LanServer
                 Case path = "/assets/hljs.js"
                     Await ServeResourceAsync(ctx, "hljs.min.js", "application/javascript; charset=utf-8", cache:=True)
                     Return
+                Case path = "/assets/katex.js"
+                    Await ServeResourceAsync(ctx, "katex.min.js", "application/javascript; charset=utf-8", cache:=True)
+                    Return
+                Case path = "/assets/katex.css"
+                    Await ServeResourceAsync(ctx, "katex.min.css", "text/css; charset=utf-8", cache:=True)
+                    Return
                 Case path = "/assets/hljs.css"
                     Await ServeResourceAsync(ctx, "hljs-dark.min.css", "text/css; charset=utf-8", cache:=True)
                     Return

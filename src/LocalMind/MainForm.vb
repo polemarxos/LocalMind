@@ -117,6 +117,9 @@ Public Class MainForm
 
         BuildChatContextMenu()
         BuildFileMenuExtras()
+        BuildPromptsButton()
+        BuildFolderFilter()
+        SetupTray()
         AddHandler txtInput.DragEnter, AddressOf Files_DragEnter
         AddHandler txtInput.DragDrop, AddressOf Files_DragDrop
         AddHandler Me.DragEnter, AddressOf Files_DragEnter
@@ -133,7 +136,53 @@ Public Class MainForm
 
         Await FirstRunAsync()
         PrepareEngineInBackground()
+
+        ' Help → Check for updates, plus a quiet daily check.
+        Dim miUpdate As New ToolStripMenuItem("Check for updates…")
+        AddHandler miUpdate.Click, Async Sub() Await CheckUpdatesAsync(manual:=True)
+        menuHelp.DropDownItems.Insert(0, miUpdate)
+        If Settings.CheckForUpdates AndAlso (DateTime.Now - Settings.LastUpdateCheck).TotalHours > 20 Then
+            Await Task.Delay(8000)
+            Await CheckUpdatesAsync(manual:=False)
+        End If
     End Sub
+
+    Private _updating As Boolean
+
+    Private Async Function CheckUpdatesAsync(manual As Boolean) As Task
+        If _updating Then Return
+        _updating = True
+        Try
+            Dim info = Await Updater.CheckAsync(CancellationToken.None)
+            Settings.LastUpdateCheck = DateTime.Now
+            AppCore.SaveSettings()
+            If info Is Nothing Then
+                If manual Then MessageBox.Show(Me, $"You have the latest version ({Updater.CurrentVersion}).", "Updates",
+                                               MessageBoxButtons.OK, MessageBoxIcon.Information)
+                Return
+            End If
+            Dim notes = If(info.Notes, "")
+            If notes.Length > 700 Then notes = notes.Substring(0, 700) & "…"
+            If MessageBox.Show(Me, $"LocalMind {info.Tag} is available (you have {Updater.CurrentVersion})." & vbCrLf & vbCrLf &
+                               notes & vbCrLf & vbCrLf & "Update now? LocalMind will restart; your chats and models are kept.",
+                               "Update available", MessageBoxButtons.YesNo, MessageBoxIcon.Information) <> DialogResult.Yes Then Return
+            If Not AppPaths.IsPortable Then
+                ModelManagerForm.OpenUrl(If(info.PageUrl, Updater.ReleasesPage))
+                Return
+            End If
+            If _isGenerating Then
+                MessageBox.Show(Me, "Wait for the current answer to finish, then use Help → Check for updates.", "Update")
+                Return
+            End If
+            Dim exe = Await Updater.InstallAsync(info, Sub(p) SetStatus($"Downloading update… {p}%"), CancellationToken.None)
+            Updater.Restart(exe)
+            Close()
+        Catch ex As Exception
+            If manual Then MessageBox.Show(Me, "Update failed: " & ex.Message, "Update", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        Finally
+            _updating = False
+        End Try
+    End Function
 
     ''' <summary>One-time welcome: offer the built-in engine (v1 users) or the Model Manager (new users).</summary>
     Private Async Function FirstRunAsync() As Task
@@ -414,7 +463,7 @@ Public Class MainForm
     '════════════════════════════════════════════════════════════
     Private Async Function InitWebViewAsync() As Task
         Try
-            Dim env = Await CoreWebView2Environment.CreateAsync(Nothing, Path.Combine(AppPaths.LocalData, "webview"))
+            Dim env = Await CoreWebView2Environment.CreateAsync(Nothing, AppPaths.WebViewFolder)
             Await webChat.EnsureCoreWebView2Async(env)
             webChat.CoreWebView2.Settings.AreDefaultContextMenusEnabled = True
             webChat.CoreWebView2.Settings.AreDevToolsEnabled = False
@@ -810,7 +859,9 @@ Public Class MainForm
         Dim selectedId = If(_session?.Id, "")
         lstChats.BeginUpdate()
         lstChats.Items.Clear()
+        Dim folder = CurrentFolderFilter()
         For Each s In AppCore.History.ListAll()
+            If folder IsNot Nothing AndAlso Not String.Equals(If(s.Folder, ""), folder, StringComparison.OrdinalIgnoreCase) Then Continue For
             Dim i = lstChats.Items.Add(New ChatListItem(s))
             ' Re-selecting the open chat is a no-op in lstChats_SelectedIndexChanged.
             If s.Id = selectedId Then lstChats.SelectedIndex = i
@@ -866,7 +917,7 @@ Public Class MainForm
     Private Sub btnNewChat_Click(sender As Object, e As EventArgs) Handles btnNewChat.Click, miNewChat.Click
         If _isGenerating Then Return
         AppCore.History.Save(_session)
-        _session = New ChatSession()
+        _session = New ChatSession() With {.Folder = CurrentFolderFilter()}
         txtInput.Clear()
         ClearAttachments()
         RefreshChatList()
@@ -942,8 +993,11 @@ Public Class MainForm
         Dim miClearAll As New ToolStripMenuItem("Clear all history…")
         AddHandler miClearAll.Click, AddressOf ClearAllHistory
 
+        Dim miMove As New ToolStripMenuItem("Move to folder")
         _chatContextMenu.Items.Add(_miRenameChat)
+        _chatContextMenu.Items.Add(miMove)
         _chatContextMenu.Items.Add(_miDeleteChat)
+        AddHandler _chatContextMenu.Opening, Sub() BuildMoveMenu(miMove)
         _chatContextMenu.Items.Add(New ToolStripSeparator())
         _chatContextMenu.Items.Add(miClearAll)
         lstChats.ContextMenuStrip = _chatContextMenu
@@ -1145,6 +1199,7 @@ Public Class MainForm
         Using f As New SettingsForm()
             If f.ShowDialog(Me) <> DialogResult.OK Then Return
         End Using
+        RegisterQuickAskHotkey()
         _isFirstConnectionCheck = True
         Await RefreshModelsKeepSelectionAsync()
         Await CheckConnectionNowAsync()
@@ -1236,6 +1291,7 @@ Public Class MainForm
     End Function
 
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
+        If HandleCloseToTray(e) Then Return
         If AppCore.Downloads.ActiveCount > 0 AndAlso e.CloseReason = CloseReason.UserClosing Then
             If MessageBox.Show(Me, "Downloads are still running. They will resume next time you open the app." & vbCrLf & vbCrLf &
                                "Close anyway?", "Downloads running", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
@@ -1255,6 +1311,7 @@ Public Class MainForm
     End Sub
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+        DisposeTray()
         AppCore.Shutdown()
         MyBase.OnFormClosed(e)
     End Sub

@@ -1,8 +1,23 @@
 # Changelog
 
-## Unreleased
-- Portable layout: the engine downloads to `Engine\` and models to `Models\` next to `LocalMind.exe`.
-  Existing engine and models are moved there automatically when they are on the same drive.
+## 2.1.0
+
+### New
+- **Fully portable:** the engine goes in `Engine\`, models in `Models\`, and settings, chats, personas and prompts
+  in `Data\`, all next to `LocalMind.exe`. Existing data is moved or copied there automatically.
+- **Math rendering:** formulas display properly (KaTeX, embedded, works offline), in the desktop app and on the phone page.
+- **Auto-update:** checks GitHub Releases daily (and from Help → Check for updates) and updates in one click.
+- **Auto context size:** each model gets the largest context that fits in VRAM (minimum configurable).
+  The chosen size is shown when the model loads.
+- **Speed test:** Model Manager → Installed → ⚡ Speed test measures generation speed, reading speed, load time
+  and context for each model.
+- **Tray icon and quick-ask hotkey:** press Ctrl+Alt+Space (changeable) anywhere to ask a question in a small window.
+  Minimizing (or optionally closing) the window keeps LocalMind in the tray.
+- **Prompt library:** the 📝 Prompts button inserts saved prompts, and `{text}` is replaced by what you typed.
+  Several useful prompts are included.
+- **Chat folders:** filter the chat list by folder, and right-click a chat → Move to folder.
+
+### Improved
 - Release builds publish only `LocalMind.exe`.
 
 ## 2.0.0 — renamed from OllamaChat to LocalMind

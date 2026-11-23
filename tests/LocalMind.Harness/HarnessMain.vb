@@ -54,6 +54,16 @@ Module HarnessMain
             Dim html = MarkdownRenderer.ToHtml("Hi <script>alert(1)</script> <img src=x onerror=alert(2)>")
             Check(Not html.Contains("<script>") AndAlso Not html.Contains("<img"), "raw HTML disabled", html.Trim())
 
+            Console.WriteLine("== Portable folders")
+            Check(AppPaths.IsPortable AndAlso AppPaths.Roaming = Path.Combine(AppPaths.AppDir, "Data"), "settings/chats in Data\ next to exe", AppPaths.Roaming)
+            Check(AppPaths.EngineFolder = Path.Combine(AppPaths.AppDir, "Engine") AndAlso AppPaths.DefaultModelsFolder = Path.Combine(AppPaths.AppDir, "Models"), "Engine\ and Models\ next to exe")
+
+            Console.WriteLine("== Math rendering")
+            Dim mh = MarkdownRenderer.ToHtml("Area \(\pi r^2\) and" & vbLf & "\[\frac{a}{b} = \sqrt{x^2+1}\]" & vbLf & "Keep `\(code\)` and $5 price." & vbLf & "```" & vbLf & "\[not math\]" & vbLf & "```")
+            File.WriteAllText("/tmp/math.html", mh)
+            Check(mh.Contains("<span class=""math"">") AndAlso mh.Contains("<div class=""math"">") AndAlso mh.Contains("<code>\(code\)</code>") AndAlso mh.Contains("\[not math\]"),
+                  "LaTeX → math blocks, code untouched", mh.Replace(vbLf, " "))
+
             Console.WriteLine("== Embedded catalog")
             Dim emb = ModelCatalog.LoadEmbedded()
             Check(emb.Count > 500, "embedded catalog loads", emb.Count & " entries")
@@ -92,12 +102,17 @@ Module HarnessMain
             Dim hits = Await ModelCatalog.SearchHubAsync("mistral", CancellationToken.None)
             Check(hits.Count > 5, "hub search 'mistral'", hits.Count & " results, e.g. " & String.Join(", ", hits.Take(3).Select(Function(h) h.Repo)))
 
+            Console.WriteLine("== Auto-update check (GitHub Releases)")
+            Dim upd = Await Updater.CheckAsync(CancellationToken.None)
+            Check(upd IsNot Nothing AndAlso upd.ZipUrl IsNot Nothing AndAlso upd.Version > Updater.CurrentVersion,
+                  "finds newer release than this build", $"current {Updater.CurrentVersion} → {upd?.Tag} ({upd?.ZipUrl})")
+
             Console.WriteLine("== Auto quant on real files")
-            For Each repo In {"unsloth/gemma-4-12b-it-GGUF", "unsloth/Qwen3.6-35B-A3B-GGUF", "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF"}
-                Dim e = live.FirstOrDefault(Function(x) x.Repo = repo)
-                If e Is Nothing Then e = ModelCatalog.LoadEmbedded().First(Function(x) x.Repo = repo)
-                Dim files = Await ModelCatalog.GetRepoFilesAsync(repo, Nothing, CancellationToken.None)
-                Dim line = repo & ": " & files.Quants.Count & " quants, mmproj=" & If(files.Mmproj?.Path, "none") & vbLf
+            For Each repoName In {"unsloth/gemma-4-12b-it-GGUF", "unsloth/Qwen3.6-35B-A3B-GGUF", "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF"}
+                Dim e = live.FirstOrDefault(Function(x) x.Repo = repoName)
+                If e Is Nothing Then e = ModelCatalog.LoadEmbedded().First(Function(x) x.Repo = repoName)
+                Dim files = Await ModelCatalog.GetRepoFilesAsync(repoName, Nothing, CancellationToken.None)
+                Dim line = repoName & ": " & files.Quants.Count & " quants, mmproj=" & If(files.Mmproj?.Path, "none") & vbLf
                 For Each prof In {(0.0, 16.0), (8.0, 16.0), (12.0, 32.0), (16.0, 32.0), (24.0, 64.0)}
                     Dim h = Hw(prof.Item1, prof.Item2)
                     Dim pick = ModelCatalog.PickQuant(e, files, "Auto", h, 16384)
@@ -292,6 +307,12 @@ Module HarnessMain
                 New ChatRequestOptions With {.Model = qwen.DisplayName, .Temperature = 0.6, .MaxTokens = 200, .EnableThinking = False},
                 Sub(t) Return, Sub(t) Return, CancellationToken.None)
             Check(r3.Thinking.Trim().Length = 0, "thinking off honoured", $"thinking {r3.Thinking.Length} chars; answer: {r3.Content.Trim().Replace(vbLf, " ")}")
+
+            Check(AppCore.Engine.LoadedContext > 0, "auto context read from engine", AppCore.Engine.LoadedContext & " tokens")
+            Console.WriteLine("== Speed test")
+            Dim sp = Await SpeedTest.RunAsync(smol, CancellationToken.None)
+            Check(sp.GenTokensPerSecond > 0 AndAlso sp.PromptTokensPerSecond > 0 AndAlso SpeedTest.GetResult(smol) IsNot Nothing,
+                  "benchmark stored", $"{sp.GenTokensPerSecond} tok/s gen, {sp.PromptTokensPerSecond} tok/s prompt, load {sp.LoadSeconds}s, ctx {sp.ContextTokens}")
 
             Console.WriteLine("== Concurrent requests on different models")
             Dim aText As New StringBuilder()

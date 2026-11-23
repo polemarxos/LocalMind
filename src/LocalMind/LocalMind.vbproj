@@ -13,7 +13,7 @@
     <OptionExplicit>On</OptionExplicit>
     <OptionInfer>On</OptionInfer>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
 
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -41,6 +41,8 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\hljs.min.js" LogicalName="hljs.min.js" />
     <EmbeddedResource Include="Resources\hljs-dark.min.css" LogicalName="hljs-dark.min.css" />
+    <EmbeddedResource Include="Resources\katex.min.js" LogicalName="katex.min.js" />
+    <EmbeddedResource Include="Resources\katex.min.css" LogicalName="katex.min.css" />
     <EmbeddedResource Include="Resources\webui.html" LogicalName="webui.html" />
     <EmbeddedResource Include="Resources\catalog.json" LogicalName="catalog.json" />
   </ItemGroup>

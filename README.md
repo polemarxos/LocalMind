@@ -19,7 +19,13 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
   It supports photos, a PIN, and chat history shared with the PC. An OpenAI-compatible `/v1` API lets other apps
   use your GPU too.
 - **Chat features:** personas, thinking/reasoning view, images (vision models), PDF and text attachments,
-  paste and drag-and-drop, chat search, Markdown export and import, code highlighting with copy buttons.
+  paste and drag-and-drop, chat search and folders, a prompt library, Markdown export and import,
+  code highlighting with copy buttons, and math formulas.
+- **Quick ask from anywhere:** press **Ctrl+Alt+Space** to ask a question without opening the main window.
+  LocalMind waits in the system tray.
+- **Speed test:** see how fast each model runs on your PC.
+- **Auto context:** each model uses the largest conversation memory that fits your GPU.
+- **Auto-update** from GitHub Releases.
 - **Other backends:** you can also connect to Ollama or any OpenAI-compatible server (LM Studio, vLLM,
   or another PC running LocalMind).
 
@@ -63,18 +69,18 @@ This produces a single self-contained `publish\LocalMind.exe`. You can also open
 
 ## Where LocalMind keeps its data
 
-LocalMind is portable. The engine and models live next to the exe:
+LocalMind is fully portable. Everything lives next to the exe, so you can copy the folder to another PC or a USB drive:
 
 ```
 LocalMind\
 ├─ LocalMind.exe
 ├─ Engine\    llama.cpp engine (downloaded automatically, 50–700 MB)
-└─ Models\    downloaded AI models (can be changed in Settings)
+├─ Models\    downloaded AI models (can be changed in Settings)
+└─ Data\      settings, chats, personas, prompts, speed-test results
 ```
 
-Settings, chats and personas are kept in `%AppData%\LocalMind`.
-If the exe is in a folder Windows doesn't allow writing to (such as `C:\Program Files`), the engine and models
-go to `%LocalAppData%\LocalMind` instead. Put LocalMind in a normal folder, such as `D:\LocalMind`, on a drive
+If the exe is in a folder Windows doesn't allow writing to (such as `C:\Program Files`), LocalMind uses
+`%AppData%\LocalMind` and `%LocalAppData%\LocalMind` instead. Put LocalMind in a normal folder, such as `D:\LocalMind`, on a drive
 with plenty of free space.
 
 Upgrading from **OllamaChat**: your old data is moved over automatically the first time LocalMind starts.

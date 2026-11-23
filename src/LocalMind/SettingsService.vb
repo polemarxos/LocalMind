@@ -30,6 +30,9 @@ Public Class AppSettings
     Public Property EngineVariant As String = "auto"   ' auto | cuda12 | cuda13 | vulkan | cpu | rocm
     Public Property ModelsFolder As String = ""        ' empty = default under LocalAppData
     Public Property ContextSize As Integer = 16384
+    ''' <summary>Let llama.cpp use the largest context that fits in VRAM (at least MinAutoContext).</summary>
+    Public Property AutoContext As Boolean = True
+    Public Property MinAutoContext As Integer = 8192
     Public Property GpuLayers As String = "auto"       ' auto | all | number
     Public Property ParallelSlots As Integer = 1
     Public Property KvCacheType As String = "f16"      ' f16 | q8_0 | q4_0
@@ -48,6 +51,11 @@ Public Class AppSettings
 
     ' ── Misc ──
     Public Property FirstRunDone As Boolean = False
+    Public Property CheckForUpdates As Boolean = True
+    Public Property MinimizeToTray As Boolean = True
+    Public Property CloseToTray As Boolean = False
+    Public Property QuickAskHotkey As String = "Ctrl+Alt+Space"
+    Public Property LastUpdateCheck As DateTime
 
     ''' <summary>True when settings.json came from v1 (Ollama-only) — used to offer the built-in engine once.</summary>
     <JsonIgnore> Public Property UpgradedFromV1 As Boolean
@@ -70,15 +78,64 @@ Public Module AppPaths
     Private _local As String
     Private ReadOnly _lock As New Object()
 
-    ''' <summary>Settings, chats, personas (%AppData%\LocalMind).</summary>
+    ''' <summary>
+    ''' Settings, chats, personas, prompts: &lt;exe folder&gt;\Data (portable), or %AppData%\LocalMind
+    ''' when the exe folder is read-only.
+    ''' </summary>
     Public ReadOnly Property Roaming As String
         Get
             SyncLock _lock
-                If _roaming Is Nothing Then _roaming = Resolve(Environment.SpecialFolder.ApplicationData)
+                If _roaming Is Nothing Then
+                    _roaming = If(IsPortable, PortableData(), Resolve(Environment.SpecialFolder.ApplicationData))
+                End If
                 Return _roaming
             End SyncLock
         End Get
     End Property
+
+    ''' <summary>True when LocalMind can keep everything in its own folder.</summary>
+    Public ReadOnly Property IsPortable As Boolean
+        Get
+            Return CanWrite(AppDir)
+        End Get
+    End Property
+
+    ''' <summary>WebView2 browser cache for the chat view.</summary>
+    Public ReadOnly Property WebViewFolder As String
+        Get
+            Return If(IsPortable, Path.Combine(Roaming, "WebView"), Path.Combine(LocalData, "webview"))
+        End Get
+    End Property
+
+    ''' <summary>&lt;exe folder&gt;\Data — first run copies settings/chats from %AppData%\LocalMind (or OllamaChat).</summary>
+    Private Function PortableData() As String
+        Dim target = Path.Combine(AppDir, "Data")
+        If Not Directory.Exists(target) Then
+            Dim appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
+            Dim old = {Path.Combine(appData, AppFolderName), Path.Combine(appData, LegacyFolderName)}.
+                      FirstOrDefault(Function(d) Directory.Exists(d) AndAlso Directory.EnumerateFileSystemEntries(d).Any())
+            If old IsNot Nothing Then
+                Try
+                    CopyTree(old, target)   ' small (text files) — copy, leave the original as a backup
+                Catch
+                End Try
+            End If
+        End If
+        Directory.CreateDirectory(target)
+        Return target
+    End Function
+
+    Private Sub CopyTree(src As String, dst As String)
+        Directory.CreateDirectory(dst)
+        For Each f In Directory.GetFiles(src)
+            File.Copy(f, Path.Combine(dst, Path.GetFileName(f)), False)
+        Next
+        For Each d In Directory.GetDirectories(src)
+            Dim name = Path.GetFileName(d)
+            If name.Equals("webview", StringComparison.OrdinalIgnoreCase) Then Continue For   ' browser cache: rebuilds itself
+            CopyTree(d, Path.Combine(dst, name))
+        Next
+    End Sub
 
     ''' <summary>Large, machine-specific data: engine binaries, models (%LocalAppData%\LocalMind) — not roamed.</summary>
     Public ReadOnly Property LocalData As String
@@ -172,7 +229,16 @@ Public Module AppPaths
         Return target
     End Function
 
+    Private _canWriteCache As Boolean?
+
     Private Function CanWrite(dir As String) As Boolean
+        If dir = AppDir AndAlso _canWriteCache.HasValue Then Return _canWriteCache.Value
+        Dim ok = ProbeWrite(dir)
+        If dir = AppDir Then _canWriteCache = ok
+        Return ok
+    End Function
+
+    Private Function ProbeWrite(dir As String) As Boolean
         Try
             Dim probe = Path.Combine(dir, ".write-test-" & Guid.NewGuid().ToString("N"))
             File.WriteAllText(probe, "")

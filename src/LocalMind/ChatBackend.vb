@@ -17,6 +17,8 @@ Public Class ChatResult
     Public Property Tokens As Integer
     ''' <summary>Generation speed reported by the engine itself (0 if unknown).</summary>
     Public Property EngineTokensPerSecond As Double
+    ''' <summary>Prompt-processing speed reported by llama.cpp (0 if unknown).</summary>
+    Public Property PromptTokensPerSecond As Double
 End Class
 
 ''' <summary>

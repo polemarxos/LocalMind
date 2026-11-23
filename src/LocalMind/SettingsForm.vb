@@ -1,4 +1,5 @@
 Imports System
+Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
 Imports System.Threading
@@ -20,7 +21,9 @@ Public Class SettingsForm
     Private btnInstall As Button
     Private prgInstall As ProgressBar
     Private txtModels As TextBox
-    Private numCtx, numSlots, numIdle As NumericUpDown
+    Private numCtx, numSlots, numIdle, numMinCtx As NumericUpDown
+    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray As CheckBox
+    Private txtHotkey As TextBox
     Private cmbNgl, cmbKv As ComboBox
     Private txtExtra, txtHfToken As TextBox
     Private chkVerify, chkResume As CheckBox
@@ -156,8 +159,16 @@ Public Class SettingsForm
                                     End Sub
         Row(t, "Models folder", pm)
 
+        chkAutoCtx = New CheckBox() With {.Text = "Auto: use the largest context that fits in VRAM", .Checked = _s.AutoContext, .AutoSize = True}
+        Row(t, "Context size", chkAutoCtx)
+        numMinCtx = Num(2048, 262144, _s.MinAutoContext, inc:=1024)
+        Row(t, "   Minimum (auto)", numMinCtx, "Never go below this, even on small GPUs")
         numCtx = Num(1024, 1048576, _s.ContextSize, inc:=1024)
-        Row(t, "Context size (tokens)", numCtx, "Memory per chat. 8K–32K is typical; bigger = more VRAM")
+        Row(t, "   Fixed size (tokens)", numCtx, "Used when Auto is off, and for fit estimates in the Model Manager")
+        AddHandler chkAutoCtx.CheckedChanged, Sub()
+                                                  numMinCtx.Enabled = chkAutoCtx.Checked
+                                              End Sub
+        numMinCtx.Enabled = chkAutoCtx.Checked
         cmbNgl = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDown, .Width = 110, .Text = _s.GpuLayers}
         cmbNgl.Items.AddRange({"auto", "all", "0", "16", "24", "32", "48"})
         Row(t, "GPU layers", cmbNgl, "auto = fit as much as possible into VRAM (recommended)")
@@ -234,11 +245,34 @@ Public Class SettingsForm
         Row(t, "Top-p", numTopP)
         numMaxTok = Num(0, 262144, _s.MaxTokens, inc:=256)
         Row(t, "Max answer tokens", numMaxTok, "0 = no limit")
+        chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates at startup", .Checked = _s.CheckForUpdates, .AutoSize = True}
+        Row(t, "Updates", chkUpdates)
+        chkMinTray = New CheckBox() With {.Text = "Minimize to the system tray", .Checked = _s.MinimizeToTray, .AutoSize = True}
+        chkCloseTray = New CheckBox() With {.Text = "Close button keeps LocalMind running in the tray", .Checked = _s.CloseToTray, .AutoSize = True}
+        Row(t, "Tray", chkMinTray)
+        Row(t, "", chkCloseTray)
+        txtHotkey = New TextBox() With {.Text = _s.QuickAskHotkey, .Width = 180, .ReadOnly = True, .Cursor = Cursors.Hand}
+        Row(t, "Quick-ask hotkey", txtHotkey, "Click, then press the keys (Backspace = none)")
+        AddHandler txtHotkey.KeyDown, Sub(s, e)
+                                          e.SuppressKeyPress = True
+                                          If e.KeyCode = Keys.Back OrElse e.KeyCode = Keys.Delete Then
+                                              txtHotkey.Text = ""
+                                              Return
+                                          End If
+                                          If e.KeyCode = Keys.ControlKey OrElse e.KeyCode = Keys.Menu OrElse e.KeyCode = Keys.ShiftKey Then Return
+                                          If Not (e.Control OrElse e.Alt) Then Return   ' must include Ctrl or Alt
+                                          Dim parts As New List(Of String)
+                                          If e.Control Then parts.Add("Ctrl")
+                                          If e.Alt Then parts.Add("Alt")
+                                          If e.Shift Then parts.Add("Shift")
+                                          parts.Add(e.KeyCode.ToString())
+                                          txtHotkey.Text = String.Join("+", parts)
+                                      End Sub
     End Sub
 
     '──────────────── Save ────────────────
     Private Sub SaveAndClose(sender As Object, e As EventArgs)
-        Dim engineBefore = (_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs)
+        Dim engineBefore = (_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, _s.MinAutoContext)
         Dim backendBefore = (_s.Backend, _s.OllamaUrl, _s.OpenAiUrl, _s.OpenAiKey)
         Dim folderBefore = _s.EffectiveModelsFolder
 
@@ -250,6 +284,12 @@ Public Class SettingsForm
         Dim folder = txtModels.Text.Trim()
         _s.ModelsFolder = If(String.Equals(folder, AppPaths.DefaultModelsFolder, StringComparison.OrdinalIgnoreCase), "", folder)
         _s.ContextSize = CInt(numCtx.Value)
+        _s.AutoContext = chkAutoCtx.Checked
+        _s.MinAutoContext = CInt(numMinCtx.Value)
+        _s.CheckForUpdates = chkUpdates.Checked
+        _s.MinimizeToTray = chkMinTray.Checked
+        _s.CloseToTray = chkCloseTray.Checked
+        _s.QuickAskHotkey = txtHotkey.Text.Trim()
         _s.GpuLayers = If(String.IsNullOrWhiteSpace(cmbNgl.Text), "auto", cmbNgl.Text.Trim())
         _s.KvCacheType = cmbKv.SelectedItem.ToString()
         _s.ParallelSlots = CInt(numSlots.Value)
@@ -267,7 +307,7 @@ Public Class SettingsForm
 
         If Not backendBefore.Equals((_s.Backend, _s.OllamaUrl, _s.OpenAiUrl, _s.OpenAiKey)) Then AppCore.ResetBackend()
         If Not String.Equals(folderBefore, _s.EffectiveModelsFolder, StringComparison.OrdinalIgnoreCase) Then AppCore.Library.Refresh()
-        If Not engineBefore.Equals((_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs)) Then
+        If Not engineBefore.Equals((_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, _s.MinAutoContext)) Then
             ' Reload with the new settings on the next message.
             Dim unused = AppCore.Engine.StopAsync()
             AppCore.ResetBackend()

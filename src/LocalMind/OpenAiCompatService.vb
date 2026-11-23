@@ -217,6 +217,8 @@ Public Class OpenAiCompatService
                             If timings IsNot Nothing AndAlso timings.Type = JTokenType.Object Then
                                 Dim pps = timings("predicted_per_second")
                                 If pps IsNot Nothing Then result.EngineTokensPerSecond = CDbl(pps)
+                                Dim prps = timings("prompt_per_second")
+                                If prps IsNot Nothing Then result.PromptTokensPerSecond = CDbl(prps)
                             End If
                         Loop
                     End Using
