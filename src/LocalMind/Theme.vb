@@ -271,6 +271,102 @@ Public Module Theme
             b.FlatAppearance.MouseDownBackColor = CRaised
         End If
         b.ForeColor = If(primary, CAccentText, If(danger, Color.White, CText))
+        HookButton(b, primary, danger)
+    End Sub
+
+    '──────────────── professional buttons: rounded, bordered, icon + text ────────────────
+    Private Class ButtonLook
+        Public Hover, Down As Boolean
+        Public Primary, Danger As Boolean
+    End Class
+    Private ReadOnly _buttons As New Runtime.CompilerServices.ConditionalWeakTable(Of Button, ButtonLook)()
+
+    ''' <summary>Draws the button itself (rounded corners, thin border, icon instead of emoji).</summary>
+    Private Sub HookButton(b As Button, primary As Boolean, danger As Boolean)
+        Dim st As ButtonLook = Nothing
+        If Not _buttons.TryGetValue(b, st) Then
+            st = New ButtonLook()
+            _buttons.Add(b, st)
+            Try
+                GetType(Control).GetProperty("DoubleBuffered", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic)?.SetValue(b, True)
+            Catch
+            End Try
+            AddHandler b.MouseEnter, Sub()
+                                         st.Hover = True
+                                         b.Invalidate()
+                                     End Sub
+            AddHandler b.MouseLeave, Sub()
+                                         st.Hover = False : st.Down = False : b.Invalidate()
+                                     End Sub
+            AddHandler b.MouseDown, Sub()
+                                         st.Down = True
+                                         b.Invalidate()
+                                     End Sub
+            AddHandler b.MouseUp, Sub()
+                                         st.Down = False
+                                         b.Invalidate()
+                                     End Sub
+            AddHandler b.EnabledChanged, Sub() b.Invalidate()
+            AddHandler b.Paint, Sub(s, e) PaintButton(b, st, e.Graphics)
+        End If
+        st.Primary = primary
+        st.Danger = danger
+    End Sub
+
+    Private Sub PaintButton(b As Button, st As ButtonLook, g As Graphics)
+        Dim outer = If(b.Parent?.BackColor, CPanel)
+        If outer.A < 255 Then outer = CPanel
+        g.Clear(outer)
+        g.SmoothingMode = SmoothingMode.AntiAlias
+        Dim fill = b.BackColor
+        If b.Enabled Then
+            If st.Down Then
+                fill = b.FlatAppearance.MouseDownBackColor
+            ElseIf st.Hover Then
+                fill = b.FlatAppearance.MouseOverBackColor
+            End If
+        End If
+        If fill.A = 0 OrElse fill.IsEmpty Then fill = b.BackColor
+        Dim r As New RectangleF(0.5F, 0.5F, b.Width - 1.0F, b.Height - 1.0F)
+        Using p = Rounded(r, 6), br As New SolidBrush(If(b.Enabled, fill, ThemePresets.Mix(fill, outer, 0.45)))
+            g.FillPath(br, p)
+        End Using
+        Dim accent = st.Primary OrElse st.Danger OrElse b.BackColor.ToArgb() = CAccent.ToArgb()
+        If Not accent Then
+            Using p = Rounded(r, 6), pen As New Pen(ThemePresets.Mix(fill, CText, 0.13))
+                g.DrawPath(pen, p)
+            End Using
+        End If
+        g.SmoothingMode = SmoothingMode.Default
+        Dim fore = If(b.Enabled, b.ForeColor, ThemePresets.Mix(b.ForeColor, fill, 0.55))
+        Dim parts = Icons.Split(b.Text)
+        Dim flags = TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.EndEllipsis Or
+                    If(b.UseMnemonic, TextFormatFlags.Default, TextFormatFlags.NoPrefix)
+        Dim area = New Rectangle(b.Padding.Left + 4, 0, b.Width - b.Padding.Horizontal - 8, b.Height)
+        Dim iconW = If(parts.Glyph IsNot Nothing, 16, 0)
+        Dim gap = If(parts.Glyph IsNot Nothing AndAlso parts.After.Length > 0, 7, 0)
+        Dim textSize = If(parts.After.Length > 0, TextRenderer.MeasureText(g, parts.After, b.Font, area.Size, flags), Size.Empty)
+        Dim total = iconW + gap + textSize.Width
+        Dim left = If(b.TextAlign = ContentAlignment.MiddleLeft OrElse b.TextAlign = ContentAlignment.TopLeft OrElse b.TextAlign = ContentAlignment.BottomLeft,
+                      area.Left, area.Left + Math.Max(0, (area.Width - total) \ 2))
+        If parts.Glyph IsNot Nothing Then Icons.Draw(g, parts.Glyph, New Rectangle(left, 0, iconW, b.Height), fore, 10.5!)
+        If parts.After.Length > 0 Then
+            TextRenderer.DrawText(g, parts.After, b.Font, New Rectangle(left + iconW + gap, 0, Math.Min(textSize.Width + 2, area.Right - (left + iconW + gap)), b.Height), fore, flags)
+        End If
+    End Sub
+
+    ''' <summary>Text with the icon for its leading emoji (tabs, owner-drawn lists).</summary>
+    Public Sub DrawIconText(g As Graphics, text As String, font As Font, bounds As Rectangle, color As Color, centered As Boolean)
+        Dim parts = Icons.Split(text)
+        Dim flags = TextFormatFlags.VerticalCenter Or TextFormatFlags.SingleLine Or TextFormatFlags.NoPrefix Or TextFormatFlags.EndEllipsis
+        If parts.Glyph Is Nothing Then
+            TextRenderer.DrawText(g, text, font, bounds, color, flags Or If(centered, TextFormatFlags.HorizontalCenter, TextFormatFlags.Default))
+            Return
+        End If
+        Dim w = 16 + 7 + TextRenderer.MeasureText(g, parts.After, font, bounds.Size, flags).Width
+        Dim x = If(centered, bounds.X + Math.Max(0, (bounds.Width - w) \ 2), bounds.X)
+        Icons.Draw(g, parts.Glyph, New Rectangle(x, bounds.Y, 16, bounds.Height), color, 10.5!)
+        TextRenderer.DrawText(g, parts.After, font, New Rectangle(x + 23, bounds.Y, bounds.Right - (x + 23), bounds.Height), color, flags)
     End Sub
 
     Public Function MakeLabel(caption As String, Optional bold As Boolean = False, Optional dim_ As Boolean = False) As Label
@@ -370,8 +466,7 @@ Public Module Theme
                         e.Graphics.FillRectangle(b, e.Bounds.X + 10, e.Bounds.Bottom - 3, e.Bounds.Width - 20, 3)
                     End Using
                 End If
-                TextRenderer.DrawText(e.Graphics, t.TabPages(e.Index).Text, If(selected, BoldFont, UiFont), e.Bounds, If(selected, CText, CDim),
-                                      TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
+                DrawIconText(e.Graphics, t.TabPages(e.Index).Text, If(selected, BoldFont, UiFont), e.Bounds, If(selected, CText, CDim), True)
             End Sub
         For Each p As TabPage In t.TabPages
             p.BackColor = CPanel
@@ -578,6 +673,15 @@ Public Module Theme
                 e.TextColor = CText
             Else
                 e.TextColor = CText
+            End If
+            ' a crisp icon in place of the leading emoji
+            Dim parts = Icons.Split(e.Text)
+            If parts.Glyph IsNot Nothing AndAlso e.Item.DisplayStyle <> ToolStripItemDisplayStyle.Image Then
+                Dim r = e.TextRectangle
+                Icons.Draw(e.Graphics, parts.Glyph, New Rectangle(r.X, r.Y, 18, r.Height), e.TextColor, 10.0!)
+                TextRenderer.DrawText(e.Graphics, parts.After, e.TextFont, New Rectangle(r.X + 22, r.Y, Math.Max(10, r.Width), r.Height), e.TextColor,
+                                      (e.TextFormat And Not TextFormatFlags.HorizontalCenter And Not TextFormatFlags.Right) Or TextFormatFlags.Left Or TextFormatFlags.VerticalCenter)
+                Return
             End If
             MyBase.OnRenderItemText(e)
         End Sub

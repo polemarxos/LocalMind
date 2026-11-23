@@ -49,7 +49,7 @@ Public Module ThemePresets
 
     ''' <summary>All looks, in the order shown in Settings (numbered like the preview pictures).</summary>
     Public ReadOnly All As List(Of Preset) = New List(Of Preset) From {
-        D("Midnight", "#18181B", "#1F1F23", "#292A2F", "#36383E", "#E8E8EC", "#9698A2", "#2563EB"),
+        D("Midnight", "#18181B", "#1F1F23", "#292A2F", "#36383E", "#E8E8EC", "#9698A2", "#2563EB", "Segoe UI Variable Text"),
         D("Graphite Pro", "#1C1C1E", "#232325", "#2C2C2E", "#3A3A3C", "#F2F2F7", "#98989F", "#0A84FF", "Segoe UI Variable Text"),
         D("Windows 11 Dark", "#1C1C1C", "#202020", "#2B2B2B", "#373737", "#FFFFFF", "#A0A0A0", "#0078D4", "Segoe UI Variable Text"),
         D("Studio Code", "#1E1E1E", "#252526", "#2D2D30", "#3C3C3C", "#D4D4D4", "#9D9D9D", "#0E639C"),
