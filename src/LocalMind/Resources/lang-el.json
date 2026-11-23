@@ -971,5 +971,6 @@
 "Copies a voice from a short recording (voice cloning).": "Αντιγράφει μια φωνή από σύντομη ηχογράφηση (κλωνοποίηση).",
 "Makes a new voice from a description.": "Φτιάχνει νέα φωνή από περιγραφή.",
 "Languages": "Γλώσσες",
-"Files": "Αρχεία"
+"Files": "Αρχεία",
+"None of these fits this PC's graphics card — choose 'All models' above to see them all (they can use system RAM).": "Κανένα από αυτά δεν χωράει στην κάρτα γραφικών — επιλέξτε «Όλα τα μοντέλα» επάνω για να τα δείτε όλα (μπορούν να χρησιμοποιήσουν τη μνήμη RAM)."
 }

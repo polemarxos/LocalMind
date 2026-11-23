@@ -41,7 +41,7 @@ Public Class StudioForm
 
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
     Private ReadOnly cmbShow, cmbTask, cmbVariant, cmbSize As ComboBox
-    Private ReadOnly cmbTop As ComboBox = Popular.MakeCombo(150)
+    Private ReadOnly cmbTop As ComboBox = Popular.MakeCombo(205)
     Private _keepId As String
     Private ReadOnly grid As DataGridView
     Private ReadOnly lblAbout, lblStatus, lblStrength, lblVideo, lblFrames, lblNeed As Label

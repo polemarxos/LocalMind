@@ -53,12 +53,12 @@ Public Class MediaModelsPanel
         ("🗣 Talking videos", Function(r) r.Can("talk")),
         ("🎞 Edit videos", Function(r) r.Can("video-edit"))}
     Private ReadOnly optPictures As New RadioButton() With {.Appearance = Appearance.Button, .AutoSize = True, .Checked = True, .Margin = New Padding(3, 5, 0, 3),
-                                                             .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter}
+                                                             .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter, .UseMnemonic = False, .MinimumSize = New Size(0, 34)}
     Private ReadOnly optVideos As New RadioButton() With {.Appearance = Appearance.Button, .AutoSize = True, .Margin = New Padding(0, 5, 8, 3),
-                                                           .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter}
+                                                           .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter, .UseMnemonic = False, .MinimumSize = New Size(0, 34)}
 
     Private ReadOnly optMusic As New RadioButton() With {.Appearance = Appearance.Button, .AutoSize = True, .Margin = New Padding(0, 5, 8, 3),
-                                                          .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter}
+                                                          .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter, .UseMnemonic = False, .MinimumSize = New Size(0, 34)}
     Private Shared ReadOnly AudioTypes As (Label As String, Test As Func(Of AudioModel, Boolean))() = {
         ("All music & voice models", Function(m) True),
         ("🎵 Songs & music", Function(m) m.IsMusic),
@@ -359,6 +359,11 @@ Public Class MediaModelsPanel
         Next
         grid.ResumeLayout()
         _suppress = False
+        If items.Count = 0 AndAlso cmbShow.SelectedIndex = 0 AndAlso q.Length = 0 Then
+            lblInfo.Text = Localizer.T("None of these fits this PC's graphics card — choose 'All models' above to see them all (they can use system RAM).")
+            UpdateButton()
+            Return
+        End If
         lblInfo.Text = String.Format(Localizer.T(If(optVideos.Checked, "Showing {0} of {1} video models · click a column title to sort", "Showing {0} of {1} picture models · click a column title to sort")), items.Count, all.Count)
         UpdateButton()
     End Sub

@@ -135,7 +135,8 @@ Public Class MediaDetailsView
                                                 If lv.SelectedItems.Count > 0 Then RaiseEvent VariantPicked(r, CStr(lv.SelectedItems(0).Tag))
                                             End Sub
         flow.Controls.Add(lv)
-        Theme.FitListHeight(lv, 6)          ' measured: right at every display scale
+        Theme.FitListHeight(lv, 6)
+        If Environment.GetEnvironmentVariable("LOCALMIND_MODELS_KIND") = "files" Then BeginInvoke(Sub() flow.ScrollControlIntoView(lv))   ' (screenshot checks)          ' measured: right at every display scale
 
         Dim lblStats = Text_(Localizer.T("Loading details…"), dim_:=True)
         flow.Controls.Add(Heading(Localizer.T("About")))

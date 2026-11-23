@@ -63,7 +63,7 @@ jobs:
               $ws.SendKeys('^m'); Start-Sleep -Seconds 15
               Shot "models-media"
               Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
-              foreach ($kind in @('video', 'music')) {
+              foreach ($kind in @('video', 'music', 'files')) {
                 $env:LOCALMIND_MODELS_KIND = $kind
                 $p = Start-Process publish/LocalMind.exe -PassThru
                 Start-Sleep -Seconds 20
