@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -80,6 +80,14 @@ Module HarnessMain
                 Dim sample = emb.Where(Function(e) best.Contains(e.Repo)).OrderByDescending(Function(e) e.Params).Take(6).Select(Function(e) $"{e.Name}[{ModelCatalog.AutoQuant(e, h, 16384)}]")
                 Dim allFit = emb.Where(Function(e) best.Contains(e.Repo)).All(Function(e) prof.Item1 = 0 OrElse ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, ModelCatalog.AutoQuant(e, h, 16384)), h, 16384) = FitLevel.Fits)
                 Check(best.Count >= 5 AndAlso best.Count <= 60 AndAlso allFit, $"{prof.Item1:0}GB VRAM: {best.Count} shown", "largest: " & String.Join(", ", sample))
+            Next
+
+            For Each vram In {8.0, 16.0}
+                Dim h = Hw(vram, 32)
+                Dim unc = ModelCatalog.BestThatFit(emb, h, 16384, uncensored:=True)
+                Dim names = emb.Where(Function(e) unc.Contains(e.Repo)).Select(Function(e) e.Name).Take(6)
+                Check(unc.Count >= 3 AndAlso emb.Where(Function(e) unc.Contains(e.Repo)).All(Function(e) e.IsUncensored),
+                      $"{vram:0}GB VRAM uncensored best: {unc.Count} shown", String.Join(", ", names))
             Next
 
             Console.WriteLine("== Payload building")

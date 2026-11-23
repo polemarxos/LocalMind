@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -267,12 +267,16 @@ Public Module ModelCatalog
     ''' (e.g. three re-uploads of the same 8B) don't crowd the list.
     ''' With no usable GPU it falls back to the best small models that run well on the CPU.
     ''' </summary>
-    Public Function BestThatFit(all As IEnumerable(Of CatalogEntry), hw As HardwareInfo, ctx As Integer) As HashSet(Of String)
+    Public Function BestThatFit(all As IEnumerable(Of CatalogEntry), hw As HardwareInfo, ctx As Integer,
+                                Optional uncensored As Boolean = False) As HashSet(Of String)
         Dim cpuOnly = hw.VramBytes = 0
-        Dim cutoff = DateTime.Today.AddMonths(-18).ToString("yyyy-MM-dd")
+        ' Uncensored fine-tunes are a separate list (never mixed into the normal picks) and are
+        ' much less downloaded than the originals, so they get a lower popularity bar.
+        Dim minDownloads = If(uncensored, 1000, 20000)
+        Dim cutoff = DateTime.Today.AddMonths(If(uncensored, -36, -18)).ToString("yyyy-MM-dd")
         Dim pool = all.Where(Function(e)
-                                 If e.Params <= 0 OrElse e.IsUncensored Then Return False
-                                 If e.Downloads < 20000 Then Return False
+                                 If e.Params <= 0 OrElse e.IsUncensored <> uncensored Then Return False
+                                 If e.Downloads < minDownloads Then Return False
                                  If Not String.IsNullOrEmpty(e.Updated) AndAlso String.CompareOrdinal(e.Updated, cutoff) < 0 Then Return False
                                  Dim q = AutoQuant(e, hw, ctx)
                                  If BitsFor(q) < 4.2 Then Return False            ' quality floor: IQ4_XS / Q4_K_M or better
@@ -292,7 +296,7 @@ Public Module ModelCatalog
         ' Keep the top 2 per architecture × size bucket (removes near-duplicate uploads and old versions).
         Dim bucket = Function(e As CatalogEntry) If(e.Arch, "") & "|" & e.SizeClass & "|" & If(e.IsVision, "v", "") & If(e.IsCoder, "c", "")
         Dim best = pool.GroupBy(bucket).
-                        SelectMany(Function(g) g.OrderByDescending(score).Take(2)).
+                        SelectMany(Function(g) g.OrderByDescending(score).Take(If(uncensored, 3, 2))).
                         OrderByDescending(score).Take(60).
                         Select(Function(e) e.Repo)
         Return New HashSet(Of String)(best, StringComparer.OrdinalIgnoreCase)

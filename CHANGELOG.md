@@ -22,6 +22,7 @@
 - **Memory monitor** in the status bar: graphics memory, RAM and what is loaded; click to free memory.
 
 ### Fixes
+- Model Manager: the 🔓 Uncensored category was empty in “★ Best that fit my GPU” — it now shows the best uncensored models that fit your GPU.
 - Files already on disk under a renamed Hugging Face folder are reused instead of downloaded again.
 - Painted-area edits blend in smoothly; everything outside the painted area stays exactly as it was. The brush is faster.
 - Before downloading a picture, video, voice or music model, LocalMind shows the graphics memory and RAM it needs

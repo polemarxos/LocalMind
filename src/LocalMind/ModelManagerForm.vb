@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.Drawing
@@ -35,6 +35,7 @@ Public Class ModelManagerForm
     Private cmbSort As ComboBox
     Private cmbShow As ComboBox
     Private _best As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+    Private _bestUncensored As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
     Private btnRefresh As Button
     Private btnHub As Button
     Private btnRecommend As Button
@@ -325,6 +326,7 @@ Public Class ModelManagerForm
 
     Private Sub RecomputeBest()
         _best = ModelCatalog.BestThatFit(_entries, _hw, AppCore.Settings.ContextSize)
+        _bestUncensored = ModelCatalog.BestThatFit(_entries, _hw, AppCore.Settings.ContextSize, uncensored:=True)
     End Sub
 
     Private Sub UpdateInfoLabel(age As String)
@@ -414,7 +416,15 @@ Public Class ModelManagerForm
         If _searchResults Is Nothing Then
             Select Case cmbShow.SelectedIndex
                 Case 0   ' best that fully fit in VRAM (default)
-                    src = src.Where(Function(e) _best.Contains(e.Repo) OrElse AppCore.Library.HasRepo(e.Repo))
+                    ' The Uncensored category has its own best list; the normal one never contains them.
+                    Dim bestSet = If(cmbCategory.SelectedIndex = 6, _bestUncensored, _best)
+                    Dim picked = src.Where(Function(e) bestSet.Contains(e.Repo) OrElse AppCore.Library.HasRepo(e.Repo)).ToList()
+                    If picked.Count = 0 AndAlso cmbCategory.SelectedIndex > 0 Then
+                        ' Nothing in this category made the "best" cut: show what runs here instead of an empty list.
+                        picked = src.Where(Function(e) e.Params > 0 AndAlso
+                            ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, ModelCatalog.AutoQuant(e, _hw, ctx)), _hw, ctx) <> FitLevel.TooBig).ToList()
+                    End If
+                    src = picked
                 Case 1   ' anything that runs, incl. GPU+CPU offload
                     src = src.Where(Function(e) e.Params <= 0 OrElse
                         ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, ModelCatalog.AutoQuant(e, _hw, ctx)), _hw, ctx) <> FitLevel.TooBig)
