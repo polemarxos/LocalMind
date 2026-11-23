@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
@@ -263,7 +263,7 @@ Public Class SettingsForm
         Row(t, "Updates", chkUpdates)
         chkEngUpd = New CheckBox() With {.Text = "Keep the AI engines up to date automatically", .Checked = _s.AutoUpdateEngines, .AutoSize = True}
         Row(t, "", chkEngUpd)
-        chkAgent = New CheckBox() With {.Text = "The AI may draw, compose and search the web by itself when you ask", .Checked = _s.AgentTools, .AutoSize = True}
+        chkAgent = New CheckBox() With {.Text = "The AI may draw, make videos, compose and search the web by itself when you ask", .Checked = _s.AgentTools, .AutoSize = True}
         Row(t, "AI tools", chkAgent)
         chkMinTray = New CheckBox() With {.Text = "Minimize to the system tray", .Checked = _s.MinimizeToTray, .AutoSize = True}
         chkCloseTray = New CheckBox() With {.Text = "Close button keeps LocalMind running in the tray", .Checked = _s.CloseToTray, .AutoSize = True}

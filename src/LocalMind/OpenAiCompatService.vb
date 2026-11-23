@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Net.Http
@@ -139,6 +139,7 @@ Public Class OpenAiCompatService
         payload("stream_options") = New JObject From {{"include_usage", True}}
         If opts.Tools IsNot Nothing AndAlso opts.Tools.Count > 0 Then
             payload("tools") = opts.Tools
+            If Not String.IsNullOrEmpty(opts.ToolChoice) Then payload("tool_choice") = opts.ToolChoice
             payload("tool_choice") = "auto"
         End If
         If SendLlamaExtras Then

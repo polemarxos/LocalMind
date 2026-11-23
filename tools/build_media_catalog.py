@@ -117,6 +117,9 @@ def recipe(**k):
     k.setdefault("refs", 0)             # how many reference pictures edit/combine accepts
     k.setdefault("extra", "")           # extra sd-cli arguments
     k.setdefault("fps", 0)
+    k.setdefault("uncensored", False)   # no content filter: listed under "🔓 Uncensored"
+    k.setdefault("prefix", "")          # added before the prompt (e.g. Pony quality tags)
+    if "loras" in k: k["loras"] = [l for l in k["loras"] if l]   # always-on LoRAs
     if k.get("speed") is None: k.pop("speed", None)
     k["variants"] = sorted(v, key=lambda x: x["size"])
     k["parts"] = parts
@@ -206,6 +209,51 @@ recipe(id="sd15", name="Stable Diffusion 1.5", kind="image", family="SD1.5",
        variants=[dict(label="FP32", format="checkpoint", **sd15)] if sd15 else [],
        parts=[])
 
+# ── uncensored pictures (no content filter; shown under "🔓 Uncensored" in the Studio) ──
+CHROMA_NEG = "low quality, ugly, unfinished, out of focus, deformed, disfigured, blurry, smudged, restricted palette, flat colors"
+recipe(id="chroma1-hd", name="Chroma1-HD", kind="image", family="Chroma", uncensored=True,
+       about="Uncensored FLUX-based model (Apache-2.0): photos, art and anime with no content filter. 26 steps.",
+       steps=26, cfg=4.0, width=1024, height=1024, negative=CHROMA_NEG, input="optional",
+       extra="--model-args chroma_use_dit_mask=false",
+       tasks=["create","restyle","inpaint"],
+       variants=variants_list(gguf_variants("silveroxides/Chroma1-HD-GGUF")),
+       parts=[dict(role="vae", **AE_FLUX1), dict(role="t5xxl", **T5XXL)])
+recipe(id="chroma1-flash", name="Chroma1-Flash", kind="image", family="Chroma", uncensored=True,
+       about="Fast uncensored Chroma (about 12 steps, no negative prompt needed).",
+       steps=12, cfg=1.0, width=1024, height=1024, input="optional",
+       extra="--model-args chroma_use_dit_mask=false",
+       tasks=["create","restyle","inpaint"],
+       variants=variants_list(gguf_variants("silveroxides/Chroma1-Flash-GGUF")),
+       parts=[dict(role="vae", **AE_FLUX1), dict(role="t5xxl", **T5XXL)])
+SDXL_SPEED = lambda: speed("⚡ Lightning · 8 steps", 8, 1.0, [lora("ByteDance/SDXL-Lightning", r"^sdxl_lightning_8step_lora\.safetensors$", "speed-sdxl-lightning-8step")], extra="--scheduler sgm_uniform")
+SDXL_CONTROL = lambda: dict(role="control-net", control=True, **one("xinsir/controlnet-union-sdxl-1.0", r"^diffusion_pytorch_model_promax\.safetensors$"))
+def sdxl_checkpoint(rid, name, about, repo, pattern, **k):
+    f = one(repo, pattern)
+    recipe(id=rid, name=name, kind="image", family="SDXL", uncensored=True, about=about,
+           width=1024, height=1024, input="optional", tasks=["create","restyle","inpaint","layout","outline"],
+           speed=SDXL_SPEED(), variants=[dict(label="FP16", format="checkpoint", **f)] if f else [],
+           parts=[dict(role="vae", **SDXL_VAE), SDXL_CONTROL()], **k)
+sdxl_checkpoint("realvisxl-v5", "RealVisXL V5 (photo)", "Photorealistic SDXL model without a content filter. Runs on 8 GB GPUs.",
+                "SG161222/RealVisXL_V5.0", r"^RealVisXL_V5\.0_fp16\.safetensors$",
+                steps=30, cfg=5.0, negative="cartoon, painting, illustration, worst quality, low quality, blurry, deformed")
+sdxl_checkpoint("pony-v6-xl", "Pony Diffusion V6 XL", "Popular uncensored SDXL model for characters (anime, cartoon, furry, semi-real). Quality tags are added for you.",
+                "LyliaEngine/Pony_Diffusion_V6_XL", r"^ponyDiffusionV6XL.*\.safetensors$",
+                steps=25, cfg=7.0, sampler="euler_a", extra="--clip-skip 2", prefix="score_9, score_8_up, score_7_up, ",
+                negative="score_4, score_5, score_6, worst quality, low quality, blurry")
+sdxl_checkpoint("noobai-xl-1.1", "NoobAI-XL 1.1 (anime)", "Uncensored anime / illustration model (Illustrious family). Understands Danbooru tags.",
+                "Laxhar/noobai-XL-1.1", r"^NoobAI-XL-v1\.1\.safetensors$",
+                steps=28, cfg=5.0, sampler="euler_a", prefix="masterpiece, best quality, newest, absurdres, highres, ",
+                negative="worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands")
+rv6 = one("SG161222/Realistic_Vision_V6.0_B1_noVAE", r"^Realistic_Vision_V6\.0_NV_B1_fp16\.safetensors$")
+recipe(id="realistic-vision-v6", name="Realistic Vision V6 (SD 1.5)", kind="image", family="SD1.5", uncensored=True,
+       about="Small photorealistic model without a content filter. Runs on almost any PC (4 GB GPU).",
+       steps=25, cfg=5.0, width=512, height=768, input="optional",
+       negative="deformed, cartoon, anime, worst quality, low quality, blurry",
+       tasks=["create","restyle","inpaint"],
+       speed=speed("⚡ LCM · 6 steps", 6, 1.5, [lora("latent-consistency/lcm-lora-sdv1-5", r"^pytorch_lora_weights\.safetensors$", "speed-sd15-lcm")], extra="--sampling-method lcm"),
+       variants=[dict(label="FP16", format="checkpoint", **rv6)] if rv6 else [],
+       parts=[])
+
 # ── dedicated picture editors ───────────────────────────────────────────────
 recipe(id="qwen-image-edit-2511", name="Qwen-Image Edit 2511", kind="image", family="Qwen-Image-Edit",
        about="The strongest 'describe the change' editor: change objects, clothes, text, style or background while keeping the rest. Combines up to 3 pictures.",
@@ -267,7 +315,7 @@ WAN22_I2V_SPEED = lambda: speed("⚡ Lightning · 4+4 steps", 4, 1.0, [
     lora("lightx2v/Wan2.2-Distill-Loras", r"wan2\.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step", "speed-wan22-i2v-low-4step"),
     lora("lightx2v/Wan2.2-Distill-Loras", r"wan2\.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step", "speed-wan22-i2v-high-4step", high=True)], high_steps=4)
 
-def wan_a14b(rid, name, about, repo, conv_hi, conv_lo, input_mode, tasks, spd=None):
+def wan_a14b(rid, name, about, repo, conv_hi, conv_lo, input_mode, tasks, spd=None, **k):
     lo = gguf_variants(repo, folder="LowNoise")
     hi = gguf_variants(repo, folder="HighNoise")
     v = []
@@ -279,12 +327,36 @@ def wan_a14b(rid, name, about, repo, conv_hi, conv_lo, input_mode, tasks, spd=No
         v.append(dict(label="INT8 ConvRot", format="convrot", **cl, high=ch, size_total=ch["size"] + cl["size"]))
     recipe(id=rid, name=name, kind="video", family="Wan", about=about,
            steps=10, highSteps=8, cfg=3.5, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input=input_mode, tasks=tasks, fps=16, speed=spd,
-           variants=v, parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+           variants=v, parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)], **k)
 
 wan_a14b("wan2.2-t2v-a14b", "Wan 2.2 T2V A14B (video)", "Best-quality text-to-video (two 14B experts). Needs lots of RAM; GPU 12 GB+.",
          "QuantStack/Wan2.2-T2V-A14B-GGUF", r"wan2\.2_t2v_high_int8_ConvRot", r"wan2\.2_t2v_low_int8_ConvRot", "none", ["create"], WAN22_T2V_SPEED())
 wan_a14b("wan2.2-i2v-a14b", "Wan 2.2 I2V A14B (video)", "Animate a photo into a video clip (two 14B experts). GPU 12 GB+.",
          "QuantStack/Wan2.2-I2V-A14B-GGUF", r"^diffusion_models/wan2\.2_i2v_high_int8_convrot", r"^diffusion_models/wan2\.2_i2v_low_int8_convrot", "required", ["animate"], WAN22_I2V_SPEED())
+
+# ── uncensored video ──
+NSFW_I2V = [lora("lopi999/Wan2.2-I2V_General-NSFW-LoRA", r"NSFW-22-L-e8\.safetensors$", "builtin-wan22-i2v-nsfw-low"),
+            lora("lopi999/Wan2.2-I2V_General-NSFW-LoRA", r"NSFW-22-H-e8\.safetensors$", "builtin-wan22-i2v-nsfw-high", high=True)]
+wan_a14b("wan2.2-i2v-a14b-nsfw", "Wan 2.2 I2V A14B Uncensored (video)",
+         "Animate a photo with no content filter: Wan 2.2 with an NSFW LoRA (uses the same base files as Wan 2.2 I2V). GPU 12 GB+.",
+         "QuantStack/Wan2.2-I2V-A14B-GGUF", r"^diffusion_models/wan2\.2_i2v_high_int8_convrot", r"^diffusion_models/wan2\.2_i2v_low_int8_convrot",
+         "required", ["animate"], WAN22_I2V_SPEED(), uncensored=True, loras=[l for l in NSFW_I2V if l])
+nsfw14 = one("NSFW-API/NSFW_Wan_14b", r"^nsfw_wan_14b_e15_q4_k\.gguf$")
+recipe(id="nsfw-wan-14b-t2v", name="NSFW Wan 14B (text to video)", kind="video", family="Wan", uncensored=True,
+       about="Uncensored text-to-video: Wan 2.1 14B fine-tuned without a content filter. GPU 12 GB+.",
+       steps=20, cfg=5.0, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, fps=16,
+       tasks=["create"],
+       speed=speed("⚡ Lightx2v · 4 steps", 4, 1.0, [lora("lightx2v/Wan2.1-Distill-Loras", r"wan2\.1_t2v_14b_lora_rank64_lightx2v_4step\.safetensors$", "speed-wan21-14b-lightx2v-4step")]),
+       variants=[dict(label="Q4_K", format="gguf", **nsfw14)] if nsfw14 else [],
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+NV = "PineAmbassador/Wan2.2-VACE-Fun-A14B-NSFW_Merge"
+nlo, nhi = one(NV, r"low_noise/.*Q6_K.*\.gguf$"), one(NV, r"high_noise/.*Q6_K.*\.gguf$")
+recipe(id="wan2.2-vace-fun-a14b-nsfw", name="Wan 2.2 VACE Fun A14B Uncensored (video edit)", kind="video", family="Wan-VACE", uncensored=True,
+       about="Video editing and restyling with no content filter (NSFW merge of Wan 2.2 VACE Fun). Needs lots of RAM; GPU 16 GB+.",
+       steps=10, highSteps=8, cfg=3.5, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, input="optional", fps=16,
+       tasks=["video-edit","animate"], speed=WAN22_T2V_SPEED(),
+       variants=[dict(label="Q6_K", format="gguf", **nlo, high=nhi, size_total=nlo["size"] + nhi["size"])] if nlo and nhi else [],
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
 
 # ── video editing (Wan VACE) and LTX-2.3 ────────────────────────────────────
 vace13 = one("Comfy-Org/Wan-2.1", r"diffusion_models/wan2\.1_vace_1\.3B_fp16\.safetensors$")

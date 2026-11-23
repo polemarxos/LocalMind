@@ -508,6 +508,45 @@ Module HarnessMain
             Check(Voice.Chunks("First sentence. Second one! " & New String("x"c, 300) & ". Last.").Count >= 2, "long answers are read sentence by sentence")
         End If
 
+        If only = "v27" Then
+            Console.WriteLine("== 2.6.1: uncensored pictures & video, videos from the chat")
+            Dim unc = MediaStudio.Recipes().Where(Function(r) r.Uncensored).ToList()
+            Check(unc.Where(Function(r) Not r.IsVideo).Count() >= 5 AndAlso unc.Where(Function(r) r.IsVideo).Count() >= 3, "uncensored picture and video models in the catalog",
+                  String.Join(", ", unc.Select(Function(r) r.Id)))
+            Dim h16 = Hw(16, 32)
+            Dim normal = MediaStudio.BestForGpu(h16)
+            Dim uncFit = MediaStudio.BestForGpu(h16, uncensored:=True)
+            Check(Not normal.Any(Function(r) r.Uncensored) AndAlso uncFit.Count >= 4 AndAlso uncFit.All(Function(r) r.Uncensored OrElse r.IsUpscaler OrElse r.Kind = "tool"),
+                  "16 GB GPU: uncensored list has its own best picks", String.Join(", ", uncFit.Where(Function(r) r.Uncensored).Select(Function(r) r.Id)))
+            Dim wn = unc.First(Function(r) r.Id = "wan2.2-i2v-a14b-nsfw")
+            Dim files = MediaStudio.FilesFor(wn, wn.Variants.First())
+            Check(files.OfType(Of MediaLora)().Count() = 2 AndAlso files.OfType(Of MediaLora)().All(Function(l) l.Name.StartsWith(LoraLibrary.BuiltInPrefix)),
+                  "uncensored Wan 2.2 downloads its two built-in LoRAs (hidden from My LoRAs)", String.Join(", ", files.OfType(Of MediaLora)().Select(Function(l) l.Name)))
+            Dim baseI2v = MediaStudio.Recipes().First(Function(r) r.Id = "wan2.2-i2v-a14b")
+            Check(wn.Variants.First().Path = baseI2v.Variants.First().Path AndAlso wn.Variants.First().Repo = baseI2v.Variants.First().Repo,
+                  "it reuses the normal Wan 2.2 I2V files (no second download)")
+            Dim pony = unc.First(Function(r) r.Id = "pony-v6-xl")
+            Check(pony.Prefix.StartsWith("score_9") AndAlso pony.Extra.Contains("--clip-skip 2"), "Pony gets its quality tags and clip skip")
+
+            AppCore.Settings.AgentTools = True
+            AppCore.Settings.EnableImages = True
+            Dim tl = ChatAgent.Tools("any-model", False)
+            Dim names = tl.Select(Function(t) t("function").Value(Of String)("name")).ToList()
+            Check(names.Contains("generate_video") AndAlso names.Contains("generate_image"), "chat offers picture and video tools", String.Join(", ", names))
+            For Each c In {("generate me a video", "generate_video"), ("Generate me an image", "generate_image"),
+                           ("make a short video of a cat surfing", "generate_video"), ("draw me a dragon", "generate_image"),
+                           ("can you create a picture of a sunset over Santorini?", "generate_image"),
+                           ("animate this photo into a video", "generate_video"),
+                           ("φτιάξε μου ένα βίντεο με μια γάτα", "generate_video"), ("φτιάξε μου μια εικόνα με ένα σκύλο", "generate_image"),
+                           ("how do I make a video in Premiere?", CStr(Nothing)), ("πώς φτιάχνω βίντεο στο κινητό;", CStr(Nothing)),
+                           ("what is a good video card for gaming?", CStr(Nothing)), ("tell me a joke", CStr(Nothing))}
+                Dim got = ChatAgent.RequestedTool(c.Item1, tl)
+                Check(got = c.Item2, $"'{c.Item1}' → {If(c.Item2, "normal answer")}", If(got, "(none)"))
+            Next
+            Dim msg = Await ChatAgent.MakeVideoAsync("a cat", Nothing, Sub(t) Return, CancellationToken.None)
+            Check(msg.Contains("video model"), "no video model yet: a helpful note instead of an error", msg)
+        End If
+
         If only = "docs" Then
             Console.WriteLine("== Chat with documents (real embedding model)")
             Dim dir = Path.Combine(Path.GetTempPath(), "lm-docs")

@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -42,6 +42,8 @@ Public Module LoraLibrary
     Private _items As List(Of UserLora)
 
     Public Const SpeedPrefix As String = "speed-"
+    ''' <summary>LoRAs that are part of a built-in model (e.g. the uncensored Wan 2.2); hidden like speed LoRAs.</summary>
+    Public Const BuiltInPrefix As String = "builtin-"
 
     Public ReadOnly Property Folder As String
         Get
@@ -70,7 +72,8 @@ Public Module LoraLibrary
             Dim files = Directory.EnumerateFiles(Folder).Where(Function(f) f.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase) OrElse
                                                                          f.EndsWith(".ckpt", StringComparison.OrdinalIgnoreCase) OrElse
                                                                          f.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase)).
-                                                         Where(Function(f) Not Path.GetFileName(f).StartsWith(SpeedPrefix, StringComparison.OrdinalIgnoreCase)).ToList()
+                                                         Where(Function(f) Not Path.GetFileName(f).StartsWith(SpeedPrefix, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                                       Not Path.GetFileName(f).StartsWith(BuiltInPrefix, StringComparison.OrdinalIgnoreCase)).ToList()
             Dim changed = False
             For Each f In files
                 Dim n = Path.GetFileNameWithoutExtension(f)

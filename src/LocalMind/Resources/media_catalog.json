@@ -23,6 +23,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -120,6 +122,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -278,6 +282,8 @@
   "highSteps": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q4_0",
@@ -338,6 +344,8 @@
   "highSteps": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q4_0",
@@ -422,6 +430,8 @@
   "highSteps": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -526,6 +536,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "INT8 ConvRot",
@@ -591,6 +603,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -744,6 +758,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q3_K_M",
@@ -834,6 +850,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q3_K_L",
@@ -959,6 +977,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -1102,6 +1122,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "FP16",
@@ -1168,6 +1190,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "FP32",
@@ -1175,6 +1199,538 @@
     "repo": "stable-diffusion-v1-5/stable-diffusion-v1-5",
     "path": "v1-5-pruned-emaonly.safetensors",
     "size": 4265146304
+   }
+  ],
+  "parts": []
+ },
+ {
+  "id": "chroma1-hd",
+  "name": "Chroma1-HD",
+  "kind": "image",
+  "family": "Chroma",
+  "uncensored": true,
+  "about": "Uncensored FLUX-based model (Apache-2.0): photos, art and anime with no content filter. 26 steps.",
+  "steps": 26,
+  "cfg": 4.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "low quality, ugly, unfinished, out of focus, deformed, disfigured, blurry, smudged, restricted palette, flat colors",
+  "input": "optional",
+  "extra": "--model-args chroma_use_dit_mask=false",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "fps": 0,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q2_K.gguf",
+    "size": 3414855840
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q3_K_S.gguf",
+    "size": 4288975008
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q4_0.gguf",
+    "size": 5432053920
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q4_K_S.gguf",
+    "size": 5432053920
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q4_K_M.gguf",
+    "size": 5566533792
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q4_1.gguf",
+    "size": 5969973408
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q5_0.gguf",
+    "size": 6507892896
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q5_K_S.gguf",
+    "size": 6507892896
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q5_K_M.gguf",
+    "size": 6650777760
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q5_1.gguf",
+    "size": 7045812384
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q6_K.gguf",
+    "size": 7650971808
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-Q8_0.gguf",
+    "size": 9735409824
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-HD-GGUF",
+    "path": "Chroma1-HD-BF16.gguf",
+    "size": 17804202144
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/t5-v1_1-xxl-encoder-gguf",
+    "path": "t5-v1_1-xxl-encoder-Q8_0.gguf",
+    "size": 5061584064
+   }
+  ]
+ },
+ {
+  "id": "chroma1-flash",
+  "name": "Chroma1-Flash",
+  "kind": "image",
+  "family": "Chroma",
+  "uncensored": true,
+  "about": "Fast uncensored Chroma (about 12 steps, no negative prompt needed).",
+  "steps": 12,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "extra": "--model-args chroma_use_dit_mask=false",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "fps": 0,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q2_K.gguf",
+    "size": 3414855840
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q3_K_S.gguf",
+    "size": 4288975008
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q4_0.gguf",
+    "size": 5432053920
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q4_K_S.gguf",
+    "size": 5432053920
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q4_K_M.gguf",
+    "size": 5566533792
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q4_1.gguf",
+    "size": 5969973408
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q5_0.gguf",
+    "size": 6507892896
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q5_K_S.gguf",
+    "size": 6507892896
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q5_K_M.gguf",
+    "size": 6650777760
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q5_1.gguf",
+    "size": 7045812384
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q6_K.gguf",
+    "size": 7650971808
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-Q8_0.gguf",
+    "size": 9735409824
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "silveroxides/Chroma1-Flash-GGUF",
+    "path": "Chroma1-HD-Flash-BF16.gguf",
+    "size": 17804202144
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/t5-v1_1-xxl-encoder-gguf",
+    "path": "t5-v1_1-xxl-encoder-Q8_0.gguf",
+    "size": 5061584064
+   }
+  ]
+ },
+ {
+  "id": "realvisxl-v5",
+  "name": "RealVisXL V5 (photo)",
+  "kind": "image",
+  "family": "SDXL",
+  "uncensored": true,
+  "about": "Photorealistic SDXL model without a content filter. Runs on 8 GB GPUs.",
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint",
+   "layout",
+   "outline"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "--scheduler sgm_uniform",
+   "loras": [
+    {
+     "name": "speed-sdxl-lightning-8step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "ByteDance/SDXL-Lightning",
+     "path": "sdxl_lightning_8step_lora.safetensors",
+     "size": 393854592
+    }
+   ]
+  },
+  "steps": 30,
+  "cfg": 5.0,
+  "negative": "cartoon, painting, illustration, worst quality, low quality, blurry, deformed",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "FP16",
+    "format": "checkpoint",
+    "repo": "SG161222/RealVisXL_V5.0",
+    "path": "RealVisXL_V5.0_fp16.safetensors",
+    "size": 6938065488
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "madebyollin/sdxl-vae-fp16-fix",
+    "path": "sdxl.vae.safetensors",
+    "size": 334641162
+   },
+   {
+    "role": "control-net",
+    "control": true,
+    "repo": "xinsir/controlnet-union-sdxl-1.0",
+    "path": "diffusion_pytorch_model_promax.safetensors",
+    "size": 2513342408
+   }
+  ]
+ },
+ {
+  "id": "pony-v6-xl",
+  "name": "Pony Diffusion V6 XL",
+  "kind": "image",
+  "family": "SDXL",
+  "uncensored": true,
+  "about": "Popular uncensored SDXL model for characters (anime, cartoon, furry, semi-real). Quality tags are added for you.",
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint",
+   "layout",
+   "outline"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "--scheduler sgm_uniform",
+   "loras": [
+    {
+     "name": "speed-sdxl-lightning-8step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "ByteDance/SDXL-Lightning",
+     "path": "sdxl_lightning_8step_lora.safetensors",
+     "size": 393854592
+    }
+   ]
+  },
+  "steps": 25,
+  "cfg": 7.0,
+  "sampler": "euler_a",
+  "extra": "--clip-skip 2",
+  "prefix": "score_9, score_8_up, score_7_up, ",
+  "negative": "score_4, score_5, score_6, worst quality, low quality, blurry",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "fps": 0,
+  "variants": [
+   {
+    "label": "FP16",
+    "format": "checkpoint",
+    "repo": "LyliaEngine/Pony_Diffusion_V6_XL",
+    "path": "ponyDiffusionV6XL_v6StartWithThisOne.safetensors",
+    "size": 6938041050
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "madebyollin/sdxl-vae-fp16-fix",
+    "path": "sdxl.vae.safetensors",
+    "size": 334641162
+   },
+   {
+    "role": "control-net",
+    "control": true,
+    "repo": "xinsir/controlnet-union-sdxl-1.0",
+    "path": "diffusion_pytorch_model_promax.safetensors",
+    "size": 2513342408
+   }
+  ]
+ },
+ {
+  "id": "noobai-xl-1.1",
+  "name": "NoobAI-XL 1.1 (anime)",
+  "kind": "image",
+  "family": "SDXL",
+  "uncensored": true,
+  "about": "Uncensored anime / illustration model (Illustrious family). Understands Danbooru tags.",
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint",
+   "layout",
+   "outline"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "--scheduler sgm_uniform",
+   "loras": [
+    {
+     "name": "speed-sdxl-lightning-8step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "ByteDance/SDXL-Lightning",
+     "path": "sdxl_lightning_8step_lora.safetensors",
+     "size": 393854592
+    }
+   ]
+  },
+  "steps": 28,
+  "cfg": 5.0,
+  "sampler": "euler_a",
+  "prefix": "masterpiece, best quality, newest, absurdres, highres, ",
+  "negative": "worst quality, old, early, low quality, lowres, signature, username, logo, bad hands, mutated hands",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "variants": [
+   {
+    "label": "FP16",
+    "format": "checkpoint",
+    "repo": "Laxhar/noobai-XL-1.1",
+    "path": "NoobAI-XL-v1.1.safetensors",
+    "size": 7105349958
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "madebyollin/sdxl-vae-fp16-fix",
+    "path": "sdxl.vae.safetensors",
+    "size": 334641162
+   },
+   {
+    "role": "control-net",
+    "control": true,
+    "repo": "xinsir/controlnet-union-sdxl-1.0",
+    "path": "diffusion_pytorch_model_promax.safetensors",
+    "size": 2513342408
+   }
+  ]
+ },
+ {
+  "id": "realistic-vision-v6",
+  "name": "Realistic Vision V6 (SD 1.5)",
+  "kind": "image",
+  "family": "SD1.5",
+  "uncensored": true,
+  "about": "Small photorealistic model without a content filter. Runs on almost any PC (4 GB GPU).",
+  "steps": 25,
+  "cfg": 5.0,
+  "width": 512,
+  "height": 768,
+  "input": "optional",
+  "negative": "deformed, cartoon, anime, worst quality, low quality, blurry",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "speed": {
+   "label": "⚡ LCM · 6 steps",
+   "steps": 6,
+   "highSteps": 0,
+   "cfg": 1.5,
+   "extra": "--sampling-method lcm",
+   "loras": [
+    {
+     "name": "speed-sd15-lcm",
+     "high": false,
+     "weight": 1.0,
+     "repo": "latent-consistency/lcm-lora-sdv1-5",
+     "path": "pytorch_lora_weights.safetensors",
+     "size": 134621556
+    }
+   ]
+  },
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "FP16",
+    "format": "checkpoint",
+    "repo": "SG161222/Realistic_Vision_V6.0_B1_noVAE",
+    "path": "Realistic_Vision_V6.0_NV_B1_fp16.safetensors",
+    "size": 2132625894
    }
   ],
   "parts": []
@@ -1224,6 +1780,8 @@
   "highSteps": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -1408,6 +1966,8 @@
   "frames": 0,
   "highSteps": 0,
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -1544,6 +2104,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "lite 512",
@@ -1577,6 +2139,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "4×",
@@ -1610,6 +2174,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "4×",
@@ -1643,6 +2209,8 @@
   "refs": 0,
   "extra": "",
   "fps": 0,
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "4×",
@@ -1677,6 +2245,8 @@
   "highSteps": 0,
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -1824,6 +2394,8 @@
   "input": "none",
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "FP16",
@@ -1895,6 +2467,8 @@
   "sampler": "euler",
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -2141,6 +2715,8 @@
   "sampler": "euler",
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",
@@ -2315,6 +2891,391 @@
   ]
  },
  {
+  "id": "wan2.2-i2v-a14b-nsfw",
+  "name": "Wan 2.2 I2V A14B Uncensored (video)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Animate a photo with no content filter: Wan 2.2 with an NSFW LoRA (uses the same base files as Wan 2.2 I2V). GPU 12 GB+.",
+  "steps": 10,
+  "highSteps": 8,
+  "cfg": 3.5,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "required",
+  "tasks": [
+   "animate"
+  ],
+  "fps": 16,
+  "speed": {
+   "label": "⚡ Lightning · 4+4 steps",
+   "steps": 4,
+   "highSteps": 4,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-i2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+     "size": 739472104
+    },
+    {
+     "name": "speed-wan22-i2v-high-4step",
+     "high": true,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+     "size": 634645944
+    }
+   ]
+  },
+  "uncensored": true,
+  "loras": [
+   {
+    "name": "builtin-wan22-i2v-nsfw-low",
+    "high": false,
+    "weight": 1.0,
+    "repo": "lopi999/Wan2.2-I2V_General-NSFW-LoRA",
+    "path": "NSFW-22-L-e8.safetensors",
+    "size": 613516752
+   },
+   {
+    "name": "builtin-wan22-i2v-nsfw-high",
+    "high": true,
+    "weight": 1.0,
+    "repo": "lopi999/Wan2.2-I2V_General-NSFW-LoRA",
+    "path": "NSFW-22-H-e8.safetensors",
+    "size": 613516752
+   }
+  ],
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q2_K.gguf",
+    "size": 5300957696,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q2_K.gguf",
+     "size": 5300957696
+    },
+    "size_total": 10601915392
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q3_K_S.gguf",
+    "size": 6515012096,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q3_K_S.gguf",
+     "size": 6515012096
+    },
+    "size_total": 13030024192
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q3_K_M.gguf",
+    "size": 7176106496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q3_K_M.gguf",
+     "size": 7176106496
+    },
+    "size_total": 14352212992
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q4_K_S.gguf",
+    "size": 8748151296,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q4_K_S.gguf",
+     "size": 8748151296
+    },
+    "size_total": 17496302592
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q4_K_M.gguf",
+    "size": 9651728896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q4_K_M.gguf",
+     "size": 9651728896
+    },
+    "size_total": 19303457792
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_K_S.gguf",
+    "size": 10137514496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_K_S.gguf",
+     "size": 10137514496
+    },
+    "size_total": 20275028992
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_0.gguf",
+    "size": 10314461696,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_0.gguf",
+     "size": 10314461696
+    },
+    "size_total": 20628923392
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_K_M.gguf",
+    "size": 10792055296,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_K_M.gguf",
+     "size": 10792055296
+    },
+    "size_total": 21584110592
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_1.gguf",
+    "size": 11015696896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_1.gguf",
+     "size": 11015696896
+    },
+    "size_total": 22031393792
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q6_K.gguf",
+    "size": 12003652096,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q6_K.gguf",
+     "size": 12003652096
+    },
+    "size_total": 24007304192
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/wan2.2_i2v_low_int8_convrot.safetensors",
+    "size": 14538222688,
+    "high": {
+     "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+     "path": "diffusion_models/wan2.2_i2v_high_int8_convrot.safetensors",
+     "size": 14538222688
+    },
+    "size_total": 29076445376
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf",
+    "size": 15406608896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf",
+     "size": 15406608896
+    },
+    "size_total": 30813217792
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "nsfw-wan-14b-t2v",
+  "name": "NSFW Wan 14B (text to video)",
+  "kind": "video",
+  "family": "Wan",
+  "uncensored": true,
+  "about": "Uncensored text-to-video: Wan 2.1 14B fine-tuned without a content filter. GPU 12 GB+.",
+  "steps": 20,
+  "cfg": 5.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "fps": 16,
+  "tasks": [
+   "create"
+  ],
+  "speed": {
+   "label": "⚡ Lightx2v · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan21-14b-lightx2v-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.1-Distill-Loras",
+     "path": "wan2.1_t2v_14b_lora_rank64_lightx2v_4step.safetensors",
+     "size": 631344264
+    }
+   ]
+  },
+  "sampler": "euler",
+  "highSteps": 0,
+  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "NSFW-API/NSFW_Wan_14b",
+    "path": "nsfw_wan_14b_e15_q4_k.gguf",
+    "size": 9659931264
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "wan2.2-vace-fun-a14b-nsfw",
+  "name": "Wan 2.2 VACE Fun A14B Uncensored (video edit)",
+  "kind": "video",
+  "family": "Wan-VACE",
+  "uncensored": true,
+  "about": "Video editing and restyling with no content filter (NSFW merge of Wan 2.2 VACE Fun). Needs lots of RAM; GPU 16 GB+.",
+  "steps": 10,
+  "highSteps": 8,
+  "cfg": 3.5,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "fps": 16,
+  "tasks": [
+   "video-edit",
+   "animate"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 4+4 steps",
+   "steps": 4,
+   "highSteps": 4,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-t2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_low_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    },
+    {
+     "name": "speed-wan22-t2v-high-4step",
+     "high": true,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_high_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    }
+   ]
+  },
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "PineAmbassador/Wan2.2-VACE-Fun-A14B-NSFW_Merge",
+    "path": "low_noise/Wan2.2-VACE-Fun-A14B-NSFW_Merge-Q6_K_low.gguf",
+    "size": 14506139552,
+    "high": {
+     "repo": "PineAmbassador/Wan2.2-VACE-Fun-A14B-NSFW_Merge",
+     "path": "high_noise/Wan2.2-VACE-Fun-A14B-NSFW_Merge-Q6_K_high.gguf",
+     "size": 14506139552
+    },
+    "size_total": 29012279104
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
   "id": "wan2.1-vace-1.3b",
   "name": "Wan 2.1 VACE 1.3B (video edit)",
   "kind": "video",
@@ -2355,6 +3316,8 @@
   "highSteps": 0,
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "FP16",
@@ -2420,6 +3383,8 @@
   "highSteps": 0,
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q3_K_S",
@@ -2576,6 +3541,8 @@
   "sampler": "euler",
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q3_K_S",
@@ -2746,6 +3713,8 @@
   "highSteps": 0,
   "refs": 0,
   "extra": "",
+  "uncensored": false,
+  "prefix": "",
   "variants": [
    {
     "label": "Q2_K",

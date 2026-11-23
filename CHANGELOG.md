@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.6.1
+
+### New
+- **Uncensored pictures and video:** new **🔓 Uncensored** list in the Studio (next to *Best for my GPU* / *All models*):
+  - Pictures: Chroma1-HD and Chroma1-Flash (FLUX-based), RealVisXL V5 (photo), Pony Diffusion V6 XL, NoobAI-XL 1.1 (anime),
+    Realistic Vision V6 (SD 1.5, runs on 4 GB GPUs).
+  - Video: Wan 2.2 I2V Uncensored (animate a photo; reuses your Wan 2.2 I2V files and adds a small LoRA),
+    NSFW Wan 14B (text to video), Wan 2.2 VACE Fun Uncensored (video editing).
+  - Pony and NoobAI add their quality tags to your prompt automatically; ⚡ Lightning/LCM fast mode on the SDXL and SD 1.5 ones.
+- **Videos from the chat:** say *"generate me a video of…"* (or *"φτιάξε μου ένα βίντεο…"*) and the video appears in the chat,
+  on the PC and on the phone (MP4). Attach a photo to animate it.
+- **Pictures and videos are made when you plainly ask**, even with small chat models that used to answer *"I can't make images"*.
+  Questions like *"how do I make a video in Premiere?"* still get a normal answer.
+
+### Fixes
+- Model Manager: the 🔓 Uncensored category was empty in *★ Best that fit my GPU* — it now shows the best uncensored chat models that fit your GPU.
+
 ## 2.6.0
 
 ### New
@@ -22,7 +39,6 @@
 - **Memory monitor** in the status bar: graphics memory, RAM and what is loaded; click to free memory.
 
 ### Fixes
-- Model Manager: the 🔓 Uncensored category was empty in “★ Best that fit my GPU” — it now shows the best uncensored models that fit your GPU.
 - Files already on disk under a renamed Hugging Face folder are reused instead of downloaded again.
 - Painted-area edits blend in smoothly; everything outside the painted area stays exactly as it was. The brush is faster.
 - Before downloading a picture, video, voice or music model, LocalMind shows the graphics memory and RAM it needs

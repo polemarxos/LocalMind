@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.IO
@@ -94,6 +94,12 @@ Public Class MediaRecipe
     <JsonProperty("extra")> Public Property Extra As String     ' extra sd-cli arguments
     <JsonProperty("fps")> Public Property Fps As Integer
     <JsonProperty("speed")> Public Property Speed As MediaSpeed
+    ''' <summary>No content filter; listed under "🔓 Uncensored" and kept out of the default list.</summary>
+    <JsonProperty("uncensored")> Public Property Uncensored As Boolean
+    ''' <summary>Text put in front of every prompt (e.g. Pony's quality tags).</summary>
+    <JsonProperty("prefix")> Public Property Prefix As String
+    ''' <summary>LoRAs that are part of the model (always downloaded and applied).</summary>
+    <JsonProperty("loras")> Public Property Loras As New List(Of MediaLora)()
     <JsonProperty("variants")> Public Property Variants As New List(Of MediaVariant)()
     <JsonProperty("parts")> Public Property Parts As New List(Of MediaPart)()
 
@@ -276,6 +282,7 @@ Public Module MediaStudio
         Dim l As New List(Of MediaFile) From {v}
         If v.High IsNot Nothing Then l.Add(v.High)
         l.AddRange(r.Parts.Where(Function(p) (forEdit OrElse Not p.Edit) AndAlso Not p.Control))
+        If r.Loras IsNot Nothing Then l.AddRange(r.Loras)
         If withSpeed AndAlso r.Speed IsNot Nothing Then l.AddRange(r.Speed.Loras)
         Return l
     End Function
@@ -391,8 +398,9 @@ Public Module MediaStudio
     End Function
 
     ''' <summary>Default Studio list: recipes whose best variant runs entirely on this GPU.</summary>
-    Public Function BestForGpu(hw As HardwareInfo) As List(Of MediaRecipe)
+    Public Function BestForGpu(hw As HardwareInfo, Optional uncensored As Boolean = False) As List(Of MediaRecipe)
         Return Recipes().Where(Function(r)
+                                   If r.Uncensored <> uncensored AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" Then Return False
                                    Dim v = PickVariant(r, hw)
                                    Dim f = Fit(r, v, hw)
                                    Return f = FitLevel.Fits OrElse (hw.VramBytes = 0 AndAlso f <> FitLevel.TooBig)
@@ -521,7 +529,11 @@ Public Module MediaStudio
             Next
             ' LoRAs: the user's own (with trigger words) and the Turbo / Lightning one.
             Dim prompt = promptPrefix & req.Prompt
+            If Not String.IsNullOrEmpty(r.Prefix) AndAlso Not req.Prompt.StartsWith(r.Prefix.Trim().TrimEnd(","c), StringComparison.OrdinalIgnoreCase) Then prompt = r.Prefix & prompt
             Dim tags As New StringBuilder()
+            For Each l In If(r.Loras, New List(Of MediaLora)())
+                tags.Append(FormattableString.Invariant($"<lora:{If(l.High, "|high_noise|", "")}{l.Name}:{l.Weight}>"))
+            Next
             Dim speedOn = req.Fast AndAlso r.Speed IsNot Nothing
             If speedOn Then
                 If Not SpeedReady(r) Then

@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Threading
 Imports System.Threading.Tasks
@@ -11,6 +11,8 @@ Public Class ChatRequestOptions
     Public Property EnableThinking As Boolean
     ''' <summary>OpenAI-style tool definitions the model may call (built-in engine / OpenAI-compatible servers).</summary>
     Public Property Tools As Newtonsoft.Json.Linq.JArray
+    ''' <summary>"required" makes the model call one of the tools (used when the user plainly asks for a picture or video).</summary>
+    Public Property ToolChoice As String
 End Class
 
 Public Class ToolCall

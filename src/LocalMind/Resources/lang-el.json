@@ -547,7 +547,6 @@
 "Choose a chat model first.": "Επιλέξτε πρώτα μοντέλο συνομιλίας.",
 "Preparing the AI voice…": "Προετοιμασία της φωνής AI…",
 "Keep the AI engines up to date automatically": "Αυτόματη ενημέρωση των μηχανών AI",
-"The AI may draw, compose and search the web by itself when you ask": "Το AI μπορεί μόνο του να ζωγραφίσει, να συνθέσει και να ψάξει στο διαδίκτυο όταν το ζητάτε",
 "AI tools": "Εργαλεία AI",
 "(use the Windows voice above)": "(χρήση της φωνής Windows παραπάνω)",
 "AI reading voice": "Φωνή ανάγνωσης AI",
@@ -595,5 +594,11 @@
 "📦 Product shot": "📦 Φωτογραφία προϊόντος",
 "🏛 Architecture": "🏛 Αρχιτεκτονική",
 "Built-in engine (llama.cpp) — runs models on this PC  ★ recommended": "Ενσωματωμένη μηχανή (llama.cpp) — τρέχει τα μοντέλα σε αυτόν τον υπολογιστή  ★ προτείνεται",
-"Private AI for Windows: chat, pictures, video, music and voice, all on your own PC.": "Ιδιωτικό AI για Windows: συνομιλία, εικόνες, βίντεο, μουσική και φωνή, όλα στον δικό σας υπολογιστή."
+"Private AI for Windows: chat, pictures, video, music and voice, all on your own PC.": "Ιδιωτικό AI για Windows: συνομιλία, εικόνες, βίντεο, μουσική και φωνή, όλα στον δικό σας υπολογιστή.",
+"🔓 Uncensored": "🔓 Χωρίς λογοκρισία",
+"The AI may draw, make videos, compose and search the web by itself when you ask": "Το AI μπορεί μόνο του να ζωγραφίσει, να φτιάξει βίντεο, να συνθέσει και να ψάξει στο διαδίκτυο όταν το ζητάτε",
+"(Your video model needs a photo — attach one and ask again.)": "(Το μοντέλο βίντεο χρειάζεται φωτογραφία — επισυνάψτε μία και ζητήστε το ξανά.)",
+"(No video model is downloaded yet — open 🎨 Create, pick a video task and get one.)": "(Δεν έχει κατέβει ακόμη μοντέλο βίντεο — ανοίξτε το 🎨 Δημιουργία, διαλέξτε μια εργασία βίντεο και κατεβάστε ένα.)",
+"Animating the photo…": "Ζωντανεύω τη φωτογραφία…",
+"Making the video…": "Φτιάχνω το βίντεο…"
 }

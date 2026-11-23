@@ -1,9 +1,10 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
 Imports System.Threading
 Imports System.Threading.Tasks
+Imports System.Text.RegularExpressions
 Imports Newtonsoft.Json.Linq
 
 ''' <summary>
@@ -22,15 +23,37 @@ Public Module ChatAgent
                 {"parameters", New JObject From {{"type", "object"}, {"properties", props}, {"required", New JArray(required)}}}}}}
     End Function
 
+    ' Plain requests for a video or a picture (English and Greek). "How do I make a video…" questions are not requests.
+    Private ReadOnly AskVideo As New Regex("\b(generate|make|create|render|produce|animate|film)\b[^.?!\n]{0,60}\b(video|clip|animation|movie)s?\b|" &
+                                           "(φτιά[χξ]|δημιούργ|κάνε|κάν'|βγάλε|παρήγαγε|ζωντάνεψε)[^.?!;\n]{0,60}(βίντεο|κλιπ|κινούμεν)",
+                                           RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    Private ReadOnly AskPicture As New Regex("\b(generate|make|create|draw|paint|render|design)\b[^.?!\n]{0,60}\b(image|picture|photo|drawing|painting|illustration|logo|wallpaper|portrait)s?\b|" &
+                                             "^\s*(please\s+)?(draw|paint)\b|" &
+                                             "(φτιά[χξ]|δημιούργ|ζωγράφισ|κάνε|σχεδίασ)[^.?!;\n]{0,60}(εικόνα|φωτογραφ|ζωγραφι|σκίτσο|λογότυπο|πορτρέτο)",
+                                             RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    Private ReadOnly HowTo As New Regex("\bhow (do|to|can|should|would)\b|\bπώς\b|\bπως\b|\btutorial\b", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+
+    ''' <summary>The tool the user plainly asked for in their latest message ("generate me a video"), if offered.</summary>
+    Public Function RequestedTool(text As String, tools As JArray) As String
+        If tools Is Nothing OrElse String.IsNullOrWhiteSpace(text) OrElse HowTo.IsMatch(text) Then Return Nothing
+        Dim offered = tools.Select(Function(t) t("function")?.Value(Of String)("name")).ToList()
+        If AskVideo.IsMatch(text) AndAlso offered.Contains("generate_video") Then Return "generate_video"
+        If AskPicture.IsMatch(text) AndAlso offered.Contains("generate_image") Then Return "generate_image"
+        Return Nothing
+    End Function
+
     ''' <summary>Tools offered to the model, depending on the abilities that are switched on and installed.</summary>
     Public Function Tools(model As String, offerWebSearch As Boolean) As JArray
         Dim s = AppCore.Settings
         If Not s.AgentTools Then Return Nothing
         If NoToolModels.Contains(If(model, "")) Then Return Nothing
         Dim list As New JArray()
-        If s.EnableImages AndAlso PickImageRecipe(False) IsNot Nothing Then
+        If s.EnableImages Then
             list.Add(Tool("generate_image", "Create a picture with the local image model. Use it only when the user asks for a picture, drawing, photo, logo or illustration.",
                 New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the picture: subject, setting, style, lighting. Keep any text that must appear exactly."}}}},
+                {"prompt"}))
+            list.Add(Tool("generate_video", "Create a short video clip (a few seconds) with the local video model. If the user attached a photo, it is animated. Use it only when the user asks for a video, clip or animation.",
+                New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the video: subject, action and motion, camera movement, setting, style, lighting."}}}},
                 {"prompt"}))
         End If
         If s.EnableAudio AndAlso AudioStudio.Models().Any(Function(m) m.IsMusic AndAlso AudioStudio.IsInstalled(m)) Then
@@ -55,6 +78,14 @@ Public Module ChatAgent
                                       opts As ChatRequestOptions, offerWebSearch As Boolean, status As Action(Of String), beforeFollowup As Action,
                                       ct As CancellationToken) As Task(Of (Result As ChatResult, Markdown As String, Sources As List(Of SourceRef)))
         opts.Tools = Tools(opts.Model, offerWebSearch)
+        ' A plain "make me a video / picture": make sure it happens (small models often answer "I can't")
+        ' by offering only that tool and requiring the call; the model still writes the English prompt.
+        Dim userText = payload?.LastOrDefault(Function(m) m.Role = "user")?.Content
+        Dim forced = RequestedTool(userText, opts.Tools)
+        If forced IsNot Nothing Then
+            opts.Tools = New JArray(opts.Tools.First(Function(t) t("function")?.Value(Of String)("name") = forced))
+            opts.ToolChoice = "required"
+        End If
         Dim result As ChatResult = Nothing
         Dim failed = False
         Try
@@ -65,7 +96,13 @@ Public Module ChatAgent
         If failed Then
             NoToolModels.Add(If(opts.Model, ""))
             opts.Tools = Nothing
+            opts.ToolChoice = Nothing
             result = Await streamOnce(opts)
+        End If
+        opts.ToolChoice = Nothing
+        If result.ToolCalls.Count = 0 AndAlso forced IsNot Nothing Then
+            ' The model could not call the tool: run it with the user's own words.
+            result.ToolCalls.Add(New ToolCall With {.Name = forced, .Arguments = New JObject From {{"prompt", userText}}.ToString()})
         End If
         If result.ToolCalls.Count = 0 Then Return (result, "", Nothing)
 
@@ -82,6 +119,8 @@ Public Module ChatAgent
                 Select Case tc.Name
                     Case "generate_image"
                         md.AppendLine().AppendLine().Append(Await MakePictureAsync(If(args.Value(Of String)("prompt"), ""), Nothing, status, ct))
+                    Case "generate_video"
+                        md.AppendLine().AppendLine().Append(Await MakeVideoAsync(If(args.Value(Of String)("prompt"), ""), LastPhoto(payload), status, ct))
                     Case "make_song"
                         md.AppendLine().AppendLine().Append(Await MakeSongAsync(If(args.Value(Of String)("style"), ""), args.Value(Of String)("lyrics"), status, ct))
                     Case "web_search"
@@ -135,6 +174,63 @@ Public Module ChatAgent
             .InputImage = photoFile, .Loras = LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()}
         Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
         Return $"![{EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
+    End Function
+
+    ''' <summary>A downloaded video model: with a photo one that animates it (else one that creates from text).</summary>
+    Public Function PickVideoRecipe(withPhoto As Boolean) As MediaRecipe
+        Dim hw = HardwareInfo.Current()
+        Dim all = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
+        Dim ok = all.Where(Function(r) If(withPhoto, r.Can("animate"), r.Can("create") AndAlso r.Input <> "required")).ToList()
+        If ok.Count = 0 AndAlso withPhoto Then ok = all.Where(Function(r) r.Can("create") AndAlso r.Input <> "required").ToList()
+        Return ok.OrderBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.InstalledVariant(r), hw) = FitLevel.Fits, 0, 1)).
+                  ThenBy(Function(r) If(r.Uncensored, 1, 0)).
+                  ThenBy(Function(r) If(r.Speed IsNot Nothing AndAlso AppCore.Settings.MediaFast, r.Speed.Steps, r.Steps)).FirstOrDefault()
+    End Function
+
+    ''' <summary>The photo attached to the user's latest message (saved to a temporary file), if any.</summary>
+    Private Function LastPhoto(payload As List(Of ChatMessage)) As String
+        Dim m = payload?.LastOrDefault(Function(x) x.Role = "user")
+        Dim b64 = m?.Images?.FirstOrDefault()
+        If String.IsNullOrEmpty(b64) Then Return Nothing
+        Try
+            Dim f = Path.Combine(Path.GetTempPath(), "localmind-photo-" & Guid.NewGuid().ToString("N") & ".png")
+            File.WriteAllBytes(f, Convert.FromBase64String(b64))
+            Return f
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    ''' <summary>Makes a short video (animates the photo if one is given) and returns Markdown with a player.</summary>
+    Public Async Function MakeVideoAsync(prompt As String, photoFile As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Dim r = PickVideoRecipe(photoFile IsNot Nothing)
+        If r Is Nothing Then
+            Dim animOnly = MediaStudio.Recipes().Any(Function(x) x.IsVideo AndAlso MediaStudio.InstalledVariant(x) IsNot Nothing)
+            Return Localizer.T(If(animOnly, "(Your video model needs a photo — attach one and ask again.)",
+                                            "(No video model is downloaded yet — open 🎨 Create, pick a video task and get one.)"))
+        End If
+        Dim v = MediaStudio.InstalledVariant(r)
+        Dim fast = AppCore.Settings.MediaFast AndAlso r.Speed IsNot Nothing
+        Dim animate = photoFile IsNot Nothing AndAlso r.Can("animate")
+        status?.Invoke(If(animate, "Animating the photo…", "Making the video…"))
+        Dim req As New MediaStudio.GenerateRequest With {
+            .Recipe = r, .Variant = v, .Prompt = If(String.IsNullOrWhiteSpace(prompt), "a beautiful scene, gentle camera movement", prompt), .Negative = r.Negative,
+            .Task = If(animate, "animate", "create"), .InputImage = If(animate, photoFile, Nothing),
+            .Width = If(r.Width > 0, r.Width, 832), .Height = If(r.Height > 0, r.Height, 480), .Frames = Math.Max(1, r.Frames),
+            .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast,
+            .Loras = LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()}
+        Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
+        ' MP4 plays everywhere (iPhone too); keep the original if ffmpeg is not available.
+        If out.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) Then
+            Try
+                status?.Invoke("Converting to MP4…")
+                out = Await VideoTools.ToMp4Async(out, status, ct)
+            Catch ex As OperationCanceledException
+                Throw
+            Catch
+            End Try
+        End If
+        Return $"[🎬 {EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
     End Function
 
     Public Async Function MakeSongAsync(style As String, lyrics As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)

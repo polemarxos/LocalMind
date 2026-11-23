@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
@@ -81,7 +81,7 @@ Public Class StudioForm
         cmbTask.Items.AddRange(TaskList.Select(Function(t) CObj(Localizer.T(t.Label))).ToArray())
         cmbTask.SelectedIndex = 0
         cmbShow = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 190}
-        cmbShow.Items.AddRange({Localizer.T("★ Best for my GPU"), Localizer.T("All models (show everything)")})
+        cmbShow.Items.AddRange({Localizer.T("★ Best for my GPU"), Localizer.T("All models (show everything)"), Localizer.T("🔓 Uncensored")})
         cmbShow.SelectedIndex = 0
         Theme.StyleInput(cmbShow) : Theme.StyleInput(cmbTask)
         Dim btnCivitai = Theme.MakeButton("🌐 More on Civitai…")
@@ -393,7 +393,14 @@ Public Class StudioForm
     End Function
 
     Private Sub FillGrid()
-        Dim list = If(cmbShow.SelectedIndex = 0, MediaStudio.BestForGpu(_hw), MediaStudio.Recipes())
+        Dim list As List(Of MediaRecipe)
+        Select Case cmbShow.SelectedIndex
+            Case 0 : list = MediaStudio.BestForGpu(_hw)
+            Case 2   ' uncensored: the ones that fit first, then the rest (they may use system RAM)
+                Dim fit = MediaStudio.BestForGpu(_hw, uncensored:=True)
+                list = fit.Concat(MediaStudio.Recipes().Where(Function(x) x.Uncensored AndAlso Not fit.Contains(x))).ToList()
+            Case Else : list = MediaStudio.Recipes()
+        End Select
         Dim t = CurrentTask()
         list = list.Where(Function(r) r.Can(t.Id) AndAlso (r.IsUpscaler OrElse r.IsVideo = t.Video)).ToList()
         grid.Rows.Clear()
@@ -401,7 +408,7 @@ Public Class StudioForm
             Dim v = MediaStudio.PickVariant(r, _hw)
             Dim fit = MediaStudio.Fit(r, v, _hw)
             Dim installed = MediaStudio.InstalledVariant(r)
-            Dim i = grid.Rows.Add(If(installed IsNot Nothing, "✔ ", "") & r.Name & If(r.Speed IsNot Nothing, " ⚡", ""),
+            Dim i = grid.Rows.Add(If(installed IsNot Nothing, "✔ ", "") & r.Name & If(r.Speed IsNot Nothing, " ⚡", "") & If(r.Uncensored, " 🔓", ""),
                                   If(r.IsVideo, "🎬", If(r.IsUpscaler, "🔍", "🖼")),
                                   $"{v.Label} · {Downloader.FormatBytes(v.Total)}", ModelCatalog.FitText(fit, _hw.VramBytes = 0))
             grid.Rows(i).Tag = r

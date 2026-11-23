@@ -30,7 +30,8 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 - **Speed test:** see how fast each model runs on your PC.
 - **Auto context:** each model uses the largest conversation memory that fits your GPU.
 - **Image & video studio:** make pictures and short videos offline with Z-Image, FLUX.2 klein, Qwen-Image, Krea 2,
-  Anima, SDXL and Wan 2.x. You get GGUF and **INT8 ConvRot** versions, picked to fit your VRAM.
+  Anima, SDXL and Wan 2.x, plus a **🔓 Uncensored** list (Chroma, Pony, RealVisXL, NoobAI, uncensored Wan video).
+  You get GGUF and **INT8 ConvRot** versions, picked to fit your VRAM.
   Or switch on **🖼 Image** in the chat: the chat model unloads to free the GPU, and the picture appears in the conversation.
 - **Edit pictures and videos:** describe a change, paint an area, combine pictures, enlarge 4×, restyle your own videos.
   ⚡ Lightning/Turbo LoRAs make most models 4–8 step fast.
@@ -39,7 +40,7 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 - **Music & voice:** songs with vocals, speech in 23 languages (Greek too), and voice cloning from a short recording.
 - **Only what you want:** on first start choose chat only, or add pictures & video and/or music & voice.
 - **Hands-free:** talk to the AI and hear the answer (in your own cloned voice if you like). The AI can also draw,
-  compose and search the web by itself when you ask.
+  make videos, compose and search the web by itself when you ask ("generate me a video of…").
 - **Auto-update** from GitHub Releases.
 - **Other servers:** you can also connect to any OpenAI-compatible server (LM Studio, vLLM,
   or another PC running LocalMind).
