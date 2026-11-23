@@ -193,7 +193,7 @@ Public Module Theme
                     e.Graphics.FillRectangle(b, e.Bounds)
                 End Using
                 TextRenderer.DrawText(e.Graphics, t.TabPages(e.Index).Text, BoldFont, e.Bounds, If(selected, Color.White, CText),
-                                      TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter)
+                                      TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
             End Sub
         For Each p As TabPage In t.TabPages
             p.BackColor = CPanel

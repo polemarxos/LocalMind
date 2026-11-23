@@ -54,7 +54,7 @@ jobs:
               Shot "models-best"
               $ws.SendKeys('Qwen3.8-27B-Uncensored:iq4_xs'); Start-Sleep -Seconds 4
               Shot "models-search"
-              $ws.SendKeys('^{TAB}'); Start-Sleep 1; $ws.SendKeys('^{TAB}'); Start-Sleep -Seconds 5
+              $ws.SendKeys('^{TAB}'); Start-Sleep 1; $ws.SendKeys('^{TAB}'); Start-Sleep 1; $ws.SendKeys('^{TAB}'); Start-Sleep -Seconds 6
               Shot "models-media"
             }
             Stop-Process -Id $p.Id -Force
