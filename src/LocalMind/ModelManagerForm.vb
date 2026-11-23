@@ -70,15 +70,21 @@ Public Class ModelManagerForm
     '════════════════════════════════════════════════════════════
     Private Sub BuildUi()
         ' Header
-        Dim header As New Panel() With {.Dock = DockStyle.Top, .Height = 58, .BackColor = Theme.CRaised, .Padding = New Padding(12, 6, 12, 6)}
-        lblHw = New Label() With {.AutoSize = True, .Font = New Font("Segoe UI", 10.5!, FontStyle.Bold), .ForeColor = Color.White, .Location = New Point(12, 8)}
-        lblInfo = New Label() With {.AutoSize = True, .Font = Theme.SmallFont, .ForeColor = Theme.CDim, .Location = New Point(12, 32)}
+        Dim header As New Panel() With {.Dock = DockStyle.Top, .Height = 70, .BackColor = Theme.CBack, .Padding = New Padding(16, 10, 16, 8)}
+        lblHw = New Label() With {.AutoSize = True, .Font = New Font("Segoe UI Semibold", 12.0!), .ForeColor = Color.White, .Location = New Point(16, 10)}
+        lblInfo = New Label() With {.AutoSize = True, .Font = Theme.SmallFont, .ForeColor = Theme.CDim, .Location = New Point(17, 40)}
         header.Controls.AddRange({lblHw, lblInfo})
+        AddHandler header.Paint, Sub(s, e)
+                                     Using p As New Pen(Theme.CBorder)
+                                         e.Graphics.DrawLine(p, 0, header.Height - 1, header.Width, header.Height - 1)
+                                     End Using
+                                 End Sub
 
         ' Downloads panel (bottom)
-        Dim dlPanel As New Panel() With {.Dock = DockStyle.Bottom, .Height = 190, .Padding = New Padding(8)}
-        Dim dlBar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 36, .WrapContents = False}
-        Dim lblDl = Theme.MakeLabel("Downloads", bold:=True)
+        Dim dlPanel As New Panel() With {.Dock = DockStyle.Bottom, .Height = 180, .Padding = New Padding(10, 6, 10, 8), .BackColor = Theme.CBack}
+        Dim dlBar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 38, .WrapContents = False}
+        Dim lblDl = Theme.MakeLabel("⬇ DOWNLOADS", bold:=True, dim_:=True)
+        lblDl.Margin = New Padding(3, 10, 12, 3)
         Dim btnCancel = Theme.MakeButton("Cancel")
         Dim btnCancelDel = Theme.MakeButton("Cancel && delete files")
         Dim btnRetry = Theme.MakeButton("Retry / resume")
@@ -149,7 +155,14 @@ Public Class ModelManagerForm
         btnRefresh = Theme.MakeButton("⟳ Update list")
         btnHub = Theme.MakeButton("🔍 Search all of Hugging Face")
         btnRecommend = Theme.MakeButton("★ Recommend for my PC")
-        bar.Controls.AddRange({cmbShow, txtFilter, cmbCategory, cmbSort, btnRecommend, btnHub, btnRefresh})
+        chkFitGpu = New CheckBox() With {.Text = Localizer.T("✔ Only models that fit my GPU"), .AutoSize = True, .Checked = AppCore.Settings.OnlyFitGpu,
+                                         .ForeColor = Theme.CText, .Margin = New Padding(10, 9, 3, 3)}
+        AddHandler chkFitGpu.CheckedChanged, Sub()
+                                                 AppCore.Settings.OnlyFitGpu = chkFitGpu.Checked
+                                                 AppCore.SaveSettings()
+                                                 ApplyFilter()
+                                             End Sub
+        bar.Controls.AddRange({cmbShow, txtFilter, cmbCategory, cmbSort, chkFitGpu, btnRecommend, btnHub, btnRefresh})
 
         _filterTimer = New System.Windows.Forms.Timer() With {.Interval = 250}
         AddHandler _filterTimer.Tick, Sub()
@@ -463,6 +476,12 @@ Public Class ModelManagerForm
                         ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, ModelCatalog.AutoQuant(e, _hw, ctx)), _hw, ctx) <> FitLevel.TooBig)
             End Select
         End If
+        ' Only models that run entirely on the graphics card (with the file size picked for each).
+        If chkFitGpu IsNot Nothing AndAlso chkFitGpu.Checked Then
+            src = src.Where(Function(e) e.Params > 0 AndAlso
+                If(_hw.VramBytes = 0, ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, EffectiveQuant(e)), _hw, ctx) <> FitLevel.TooBig,
+                   ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, EffectiveQuant(e)), _hw, ctx) = FitLevel.Fits))
+        End If
 
         If _sortCol IsNot Nothing Then
             Dim ctx2 = ctx
@@ -735,6 +754,7 @@ Public Class ModelManagerForm
 
     Private _sortCol As String
     Private _sortDesc As Boolean
+    Private chkFitGpu As CheckBox
 
     ''' <summary>The quant that will really be downloaded for this model (Auto resolved).</summary>
     Private Function EffectiveQuant(e As CatalogEntry) As String

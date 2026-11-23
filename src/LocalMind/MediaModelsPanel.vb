@@ -34,6 +34,7 @@ Public Class MediaModelsPanel
     Private ReadOnly _filterTimer As New System.Windows.Forms.Timer() With {.Interval = 250}
     Private ReadOnly details As New MediaDetailsView() With {.Dock = DockStyle.Fill}
     Private ReadOnly chkNsfw As New CheckBox() With {.AutoSize = True, .Margin = New Padding(10, 9, 3, 3), .ForeColor = Theme.CText}
+    Private ReadOnly chkFit As New CheckBox() With {.AutoSize = True, .Margin = New Padding(10, 9, 3, 3), .ForeColor = Theme.CText}
 
     ''' <summary>Raised after downloads, so the Studio can refresh.</summary>
     Public Event Downloaded()
@@ -81,7 +82,14 @@ Public Class MediaModelsPanel
                                                Fill()
                                                ShowAbout()
                                            End Sub
-        top.Controls.AddRange({cmbShow, cmbType, txtFilter, chkNsfw, btnStudio})
+        chkFit.Text = Localizer.T("✔ Only models that fit my GPU")
+        chkFit.Checked = AppCore.Settings.OnlyFitGpu
+        AddHandler chkFit.CheckedChanged, Sub()
+                                              AppCore.Settings.OnlyFitGpu = chkFit.Checked
+                                              AppCore.SaveSettings()
+                                              Fill()
+                                          End Sub
+        top.Controls.AddRange({cmbShow, cmbType, txtFilter, chkFit, chkNsfw, btnStudio})
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False
@@ -227,6 +235,9 @@ Public Class MediaModelsPanel
             Case 2 : list = list.Where(Function(r) r.Uncensored)
             Case 3 : list = list.Where(Function(r) MediaStudio.InstalledVariant(r) IsNot Nothing)
         End Select
+        ' (a PC without a graphics card: everything that runs)
+        If chkFit.Checked Then list = list.Where(Function(r) If(_hw.VramBytes = 0, MediaStudio.Fit(r, ChosenVariant(r), _hw) <> FitLevel.TooBig,
+                                                              MediaStudio.Fit(r, ChosenVariant(r), _hw) = FitLevel.Fits))
         If q.Length > 0 Then
             Dim words = q.Split(" "c, StringSplitOptions.RemoveEmptyEntries)
             list = list.Where(Function(r)

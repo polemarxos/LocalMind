@@ -746,5 +746,7 @@
 "Creators' pictures use": "Οι εικόνες των δημιουργών χρησιμοποιούν",
 "(No description from the author.)": "(Δεν υπάρχει περιγραφή από τον δημιουργό.)",
 "(No sample pictures found.)": "(Δεν βρέθηκαν δείγματα εικόνων.)",
-"NSFW picture (blurred). Click to show it, or tick 🔓 Show NSFW at the top.": "Εικόνα NSFW (θολωμένη). Κλικ για εμφάνιση ή επιλέξτε 🔓 Εμφάνιση NSFW επάνω."
+"NSFW picture (blurred). Click to show it, or tick 🔓 Show NSFW at the top.": "Εικόνα NSFW (θολωμένη). Κλικ για εμφάνιση ή επιλέξτε 🔓 Εμφάνιση NSFW επάνω.",
+"✔ Only models that fit my GPU": "✔ Μόνο μοντέλα που χωράνε στην κάρτα γραφικών",
+"⬇ DOWNLOADS": "⬇ ΛΗΨΕΙΣ"
 }

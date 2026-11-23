@@ -139,19 +139,25 @@ Public Module Theme
         g.ColumnHeadersDefaultCellStyle.Font = BoldFont
         g.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single
         g.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing
-        g.ColumnHeadersHeight = 32
+        g.ColumnHeadersHeight = 36
+        g.ColumnHeadersDefaultCellStyle.Padding = New Padding(6, 0, 4, 0)
+        g.ColumnHeadersDefaultCellStyle.ForeColor = CDim
+        g.DefaultCellStyle.Padding = New Padding(4, 0, 4, 0)
+        g.AdvancedColumnHeadersBorderStyle.All = DataGridViewAdvancedCellBorderStyle.None
+        g.AdvancedColumnHeadersBorderStyle.Bottom = DataGridViewAdvancedCellBorderStyle.Single
         g.DefaultCellStyle.BackColor = CBack
         g.DefaultCellStyle.ForeColor = CText
-        g.DefaultCellStyle.SelectionBackColor = CAccentSoft
+        g.DefaultCellStyle.SelectionBackColor = Color.FromArgb(38, 52, 82)
         g.DefaultCellStyle.SelectionForeColor = Color.White
-        g.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(28, 28, 31)
+        g.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(27, 27, 31)
+        g.GridColor = Color.FromArgb(38, 39, 44)
         g.RowHeadersVisible = False
         g.AllowUserToAddRows = False
         g.AllowUserToDeleteRows = False
         g.AllowUserToResizeRows = False
         g.SelectionMode = DataGridViewSelectionMode.FullRowSelect
         g.MultiSelect = False
-        g.RowTemplate.Height = 28
+        g.RowTemplate.Height = 32
         g.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
         ' Double buffering removes flicker when progress updates repaint rows.
         GetType(DataGridView).GetProperty("DoubleBuffered", Reflection.BindingFlags.Instance Or Reflection.BindingFlags.NonPublic)?.SetValue(g, True)
@@ -185,14 +191,22 @@ Public Module Theme
     Public Sub StyleTabs(t As TabControl)
         t.DrawMode = TabDrawMode.OwnerDrawFixed
         t.SizeMode = TabSizeMode.Fixed
-        t.ItemSize = New Size(170, 32)
+        t.ItemSize = New Size(190, 38)
+        t.Padding = New Point(14, 4)
         AddHandler t.DrawItem,
             Sub(s, e)
                 Dim selected = (e.Index = t.SelectedIndex)
-                Using b As New SolidBrush(If(selected, CAccent, CRaised))
-                    e.Graphics.FillRectangle(b, e.Bounds)
+                ' flat tabs: the chosen one is lighter with a blue line under it
+                Dim r = New Rectangle(e.Bounds.X - 2, e.Bounds.Y - 2, e.Bounds.Width + 4, e.Bounds.Height + 4)
+                Using b As New SolidBrush(If(selected, CRaised, CBack))
+                    e.Graphics.FillRectangle(b, r)
                 End Using
-                TextRenderer.DrawText(e.Graphics, t.TabPages(e.Index).Text, BoldFont, e.Bounds, If(selected, Color.White, CText),
+                If selected Then
+                    Using b As New SolidBrush(CAccent)
+                        e.Graphics.FillRectangle(b, e.Bounds.X + 10, e.Bounds.Bottom - 3, e.Bounds.Width - 20, 3)
+                    End Using
+                End If
+                TextRenderer.DrawText(e.Graphics, t.TabPages(e.Index).Text, If(selected, BoldFont, UiFont), e.Bounds, If(selected, Color.White, CDim),
                                       TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
             End Sub
         For Each p As TabPage In t.TabPages

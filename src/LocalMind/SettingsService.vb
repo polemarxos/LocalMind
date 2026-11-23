@@ -74,6 +74,8 @@ Public Class AppSettings
     Public Property CheckForUpdates As Boolean = True
     ''' <summary>Show uncensored / NSFW picture and video models (and their sample pictures unblurred).</summary>
     Public Property ShowNsfw As Boolean = False
+    ''' <summary>Model Manager: list only models that run fully on the graphics card.</summary>
+    Public Property OnlyFitGpu As Boolean = False
     ''' <summary>Download and install LocalMind updates by themselves (used from the next start).</summary>
     Public Property AutoInstallUpdates As Boolean = True
     Public Property MinimizeToTray As Boolean = True
