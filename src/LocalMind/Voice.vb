@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Diagnostics
 Imports System.IO
 Imports System.Linq
@@ -62,6 +62,15 @@ Public Module Voice
             .AssetPatterns = If(flavor = "cuda12",
                                 {"^whisper-(cublas-12[\d.]*-bin-x64|bin-win-cuda-12[\d.]*-x64)\.zip$"},
                                 {"^whisper-(blas-bin-x64|bin-x64)\.zip$"})}
+    End Function
+
+    ''' <summary>Updates whisper.cpp builds that are installed, when a newer one exists.</summary>
+    Public Async Function UpdateWhisperAsync(progress As Action(Of String), ct As CancellationToken) As Task
+        If Not OperatingSystem.IsWindows() Then Return
+        For Each flavor In {"cuda12", "cpu"}
+            Dim p = WhisperPackage(flavor)
+            If ExternalTools.FindExe(p) IsNot Nothing Then Await ExternalTools.InstallAsync(p, progress, ct, onlyIfNewer:=True)
+        Next
     End Function
 
     Private Function PreferredFlavor() As String

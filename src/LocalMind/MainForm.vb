@@ -114,8 +114,9 @@ Public Class MainForm
         AddHandler btnThinking.CheckedChanged, AddressOf SaveThinkingPreference
 
         _webReady = True
-        txtSearch.Text = SearchPlaceholder
-        txtSearch.ForeColor = Color.Gray
+        txtSearch.Text = ""
+        txtSearch.PlaceholderText = SearchPlaceholder
+        txtSearch.ForeColor = Theme.CText
 
         BuildChatContextMenu()
         BuildFileMenuExtras()
@@ -148,14 +149,15 @@ Public Class MainForm
         FirstRun()
         PrepareEngineInBackground()
 
-        ' Help → Check for updates, plus a quiet daily check.
-        Dim miUpdate As New ToolStripMenuItem("Check for updates…")
+        ' Help → Check for updates / Update everything now, plus a quiet daily round that updates
+        ' LocalMind, the engines and the model list by itself.
+        Dim miUpdate As New ToolStripMenuItem(Localizer.T("Check for updates…"))
         AddHandler miUpdate.Click, Async Sub() Await CheckUpdatesAsync(manual:=True)
+        Dim miUpdateAll As New ToolStripMenuItem(Localizer.T("Update everything now (app, engines, model list)"))
+        AddHandler miUpdateAll.Click, Sub() Task.Run(Function() UpdateEverythingAsync(manual:=True))
+        menuHelp.DropDownItems.Insert(0, miUpdateAll)
         menuHelp.DropDownItems.Insert(0, miUpdate)
-        If Settings.CheckForUpdates AndAlso (DateTime.Now - Settings.LastUpdateCheck).TotalHours > 20 Then
-            Await Task.Delay(8000)
-            Await CheckUpdatesAsync(manual:=False)
-        End If
+        AutoUpdateEverythingLater()
     End Sub
 
     Private _updating As Boolean
@@ -187,6 +189,7 @@ Public Class MainForm
             End If
             Dim exe = Await Updater.InstallAsync(info, Sub(p) SetStatus($"Downloading update… {p}%"), CancellationToken.None)
             Updater.Restart(exe)
+            _reallyExit = True
             Close()
         Catch ex As Exception
             If manual Then Localizer.Box(Me, "Update failed: " & ex.Message, "Update", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -220,7 +223,6 @@ Public Class MainForm
 
     ''' <summary>Installs the llama.cpp engine in the background so it's ready when the first model finishes downloading.</summary>
     Private Sub PrepareEngineInBackground()
-        If Settings.Backend = BackendKind.BuiltIn AndAlso AppCore.Engine.IsInstalled() Then AutoUpdateEnginesLater()
         If Settings.Backend <> BackendKind.BuiltIn OrElse AppCore.Engine.IsInstalled() Then Return
         If _engineInstallTask IsNot Nothing AndAlso Not _engineInstallTask.IsCompleted Then Return
         Dim prog As New Progress(Of (Text As String, Percent As Integer))(Sub(p) SetStatus(p.Text))
@@ -234,34 +236,6 @@ Public Class MainForm
                                       End Function)
     End Sub
 
-    Private _autoUpdateStarted As Boolean
-
-    ''' <summary>
-    ''' Every few days, a few minutes after start: update llama.cpp, the image engine and FFmpeg when a newer build
-    ''' exists, so new voice, music and image models keep working. Waits until nothing is running.
-    ''' </summary>
-    Private Sub AutoUpdateEnginesLater()
-        If _autoUpdateStarted OrElse Not Settings.AutoUpdateEngines Then Return
-        If (DateTime.Now - Settings.LastEngineCheck).TotalDays < 3 Then Return
-        _autoUpdateStarted = True
-        Dim unused = Task.Run(Async Function()
-                                  Try
-                                      Await Task.Delay(TimeSpan.FromMinutes(3))
-                                      For i = 1 To 60
-                                          If AppCore.Engine.ActiveRequests = 0 AndAlso Not _isGenerating Then Exit For
-                                          Await Task.Delay(TimeSpan.FromMinutes(1))
-                                      Next
-                                      Dim prog As New Progress(Of (Text As String, Percent As Integer))(Sub(p) SetStatus(p.Text))
-                                      Await AppCore.Engine.InstallAsync(prog, CancellationToken.None)
-                                      If Settings.EnableImages Then Await MediaStudio.UpdateEngineAsync(Sub(t) SetStatus(t), CancellationToken.None)
-                                      Await VideoTools.UpdateAsync(Sub(t) SetStatus(t), CancellationToken.None)
-                                      Settings.LastEngineCheck = DateTime.Now
-                                      AppCore.SaveSettings()
-                                  Catch ex As Exception
-                                      SetStatus("Engine update check failed: " & ex.Message)
-                                  End Try
-                              End Function)
-    End Sub
 
     '════════════════════════════════════════════════════════════
     '  Personas
@@ -363,8 +337,11 @@ Public Class MainForm
     End Function
 
     Private Sub SetConnLabel(text As String, color As Color)
+        text = Localizer.T(text)
         If lblConnection.Text <> text Then lblConnection.Text = text
-        lblConnection.ForeColor = color
+        ' softer versions of the traffic-light colors
+        lblConnection.ForeColor = If(color = Color.LimeGreen, Theme.CGood, If(color = Color.Gold, Theme.CWarn,
+                                  If(color = Color.IndianRed, Theme.CBad, If(color = Color.Gray, Theme.CDim, color))))
     End Sub
 
     Private Sub OnEngineState(state As EngineState, message As String)
@@ -382,7 +359,8 @@ Public Class MainForm
     Private Sub ShowEngineState(state As EngineState, message As String)
         Select Case state
             Case EngineState.Ready
-                SetConnLabel("● " & If(AppCore.Engine.CurrentModel?.DisplayName, "Ready"), Color.LimeGreen)
+                SetConnLabel("● Ready", Color.LimeGreen)
+                lblConnection.ToolTipText = If(AppCore.Engine.CurrentModel?.DisplayName, "")
             Case EngineState.Loading
                 SetConnLabel("◌ Loading model…", Color.Gold)
             Case EngineState.Installing
@@ -454,8 +432,8 @@ Public Class MainForm
         ElseIf lblDownloads.Visible Then
             lblDownloads.Visible = False
         End If
-        btnLan.Text = If(AppCore.Lan IsNot Nothing AndAlso AppCore.Lan.IsRunning,
-                         $"📡 Sharing ({AppCore.Lan.ActiveClients} active)", "📡 Share")
+        Dim lanText = LanButtonText()
+        If btnLan.Text <> lanText Then btnLan.Text = lanText
 
         If _modelsDirty AndAlso Not _isGenerating Then
             _modelsDirty = False
@@ -990,17 +968,11 @@ Public Class MainForm
     End Sub
 
     Private Sub txtSearch_GotFocus(sender As Object, e As EventArgs) Handles txtSearch.GotFocus
-        If txtSearch.Text = SearchPlaceholder Then
-            txtSearch.Text = ""
-            txtSearch.ForeColor = Color.FromArgb(212, 212, 212)
-        End If
+        ' (the box shows its placeholder by itself)
     End Sub
 
     Private Sub txtSearch_LostFocus(sender As Object, e As EventArgs) Handles txtSearch.LostFocus
-        If String.IsNullOrWhiteSpace(txtSearch.Text) Then
-            txtSearch.Text = SearchPlaceholder
-            txtSearch.ForeColor = Color.Gray
-        End If
+        ' (the box shows its placeholder by itself)
     End Sub
 
     '════════════════════════════════════════════════════════════

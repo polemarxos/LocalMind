@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Drawing
 Imports System.Linq
 Imports System.Windows.Forms
@@ -52,7 +52,7 @@ Partial Class MainForm
         btnEditPersona.Text = "✎"
         btnEditPersona.ToolTipText = Localizer.T("Create, edit or delete personas")
 
-        btnLan.Text = ItemText("📱 Use on phone")
+        btnLan.Text = LanButtonText()
         btnLan.ToolTipText = Localizer.T("Use this AI from your phone or other PCs on your network")
         If _btnStudio IsNot Nothing Then
             _btnStudio.Text = ItemText("🎨 Pictures & video")
@@ -78,6 +78,11 @@ Partial Class MainForm
             toolTop.Items.Add(it)
         Next
         lblConnection.Margin = New Padding(4, 0, 6, 0)
+        Theme.DarkCombo(cmbModels.ComboBox)
+        Theme.DarkCombo(cmbPersonas.ComboBox)
+        AddHandler toolTop.Resize, Sub() FitTopBar()
+        FitTopBar()
+        FitToScreen()
 
         ' ── sidebar ──
         BuildSidebar()
@@ -108,6 +113,37 @@ Partial Class MainForm
         Catch
         End Try
         ResumeLayout(True)
+    End Sub
+
+    Private _compactBar As Boolean? = Nothing
+
+    ''' <summary>Narrow windows: smaller boxes and short button names so nothing disappears.</summary>
+    Private Sub FitTopBar()
+        Dim w = toolTop.Width
+        Dim compact = w < 1240
+        cmbModels.Width = CInt(Math.Max(170, Math.Min(360, w * If(compact, 0.21, 0.24))))
+        cmbPersonas.Width = CInt(Math.Max(120, Math.Min(220, w * If(compact, 0.13, 0.14))))
+        If _compactBar.HasValue AndAlso _compactBar.Value = compact Then Return
+        _compactBar = compact
+        If _btnStudio IsNot Nothing Then _btnStudio.Text = ItemText(If(compact, "🎨 Create", "🎨 Pictures & video"))
+        If _btnAudio IsNot Nothing Then _btnAudio.Text = ItemText(If(compact, "🎵 Music", "🎵 Music & voice"))
+        btnLan.Text = LanButtonText()
+    End Sub
+
+    Private Function LanButtonText() As String
+        If AppCore.Lan IsNot Nothing AndAlso AppCore.Lan.IsRunning Then
+            Return String.Format(ItemText("📱 On phone ({0} connected)"), AppCore.Lan.ActiveClients)
+        End If
+        Return ItemText(If(_compactBar.GetValueOrDefault(), "📱 Phone", "📱 Use on phone"))
+    End Function
+
+    ''' <summary>Never open bigger than the screen (small laptops).</summary>
+    Private Sub FitToScreen()
+        Dim wa = Screen.FromControl(Me).WorkingArea
+        If Width > wa.Width OrElse Height > wa.Height Then
+            Size = New Size(Math.Min(Width, wa.Width), Math.Min(Height, wa.Height))
+            Location = New Point(wa.X + (wa.Width - Width) \ 2, wa.Y + (wa.Height - Height) \ 2)
+        End If
     End Sub
 
     Private Sub StyleStripCombo(c As ToolStripComboBox, width As Integer)
@@ -145,6 +181,7 @@ Partial Class MainForm
             _cmbFolder.BackColor = Theme.CRaised
             _cmbFolder.ForeColor = Theme.CText
             _cmbFolder.FlatStyle = FlatStyle.Flat
+            Theme.DarkCombo(_cmbFolder)
             _tips.SetToolTip(_cmbFolder, Localizer.T("Show the chats of one folder"))
         End If
 

@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.IO
 Imports System.Linq
 Imports Newtonsoft.Json
@@ -72,6 +72,8 @@ Public Class AppSettings
     ' ── Misc ──
     Public Property FirstRunDone As Boolean = False
     Public Property CheckForUpdates As Boolean = True
+    ''' <summary>Download and install LocalMind updates by themselves (used from the next start).</summary>
+    Public Property AutoInstallUpdates As Boolean = True
     Public Property MinimizeToTray As Boolean = True
     Public Property CloseToTray As Boolean = False
     Public Property QuickAskHotkey As String = "Ctrl+Alt+Space"

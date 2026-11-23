@@ -22,7 +22,7 @@ Public Class SettingsForm
     Private prgInstall As ProgressBar
     Private txtModels As TextBox
     Private numCtx, numSlots, numIdle, numMinCtx As NumericUpDown
-    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent As CheckBox
+    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent, chkAutoInstall As CheckBox
     Private cmbLang As ComboBox
     Private txtHotkey As TextBox
     Private cmbNgl, cmbKv, cmbSpeed As ComboBox
@@ -259,9 +259,11 @@ Public Class SettingsForm
         chkAudio = New CheckBox() With {.Text = "🎵 Music & voice (songs, speech, voice cloning)", .Checked = _s.EnableAudio, .AutoSize = True}
         Row(t, "Extra abilities", chkImages, "Off = hidden, and nothing for it is downloaded")
         Row(t, "", chkAudio)
-        chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates at startup", .Checked = _s.CheckForUpdates, .AutoSize = True}
+        chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates every day", .Checked = _s.CheckForUpdates, .AutoSize = True}
         Row(t, "Updates", chkUpdates)
-        chkEngUpd = New CheckBox() With {.Text = "Keep the AI engines up to date automatically", .Checked = _s.AutoUpdateEngines, .AutoSize = True}
+        chkAutoInstall = New CheckBox() With {.Text = "Install LocalMind updates by themselves (used from the next start)", .Checked = _s.AutoInstallUpdates, .AutoSize = True}
+        Row(t, "", chkAutoInstall)
+        chkEngUpd = New CheckBox() With {.Text = "Keep the AI engines and the model list up to date automatically", .Checked = _s.AutoUpdateEngines, .AutoSize = True}
         Row(t, "", chkEngUpd)
         chkAgent = New CheckBox() With {.Text = "The AI may draw, make videos, compose and search the web by itself when you ask", .Checked = _s.AgentTools, .AutoSize = True}
         Row(t, "AI tools", chkAgent)
@@ -353,6 +355,7 @@ Public Class SettingsForm
         _s.MinAutoContext = CInt(numMinCtx.Value)
         _s.CheckForUpdates = chkUpdates.Checked
         _s.AutoUpdateEngines = chkEngUpd.Checked
+        _s.AutoInstallUpdates = chkAutoInstall.Checked
         _s.AgentTools = chkAgent.Checked
         _s.EnableImages = chkImages.Checked
         _s.EnableAudio = chkAudio.Checked

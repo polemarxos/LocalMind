@@ -1,4 +1,4 @@
-Imports System.Drawing
+﻿Imports System.Drawing
 Imports System.Drawing.Drawing2D
 Imports System.Windows.Forms
 
@@ -168,6 +168,64 @@ Public Module Theme
             p.ForeColor = CText
         Next
     End Sub
+
+    ''' <summary>Dark border and arrow for a combo box (Windows draws them white in flat style).</summary>
+    Public Sub DarkCombo(c As ComboBox)
+        If c Is Nothing Then Return
+        c.FlatStyle = FlatStyle.Flat
+        c.BackColor = CRaised
+        c.ForeColor = CText
+        _painters.Add(New ComboPainter(c))   ' keep alive (NativeWindow is only weakly referenced)
+    End Sub
+
+    Private ReadOnly _painters As New List(Of Object)()
+
+    Private Class ComboPainter
+        Inherits NativeWindow
+        Private ReadOnly _c As ComboBox
+
+        Public Sub New(c As ComboBox)
+            _c = c
+            If c.IsHandleCreated Then AssignHandle(c.Handle)
+            AddHandler c.HandleCreated, Sub() AssignHandle(c.Handle)
+            AddHandler c.HandleDestroyed, Sub() ReleaseHandle()
+            AddHandler c.GotFocus, Sub() c.Invalidate()
+            AddHandler c.LostFocus, Sub() c.Invalidate()
+            AddHandler c.MouseEnter, Sub() c.Invalidate()
+            AddHandler c.MouseLeave, Sub() c.Invalidate()
+        End Sub
+
+        Protected Overrides Sub WndProc(ByRef m As Message)
+            MyBase.WndProc(m)
+            If m.Msg = &HF Then PaintFrame()     ' WM_PAINT
+        End Sub
+
+        Private Sub PaintFrame()
+            Try
+                Using g = Graphics.FromHwnd(_c.Handle)
+                    Dim w = _c.Width, h = _c.Height
+                    Dim hot = _c.Focused OrElse _c.ClientRectangle.Contains(_c.PointToClient(Cursor.Position))
+                    Using p As New Pen(_c.BackColor, 2)
+                        g.DrawRectangle(p, 1, 1, w - 2, h - 2)
+                    End Using
+                    Dim aw = 20
+                    Using b As New SolidBrush(_c.BackColor)
+                        g.FillRectangle(b, w - aw - 1, 1, aw, h - 2)
+                    End Using
+                    g.SmoothingMode = SmoothingMode.AntiAlias
+                    Dim cx = w - aw \ 2 - 2, cy = h \ 2
+                    Using p As New Pen(CDim, 1.6F)
+                        g.DrawLines(p, {New PointF(cx - 4, cy - 2), New PointF(cx, cy + 2), New PointF(cx + 4, cy - 2)})
+                    End Using
+                    g.SmoothingMode = SmoothingMode.Default
+                    Using p As New Pen(If(hot, CAccent, CBorder))
+                        g.DrawRectangle(p, 0, 0, w - 1, h - 1)
+                    End Using
+                End Using
+            Catch
+            End Try
+        End Sub
+    End Class
 
     Public Function Rounded(r As RectangleF, radius As Single) As GraphicsPath
         Dim p As New GraphicsPath()
