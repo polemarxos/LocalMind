@@ -741,8 +741,13 @@ Public Module Theme
 
         Protected Overrides Sub InitializeItem(item As ToolStripItem)
             MyBase.InitializeItem(item)
-            If Icons.Split(item.Text).Glyph IsNot Nothing AndAlso Not item.IsOnDropDown Then
-                item.Padding = New Padding(item.Padding.Left, item.Padding.Top, item.Padding.Right + 10, item.Padding.Bottom)
+            Dim parts = Icons.Split(item.Text)
+            If parts.Glyph IsNot Nothing AndAlso Not item.IsOnDropDown Then
+                ' the icon takes 22 px where the emoji (and its space) took less: add only the difference
+                Dim emoji = item.Text.Substring(0, item.Text.Length - parts.After.Length)
+                Dim had = TextRenderer.MeasureText(emoji, item.Font, New Size(200, 50), TextFormatFlags.NoPadding).Width
+                Dim extra = Math.Max(0, 22 - had)
+                If extra > 0 Then item.Padding = New Padding(item.Padding.Left, item.Padding.Top, item.Padding.Right + extra, item.Padding.Bottom)
             End If
         End Sub
 

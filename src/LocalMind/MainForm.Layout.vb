@@ -363,7 +363,7 @@ Partial Class MainForm
 
     ''' <summary>Narrow message card: short names for the options so none of them hides.</summary>
     Private Sub FitComposer(width As Integer)
-        Dim compact = width < 960
+        Dim compact = width < 1100
         If _compactComposer.HasValue AndAlso _compactComposer.Value = compact Then Return
         _compactComposer = compact
         _attachMenu.Text = ItemText(If(compact, "📎", "📎 Attach"))
