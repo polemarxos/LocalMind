@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.14.0
+
+### Changed (same colors, a more professional look)
+- Crisp monochrome Windows icons (Segoe Fluent Icons) instead of the colored emoji on buttons, toolbars, menus and
+  tabs.
+- Buttons have rounded corners, a thin border and clear hover and pressed states. Text is never cut off.
+- Tabs are flat, with no white or boxy borders: the chosen tab has a soft highlight and an accent line.
+- The Windows 11 interface font (Segoe UI Variable), with Segoe UI on Windows 10.
+- Tidier toolbars: the Studio's Film editor and output-folder buttons sit beside the gallery, and the Model Manager's
+  hint text is shorter (details in its tooltip).
+
 ## 2.13.0
 
 ### New
