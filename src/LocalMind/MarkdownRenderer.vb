@@ -336,6 +336,9 @@ Public Module MarkdownRenderer
       var c = document.createElement('button'); c.textContent = 'Copy answer';
       c.onclick = function () { copyToClipboard(b.innerText, c); };
       m.appendChild(c);
+      var r = document.createElement('button'); r.textContent = '🔊 Read'; r.title = 'Read aloud (click again to stop)';
+      r.onclick = function () { try { window.chrome.webview.postMessage({ type: 'speak', text: b.innerText }); } catch (e) {} };
+      m.appendChild(r);
       if (meta) { var sp = document.createElement('span'); sp.textContent = meta; m.appendChild(sp); }
     }
     scroll();

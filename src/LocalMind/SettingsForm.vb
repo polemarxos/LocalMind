@@ -43,12 +43,14 @@ Public Class SettingsForm
         Dim tBackend As New TabPage("Backend")
         Dim tEngine As New TabPage("Built-in engine")
         Dim tChat As New TabPage("Chat")
-        tabs.TabPages.AddRange({tBackend, tEngine, tChat})
+        Dim tTools As New TabPage("Web && voice")
+        tabs.TabPages.AddRange({tBackend, tEngine, tChat, tTools})
         Theme.StyleTabs(tabs)
 
         BuildBackend(tBackend)
         BuildEngine(tEngine)
         BuildChat(tChat)
+        BuildTools(tTools)
 
         Dim bottom As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 46, .FlowDirection = FlowDirection.RightToLeft, .Padding = New Padding(8)}
         Dim btnOk = Theme.MakeButton("Save", primary:=True, width:=100)
@@ -270,6 +272,40 @@ Public Class SettingsForm
                                       End Sub
     End Sub
 
+    '──────────────── Web & voice tab ────────────────
+    Private cmbSearch, cmbVoiceModel, cmbVoiceLang, cmbTts As ComboBox
+    Private txtBrave, txtSearx As TextBox
+    Private numPages As NumericUpDown
+
+    Private Sub BuildTools(page As TabPage)
+        Dim t = Grid(page)
+        Wide(t, Theme.MakeLabel("🌐 Web search", bold:=True))
+        cmbSearch = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
+        cmbSearch.Items.AddRange({"duckduckgo  (no key needed)", "brave  (free API key)", "searxng  (your own server)"})
+        cmbSearch.SelectedIndex = Math.Max(0, Array.IndexOf({"duckduckgo", "brave", "searxng"}, If(_s.WebSearchProvider, "duckduckgo")))
+        Row(t, "Search engine", cmbSearch)
+        txtBrave = New TextBox() With {.Text = _s.BraveApiKey, .Width = 300, .UseSystemPasswordChar = True}
+        Row(t, "Brave API key", txtBrave, "brave.com/search/api — free tier")
+        txtSearx = New TextBox() With {.Text = _s.SearxngUrl, .Width = 300}
+        Row(t, "SearXNG address", txtSearx, "e.g. http://192.168.1.5:8888")
+        numPages = Num(0, 5, _s.WebPagesToRead)
+        Row(t, "Pages to read", numPages, "Top results whose full text is given to the model")
+
+        Wide(t, Theme.MakeLabel("🎤 Voice", bold:=True))
+        cmbVoiceModel = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
+        cmbVoiceModel.Items.AddRange({"auto", "base-q5_1", "small-q5_1", "medium-q5_0", "large-v3-turbo-q5_0", "large-v3-q5_0"})
+        cmbVoiceModel.SelectedItem = If(cmbVoiceModel.Items.Contains(_s.VoiceModel), _s.VoiceModel, "auto")
+        Row(t, "Speech model", cmbVoiceModel, "auto = large-v3-turbo on NVIDIA, small otherwise (Greek works best with turbo)")
+        cmbVoiceLang = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDown, .Width = 120, .Text = _s.VoiceLanguage}
+        cmbVoiceLang.Items.AddRange({"auto", "el", "en", "de", "fr", "es", "it"})
+        Row(t, "Spoken language", cmbVoiceLang, "auto-detect, or a language code")
+        cmbTts = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 300}
+        cmbTts.Items.Add("(Windows default)")
+        cmbTts.Items.AddRange(Voice.VoiceNames())
+        cmbTts.SelectedItem = If(cmbTts.Items.Contains(_s.TtsVoice), _s.TtsVoice, "(Windows default)")
+        Row(t, "Reading voice", cmbTts, "Greek text automatically uses a Greek voice if one is installed")
+    End Sub
+
     '──────────────── Save ────────────────
     Private Sub SaveAndClose(sender As Object, e As EventArgs)
         Dim engineBefore = (_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, _s.MinAutoContext)
@@ -287,6 +323,13 @@ Public Class SettingsForm
         _s.AutoContext = chkAutoCtx.Checked
         _s.MinAutoContext = CInt(numMinCtx.Value)
         _s.CheckForUpdates = chkUpdates.Checked
+        _s.WebSearchProvider = cmbSearch.SelectedItem.ToString().Split(" "c)(0)
+        _s.BraveApiKey = txtBrave.Text.Trim()
+        _s.SearxngUrl = txtSearx.Text.Trim()
+        _s.WebPagesToRead = CInt(numPages.Value)
+        _s.VoiceModel = cmbVoiceModel.SelectedItem.ToString()
+        _s.VoiceLanguage = If(String.IsNullOrWhiteSpace(cmbVoiceLang.Text), "auto", cmbVoiceLang.Text.Trim())
+        _s.TtsVoice = If(cmbTts.SelectedIndex <= 0, "", cmbTts.SelectedItem.ToString())
         _s.MinimizeToTray = chkMinTray.Checked
         _s.CloseToTray = chkCloseTray.Checked
         _s.QuickAskHotkey = txtHotkey.Text.Trim()

@@ -87,6 +87,75 @@ Public Module AppCore
         Return payload
     End Function
 
+    ''' <summary>
+    ''' Adds passages from the user's documents and/or the web to the prompt (as a system message
+    ''' right before the question) and returns the sources so the UI can list them.
+    ''' </summary>
+    Public Async Function AugmentAsync(payload As List(Of ChatMessage), useDocs As Boolean, useWeb As Boolean,
+                                      progress As Action(Of String), ct As CancellationToken) As Task(Of List(Of SourceRef))
+        Dim sources As New List(Of SourceRef)
+        Dim lastUser = payload.LastOrDefault(Function(m) m.Role = "user")
+        If lastUser Is Nothing OrElse (Not useDocs AndAlso Not useWeb) Then Return sources
+        Dim query = Text.RegularExpressions.Regex.Replace(If(lastUser.Content, ""), "\[Attached document:[\s\S]*?\[End of document\]", "").Trim()
+        If query.Length > 400 Then query = query.Substring(0, 400)
+        If query.Length = 0 Then Return sources
+
+        Dim sb As New Text.StringBuilder()
+        If useDocs Then
+            Try
+                progress?.Invoke("📚 Searching your documents…")
+                Dim hits = Await Knowledge.SearchAsync(query, 6, ct)
+                If hits.Count > 0 Then
+                    sb.AppendLine("Relevant excerpts from the user's own documents. Use them to answer and cite them like [1].")
+                    For Each h In hits
+                        sb.AppendLine($"{h.Label} {h.Title}{If(String.IsNullOrEmpty(h.Detail), "", ", " & h.Detail)}:").AppendLine(h.Text).AppendLine()
+                    Next
+                    sources.AddRange(hits)
+                End If
+            Catch ex As OperationCanceledException
+                Throw
+            Catch ex As Exception
+                progress?.Invoke("Document search failed: " & ex.Message)
+            End Try
+        End If
+        If useWeb Then
+            Try
+                progress?.Invoke("🌐 Searching the web…")
+                Dim hits = Await WebSearch.SearchAndReadAsync(query, ct)
+                If hits.Count > 0 Then
+                    sb.AppendLine($"Web search results (today is {DateTime.Now:yyyy-MM-dd}). Prefer them for current facts and cite them like [W1].")
+                    For Each h In hits
+                        sb.AppendLine($"{h.Label} {h.Title} — {h.Location}").AppendLine(h.Text).AppendLine()
+                    Next
+                    sources.AddRange(hits)
+                End If
+            Catch ex As OperationCanceledException
+                Throw
+            Catch ex As Exception
+                progress?.Invoke("Web search failed: " & ex.Message)
+            End Try
+        End If
+        If sb.Length > 0 Then
+            sb.AppendLine("If these sources don't contain the answer, say so and answer from general knowledge.")
+            payload.Insert(payload.LastIndexOf(lastUser), New ChatMessage With {.Role = "system", .Content = sb.ToString()})
+        End If
+        Return sources
+    End Function
+
+    ''' <summary>Markdown list of sources shown under an answer.</summary>
+    Public Function SourcesMarkdown(sources As List(Of SourceRef)) As String
+        If sources Is Nothing OrElse sources.Count = 0 Then Return ""
+        Dim sb As New Text.StringBuilder(vbLf & vbLf & "---" & vbLf & "**Sources**" & vbLf)
+        For Each s In sources
+            If s.Location.StartsWith("http") Then
+                sb.AppendLine($"- {s.Label} [{s.Title.Replace("[", "(").Replace("]", ")")}]({s.Location})")
+            Else
+                sb.AppendLine($"- {s.Label} {s.Title}{If(String.IsNullOrEmpty(s.Detail), "", " (" & s.Detail & ")")}")
+            End If
+        Next
+        Return sb.ToString()
+    End Function
+
     Public Function FindPersona(name As String) As Persona
         If String.IsNullOrWhiteSpace(name) Then Return Nothing
         Return Personas.Load().FirstOrDefault(Function(p) String.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
@@ -103,6 +172,8 @@ Public Module AppCore
             Next
         Catch
         End Try
+        Knowledge.StopEmbedder()
+        Voice.StopSpeaking()
         Engine.Dispose()
     End Sub
 End Module

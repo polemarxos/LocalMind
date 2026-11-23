@@ -274,6 +274,43 @@ Module HarnessMain
             Check(Not AppCore.Lan.IsRunning, "LAN server stops cleanly")
         End If
 
+        If only = "docs" Then
+            Console.WriteLine("== Chat with documents (real embedding model)")
+            Dim dir = Path.Combine(Path.GetTempPath(), "lm-docs")
+            Directory.CreateDirectory(dir)
+            File.WriteAllText(Path.Combine(dir, "pets.md"), "# Our cat Milo" & vbLf & "Milo is an orange cat. He eats salmon pate twice a day and sleeps on the blue sofa. His vet is Dr. Papadopoulos in Kifisia.")
+            File.WriteAllText(Path.Combine(dir, "car.txt"), "The car is a 2019 Toyota Yaris hybrid. Next service is due in March at 60,000 km. Tyre pressure: 2.3 bar front, 2.2 bar rear.")
+            File.WriteAllText(Path.Combine(dir, "trip.html"), "<html><head><script>var x=1;</script></head><body><nav>menu</nav><article><h1>Crete trip</h1><p>We fly to Chania on 14 June and stay in Rethymno for six nights. Ferry back from Heraklion.</p></article></body></html>")
+            Knowledge.AddSource(dir)
+            Dim summary = Await Knowledge.IndexAsync(Sub(t) Return, CancellationToken.None)
+            Check(Knowledge.Stats().Docs = 3, "indexed folder", summary)
+            For Each q In {("What food does Milo eat?", "pets.md"), ("When is the car service?", "car.txt"), ("Where do we stay in Crete?", "trip.html"), ("Ποιος είναι ο κτηνίατρος της γάτας;", "pets.md")}
+                Dim hits = Await Knowledge.SearchAsync(q.Item1, 3, CancellationToken.None)
+                Check(hits.Count > 0 AndAlso hits(0).Title = q.Item2, "search: " & q.Item1, $"top = {hits(0).Title} ({hits(0).Score:0.00})")
+            Next
+            Dim payload As New List(Of ChatMessage) From {New ChatMessage With {.Role = "user", .Content = "What is the tyre pressure?"}}
+            Dim srcs = Await AppCore.AugmentAsync(payload, True, False, Nothing, CancellationToken.None)
+            Check(payload.Count = 2 AndAlso payload(0).Role = "system" AndAlso payload(0).Content.Contains("2.3 bar") AndAlso payload(1).Role = "user", "prompt augmented before the question", $"{srcs.Count} sources")
+            Check(AppCore.SourcesMarkdown(srcs).Contains("car.txt"), "sources list")
+            Knowledge.StopEmbedder()
+
+            Console.WriteLine("== Web search")
+            Check(WebSearch.HtmlToText("<html><script>bad()</script><nav>x</nav><main><p>Hello &amp; welcome</p><p>Line two</p></main></html>").StartsWith("Hello & welcome"), "HTML to text")
+            Dim sample = "<div class=""result results_links web-result""><div class=""links_main result__body""><h2 class=""result__title""><a rel=""nofollow"" class=""result__a"" href=""//duckduckgo.com/l/?uddg=https%3A%2F%2Fgithub.com%2Fggml-org%2Fllama.cpp&amp;rut=abc"">ggml-org/<b>llama.cpp</b>: LLM inference</a></h2>" &
+                         "<a class=""result__snippet"" href=""//duckduckgo.com/l/?uddg=x"">LLM inference in <b>C/C++</b> &amp; more</a></div></div>" &
+                         "<div class=""result""><h2><a rel=""nofollow"" class=""result__a"" href=""https://duckduckgo.com/y.js?ad=1"">Ad</a></h2></div>" &
+                         "<div class=""result""><h2><a rel=""nofollow"" class=""result__a"" href=""//duckduckgo.com/l/?uddg=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FLlama&amp;rut=z"">Llama - Wikipedia</a></h2><a class=""result__snippet"" href=""#"">The llama is a South American camelid</a></div>"
+            Dim parsed = WebSearch.ParseDuckDuckGo(sample)
+            Check(parsed.Count = 2 AndAlso parsed(0).Url = "https://github.com/ggml-org/llama.cpp" AndAlso parsed(0).Title = "ggml-org/llama.cpp: LLM inference" AndAlso parsed(0).Snippet = "LLM inference in C/C++ & more" AndAlso parsed(1).Url.Contains("wikipedia"),
+                  "DuckDuckGo result parsing (ads skipped, redirect links decoded)", String.Join(" | ", parsed.Select(Function(p) p.Title & " → " & p.Url)))
+            Try
+                Dim web = Await WebSearch.SearchAndReadAsync("llama.cpp github", CancellationToken.None)
+                Check(web.Count > 0, "DuckDuckGo search + page reading", $"{web.Count} results, first: {web(0).Title} — {web(0).Location} ({web(0).Text.Length} chars)")
+            Catch ex As Exception
+                Console.WriteLine("  SKIP web search from this sandbox: " & ex.Message)
+            End Try
+        End If
+
         If only = "all" OrElse only = "engine" Then
             Console.WriteLine("== Built-in engine (real llama-server)")
             AppCore.Settings.Backend = BackendKind.BuiltIn

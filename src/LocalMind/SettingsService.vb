@@ -55,6 +55,18 @@ Public Class AppSettings
     Public Property MinimizeToTray As Boolean = True
     Public Property CloseToTray As Boolean = False
     Public Property QuickAskHotkey As String = "Ctrl+Alt+Space"
+
+    ' ── Documents / web / voice ──
+    Public Property UseDocuments As Boolean = False
+    Public Property UseWeb As Boolean = False
+    Public Property WebSearchProvider As String = "duckduckgo"   ' duckduckgo | brave | searxng
+    Public Property BraveApiKey As String = ""
+    Public Property SearxngUrl As String = ""
+    Public Property WebPagesToRead As Integer = 3
+    Public Property VoiceModel As String = "auto"     ' auto | small-q5_1 | large-v3-turbo-q5_0 | …
+    Public Property VoiceLanguage As String = "auto"  ' auto | el | en | …
+    Public Property TtsVoice As String = ""
+    Public Property AutoReadAnswers As Boolean = False
     Public Property LastUpdateCheck As DateTime
 
     ''' <summary>True when settings.json came from v1 (Ollama-only) — used to offer the built-in engine once.</summary>

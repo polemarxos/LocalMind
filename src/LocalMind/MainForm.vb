@@ -118,6 +118,7 @@ Public Class MainForm
         BuildChatContextMenu()
         BuildFileMenuExtras()
         BuildPromptsButton()
+        BuildToolsUi()
         BuildFolderFilter()
         SetupTray()
         AddHandler txtInput.DragEnter, AddressOf Files_DragEnter
@@ -495,6 +496,10 @@ Public Class MainForm
     Private Sub OnWebMessage(sender As Object, e As CoreWebView2WebMessageReceivedEventArgs)
         Try
             Dim obj = JObject.Parse(e.WebMessageAsJson)
+            If obj("type")?.ToString() = "speak" Then
+                SpeakAnswer(obj("text")?.ToString())
+                Return
+            End If
             If obj("type")?.ToString() = "copy" Then
                 Dim text = obj("text")?.ToString()
                 If Not String.IsNullOrEmpty(text) Then
@@ -618,8 +623,17 @@ Public Class MainForm
         Dim sw = Stopwatch.StartNew()
         Dim backend = AppCore.Backend
         Dim ct = _cts.Token
+        Dim sources As List(Of SourceRef) = Nothing
 
         Try
+            If _btnDocs.Checked OrElse _btnWeb.Checked Then
+                Dim msgId = _streamMsgId
+                sources = Await AppCore.AugmentAsync(payload, _btnDocs.Checked, _btnWeb.Checked,
+                    Sub(t)
+                        SetStatus(t)
+                        webChat.ExecuteScriptAsync($"setStatusText('{msgId}', {JsonConvert.SerializeObject(t)});")
+                    End Sub, ct)
+            End If
             ' Run off the UI thread: token callbacks only append to buffers; the timer renders.
             result = Await Task.Run(Function() backend.StreamChatAsync(payload, opts,
                 Sub(token)
@@ -633,7 +647,7 @@ Public Class MainForm
                     End SyncLock
                     Interlocked.Increment(_streamTokens)
                 End Sub, ct))
-            assistantText = result.Content
+            assistantText = result.Content & AppCore.SourcesMarkdown(sources)
         Catch oce As OperationCanceledException
             SyncLock _liveTextLock
                 assistantText = _liveAssistantText.ToString()
@@ -679,6 +693,7 @@ Public Class MainForm
 
         lblTokens.Text = $"{tps:0.0} tok/s  ({tokens} tokens, {sw.Elapsed.TotalSeconds:0.0}s)"
         SetStatus("Done")
+        If Settings.AutoReadAnswers AndAlso result IsNot Nothing AndAlso Not Voice.IsSpeaking Then SpeakAnswer(assistantText)
     End Function
 
     Private Sub FlushLiveRender(sender As Object, e As EventArgs)

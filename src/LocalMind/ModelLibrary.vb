@@ -106,9 +106,9 @@ Public Class ModelLibrary
             End Try
         Next
 
-        ' 2) Loose GGUF files the user copied in themselves
+        ' 2) Loose GGUF files the user copied in themselves (not the helper models)
         For Each f In SafeEnum(root, "*.gguf")
-            If claimed.Contains(f) Then Continue For
+            If claimed.Contains(f) OrElse IsHelperPath(root, f) Then Continue For
             Dim name = Path.GetFileName(f)
             Dim low = name.ToLowerInvariant()
             If low.Contains("mmproj") OrElse low.StartsWith("mtp-") OrElse low.Contains("imatrix") Then Continue For
@@ -143,6 +143,15 @@ Public Class ModelLibrary
         End SyncLock
         RaiseEvent Changed()
     End Sub
+
+    ''' <summary>Models\Embeddings, Models\Voice and Models\Images hold non-chat models.</summary>
+    Public Shared ReadOnly HelperFolders As String() = {"Embeddings", "Voice", "Images"}
+
+    Private Shared Function IsHelperPath(root As String, f As String) As Boolean
+        Dim rel = Path.GetRelativePath(root, f)
+        Dim first = rel.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)(0)
+        Return HelperFolders.Contains(first, StringComparer.OrdinalIgnoreCase)
+    End Function
 
     Friend Shared Function MmprojRank(path As String) As Integer
         Dim n = IO.Path.GetFileName(path).ToUpperInvariant()

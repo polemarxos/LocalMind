@@ -373,6 +373,8 @@ Public Class LanServer
             .EnableThinking = If(body("think")?.ToObject(Of Boolean?)(), AppCore.Settings.ShowThinking)
         }
         Dim payload = AppCore.BuildPayload(session, persona)
+        Dim useDocs = If(body("docs")?.ToObject(Of Boolean?)(), False)
+        Dim useWeb = If(body("web")?.ToObject(Of Boolean?)(), False)
 
         ctx.Response.ContentType = "text/event-stream; charset=utf-8"
         ctx.Response.Headers("Cache-Control") = "no-cache"
@@ -389,9 +391,13 @@ Public Class LanServer
 
         Dim ct = ctx.RequestAborted
         Dim sw = Stopwatch.StartNew()
+        Dim sources As List(Of SourceRef) = Nothing
         Dim genTask = Task.Run(
             Async Function() As Task(Of ChatResult)
                 Try
+                    If useDocs OrElse useWeb Then
+                        sources = Await AppCore.AugmentAsync(payload, useDocs, useWeb, Nothing, ct)
+                    End If
                     Return Await AppCore.Backend.StreamChatAsync(payload, opts,
                         Sub(t) send(New JObject From {{"type", "thinking"}, {"t", t}}),
                         Sub(t) send(New JObject From {{"type", "token"}, {"t", t}}),
@@ -420,7 +426,7 @@ Public Class LanServer
             Interlocked.Decrement(_activeClients)
         End Try
 
-        Dim content = If(result?.Content, "")
+        Dim content = If(result?.Content, "") & If(result IsNot Nothing, AppCore.SourcesMarkdown(sources), "")
         If errorText = "stopped" Then
             content &= vbCrLf & vbCrLf & "_[stopped]_"
         ElseIf errorText IsNot Nothing Then

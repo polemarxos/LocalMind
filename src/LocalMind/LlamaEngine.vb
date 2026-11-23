@@ -486,6 +486,24 @@ Public Class LlamaEngine
     '════════════════════════════════════════════════════════════
     '  Request tracking + idle unload
     '════════════════════════════════════════════════════════════
+    ''' <summary>Starts another llama-server (e.g. the embedding model) tied to the app's lifetime.</summary>
+    Public Function LaunchHelper(args As String) As Process
+        Dim exe = ServerExe()
+        If exe Is Nothing Then Throw New Exception("The llama.cpp engine is not installed.")
+        Dim psi As New ProcessStartInfo(exe, args) With {
+            .UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardOutput = True, .RedirectStandardError = True,
+            .WorkingDirectory = Path.GetDirectoryName(exe)}
+        Dim p As New Process() With {.StartInfo = psi}
+        AddHandler p.OutputDataReceived, Sub(o, e) If e.Data IsNot Nothing Then AppendLog("[helper] " & e.Data)
+        AddHandler p.ErrorDataReceived, Sub(o, e) If e.Data IsNot Nothing Then AppendLog("[helper] " & e.Data)
+        AppendLog("> llama-server " & args)
+        p.Start()
+        AssignToJob(p)
+        p.BeginOutputReadLine()
+        p.BeginErrorReadLine()
+        Return p
+    End Function
+
     Public ReadOnly Property ActiveRequests As Integer
         Get
             Return Volatile.Read(_activeRequests)

@@ -112,6 +112,8 @@
     <div class="small">Persona</div>
     <select id="persona"></select>
     <label class="tog"><input type="checkbox" id="think"> 💭 Show thinking (for reasoning models)</label>
+    <label class="tog"><input type="checkbox" id="docs"> 📚 Use my documents (on the PC)</label>
+    <label class="tog"><input type="checkbox" id="web"> 🌐 Search the web</label>
     <div class="small" id="backendInfo"></div>
     <button class="icon" style="width:auto;padding:0 12px" id="logoutBtn">Forget PIN</button>
   </div>
@@ -187,6 +189,9 @@
   $('model').onchange = function () { localStorage.setItem('oc_model', this.value); if (!state.chatId) empty(); };
   $('persona').onchange = function () { localStorage.setItem('oc_persona', this.value); };
   $('think').onchange = function () { localStorage.setItem('oc_think', this.checked ? '1' : '0'); };
+  $('docs').checked = localStorage.getItem('oc_docs') === '1'; $('web').checked = localStorage.getItem('oc_web') === '1';
+  $('docs').onchange = function () { localStorage.setItem('oc_docs', this.checked ? '1' : '0'); };
+  $('web').onchange = function () { localStorage.setItem('oc_web', this.checked ? '1' : '0'); };
 
   // ---------- chats drawer ----------
   function openDrawer() { $('drawer').classList.add('open'); loadChats(); }
@@ -336,7 +341,8 @@
       method: 'POST', signal: state.abort.signal,
       headers: { 'Content-Type': 'application/json', 'X-Pin': state.pin },
       body: JSON.stringify({ chatId: state.chatId, model: $('model').value, persona: $('persona').value,
-                             message: text, images: imgs, think: $('think').checked })
+                             message: text, images: imgs, think: $('think').checked,
+                             docs: $('docs').checked, web: $('web').checked })
     }).then(function (r) {
       if (r.status === 401) { showLogin('PIN changed — enter it again'); throw new Error('auth'); }
       if (!r.ok) return r.json().then(function (j) { throw new Error((j.error && j.error.message) || ('HTTP ' + r.status)); });
