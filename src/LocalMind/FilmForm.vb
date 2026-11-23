@@ -59,7 +59,8 @@ Public Class FilmForm
         lst.Columns.Add(Localizer.T("Clip"), 420)
         lst.Columns.Add(Localizer.T("Length"), 90)
         lst.SmallImageList = thumbs
-        lst.BackColor = Theme.CBack : lst.ForeColor = Theme.CText : lst.BorderStyle = BorderStyle.None
+        Theme.StyleListView(lst)
+        lst.BorderStyle = BorderStyle.None
         lst.AllowDrop = True
         Dim left As New Panel() With {.Dock = DockStyle.Fill}
         Dim hint = Theme.MakeLabel(Localizer.T("Tip: in the studio, right-click a picture or video → 🎬 Add to film. Drop files here too."), dim_:=True)
@@ -82,6 +83,7 @@ Public Class FilmForm
         Dim btnVo = Theme.MakeButton(Localizer.T("🎙 Add voice-over…"))
         Dim btnVoDel = Theme.MakeButton(Localizer.T("Remove"))
         Theme.StyleInput(lstVo)
+        lstVo.BorderStyle = BorderStyle.FixedSingle
         btnExport = Theme.MakeButton(Localizer.T("🎬 Export film"), primary:=True, width:=200)
         Dim btnStop = Theme.MakeButton(Localizer.T("■ Stop"))
         Dim btnNew = Theme.MakeButton(Localizer.T("New film"))
