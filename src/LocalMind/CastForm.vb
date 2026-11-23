@@ -144,12 +144,36 @@ Public Class CastForm
                 End If
             Catch
             End Try
+            If Not icons.Images.ContainsKey(key) Then icons.Images.Add(key, Placeholder(m))
             Dim it As New ListViewItem(m.ToString()) With {.Tag = m, .ImageKey = If(icons.Images.ContainsKey(key), key, Nothing), .Checked = keep.Contains(m.Id)}
             lst.Items.Add(it)
             If _current IsNot Nothing AndAlso _current.Id = m.Id Then it.Selected = True
         Next
+        If lst.SelectedItems.Count = 0 AndAlso lst.Items.Count > 0 Then
+            lst.Items(0).Selected = True
+            _current = TryCast(lst.Items(0).Tag, CastLibrary.CastMember)
+        End If
         lst.EndUpdate()
     End Sub
+
+    ''' <summary>A neutral tile with the first letter, for members without pictures yet.</summary>
+    Private Shared Function Placeholder(m As CastLibrary.CastMember) As Image
+        Dim bmp As New Bitmap(96, 96)
+        Using g = Graphics.FromImage(bmp)
+            g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+            g.TextRenderingHint = Drawing.Text.TextRenderingHint.AntiAliasGridFit
+            g.Clear(Color.Transparent)
+            Dim back = If(m.IsLocation, Color.FromArgb(38, 70, 60), Color.FromArgb(40, 58, 96))
+            Using b As New SolidBrush(back)
+                g.FillEllipse(b, 8, 8, 80, 80)
+            End Using
+            Dim letter = If(String.IsNullOrWhiteSpace(m.Name), "?", m.Name.Trim().Substring(0, 1).ToUpperInvariant())
+            Using f As New Font("Segoe UI Semibold", 30.0F), sf As New StringFormat With {.Alignment = StringAlignment.Center, .LineAlignment = StringAlignment.Center}
+                g.DrawString(letter, f, Brushes.White, New RectangleF(8, 8, 80, 80), sf)
+            End Using
+        End Using
+        Return bmp
+    End Function
 
     Private Shared Function Thumb(img As Image) As Image
         Dim b As New Bitmap(96, 96)

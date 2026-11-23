@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.10.0
+
+### New
+- **🎭 Cast — characters and locations** (Image & video studio → 🎭 Cast…): save the people and places of your
+  story once (a name, a short description of what must stay the same, and 2–3 pictures), then reuse them in every
+  picture and video so they look the same from shot to shot.
+  - Tick who and where to use, or just write **@Name** in the prompt (e.g. “@Anna walks along @Old harbor at
+    sunset”). The name is replaced with its description automatically.
+  - **Describe from picture** writes the description for you with a chat model that can see pictures.
+  - How the cast is used depends on the model:
+    - Picture models that combine pictures (Qwen-Image Edit, FLUX.2 klein, Qwen-Image 2.1): the cast pictures are
+      given as references.
+    - Wan VACE video models: a reference sheet with the whole cast is used.
+    - Photo → video models: LocalMind first makes the opening scene with the cast (using an installed
+      picture model that can combine pictures), then animates it.
+    - Text → video models: the descriptions keep the characters and places consistent.
+
 ## 2.9.1
 
 ### New
