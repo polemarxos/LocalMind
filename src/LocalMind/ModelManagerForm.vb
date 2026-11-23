@@ -159,7 +159,10 @@ Public Class ModelManagerForm
                                           End If
                                       End Sub
         AddHandler cmbCategory.SelectedIndexChanged, Sub() ApplyFilter()
-        AddHandler cmbSort.SelectedIndexChanged, Sub() ApplyFilter()
+        AddHandler cmbSort.SelectedIndexChanged, Sub()
+                                                     _sortCol = Nothing      ' the list order replaces a column sort
+                                                     ApplyFilter()
+                                                 End Sub
         AddHandler cmbShow.SelectedIndexChanged, Sub() ApplyFilter()
         AddHandler btnRefresh.Click, Async Sub() Await RefreshCatalogAsync(force:=True)
         AddHandler btnHub.Click, Async Sub() Await SearchHubAsync()
@@ -195,9 +198,23 @@ Public Class ModelManagerForm
         CType(grid.Columns("quant"), DataGridViewComboBoxColumn).Items.AddRange(QuantChoices)
         grid.Columns("dl").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
         grid.Columns("file").DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight
+        ' Click a column title to sort by it; click again to reverse.
         For Each c As DataGridViewColumn In grid.Columns
-            If c.Name <> "sel" AndAlso c.Name <> "quant" Then c.SortMode = DataGridViewColumnSortMode.NotSortable
+            c.SortMode = If(c.Name = "sel", DataGridViewColumnSortMode.NotSortable, DataGridViewColumnSortMode.Programmatic)
+            If c.Name <> "sel" Then c.ToolTipText = If(String.IsNullOrEmpty(c.ToolTipText), Localizer.T("Click to sort"), c.ToolTipText & " · " & Localizer.T("Click the title to sort"))
         Next
+        AddHandler grid.ColumnHeaderMouseClick, Sub(s, e)
+                                                    Dim col = grid.Columns(e.ColumnIndex)
+                                                    If col.SortMode <> DataGridViewColumnSortMode.Programmatic OrElse e.Button <> MouseButtons.Left Then Return
+                                                    If _sortCol = col.Name Then
+                                                        _sortDesc = Not _sortDesc
+                                                    Else
+                                                        _sortCol = col.Name
+                                                        ' numbers that are "better" when big start from the top
+                                                        _sortDesc = (col.Name = "dl" OrElse col.Name = "upd")
+                                                    End If
+                                                    ApplyFilter()
+                                                End Sub
         AddHandler grid.CurrentCellDirtyStateChanged, Sub()
                                                           If grid.IsCurrentCellDirty Then grid.CommitEdit(DataGridViewDataErrorContexts.Commit)
                                                       End Sub
@@ -439,6 +456,21 @@ Public Class ModelManagerForm
             End Select
         End If
 
+        If _sortCol IsNot Nothing Then
+            Dim ctx2 = ctx
+            Dim key As Func(Of CatalogEntry, IComparable)
+            Select Case _sortCol
+                Case "name" : key = Function(e) e.Name.ToLowerInvariant()
+                Case "params" : key = Function(e) e.Params
+                Case "badges" : key = Function(e) e.Badges
+                Case "quant" : key = Function(e) QuantFor(e)
+                Case "file" : key = Function(e) ModelCatalog.EstimateFileBytes(e, EffectiveQuant(e))
+                Case "fit" : key = Function(e) CInt(ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, EffectiveQuant(e)), _hw, ctx2)) * 1000000000000L - ModelCatalog.EstimateFileBytes(e, EffectiveQuant(e))
+                Case "upd" : key = Function(e) If(e.Updated, "")
+                Case Else : key = Function(e) e.Downloads
+            End Select
+            src = If(_sortDesc, src.OrderByDescending(key), src.OrderBy(key))
+        Else
         Select Case cmbSort.SelectedIndex
             Case 1 : src = src.OrderByDescending(Function(e) e.Likes)
             Case 2 : src = src.OrderByDescending(Function(e) e.Updated)
@@ -447,6 +479,12 @@ Public Class ModelManagerForm
             Case 5 : src = src.OrderBy(Function(e) e.Name, StringComparer.OrdinalIgnoreCase)
             Case Else : src = src.OrderByDescending(Function(e) e.Downloads)
         End Select
+        End If
+        For Each c As DataGridViewColumn In grid.Columns
+            If c.SortMode = DataGridViewColumnSortMode.Programmatic Then
+                c.HeaderCell.SortGlyphDirection = If(c.Name <> _sortCol, SortOrder.None, If(_sortDesc, SortOrder.Descending, SortOrder.Ascending))
+            End If
+        Next
 
         Dim list = src.ToList()
         _suppressGridEvents = True
@@ -686,6 +724,15 @@ Public Class ModelManagerForm
         ApplyFilter()
         RefreshDownloads()
     End Sub
+
+    Private _sortCol As String
+    Private _sortDesc As Boolean
+
+    ''' <summary>The quant that will really be downloaded for this model (Auto resolved).</summary>
+    Private Function EffectiveQuant(e As CatalogEntry) As String
+        Dim q = QuantFor(e)
+        Return If(q = "Auto", ModelCatalog.AutoQuant(e, _hw, AppCore.Settings.ContextSize), q)
+    End Function
 
     Private Function QuantFor(e As CatalogEntry) As String
         Dim q As String = Nothing

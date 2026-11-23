@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.7.2
+
+### New
+- Model Manager: **click a column title** (Model, Size, Abilities, Quant, Download, On this PC, Downloads, Updated)
+  to sort the list by it; click again to reverse. An arrow shows the current order. Choosing an order in the
+  list box (Most popular, Newest…) goes back to that order.
+- **Updates are checked at every start** (about 15 seconds after LocalMind opens, when the AI is idle):
+  LocalMind itself, the AI engines and the model list.
+
 ## 2.7.1
 
 ### New

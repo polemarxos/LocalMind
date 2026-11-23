@@ -259,7 +259,7 @@ Public Class SettingsForm
         chkAudio = New CheckBox() With {.Text = "🎵 Music & voice (songs, speech, voice cloning)", .Checked = _s.EnableAudio, .AutoSize = True}
         Row(t, "Extra abilities", chkImages, "Off = hidden, and nothing for it is downloaded")
         Row(t, "", chkAudio)
-        chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates every day", .Checked = _s.CheckForUpdates, .AutoSize = True}
+        chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates at every start", .Checked = _s.CheckForUpdates, .AutoSize = True}
         Row(t, "Updates", chkUpdates)
         chkAutoInstall = New CheckBox() With {.Text = "Install LocalMind updates by themselves (used from the next start)", .Checked = _s.AutoInstallUpdates, .AutoSize = True}
         Row(t, "", chkAutoInstall)

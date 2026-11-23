@@ -12,13 +12,13 @@ Partial Class MainForm
     Private _updatedExe As String
     Private _autoUpdateStarted As Boolean
 
-    ''' <summary>Starts the quiet daily update round a few minutes after startup.</summary>
+    ''' <summary>Starts the quiet update round shortly after every start.</summary>
     Private Sub AutoUpdateEverythingLater()
         If _autoUpdateStarted Then Return
         _autoUpdateStarted = True
         Dim unused = Task.Run(Async Function()
                                   Try
-                                      Await Task.Delay(TimeSpan.FromSeconds(90))
+                                      Await Task.Delay(TimeSpan.FromSeconds(15))
                                       Await WaitUntilIdleAsync()
                                       Await UpdateEverythingAsync(manual:=False)
                                   Catch
@@ -39,7 +39,8 @@ Partial Class MainForm
         Dim s = Settings
 
         ' 1. LocalMind itself
-        If manual OrElse (s.CheckForUpdates AndAlso (DateTime.Now - s.LastUpdateCheck).TotalHours > 20) Then
+        ' Checked at every start (and with Help → Update everything now).
+        If manual OrElse s.CheckForUpdates Then
             If s.AutoInstallUpdates OrElse manual Then
                 Dim r = Await InstallAppUpdateQuietlyAsync()
                 If r IsNot Nothing Then report.Add(r)
@@ -49,7 +50,7 @@ Partial Class MainForm
         End If
 
         ' 2. AI engines (only the ones that are installed)
-        If manual OrElse (s.AutoUpdateEngines AndAlso (DateTime.Now - s.LastEngineCheck).TotalHours > 20) Then
+        If manual OrElse s.AutoUpdateEngines Then
             Dim status As Action(Of String) = Sub(t) SetStatus(t)
             Try
                 If s.Backend = BackendKind.BuiltIn AndAlso AppCore.Engine.IsInstalled() Then

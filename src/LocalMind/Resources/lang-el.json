@@ -688,5 +688,8 @@
 "Keep the AI engines and the model list up to date automatically": "Αυτόματη ενημέρωση των μηχανών AI και της λίστας μοντέλων",
 "🎵 Music && voice": "🎵 Μουσική && φωνή",
 "🎙": "🎙",
-"🖼 Picture": "🖼 Εικόνα"
+"🖼 Picture": "🖼 Εικόνα",
+"Click to sort": "Κλικ για ταξινόμηση",
+"Click the title to sort": "Κλικ στον τίτλο για ταξινόμηση",
+"Check for LocalMind updates at every start": "Έλεγχος για ενημερώσεις του LocalMind σε κάθε εκκίνηση"
 }
