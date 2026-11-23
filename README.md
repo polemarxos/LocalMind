@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/brand/social-preview.png" alt="LocalMind" width="760"></p>
+
 # LocalMind
 
 **Private AI chat for Windows that runs entirely on your own PC.** No cloud, no account and no Ollama needed.

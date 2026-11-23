@@ -17,6 +17,21 @@ Public Module Theme
     Public ReadOnly BoldFont As New Font("Segoe UI", 9.5!, FontStyle.Bold)
     Public ReadOnly SmallFont As New Font("Segoe UI", 8.5!)
 
+    Private _appIcon As Icon
+
+    ''' <summary>The LocalMind icon (all sizes, from the embedded app.ico), for windows and the tray.</summary>
+    Public Function AppIcon(Optional size As Integer = 0) As Icon
+        Try
+            Using s = Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("app.ico")
+                If size > 0 Then Return New Icon(s, size, size)
+                If _appIcon Is Nothing Then _appIcon = New Icon(s)
+                Return _appIcon
+            End Using
+        Catch
+            Return Icon.ExtractAssociatedIcon(Application.ExecutablePath)
+        End Try
+    End Function
+
     Public Sub ApplyForm(f As Form)
         f.BackColor = CPanel
         f.ForeColor = CText
@@ -24,7 +39,7 @@ Public Module Theme
         ' Translate every window once its controls exist.
         AddHandler f.Load, Sub() Localizer.Apply(f)
         Try
-            f.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath)
+            f.Icon = AppIcon()
         Catch
         End Try
     End Sub

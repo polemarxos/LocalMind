@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C5CFF"/>
+      <stop offset="0.55" stop-color="#4F7BFF"/>
+      <stop offset="1" stop-color="#19C6E6"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7C5CFF"/>
+      <stop offset="1" stop-color="#16B5D8"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.3" cy="0.2" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#bg)"/>
+  <rect x="8" y="8" width="240" height="240" rx="56" fill="url(#glow)"/>
+  <!-- chat bubble -->
+  <path d="M128 48c-49 0-88 32-88 74 0 21 10 40 27 53l-7 31c-1 5 4 8 8 6l33-18c9 2 18 3 27 3 49 0 88-32 88-75s-39-74-88-74z" fill="#FFFFFF"/>
+  <!-- AI sparkle (mind) -->
+  <path d="M128 70c4 24 14 38 40 52-26 14-36 28-40 52-4-24-14-38-40-52 26-14 36-28 40-52z" fill="url(#spark)"/>
+  <circle cx="172" cy="80" r="8" fill="url(#spark)"/>
+  <circle cx="86" cy="160" r="6" fill="url(#spark)" opacity="0.85"/>
+</svg>

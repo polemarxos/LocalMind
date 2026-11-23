@@ -3,6 +3,7 @@
 ## 2.6.0
 
 ### New
+- **New LocalMind icon** (windows, taskbar, tray) and logo.
 - **The AI uses tools by itself:** ask "draw me…", "make a song about…" or something that needs current information,
   and the chat model draws, composes or searches the web on its own (Settings → Chat → AI tools).
 - **Voice conversation** (🎙 Talk): talk hands-free; the AI answers out loud and listens again.

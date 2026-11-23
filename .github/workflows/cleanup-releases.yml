@@ -1,0 +1,29 @@
+name: Delete old releases
+
+# Deletes every release (and its tag) except the one you keep.
+on:
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: 'Release to keep (e.g. v2.6.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete
+        env:
+          GH_TOKEN: ${{ github.token }}
+          KEEP: ${{ inputs.keep }}
+        run: |
+          gh release view "$KEEP" -R "$GITHUB_REPOSITORY" > /dev/null || { echo "Release $KEEP not found — nothing deleted"; exit 1; }
+          for tag in $(gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName --jq '.[].tagName'); do
+            if [ "$tag" != "$KEEP" ]; then
+              gh release delete "$tag" -R "$GITHUB_REPOSITORY" --yes --cleanup-tag
+              echo "deleted $tag"
+            fi
+          done

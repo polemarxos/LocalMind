@@ -42,7 +42,7 @@ Partial Class MainForm
         menu.Items.AddRange({miOpen, miAsk, _trayLan, New ToolStripSeparator(), miExit})
         AddHandler menu.Opening, Sub() _trayLan.Checked = AppCore.Lan IsNot Nothing AndAlso AppCore.Lan.IsRunning
 
-        _tray = New NotifyIcon() With {.Icon = Me.Icon, .Text = "LocalMind", .ContextMenuStrip = menu, .Visible = True}
+        _tray = New NotifyIcon() With {.Icon = Theme.AppIcon(SystemInformation.SmallIconSize.Width), .Text = "LocalMind", .ContextMenuStrip = menu, .Visible = True}
         AddHandler _tray.MouseClick, Sub(s, e) If e.Button = MouseButtons.Left Then RestoreFromTray()
         RegisterQuickAskHotkey()
     End Sub

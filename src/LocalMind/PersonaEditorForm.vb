@@ -26,7 +26,7 @@ Public Class PersonaEditorForm
 
     Public Sub New(personas As List(Of Persona))
         Try
-            Me.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath)
+            Me.Icon = Theme.AppIcon()
         Catch
         End Try
 

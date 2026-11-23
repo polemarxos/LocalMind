@@ -64,7 +64,7 @@ Public Class MainForm
         MediaStudio.InpaintComposer = AddressOf ImageTools.CompositeInpaint
         OnnxTools.Register()
         Try
-            Me.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath)
+            Me.Icon = Theme.AppIcon()
         Catch
         End Try
     End Sub

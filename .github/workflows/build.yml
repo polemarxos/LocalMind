@@ -68,4 +68,11 @@ jobs:
         run: |
           Compress-Archive -Path publish/LocalMind.exe -DestinationPath LocalMind-win-x64.zip
           python tools/release_notes.py "$env:VERSION" | Out-File -Encoding utf8 notes.md
-          gh release create "$env:VERSION" LocalMind-win-x64.zip --target "${{ github.sha }}" --title "LocalMind $env:VERSION" --notes-file notes.md
+          gh release view "$env:VERSION" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            # Same version built again (e.g. a fix): replace the download and the notes.
+            gh release upload "$env:VERSION" LocalMind-win-x64.zip --clobber
+            gh release edit "$env:VERSION" --notes-file notes.md
+          } else {
+            gh release create "$env:VERSION" LocalMind-win-x64.zip --target "${{ github.sha }}" --title "LocalMind $env:VERSION" --notes-file notes.md
+          }

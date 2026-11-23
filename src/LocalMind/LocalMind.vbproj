@@ -5,6 +5,11 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>LocalMind</RootNamespace>
     <AssemblyName>LocalMind</AssemblyName>
+    <Product>LocalMind</Product>
+    <AssemblyTitle>LocalMind</AssemblyTitle>
+    <Company>polemarxos</Company>
+    <Description>LocalMind — private AI on your own PC: chat, pictures, video, music and voice.</Description>
+    <Copyright>© 2026 polemarxos</Copyright>
     <UseWindowsForms>true</UseWindowsForms>
     <StartupObject>LocalMind.Program</StartupObject>
     <LangVersion>latest</LangVersion>
@@ -33,7 +38,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="app.ico" />
+    <EmbeddedResource Include="app.ico" LogicalName="app.ico" />
   </ItemGroup>
 
   <!-- Offline assets: highlight.js, the LAN web UI and the fallback model catalog are
