@@ -98,10 +98,44 @@ Public Class OpenAiCompatService
         Return list
     End Function
 
+    ''' <summary>
+    ''' Many chat templates (Qwen 3.5, Gemma, Mistral…) allow instructions only as one system message at the very
+    ''' start ("System message must be at the beginning"). All leading system messages become one; a system note
+    ''' later in the chat (web results, document excerpts, a search query) is put in front of the next user message
+    ''' instead, so it stays next to the question it belongs to.
+    ''' </summary>
+    Public Shared Function OneSystemFirst(messages As List(Of ChatMessage)) As List(Of ChatMessage)
+        Dim res As New List(Of ChatMessage)
+        Dim head As New List(Of String)
+        Dim pending As New List(Of String)
+        Dim started = False
+        For Each m In messages
+            If m.Role = "system" Then
+                If Not started Then
+                    If Not String.IsNullOrWhiteSpace(m.Content) Then head.Add(m.Content.Trim())
+                Else
+                    If Not String.IsNullOrWhiteSpace(m.Content) Then pending.Add(m.Content.Trim())
+                End If
+                Continue For
+            End If
+            started = True
+            If pending.Count > 0 AndAlso m.Role = "user" Then
+                res.Add(New ChatMessage With {.Role = "user", .Images = m.Images,
+                        .Content = String.Join(vbLf & vbLf, pending) & vbLf & vbLf & "---" & vbLf & vbLf & If(m.Content, "")})
+                pending.Clear()
+            Else
+                res.Add(m)
+            End If
+        Next
+        head.AddRange(pending)          ' notes after the last user message: keep them as instructions
+        If head.Count > 0 Then res.Insert(0, New ChatMessage With {.Role = "system", .Content = String.Join(vbLf & vbLf, head)})
+        Return res
+    End Function
+
     ''' <summary>Builds the OpenAI "messages" array, converting base64 images to data URLs.</summary>
     Public Shared Function BuildMessages(messages As List(Of ChatMessage)) As JArray
         Dim arr As New JArray()
-        For Each m In messages
+        For Each m In OneSystemFirst(messages)
             Dim mo As New JObject()
             mo("role") = m.Role
             If m.Images IsNot Nothing AndAlso m.Images.Count > 0 Then

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.14.2
+
+### Fixed
+- "Jinja Exception: System message must be at the beginning" with some models (Qwen 3.5, Gemma, Mistral…). LocalMind now
+  sends one system message at the start; notes added later (web results, document excerpts, search queries) go
+  in front of the question they belong to.
+
 ## 2.14.1
 
 ### Fixed

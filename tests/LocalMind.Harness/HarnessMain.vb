@@ -851,6 +851,21 @@ Module HarnessMain
             Next
             Check(seen(0) = "generate_image|required" AndAlso seen(1) = "generate_video|required" AndAlso seen(2) = "generate_image|required" AndAlso Not seen(3).Contains("required"),
                   "the asked-for tool is required (and only offered tool)", String.Join(" ; ", seen))
+            ' one system message, at the start (chat templates reject others)
+            Dim msgs As New List(Of ChatMessage) From {
+                New ChatMessage With {.Role = "system", .Content = "You are a pirate."},
+                New ChatMessage With {.Role = "system", .Content = "Answer briefly."},
+                New ChatMessage With {.Role = "user", .Content = "hi"},
+                New ChatMessage With {.Role = "assistant", .Content = "Arr!"},
+                New ChatMessage With {.Role = "system", .Content = "Web results: sunny, 24°C"},
+                New ChatMessage With {.Role = "user", .Content = "weather in Athens?"}}
+            Dim arr = OpenAiCompatService.BuildMessages(msgs)
+            Dim roles = String.Join(",", arr.Select(Function(m) m.Value(Of String)("role")))
+            Check(roles = "system,user,assistant,user" AndAlso arr(0).Value(Of String)("content").Contains("Answer briefly") AndAlso
+                  arr(3).Value(Of String)("content").StartsWith("Web results") AndAlso arr(3).Value(Of String)("content").EndsWith("weather in Athens?"),
+                  "one system message at the start; later notes go with the next question", roles)
+            Dim only1 = OpenAiCompatService.BuildMessages(New List(Of ChatMessage) From {New ChatMessage With {.Role = "user", .Content = "x"}, New ChatMessage With {.Role = "system", .Content = "Search query: y"}})
+            Check(String.Join(",", only1.Select(Function(m) m.Value(Of String)("role"))) = "system,user", "a note after the last question becomes the first message")
         End If
 
         If only = "community" Then
