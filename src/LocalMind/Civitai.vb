@@ -160,10 +160,6 @@ Public Module Civitai
         Return n
     End Function
 
-    Private Function DownloadUrlFor(f As CivFile) As String
-        Return f.DownloadUrl
-    End Function
-
     ''' <summary>True when the file can only be downloaded with a signed-in account (checked without downloading it).</summary>
     Public Async Function NeedsLoginAsync(f As CivFile, ct As CancellationToken) As Task(Of Boolean)
         Dim h As New HttpClientHandler() With {.AllowAutoRedirect = False}

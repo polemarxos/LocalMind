@@ -42,8 +42,6 @@ Public Module AppCore
 
     Private Function CreateBackend() As IChatBackend
         Select Case Settings.Backend
-            Case BackendKind.Ollama
-                Return New OllamaService(Settings.OllamaUrl)
             Case BackendKind.OpenAiCompatible
                 Dim svc As New OpenAiCompatService(Settings.OpenAiUrl, Settings.OpenAiKey) With {.Name = "Server"}
                 svc.SendLlamaExtras = Not Settings.OpenAiUrl.Contains("api.openai.com")

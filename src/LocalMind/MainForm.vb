@@ -143,7 +143,7 @@ Public Class MainForm
         End If
         If Settings.LanEnabled Then Await StartLanAsync()
 
-        Await FirstRunAsync()
+        FirstRun()
         PrepareEngineInBackground()
 
         ' Help → Check for updates, plus a quiet daily check.
@@ -193,24 +193,8 @@ Public Class MainForm
         End Try
     End Function
 
-    ''' <summary>One-time welcome: offer the built-in engine (v1 users) or the Model Manager (new users).</summary>
-    Private Async Function FirstRunAsync() As Task
-        If Settings.UpgradedFromV1 Then
-            Dim ans = Localizer.Box(Me,
-                "OllamaChat is now LocalMind — with a built-in AI engine, so Ollama is no longer required." & vbCrLf & vbCrLf &
-                "• Yes = switch to the built-in engine (you can download models in Models → Model Manager)" & vbCrLf &
-                "• No = keep using Ollama (change any time in Tools → Settings)",
-                "LocalMind", MessageBoxButtons.YesNo, MessageBoxIcon.Information)
-            Settings.Backend = If(ans = DialogResult.Yes, BackendKind.BuiltIn, BackendKind.Ollama)
-            Settings.UpgradedFromV1 = False
-            Settings.FirstRunDone = True
-            AppCore.SaveSettings()
-            AppCore.ResetBackend()
-            Await RefreshModelsKeepSelectionAsync()
-            If ans = DialogResult.Yes AndAlso AppCore.Library.All().Count = 0 Then OpenModelManager()
-            Return
-        End If
-
+    ''' <summary>One-time welcome: choose abilities, then the Model Manager for new users.</summary>
+    Private Sub FirstRun()
         If Not Settings.FeaturesAsked Then
             Using f As New FeaturesForm()
                 f.ShowDialog(Me)
@@ -230,7 +214,7 @@ Public Class MainForm
                 OpenModelManager()
             End If
         End If
-    End Function
+    End Sub
 
     ''' <summary>Installs the llama.cpp engine in the background so it's ready when the first model finishes downloading.</summary>
     Private Sub PrepareEngineInBackground()
@@ -360,7 +344,7 @@ Public Class MainForm
                 online = False
             End Try
 
-            Dim name = If(Settings.Backend = BackendKind.Ollama, "Ollama", "Server")
+            Dim name = "Server"
             SetConnLabel(If(online, $"● {name} connected", $"● {name} offline"), If(online, Color.LimeGreen, Color.IndianRed))
 
             If online AndAlso Not _lastOnlineState AndAlso Not _isFirstConnectionCheck AndAlso Not _isGenerating Then
@@ -1343,7 +1327,7 @@ Public Class MainForm
     Private Sub miAbout_Click(sender As Object, e As EventArgs) Handles miAbout.Click
         Dim engine = AppCore.Engine.InstalledVersion()
         Localizer.Box("LocalMind " & Application.ProductVersion.Split("+"c)(0) & vbCrLf &
-                        "Local AI chat for Windows — built-in llama.cpp engine, Ollama or any OpenAI-compatible server." & vbCrLf & vbCrLf &
+                        "Private AI for Windows: chat, pictures, video, music and voice, all on your own PC." & vbCrLf & vbCrLf &
                         "Backend: " & AppCore.Backend.DisplayName & vbCrLf &
                         "Engine: " & If(engine, "not installed") & vbCrLf &
                         HardwareInfo.Current().Summary,

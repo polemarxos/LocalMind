@@ -2,7 +2,7 @@
 
 # LocalMind
 
-**Private AI chat for Windows that runs entirely on your own PC.** No cloud, no account and no Ollama needed.
+**Private AI chat for Windows that runs entirely on your own PC.** No cloud, no account, nothing else to install.
 Pick a model that fits your graphics card, chat with it, and use it from your phone or other PCs on your network.
 
 ## Features
@@ -41,7 +41,7 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 - **Hands-free:** talk to the AI and hear the answer (in your own cloned voice if you like). The AI can also draw,
   compose and search the web by itself when you ask.
 - **Auto-update** from GitHub Releases.
-- **Other backends:** you can also connect to Ollama or any OpenAI-compatible server (LM Studio, vLLM,
+- **Other servers:** you can also connect to any OpenAI-compatible server (LM Studio, vLLM,
   or another PC running LocalMind).
 
 ## Requirements
@@ -97,8 +97,6 @@ LocalMind\
 If the exe is in a folder Windows doesn't allow writing to (such as `C:\Program Files`), LocalMind uses
 `%AppData%\LocalMind` and `%LocalAppData%\LocalMind` instead. Put LocalMind in a normal folder, such as `D:\LocalMind`, on a drive
 with plenty of free space.
-
-Upgrading from **OllamaChat**: your old data is moved over automatically the first time LocalMind starts.
 
 ## Releasing
 

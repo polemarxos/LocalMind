@@ -2,7 +2,6 @@
 "   API key / PIN": "   Κλειδί API / PIN",
 "   Fixed size (tokens)": "   Σταθερό μέγεθος (tokens)",
 "   Minimum (auto)": "   Ελάχιστο (αυτόματο)",
-"   Ollama URL": "   Διεύθυνση Ollama",
 "   Server URL": "   Διεύθυνση διακομιστή",
 "&File": "&Αρχείο",
 "&Help": "&Βοήθεια",
@@ -27,7 +26,6 @@
 "Brave API key": "Κλειδί API Brave",
 "Browse and download models that fit your GPU (Ctrl+M)": "Αναζήτηση και λήψη μοντέλων που χωράνε στην κάρτα γραφικών σας (Ctrl+M)",
 "Built-in engine": "Ενσωματωμένη μηχανή",
-"Built-in engine (llama.cpp) — runs models itself, no Ollama needed  ★ recommended": "Ενσωματωμένη μηχανή (llama.cpp) — τρέχει τα μοντέλα μόνη της, χωρίς Ollama  ★ προτείνεται",
 "Can be another PC: http://192.168.1.20:11434": "Μπορεί να είναι άλλος υπολογιστής: http://192.168.1.20:11434",
 "Cancel": "Ακύρωση",
 "Cancel && delete files": "Ακύρωση && διαγραφή αρχείων",
@@ -317,7 +315,6 @@
 "Update available": "Διαθέσιμη ενημέρωση",
 "You have the latest version": "Έχετε την πιο πρόσφατη έκδοση",
 "• Yes = switch to the built-in engine (you can download models in Models → Model Manager)": "• Ναι = μετάβαση στην ενσωματωμένη μηχανή (κατεβάζετε μοντέλα από Μοντέλα → Διαχείριση μοντέλων)",
-"• No = keep using Ollama (change any time in Tools → Settings)": "• Όχι = συνέχεια με το Ollama (αλλάζει όποτε θέλετε στα Εργαλεία → Ρυθμίσεις)",
 "Next, the Model Manager opens: press '★ Recommend for my PC' (or tick any model), ": "Τώρα ανοίγει η Διαχείριση μοντέλων: πατήστε «★ Πρόταση για τον υπολογιστή μου» (ή επιλέξτε όποιο μοντέλο θέλετε), ",
 "then 'Download'. Everything else is set up automatically.": "και μετά «Λήψη». Όλα τα υπόλοιπα ρυθμίζονται αυτόματα.",
 "Downloaded models are used by the built-in engine, but you are using ": "Τα μοντέλα που κατεβάζετε χρησιμοποιούνται από την ενσωματωμένη μηχανή, αλλά τώρα χρησιμοποιείτε ",
@@ -596,5 +593,7 @@
 "✏ Pencil sketch": "✏ Σκίτσο με μολύβι",
 "🐉 Fantasy art": "🐉 Φαντασία",
 "📦 Product shot": "📦 Φωτογραφία προϊόντος",
-"🏛 Architecture": "🏛 Αρχιτεκτονική"
+"🏛 Architecture": "🏛 Αρχιτεκτονική",
+"Built-in engine (llama.cpp) — runs models on this PC  ★ recommended": "Ενσωματωμένη μηχανή (llama.cpp) — τρέχει τα μοντέλα σε αυτόν τον υπολογιστή  ★ προτείνεται",
+"Private AI for Windows: chat, pictures, video, music and voice, all on your own PC.": "Ιδιωτικό AI για Windows: συνομιλία, εικόνες, βίντεο, μουσική και φωνή, όλα στον δικό σας υπολογιστή."
 }

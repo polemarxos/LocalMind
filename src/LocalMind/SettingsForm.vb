@@ -13,8 +13,8 @@ Public Class SettingsForm
     Private _installCts As CancellationTokenSource
 
     ' Backend
-    Private rbBuiltIn, rbOllama, rbOpenAi As RadioButton
-    Private txtOllamaUrl, txtOpenAiUrl, txtOpenAiKey As TextBox
+    Private rbBuiltIn, rbOpenAi As RadioButton
+    Private txtOpenAiUrl, txtOpenAiKey As TextBox
     ' Engine
     Private cmbVariant As ComboBox
     Private lblEngine As Label
@@ -103,17 +103,13 @@ Public Class SettingsForm
     '──────────────── Backend tab ────────────────
     Private Sub BuildBackend(page As TabPage)
         Dim t = Grid(page)
-        rbBuiltIn = New RadioButton() With {.Text = "Built-in engine (llama.cpp) — runs models itself, no Ollama needed  ★ recommended", .AutoSize = True, .Checked = _s.Backend = BackendKind.BuiltIn}
-        rbOllama = New RadioButton() With {.Text = "Ollama", .AutoSize = True, .Checked = _s.Backend = BackendKind.Ollama}
+        rbBuiltIn = New RadioButton() With {.Text = "Built-in engine (llama.cpp) — runs models on this PC  ★ recommended", .AutoSize = True, .Checked = _s.Backend = BackendKind.BuiltIn}
         rbOpenAi = New RadioButton() With {.Text = "OpenAI-compatible server (LM Studio, vLLM, Jan, another PC running this app…)", .AutoSize = True, .Checked = _s.Backend = BackendKind.OpenAiCompatible}
-        txtOllamaUrl = New TextBox() With {.Text = _s.OllamaUrl, .Width = 360}
         txtOpenAiUrl = New TextBox() With {.Text = _s.OpenAiUrl, .Width = 360}
         txtOpenAiKey = New TextBox() With {.Text = _s.OpenAiKey, .Width = 360, .UseSystemPasswordChar = True}
 
         Wide(t, Theme.MakeLabel("Where should the AI run?", bold:=True))
         Wide(t, rbBuiltIn)
-        Wide(t, rbOllama)
-        Row(t, "   Ollama URL", txtOllamaUrl, "Can be another PC: http://192.168.1.20:11434")
         Wide(t, rbOpenAi)
         Row(t, "   Server URL", txtOpenAiUrl, "e.g. http://localhost:1234 (LM Studio) or http://192.168.1.20:8484 (this app on another PC)")
         Row(t, "   API key / PIN", txtOpenAiKey, "For another PC running this app, enter its LAN PIN")
@@ -343,11 +339,10 @@ Public Class SettingsForm
     '──────────────── Save ────────────────
     Private Sub SaveAndClose(sender As Object, e As EventArgs)
         Dim engineBefore = (_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, (_s.MinAutoContext, _s.SpeedUpMode))
-        Dim backendBefore = (_s.Backend, _s.OllamaUrl, _s.OpenAiUrl, _s.OpenAiKey)
+        Dim backendBefore = (_s.Backend, _s.OpenAiUrl, _s.OpenAiKey)
         Dim folderBefore = _s.EffectiveModelsFolder
 
-        _s.Backend = If(rbOllama.Checked, BackendKind.Ollama, If(rbOpenAi.Checked, BackendKind.OpenAiCompatible, BackendKind.BuiltIn))
-        _s.OllamaUrl = txtOllamaUrl.Text.Trim()
+        _s.Backend = If(rbOpenAi.Checked, BackendKind.OpenAiCompatible, BackendKind.BuiltIn)
         _s.OpenAiUrl = txtOpenAiUrl.Text.Trim()
         _s.OpenAiKey = txtOpenAiKey.Text.Trim()
         _s.EngineVariant = SelectedVariant()
@@ -400,7 +395,7 @@ Public Class SettingsForm
         _s.MaxTokens = CInt(numMaxTok.Value)
         AppCore.SaveSettings()
 
-        If Not backendBefore.Equals((_s.Backend, _s.OllamaUrl, _s.OpenAiUrl, _s.OpenAiKey)) Then AppCore.ResetBackend()
+        If Not backendBefore.Equals((_s.Backend, _s.OpenAiUrl, _s.OpenAiKey)) Then AppCore.ResetBackend()
         If Not String.Equals(folderBefore, _s.EffectiveModelsFolder, StringComparison.OrdinalIgnoreCase) Then AppCore.Library.Refresh()
         If Not engineBefore.Equals((_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, (_s.MinAutoContext, _s.SpeedUpMode))) Then
             ' Reload with the new settings on the next message.

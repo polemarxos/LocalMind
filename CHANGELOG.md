@@ -129,10 +129,10 @@
 ### Improved
 - Release builds publish only `LocalMind.exe`.
 
-## 2.0.0 — renamed from OllamaChat to LocalMind
+## 2.0.0
 
 ### New
-- **Built-in llama.cpp engine.** Ollama is no longer required. The app installs and updates the right build for
+- **Built-in llama.cpp engine.** The app installs and updates the right build for
   the GPU (CUDA 12/13, Vulkan, ROCm, CPU) and runs it hidden on 127.0.0.1. The engine is shut down when the app
   closes, even after a crash.
 - **Model Manager** (Ctrl+M):
@@ -161,7 +161,3 @@
 
 ### Security
 - Raw HTML in model output is no longer rendered in the chat view.
-
-### Migration
-- `%AppData%\OllamaChat` and `%LocalAppData%\OllamaChat` are moved to `…\LocalMind` on first start.
-- Users upgrading from v1 are asked once whether to switch from Ollama to the built-in engine.

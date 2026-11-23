@@ -8,8 +8,8 @@ MainForm (WinForms + WebView2)        Phones / other PCs (browser, /v1 clients)
         ┌────────────────┼──────────────────────────────┐
    IChatBackend     HistoryService / PersonaService   ModelLibrary ◄── DownloadManager ◄── ModelCatalog (Hugging Face)
         │
- ┌──────┼──────────────────────┐
-BuiltInBackend   OllamaService   OpenAiCompatService
+ ┌──────┴──────────┐
+BuiltInBackend   OpenAiCompatService
      │
 LlamaEngine ── llama-server.exe (127.0.0.1:random port)
 ```
@@ -20,7 +20,6 @@ LlamaEngine ── llama-server.exe (127.0.0.1:random port)
 | `ChatBackend.vb` | `IChatBackend`, request options and results, plus `ThinkTagSplitter` for raw `<think>` output. |
 | `LlamaEngine.vb` | Installs and updates llama.cpp from GitHub releases. Starts and stops the engine, waits for `/health`, writes the log. `AcquireAsync` loads a model and registers a request in one step, so the model is never switched mid-answer. A Job Object kills the engine with the app. |
 | `OpenAiCompatService.vb` | Streaming `/v1/chat/completions` client. Reads `reasoning_content`, `timings` and `usage`. |
-| `OllamaService.vb` | Ollama `/api/chat` client (optional backend). |
 | `HardwareInfo.vb` | Detects GPU and VRAM (nvidia-smi, display-adapter registry), RAM and CUDA driver version. |
 | `ModelCatalog.vb` | Live and offline catalog, capability tags, VRAM-fit estimate, `PickQuant` (automatic quantization), `BestThatFit` (default list). |
 | `DownloadManager.vb`, `Downloader.vb` | Sequential queue, HTTP Range resume, SHA-256 check, `download.json` for resume after a restart. |

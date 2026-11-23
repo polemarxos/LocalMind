@@ -590,8 +590,6 @@ Public Class LanServer
                     Await ForwardAsync(ctx, AppCore.Engine.BaseUrl & path, bodyBytes, Nothing)
                 End Using
                 Return
-            Case BackendKind.Ollama
-                target = s.OllamaUrl.TrimEnd("/"c) & path
             Case Else
                 target = OpenAiCompatService.NormalizeBase(s.OpenAiUrl) & path.Substring(3)
                 auth = s.OpenAiKey

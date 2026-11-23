@@ -101,7 +101,6 @@ Partial Class MainForm
             _btnImage.Checked = False
             Return
         End If
-        Dim v = MediaStudio.InstalledVariant(r)
 
         _isGenerating = True
         btnSend.Enabled = False
@@ -152,19 +151,9 @@ Partial Class MainForm
                 File.WriteAllBytes(inputFile, Convert.FromBase64String(userMsg.Images(0)))
             End If
 
-            ' 3) Free the GPU (handled inside GenerateAsync) and draw.
-            Dim fast = Settings.MediaFast AndAlso r.Speed IsNot Nothing
-            Dim job = MediaStudio.GuessTask(r, inputFile IsNot Nothing, False, False)
-            Dim req As New MediaStudio.GenerateRequest With {
-                .Recipe = r, .Variant = v, .Prompt = prompt, .Negative = r.Negative, .Task = job,
-                .Width = If(r.Width > 0, r.Width, 1024), .Height = If(r.Height > 0, r.Height, 1024),
-                .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast,
-                .Seed = Random.Shared.Next(1, Integer.MaxValue), .InputImage = inputFile, .Strength = 0.6,
-                .Loras = LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()}
-            Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status(If(p > 0, $"{t}  ({p}%)", t)), ct)
-            Dim url = "https://outputs.localmind/" & Uri.EscapeDataString(Path.GetFileName(out))
-            content = $"![{EscapeAlt(prompt)}]({url})" & vbCrLf & vbCrLf &
-                      $"_{r.Name} · {v.Label} · {sw.Elapsed.TotalSeconds:0}s_" &
+            ' 3) Free the GPU (handled inside the studio) and draw.
+            Dim picture = Await ChatAgent.MakePictureAsync(prompt, inputFile, status, ct)
+            content = picture & $" · {sw.Elapsed.TotalSeconds:0}s" &
                       If(prompt <> text, vbCrLf & vbCrLf & "> " & prompt.Replace(vbLf, " "), "")
         Catch oce As OperationCanceledException
             content = "_[stopped]_"
@@ -193,8 +182,4 @@ Partial Class MainForm
         webChat.ExecuteScriptAsync($"setStatusText('{msgId}', {JsonConvert.SerializeObject(Localizer.T(t))});")
     End Sub
 
-    Private Shared Function EscapeAlt(s As String) As String
-        Dim t = s.Replace("[", "(").Replace("]", ")").Replace(vbCr, " ").Replace(vbLf, " ")
-        Return If(t.Length > 120, t.Substring(0, 120) & "…", t)
-    End Function
 End Class

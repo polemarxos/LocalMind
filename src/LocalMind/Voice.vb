@@ -309,11 +309,6 @@ Public Module Voice
         End Using
     End Sub
 
-    ''' <summary>Plays a WAV file to the end (blocking; call from a background thread).</summary>
-    Public Sub PlayWav(file As String)
-        PlaySound(file, IntPtr.Zero, SND_FILENAME Or SND_SYNC Or SND_NODEFAULT)
-    End Sub
-
     ''' <summary>Reads text aloud (async): the chosen AI voice, or Windows voices (Greek voice for Greek text when installed).</summary>
     Public Sub Speak(text As String)
         If Not String.IsNullOrEmpty(AppCore.Settings.ReadAloudModel) AndAlso

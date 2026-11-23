@@ -32,7 +32,7 @@ End Class
 
 ''' <summary>
 ''' A source of chat completions. Implemented by the built-in llama.cpp engine,
-''' Ollama, and any OpenAI-compatible server (LM Studio, vLLM, another PC running this app…).
+''' and any OpenAI-compatible server (LM Studio, vLLM, another PC running this app…).
 ''' </summary>
 Public Interface IChatBackend
     ReadOnly Property DisplayName As String

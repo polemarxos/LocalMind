@@ -41,22 +41,4 @@ Public Class Persona
     Public Property Temperature As Double = 0.7
 End Class
 
-Public Class OllamaTagsResponse
-    Public Property models As List(Of OllamaModelInfo)
-End Class
 
-Public Class OllamaModelInfo
-    Public Property name As String
-    Public Property model As String
-    Public Property size As Long
-End Class
-
-Public Class OllamaChatChunk
-    Public Property model As String
-    Public Property created_at As String
-    Public Property message As ChatMessage
-    Public Property done As Boolean
-    Public Property done_reason As String
-    Public Property eval_count As Integer
-    Public Property eval_duration As Long
-End Class

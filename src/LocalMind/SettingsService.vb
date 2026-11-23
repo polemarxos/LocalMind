@@ -4,8 +4,7 @@ Imports System.Linq
 Imports Newtonsoft.Json
 
 Public Enum BackendKind
-    BuiltIn = 0      ' bundled llama.cpp engine — no Ollama needed
-    Ollama = 1
+    BuiltIn = 0      ' bundled llama.cpp engine
     OpenAiCompatible = 2  ' LM Studio, vLLM, another PC running this app, etc.
 End Enum
 
@@ -22,7 +21,6 @@ Public Class AppSettings
 
     ' ── Backend ──
     Public Property Backend As BackendKind = BackendKind.BuiltIn
-    Public Property OllamaUrl As String = "http://localhost:11434"
     Public Property OpenAiUrl As String = "http://localhost:1234"
     Public Property OpenAiKey As String = ""
 
@@ -101,9 +99,6 @@ Public Class AppSettings
     Public Property Language As String = "auto"   ' auto | en | el
     Public Property LastUpdateCheck As DateTime
 
-    ''' <summary>True when settings.json came from v1 (Ollama-only) — used to offer the built-in engine once.</summary>
-    <JsonIgnore> Public Property UpgradedFromV1 As Boolean
-
     <JsonIgnore>
     Public ReadOnly Property EffectiveModelsFolder As String
         Get
@@ -116,7 +111,6 @@ End Class
 ''' <summary>Central place for every on-disk location the app uses.</summary>
 Public Module AppPaths
     Public Const AppFolderName As String = "LocalMind"
-    Private Const LegacyFolderName As String = "OllamaChat"   ' name used before the rename
 
     Private _roaming As String
     Private _local As String
@@ -151,14 +145,13 @@ Public Module AppPaths
         End Get
     End Property
 
-    ''' <summary>&lt;exe folder&gt;\Data — first run copies settings/chats from %AppData%\LocalMind (or OllamaChat).</summary>
+    ''' <summary>&lt;exe folder&gt;\Data — first run copies settings/chats from %AppData%\LocalMind.</summary>
     Private Function PortableData() As String
         Dim target = Path.Combine(AppDir, "Data")
         If Not Directory.Exists(target) Then
             Dim appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
-            Dim old = {Path.Combine(appData, AppFolderName), Path.Combine(appData, LegacyFolderName)}.
-                      FirstOrDefault(Function(d) Directory.Exists(d) AndAlso Directory.EnumerateFileSystemEntries(d).Any())
-            If old IsNot Nothing Then
+            Dim old = Path.Combine(appData, AppFolderName)
+            If Directory.Exists(old) AndAlso Directory.EnumerateFileSystemEntries(old).Any() Then
                 Try
                     CopyTree(old, target)   ' small (text files) — copy, leave the original as a backup
                 Catch
@@ -191,23 +184,9 @@ Public Module AppPaths
         End Get
     End Property
 
-    ''' <summary>
-    ''' Returns the LocalMind folder, moving the old "OllamaChat" folder there on first run so
-    ''' settings, chats, the engine and downloaded models carry over. A move on the same drive is
-    ''' instant even for many GB of models. If the move is impossible (e.g. files in use), the old
-    ''' folder keeps being used rather than copying gigabytes.
-    ''' </summary>
+    ''' <summary>The LocalMind folder under %AppData% / %LocalAppData% (used when the exe's folder is read-only).</summary>
     Private Function Resolve(root As Environment.SpecialFolder) As String
-        Dim baseDir = Environment.GetFolderPath(root)
-        Dim current = Path.Combine(baseDir, AppFolderName)
-        Dim legacy = Path.Combine(baseDir, LegacyFolderName)
-        If Not Directory.Exists(current) AndAlso Directory.Exists(legacy) Then
-            Try
-                Directory.Move(legacy, current)
-            Catch
-                Return legacy
-            End Try
-        End If
+        Dim current = Path.Combine(Environment.GetFolderPath(root), AppFolderName)
         Directory.CreateDirectory(current)
         Return current
     End Function
@@ -308,14 +287,7 @@ Public Class SettingsService
             If File.Exists(FilePath) Then
                 Dim json = File.ReadAllText(FilePath)
                 Dim s = JsonConvert.DeserializeObject(Of AppSettings)(json)
-                If s IsNot Nothing Then
-                    If Not json.Contains("""Backend""") Then
-                        ' v1 settings: keep Ollama working exactly as before until the user decides.
-                        s.UpgradedFromV1 = True
-                        s.Backend = BackendKind.Ollama
-                    End If
-                    Return Sanitize(s)
-                End If
+                If s IsNot Nothing Then Return Sanitize(s)
             End If
         Catch
         End Try
@@ -323,6 +295,7 @@ Public Class SettingsService
     End Function
 
     Private Shared Function Sanitize(s As AppSettings) As AppSettings
+        If Not [Enum].IsDefined(s.Backend) Then s.Backend = BackendKind.BuiltIn     ' an option that no longer exists
         If String.IsNullOrWhiteSpace(s.LanPin) Then
             s.LanPin = Random.Shared.Next(100000, 999999).ToString()
         End If

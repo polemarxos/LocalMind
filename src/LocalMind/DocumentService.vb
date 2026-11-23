@@ -22,21 +22,6 @@ Public Module DocumentService
     Public Const MaxChars As Integer = 16000
     Private Const MaxImageBytes As Long = 15L * 1024 * 1024      ' 15 MB
 
-    '────────────────────────────────────────────────────────────
-    '  Legacy entry points (still used by btnAttachDoc)
-    '────────────────────────────────────────────────────────────
-    Public Function ExtractText(filePath As String) As String
-        Dim ext = Path.GetExtension(filePath).ToLowerInvariant()
-        Select Case ext
-            Case ".pdf"
-                Return ExtractPdf(filePath)
-            Case ".txt", ".md", ".csv", ".json", ".xml", ".log", ".vb", ".cs", ".py", ".js", ".ts", ".html", ".css"
-                Return File.ReadAllText(filePath)
-            Case Else
-                Throw New NotSupportedException("Unsupported file type: " & ext)
-        End Select
-    End Function
-
     Private Function ExtractPdf(filePath As String) As String
         Dim sb As New StringBuilder()
         Using doc = PdfDocument.Open(filePath)

@@ -25,7 +25,7 @@ Public Module ChatAgent
     ''' <summary>Tools offered to the model, depending on the abilities that are switched on and installed.</summary>
     Public Function Tools(model As String, offerWebSearch As Boolean) As JArray
         Dim s = AppCore.Settings
-        If Not s.AgentTools OrElse s.Backend = BackendKind.Ollama Then Return Nothing
+        If Not s.AgentTools Then Return Nothing
         If NoToolModels.Contains(If(model, "")) Then Return Nothing
         Dim list As New JArray()
         If s.EnableImages AndAlso PickImageRecipe(False) IsNot Nothing Then
