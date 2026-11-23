@@ -62,6 +62,18 @@ jobs:
               $ws.SendKeys('^m'); Start-Sleep -Seconds 15
               Shot "models-media"
               $env:LOCALMIND_MODELS_TAB = ''
+              Stop-Process -Id $p.Id -Force; Start-Sleep 2
+              # the Studio and the Cast window
+              New-Item -ItemType Directory -Force publish/Data/Cast | Out-Null
+              '[{"Id":"a1","Kind":"character","Name":"Anna","Description":"woman in her 30s, short red hair, green eyes, leather jacket","Images":[]},{"Id":"b2","Kind":"character","Name":"Max","Description":"tall detective, grey beard, brown trench coat","Images":[]},{"Id":"c3","Kind":"location","Name":"Old harbor","Description":"foggy harbor at dawn, wooden boats, warm street lamps","Images":[]}]' | Set-Content -Encoding utf8 publish/Data/Cast/cast.json
+              foreach ($pv in @('studio', 'cast')) {
+                $env:LOCALMIND_PREVIEW = $pv
+                $p = Start-Process publish/LocalMind.exe -PassThru
+                Start-Sleep -Seconds 25
+                Shot "window-$pv"
+                Stop-Process -Id $p.Id -Force; Start-Sleep 2
+              }
+              $env:LOCALMIND_PREVIEW = ''
 
             }
             Stop-Process -Id $p.Id -Force

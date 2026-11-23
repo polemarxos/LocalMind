@@ -45,7 +45,12 @@ Public Class StudioForm
     Private ReadOnly cmbStyle As ComboBox
     Private ReadOnly btnStop As Button
     Private ReadOnly lblQueue As Label
-    Private ReadOnly _queue As New Queue(Of (Req As MediaStudio.GenerateRequest, Label As String))
+    ''' <summary>Jobs waiting. Before (optional) makes the start picture first, e.g. a scene with the cast for a video.</summary>
+    Private ReadOnly _queue As New Queue(Of (Req As MediaStudio.GenerateRequest, Label As String, Before As MediaStudio.GenerateRequest))
+    ''' <summary>Characters and locations picked for the next jobs.</summary>
+    Private ReadOnly _cast As New List(Of CastLibrary.CastMember)
+    Private btnCast As Button
+    Private lblCast As Label
     Private _running As Boolean
 
     ''' <summary>Style presets: words added to the end of the prompt.</summary>
@@ -189,6 +194,10 @@ Public Class StudioForm
         opts.Controls.AddRange({Theme.MakeLabel("Size"), cmbSize, Theme.MakeLabel("Steps"), numSteps, Theme.MakeLabel("CFG"), numCfg,
                                 Theme.MakeLabel("Seed"), numSeed, Theme.MakeLabel("Pictures"), numCount, Theme.MakeLabel("Style"), cmbStyle,
                                 lblFrames, numFrames, lblStrength, numStrength, chkFast, btnLoras, btnMask, btnVideo, lblVideo})
+        btnCast = Theme.MakeButton(Localizer.T("🎭 Cast…"))
+        lblCast = Theme.MakeLabel("", dim_:=True)
+        AddHandler btnCast.Click, Sub() PickCast()
+        opts.Controls.AddRange({btnCast, lblCast})
         Dim genBar As New FlowLayoutPanel() With {.Dock = DockStyle.Fill}
         btnGenerate = Theme.MakeButton("🎨 Generate", primary:=True, width:=160)
         btnGenerate.Font = Theme.BoldFont
@@ -334,6 +343,30 @@ Public Class StudioForm
     End Sub
 
     '──────────────── task ────────────────
+    ''' <summary>An installed picture model that can combine reference pictures (makes cast scenes for videos).</summary>
+    Private Function CastSceneRecipe() As MediaRecipe
+        Return MediaStudio.Recipes().Where(Function(x) Not x.IsVideo AndAlso x.Can("combine") AndAlso MediaStudio.InstalledVariant(x) IsNot Nothing).
+                                     OrderBy(Function(x) If(MediaStudio.Fit(x, MediaStudio.InstalledVariant(x), _hw) = FitLevel.Fits, 0, 1)).
+                                     ThenBy(Function(x) If(x.Speed IsNot Nothing AndAlso AppCore.Settings.MediaFast, x.Speed.Steps, x.Steps)).FirstOrDefault()
+    End Function
+
+    Private Sub PickCast()
+        Using f As New CastForm(_cast.Select(Function(m) m.Id))
+            If f.ShowDialog(Me) = DialogResult.OK Then
+                _cast.Clear()
+                _cast.AddRange(f.Picked)
+            Else
+                ' names or pictures may have changed: keep the same people, with their new details
+                Dim fresh = CastLibrary.Load()
+                Dim ids = _cast.Select(Function(m) m.Id).ToList()
+                _cast.Clear()
+                _cast.AddRange(fresh.Where(Function(m) ids.Contains(m.Id)))
+            End If
+        End Using
+        lblCast.Text = String.Join("  ", _cast.Select(Function(m) m.ToString()))
+        btnCast.Text = If(_cast.Count > 0, Localizer.T("🎭 Cast") & $" ({_cast.Count})", Localizer.T("🎭 Cast…"))
+    End Sub
+
     Private Function CurrentTask() As (Id As String, Label As String, Video As Boolean)
         Return TaskList(Math.Max(0, cmbTask.SelectedIndex))
     End Function
@@ -616,6 +649,42 @@ Public Class StudioForm
         If r Is Nothing OrElse v Is Nothing Then Return
         Dim t = CurrentTask().Id
         Dim pics = _inputs.Where(Function(x) x IsNot Nothing).ToList()
+        ' 🎭 Cast: who and where (ticked, or written as @Name in the prompt)
+        Dim cast = CastLibrary.Involved(txtPrompt.Text, _cast)
+        Dim castPics = CastLibrary.ReferencePictures(cast, 3)
+        Dim before As MediaStudio.GenerateRequest = Nothing
+        If cast.Count > 0 AndAlso castPics.Count > 0 AndAlso pics.Count = 0 Then
+            If Not r.IsVideo Then
+                ' pictures: models that take reference pictures put the same faces and places in the new picture
+                If (t = "create" OrElse t = "combine") AndAlso r.Can("combine") Then
+                    t = "combine"
+                    pics = castPics.Take(Math.Max(1, r.Refs)).ToList()
+                End If
+            ElseIf r.Can("video-edit") AndAlso t <> "video-edit" Then
+                ' Wan VACE: "reference to video" with one sheet showing the whole cast
+                t = "animate"
+                pics = {CastLibrary.ReferenceSheet(cast, 832, 480)}.ToList()
+            ElseIf t = "video-edit" Then
+                pics = {CastLibrary.ReferenceSheet(cast, 832, 480)}.ToList()
+            ElseIf r.Can("animate") Then
+                ' photo → video models: first make the opening scene with the cast, then animate it
+                Dim maker = CastSceneRecipe()
+                If maker IsNot Nothing Then
+                    t = "animate"
+                    before = New MediaStudio.GenerateRequest With {
+                        .Recipe = maker, .Variant = MediaStudio.InstalledVariant(maker), .Task = "combine",
+                        .Prompt = CastLibrary.ComposePrompt(txtPrompt.Text.Trim(), _cast) & ", opening frame of a film scene, cinematic",
+                        .Width = If(r.Width > 0, r.Width, 832), .Height = If(r.Height > 0, r.Height, 480),
+                        .Steps = If(AppCore.Settings.MediaFast AndAlso maker.Speed IsNot Nothing, maker.Speed.Steps, maker.Steps),
+                        .Cfg = If(AppCore.Settings.MediaFast AndAlso maker.Speed IsNot Nothing, maker.Speed.Cfg, maker.Cfg),
+                        .Fast = AppCore.Settings.MediaFast AndAlso maker.Speed IsNot Nothing,
+                        .InputImages = castPics.Take(Math.Max(1, maker.Refs)).ToList()}
+                ElseIf r.Input = "required" Then
+                    Localizer.Box(Me, "To use the cast with this photo → video model, LocalMind first makes the opening scene with a picture model that combines pictures (Qwen-Image Edit, FLUX.2 klein or Qwen-Image 2.1). Download one of them, or choose a start picture yourself.", "Cast")
+                    Return
+                End If
+            End If
+        End If
         Dim noText = t = "upscale" OrElse t = "remove-bg" OrElse t = "restore"
         If Not noText AndAlso String.IsNullOrWhiteSpace(txtPrompt.Text) AndAlso t <> "pose" Then
             txtPrompt.Focus()
@@ -633,7 +702,7 @@ Public Class StudioForm
                     Return
                 End If
             Case "animate"
-                If pics.Count = 0 AndAlso r.Input = "required" Then
+                If pics.Count = 0 AndAlso r.Input = "required" AndAlso before Is Nothing Then
                     Localizer.Box(Me, "This model animates a picture — choose an input image first.", "Input image")
                     Return
                 End If
@@ -667,7 +736,7 @@ Public Class StudioForm
         End If
         Dim style = If(cmbStyle.Enabled, Styles(Math.Max(0, cmbStyle.SelectedIndex)).Words, "")
         Dim req As New MediaStudio.GenerateRequest With {
-            .Recipe = r, .Variant = v, .Task = t, .Prompt = txtPrompt.Text.Trim() & style,
+            .Recipe = r, .Variant = v, .Task = t, .Prompt = CastLibrary.ComposePrompt(txtPrompt.Text.Trim(), _cast) & style,
             .Negative = If(String.IsNullOrWhiteSpace(txtNeg.Text), If(r.IsVideo, r.Negative, ""), txtNeg.Text.Trim()),
             .Width = w, .Height = h, .Steps = CInt(numSteps.Value), .Cfg = CDbl(numCfg.Value),
             .Seed = CLng(numSeed.Value), .Frames = CInt(numFrames.Value), .InputImages = pics, .MaskImage = _maskPath,
@@ -675,7 +744,7 @@ Public Class StudioForm
             .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = If(r.IsUpscaler OrElse r.Kind = "tool", New List(Of UserLora)(), ActiveLoras(r))}
 
         ' Queue it: jobs run one after another, so you can keep adding while one is running.
-        _queue.Enqueue((req, $"{r.Name}: {Truncate(If(req.Prompt, t), 40)}"))
+        _queue.Enqueue((req, $"{r.Name}: {Truncate(If(txtPrompt.Text.Trim(), t), 40)}", before))
         UpdateQueueLabel()
         If Not _running Then Await RunQueueAsync()
     End Function
@@ -732,6 +801,17 @@ Public Class StudioForm
                 btnDelete.Enabled = False
                 Dim sw = Diagnostics.Stopwatch.StartNew()
                 Try
+                    If job.Before IsNot Nothing Then
+                        ' the opening scene with the cast, then the video starts from it
+                        Await MediaStudio.GenerateAsync(job.Before, Sub(p, tx) BeginInvoke(Sub()
+                                                                                              prg.Value = Math.Max(0, Math.Min(100, p))
+                                                                                              lblStatus.Text = Localizer.T("🎭 Making the opening scene with the cast") & " — " & Localizer.T(tx)
+                                                                                          End Sub), _cts.Token)
+                        If job.Before.Outputs.Count > 0 Then
+                            AddToGallery(job.Before.Outputs(0), 0)
+                            job.Req.InputImages = New List(Of String) From {job.Before.Outputs(0)}
+                        End If
+                    End If
                     Await MediaStudio.GenerateAsync(job.Req, Sub(p, tx) BeginInvoke(Sub()
                                                                                        prg.Value = Math.Max(0, Math.Min(100, p))
                                                                                        lblStatus.Text = job.Label & " — " & Localizer.T(tx)

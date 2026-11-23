@@ -149,6 +149,13 @@ Public Class MainForm
 
         FirstRun()
         PrepareEngineInBackground()
+        ' (screenshot checks)
+        Select Case Environment.GetEnvironmentVariable("LOCALMIND_PREVIEW")
+            Case "studio" : OpenStudio()
+            Case "cast"
+                Dim cf As New CastForm()
+                cf.Show(Me)
+        End Select
 
         ' Help → Check for updates / Update everything now, plus a quiet daily round that updates
         ' LocalMind, the engines and the model list by itself.
