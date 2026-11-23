@@ -116,6 +116,9 @@ Public Module VideoMaker
             progress?.Invoke(99, Localizer.T("Joining the shots…"))
             Await VideoTools.JoinAsync(clips, final, chained, Nothing, ct)
             made.Insert(0, final)
+            Dim note = template.Clone()
+            note.Prompt = String.Join(" / ", shots)
+            MediaStudio.SaveNote(final, note, "storyboard")
             Return made
         Finally
             For Each f In temps
@@ -139,6 +142,7 @@ Public Module VideoMaker
             Dim final = NewOutput("extended.mp4")
             progress?.Invoke(98, Localizer.T("Joining the clips…"))
             Await VideoTools.JoinAsync({video, req.OutputPath}, final, True, Nothing, ct)
+            MediaStudio.SaveNote(final, req, "extend")
             Return final
         Finally
             Try : File.Delete(last) : Catch : End Try
@@ -222,6 +226,7 @@ Public Module VideoMaker
             Await VideoTools.JoinAsync(clips, joined, True, Nothing, ct)
             Dim final = NewOutput("talking.mp4")
             Await VideoTools.AddAudioAsync(joined, audio, False, 1.0, final, Nothing, ct)
+            MediaStudio.SaveNote(final, template, "talk")
             Return final
         Finally
             For Each f In temps
@@ -320,5 +325,133 @@ Public Module VideoMaker
         text = Regex.Replace(text, "^(?:improved\s+)?prompt\s*:\s*", "", RegexOptions.IgnoreCase).Trim().Trim(""""c)
         If job = "storyboard" Then text = String.Join(Environment.NewLine, SplitShots(text))
         Return text
+    End Function
+    '──────────────── conversations (several talking characters) ────────────────
+    ''' <summary>
+    ''' A scene where characters speak in turn: for each line the words are spoken (with the character's voice) and
+    ''' the character's picture talks to them; the pieces are joined with their sound. Returns the MP4.
+    ''' </summary>
+    Public Async Function ConversationAsync(template As MediaStudio.GenerateRequest,
+                                            lines As IList(Of (Picture As String, VoiceName As String, Words As String, Prompt As String)),
+                                            progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
+        Dim clips As New List(Of String)
+        Dim temps As New List(Of String)
+        Try
+            For i = 0 To lines.Count - 1
+                Dim ln = lines(i)
+                Dim label = Localizer.T("Line") & $" {i + 1}/{lines.Count}"
+                Dim wav = Await SpeakAsync(ln.Words, ln.VoiceName, Scaled(progress, i * 2, lines.Count * 2, label), ct)
+                temps.Add(wav)
+                Dim req = template.Clone()
+                req.Prompt = ln.Prompt
+                Dim clip = Await TalkAsync(req, ln.Picture, wav, Scaled(progress, i * 2 + 1, lines.Count * 2, label), ct)
+                clips.Add(clip)
+            Next
+            If clips.Count = 1 Then
+                Dim onlyClip = clips(0)
+                clips.Clear()          ' keep it: it is the result
+                Return onlyClip
+            End If
+            Dim final = NewOutput("conversation.mp4")
+            progress?.Invoke(99, Localizer.T("Joining the clips…"))
+            Await VideoTools.JoinWithSoundAsync(clips, final, ct)
+            Dim note = template.Clone()
+            note.Prompt = String.Join(" / ", lines.Select(Function(l) l.Words))
+            MediaStudio.SaveNote(final, note, "talk")
+            Return final
+        Finally
+            For Each f In temps.Concat(clips)
+                Try : File.Delete(f) : Catch : End Try
+                Try : File.Delete(MediaStudio.SettingsFile(f)) : Catch : End Try
+            Next
+        End Try
+    End Function
+
+    '──────────────── subtitles ────────────────
+    Public ReadOnly SubtitleLanguages As (Code As String, Name As String, Iso3 As String)() = {
+        ("en", "English", "eng"), ("el", "Greek", "ell"), ("es", "Spanish", "spa"), ("fr", "French", "fra"), ("de", "German", "deu"),
+        ("it", "Italian", "ita"), ("pt", "Portuguese", "por"), ("nl", "Dutch", "nld"), ("ru", "Russian", "rus"), ("uk", "Ukrainian", "ukr"),
+        ("pl", "Polish", "pol"), ("tr", "Turkish", "tur"), ("ar", "Arabic", "ara"), ("hi", "Hindi", "hin"), ("zh", "Chinese", "zho"),
+        ("ja", "Japanese", "jpn"), ("ko", "Korean", "kor")}
+
+    ''' <summary>
+    ''' Subtitles for a video with speech: Whisper writes them with timings (in the spoken language, or straight into
+    ''' English); other languages are translated by the chat model. Burned into the picture or added as a track.
+    ''' Returns the new MP4 and the SRT next to it.
+    ''' </summary>
+    Public Async Function SubtitlesAsync(video As String, spoken As String, target As String, burn As Boolean,
+                                         progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of (Video As String, Srt As String))
+        Dim info = Await VideoTools.InfoAsync(video, ct)
+        If Not info.HasAudio Then Throw New Exception(Localizer.T("This video has no sound to write subtitles from."))
+        Dim wav = Path.Combine(Path.GetTempPath(), $"localmind-sub-{Guid.NewGuid():N}.wav")
+        Dim srt As String = Nothing
+        Try
+            progress?.Invoke(5, Localizer.T("Reading the sound…"))
+            Await VideoTools.ToSpeechWavAsync(video, wav, ct)
+            spoken = If(String.IsNullOrWhiteSpace(spoken), "auto", spoken)
+            target = If(target, "")
+            Dim toEnglish = target = "en" AndAlso spoken <> "en"
+            srt = Await Voice.TranscribeSrtAsync(wav, spoken, toEnglish, Sub(t) progress?.Invoke(30, Localizer.T(t)), ct)
+            If target.Length > 0 AndAlso target <> "en" AndAlso target <> spoken Then
+                Dim name = SubtitleLanguages.FirstOrDefault(Function(l) l.Code = target).Name
+                progress?.Invoke(60, Localizer.T("Translating the subtitles…"))
+                Await TranslateSrtAsync(srt, If(name, target), ct)
+            End If
+            Dim out = NewOutput("subtitled.mp4")
+            Dim srtOut = Path.ChangeExtension(out, ".srt")
+            File.Copy(srt, srtOut, True)
+            Dim code = If(target.Length > 0, target, If(spoken = "auto", "", spoken))
+            Dim iso = SubtitleLanguages.FirstOrDefault(Function(l) l.Code = code).Iso3
+            progress?.Invoke(80, Localizer.T(If(burn, "Writing the subtitles into the picture…", "Adding the subtitle track…")))
+            Await VideoTools.AddSubtitlesAsync(video, srtOut, burn, If(iso, "und"), out, ct)
+            Return (out, srtOut)
+        Finally
+            Try : File.Delete(wav) : Catch : End Try
+            If srt IsNot Nothing Then Try : File.Delete(srt) : Catch : End Try
+        End Try
+    End Function
+
+    ''' <summary>Translates the text of an SRT file in place (timings kept), in batches, with the chat model.</summary>
+    Public Async Function TranslateSrtAsync(srt As String, language As String, ct As CancellationToken) As Task
+        Dim blocks = Regex.Split(File.ReadAllText(srt).Replace(vbCrLf, vbLf).Trim(), "\n\s*\n").ToList()
+        Dim cues As New List(Of (Head As String, Text As String))
+        For Each b In blocks
+            Dim ls = b.Split({vbLf}, StringSplitOptions.None).ToList()
+            If ls.Count < 3 Then Continue For
+            cues.Add((ls(0) & vbLf & ls(1), String.Join(" / ", ls.Skip(2).Select(Function(x) x.Trim()))))
+        Next
+        Dim texts = cues.Select(Function(c) c.Text).ToList()
+        For start = 0 To cues.Count - 1 Step 30
+            Dim batch = Enumerable.Range(start, Math.Min(30, cues.Count - start)).ToList()
+            Dim src = String.Join(vbLf, batch.Select(Function(i) $"{i + 1}| {cues(i).Text}"))
+            Dim reply = Await ChatOnceAsync($"Translate subtitles into {language}. Each input line is 'number| text'. Reply with exactly the same numbers, " &
+                                            $"one line each, as 'number| translation'. Keep ' / ' line breaks. Natural, short, spoken style. Nothing else.", src, 2000, 0.2, ct)
+            For Each m As Match In Regex.Matches(reply, "^\s*(\d+)\s*\|\s*(.+?)\s*$", RegexOptions.Multiline)
+                Dim n = CInt(m.Groups(1).Value) - 1
+                If n >= 0 AndAlso n < texts.Count AndAlso batch.Contains(n) Then texts(n) = m.Groups(2).Value
+            Next
+        Next
+        Dim sb As New Text.StringBuilder()
+        For i = 0 To cues.Count - 1
+            sb.Append(cues(i).Head).Append(vbLf).Append(texts(i).Replace(" / ", vbLf)).Append(vbLf).Append(vbLf)
+        Next
+        File.WriteAllText(srt, sb.ToString().Replace(vbLf, vbCrLf), New Text.UTF8Encoding(False))
+    End Function
+
+    ''' <summary>One answer from the current chat model (no tools, no thinking).</summary>
+    Public Async Function ChatOnceAsync(system As String, user As String, maxTokens As Integer, temperature As Double, ct As CancellationToken) As Task(Of String)
+        Dim model = AppCore.Settings.LastModel
+        If AppCore.Settings.Backend = BackendKind.BuiltIn Then
+            Dim all = AppCore.Library.All()
+            If all.Count = 0 Then Throw New Exception(Localizer.T("This needs a chat model: download one in the Model Manager first."))
+            If String.IsNullOrEmpty(model) OrElse Not all.Any(Function(m) m.DisplayName = model) Then model = all(0).DisplayName
+        End If
+        Dim msgs As New List(Of ChatMessage) From {
+            New ChatMessage With {.Role = "system", .Content = system},
+            New ChatMessage With {.Role = "user", .Content = user}}
+        Dim opts As New ChatRequestOptions With {.Model = model, .Temperature = temperature, .MaxTokens = maxTokens, .EnableThinking = False}
+        Dim backend = AppCore.Backend
+        Dim res = Await Task.Run(Function() backend.StreamChatAsync(msgs, opts, Sub(t) Return, Sub(t) Return, ct))
+        Return Regex.Replace(If(res?.Content, ""), "<think>.*?</think>", "", RegexOptions.Singleline).Trim()
     End Function
 End Module

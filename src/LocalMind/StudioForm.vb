@@ -84,6 +84,30 @@ Public Class StudioForm
     Private ReadOnly _inputs(2) As String
     Private _videoPath, _maskPath As String
     Private _cts As CancellationTokenSource
+    Private txtSearch As TextBox
+    Private chkFavs, chkIdle, chkSleep As CheckBox
+
+    <Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Sequential)>
+    Private Structure LASTINPUTINFO
+        Public cbSize As UInteger
+        Public dwTime As UInteger
+    End Structure
+    <Runtime.InteropServices.DllImport("user32.dll")>
+    Private Shared Function GetLastInputInfo(ByRef plii As LASTINPUTINFO) As Boolean
+    End Function
+
+    ''' <summary>How long nobody has touched the mouse or keyboard.</summary>
+    Private Shared Function IdleTime() As TimeSpan
+        Try
+            Dim li As New LASTINPUTINFO With {.cbSize = CUInt(Runtime.InteropServices.Marshal.SizeOf(GetType(LASTINPUTINFO)))}
+            If GetLastInputInfo(li) Then
+                Dim now = Environment.TickCount64 And &HFFFFFFFFL
+                Return TimeSpan.FromMilliseconds((now - CLng(li.dwTime) + &H100000000L) Mod &H100000000L)
+            End If
+        Catch
+        End Try
+        Return TimeSpan.Zero
+    End Function
     Private _previewReady, _loadingRecipe As Boolean
 
     Public Sub New()
@@ -214,7 +238,8 @@ Public Class StudioForm
         lblCast = Theme.MakeLabel("", dim_:=True)
         AddHandler btnCast.Click, Sub() PickCast()
         opts.Controls.AddRange({btnCast, lblCast})
-        txtSay = New TextBox() With {.Width = 300, .PlaceholderText = Localizer.T("Words to say (any language)…")}
+        txtSay = New TextBox() With {.Width = 330, .Height = 48, .Multiline = True, .AcceptsReturn = True, .ScrollBars = ScrollBars.Vertical,
+                                     .PlaceholderText = Localizer.T("Words to say — or a conversation, one line each: @Anna: Hello! / @Max: Hi…")}
         Theme.StyleInput(txtSay)
         cmbVoice = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 200}
         Theme.StyleInput(cmbVoice)
@@ -259,7 +284,17 @@ Public Class StudioForm
         btnStop = Theme.MakeButton("■ Stop")
         btnStop.Visible = False
         lblQueue = Theme.MakeLabel("")
-        genBar.Controls.AddRange({btnGenerate, btnStop, lblQueue, btnFolder})
+        Dim btnFilm = Theme.MakeButton(Localizer.T("🎬 Film editor"))
+        AddHandler btnFilm.Click, Sub()
+                                      Using f As New FilmForm()
+                                          f.ShowDialog(Me)
+                                          If f.Exported IsNot Nothing AndAlso File.Exists(f.Exported) Then
+                                              AddToGallery(f.Exported, 0)
+                                              ShowOutput(f.Exported)
+                                          End If
+                                      End Using
+                                  End Sub
+        genBar.Controls.AddRange({btnGenerate, btnStop, lblQueue, btnFilm, btnFolder})
         form.Controls.Add(txtPrompt, 0, 0) : form.Controls.Add(slotPanel, 1, 0)
         form.Controls.Add(txtNeg, 0, 1) : form.SetColumnSpan(txtNeg, 2)
         form.Controls.Add(opts, 0, 2) : form.SetColumnSpan(opts, 2)
@@ -274,6 +309,27 @@ Public Class StudioForm
                                        .BackColor = Theme.CBack, .ForeColor = Theme.CText, .BorderStyle = BorderStyle.None, .MultiSelect = False}
         right.Controls.Add(preview)
         right.Controls.Add(gallery)
+        ' history: search, favourites, and the overnight queue
+        Dim histBar As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 36, .WrapContents = False, .Padding = New Padding(0, 4, 0, 0)}
+        txtSearch = New TextBox() With {.Width = 230, .PlaceholderText = Localizer.T("🔍 Search by prompt, model, @name…")}
+        Theme.StyleInput(txtSearch)
+        chkFavs = New CheckBox() With {.Text = Localizer.T("★ Favourites"), .AutoSize = True, .ForeColor = Theme.CText, .Margin = New Padding(8, 6, 4, 0)}
+        chkIdle = New CheckBox() With {.Text = Localizer.T("🌙 Start when I'm away"), .AutoSize = True, .ForeColor = Theme.CText, .Margin = New Padding(16, 6, 4, 0)}
+        chkSleep = New CheckBox() With {.Text = Localizer.T("💤 Sleep the PC when all is done"), .AutoSize = True, .ForeColor = Theme.CText, .Margin = New Padding(8, 6, 4, 0)}
+        Dim tip As New ToolTip()
+        tip.SetToolTip(chkIdle, Localizer.T("Jobs wait until nobody has used the PC for 5 minutes, then run one after another (e.g. overnight)."))
+        histBar.Controls.AddRange({txtSearch, chkFavs, chkIdle, chkSleep})
+        right.Controls.Add(histBar)
+        Dim searchTimer As New System.Windows.Forms.Timer() With {.Interval = 400}
+        AddHandler searchTimer.Tick, Sub()
+                                         searchTimer.Stop()
+                                         LoadGallery()
+                                     End Sub
+        AddHandler txtSearch.TextChanged, Sub()
+                                              searchTimer.Stop()
+                                              searchTimer.Start()
+                                          End Sub
+        AddHandler chkFavs.CheckedChanged, Sub() LoadGallery()
         right.Controls.Add(form)
 
         Controls.Add(right)
@@ -363,6 +419,32 @@ Public Class StudioForm
         AddHandler galleryMenu.Opening, Sub()
                                             Dim isVid = gallery.SelectedItems.Count > 0 AndAlso IsVideoFile(CStr(gallery.SelectedItems(0).Tag))
                                             miExtend.Visible = isVid : miEnhance.Visible = isVid
+                                        End Sub
+        Dim miFav = galleryMenu.Items.Add(Localizer.T("★ Favourite"))
+        AddHandler miFav.Click, Sub()
+                                    If gallery.SelectedItems.Count = 0 Then Return
+                                    Dim it = gallery.SelectedItems(0)
+                                    Dim f = CStr(it.Tag)
+                                    Dim nm = IO.Path.GetFileNameWithoutExtension(f)
+                                    it.Text = If(History.ToggleFavorite(f), "★ ", "") & nm.Substring(0, Math.Min(15, nm.Length))
+                                End Sub
+        Dim miFilm = galleryMenu.Items.Add(Localizer.T("🎬 Add to film"))
+        AddHandler miFilm.Click, Sub()
+                                     If gallery.SelectedItems.Count = 0 Then Return
+                                     FilmProject.AddToCurrent(CStr(gallery.SelectedItems(0).Tag))
+                                     lblStatus.Text = Localizer.T("Added to the film — open 🎬 Film editor to arrange and export it.")
+                                 End Sub
+        Dim miSubs = galleryMenu.Items.Add(Localizer.T("💬 Add subtitles…"))
+        AddHandler miSubs.Click, Sub()
+                                     If gallery.SelectedItems.Count = 0 Then Return
+                                     Dim f = CStr(gallery.SelectedItems(0).Tag)
+                                     If IsVideoFile(f) Then QueueSubtitles(f)
+                                 End Sub
+        AddHandler galleryMenu.Opening, Sub()
+                                            Dim sel = gallery.SelectedItems.Count > 0
+                                            Dim f = If(sel, CStr(gallery.SelectedItems(0).Tag), "")
+                                            miFav.Text = Localizer.T(If(sel AndAlso History.IsFavorite(f), "☆ Remove from favourites", "★ Favourite"))
+                                            miSubs.Visible = sel AndAlso IsVideoFile(f)
                                         End Sub
         Dim miReuse = galleryMenu.Items.Add(Localizer.T("♻ Reuse these settings"))
         AddHandler miReuse.Click, Sub()
@@ -505,6 +587,7 @@ Public Class StudioForm
         For Each c As Control In {lblSize, cmbSize, lblSteps, numSteps, lblCfg, numCfg, lblSeed, numSeed, lblStyle, cmbStyle, btnLoras, btnCast, lblCast, btnImprove, txtNeg}
             c.Visible = Not enhance
         Next
+        lblStyle.Visible = lblStyle.Visible AndAlso t <> "talk" : cmbStyle.Visible = lblStyle.Visible
         chkFast.Visible = Not enhance AndAlso r IsNot Nothing AndAlso r.Speed IsNot Nothing
         lblPictures.Visible = Not CurrentTask().Video : numCount.Visible = lblPictures.Visible
         btnDescribe.Visible = Not CurrentTask().Video OrElse t = "storyboard" OrElse t = "talk"
@@ -885,7 +968,7 @@ Public Class StudioForm
             .Width = w, .Height = h, .Steps = CInt(numSteps.Value), .Cfg = CDbl(numCfg.Value),
             .Seed = CLng(numSeed.Value), .Frames = CInt(numFrames.Value), .InputImages = pics, .MaskImage = _maskPath,
             .InputVideo = _videoPath, .Strength = CDbl(numStrength.Value), .Count = If(numCount.Enabled, CInt(numCount.Value), 1),
-            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = If(r.IsUpscaler OrElse r.Kind = "tool", New List(Of UserLora)(), ActiveLoras(r))}
+            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = If(r.IsUpscaler OrElse r.Kind = "tool", New List(Of UserLora)(), WithCastLoras(ActiveLoras(r), r, ""))}
 
         ' Queue it: jobs run one after another, so you can keep adding while one is running.
         Dim pre = before
@@ -942,7 +1025,16 @@ Public Class StudioForm
             .Negative = If(String.IsNullOrWhiteSpace(txtNeg.Text), r.Negative, txtNeg.Text.Trim()),
             .Width = size.W, .Height = size.H, .Steps = CInt(numSteps.Value), .Cfg = CDbl(numCfg.Value),
             .Seed = CLng(numSeed.Value), .Frames = CInt(numFrames.Value),
-            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = ActiveLoras(r)}
+            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = WithCastLoras(ActiveLoras(r), r, prompt)}
+    End Function
+
+    ''' <summary>The cast members' own LoRAs (for this model family) added to the active ones.</summary>
+    Private Function WithCastLoras(list As List(Of UserLora), r As MediaRecipe, prompt As String) As List(Of UserLora)
+        Dim res = New List(Of UserLora)(list)
+        For Each l In CastLibrary.LorasFor(CastLibrary.Involved(prompt & " " & txtPrompt.Text, _cast), r.Family)
+            If Not res.Any(Function(x) x.Name.Equals(l.Name, StringComparison.OrdinalIgnoreCase)) Then res.Add(l)
+        Next
+        Return res
     End Function
 
     ''' <summary>Storyboard, first → last, talking character or extend: checks the inputs and queues the job.</summary>
@@ -967,39 +1059,53 @@ Public Class StudioForm
                        End Function
 
             Case "talk"
-                Dim cast = CastLibrary.Involved(text, _cast)
-                Dim pic = pics.FirstOrDefault()
-                If pic Is Nothing Then pic = cast.Where(Function(m) Not m.IsLocation).Select(Function(m) CastLibrary.ImagePaths(m).FirstOrDefault()).FirstOrDefault(Function(f) f IsNot Nothing)
-                If pic Is Nothing Then
-                    Localizer.Box(Me, "Choose the picture of the person who talks (click the picture box), or tick a cast character with a picture.", "Talking character")
-                    Return False
-                End If
+                Dim cast = CastLibrary.Involved(text & " " & txtSay.Text, _cast)
+                Dim chosenPic = pics.FirstOrDefault()
+                Dim castPic = cast.Where(Function(m) Not m.IsLocation).Select(Function(m) CastLibrary.ImagePaths(m).FirstOrDefault()).FirstOrDefault(Function(f) f IsNot Nothing)
                 Dim useRecording = UsesRecording()
                 Dim words = txtSay.Text.Trim()
                 Dim voiceName = PickedVoiceName()
+                Dim scene = If(text.Length > 0, text, "a person is talking to the camera, natural lip movement and facial expressions")
+                ' "@Anna: Hello!" lines: each character speaks with their own picture and voice
+                Dim dialogue = If(useRecording, New List(Of (Member As CastLibrary.CastMember, Words As String))(), CastLibrary.ParseDialogue(words))
+                Dim lines As New List(Of (Picture As String, VoiceName As String, Words As String, Prompt As String))
                 If Not useRecording Then
                     If words.Length = 0 Then
                         txtSay.Focus()
                         Localizer.Box(Me, "Write the words to say, or choose a recording in the voice list.", "Talking character")
                         Return False
                     End If
-                    If VideoMaker.SpeechModel(voiceName IsNot Nothing) Is Nothing Then
+                    Dim style = If(cmbStyle.Enabled, Styles(Math.Max(0, cmbStyle.SelectedIndex)).Words, "")
+                    For Each d In dialogue
+                        Dim m = d.Member
+                        Dim p = If(m IsNot Nothing, CastLibrary.ImagePaths(m).FirstOrDefault(), Nothing)
+                        If p Is Nothing Then p = If(chosenPic, castPic)
+                        If p Is Nothing Then
+                            Localizer.Box(Me, If(m IsNot Nothing, String.Format(Localizer.T("Add a picture to {0} in the cast first."), m.Name),
+                                                 Localizer.T("Choose the picture of the person who talks (click the picture box), or tick a cast character with a picture.")), "Talking character")
+                            Return False
+                        End If
+                        Dim voice = If(m IsNot Nothing AndAlso Not String.IsNullOrEmpty(m.Voice) AndAlso voiceName Is Nothing, m.Voice,
+                                       If(voiceName, cast.FirstOrDefault(Function(c) Not c.IsLocation AndAlso Not String.IsNullOrEmpty(c.Voice) AndAlso dialogue.Count = 1)?.Voice))
+                        Dim who = If(m IsNot Nothing, New List(Of CastLibrary.CastMember) From {m}, New List(Of CastLibrary.CastMember)(_cast))
+                        lines.Add((p, voice, d.Words, CastLibrary.ComposePrompt(scene, who) & style))
+                    Next
+                    If VideoMaker.SpeechModel(lines.Any(Function(l) l.VoiceName IsNot Nothing)) Is Nothing Then
                         Localizer.Box(Me, "To speak the words, download a voice model first (🎵 Music & voice), or choose a recording in the voice list.", "Talking character")
                         Return False
                     End If
                 End If
-                Dim req = BaseRequest(r, v, "talk", If(text.Length > 0, text, "a person is talking to the camera, natural lip movement and facial expressions"), ShapeOf(pic, size.W, size.H))
+                Dim pic = If(lines.Count > 0, lines(0).Picture, If(chosenPic, castPic))
+                If pic Is Nothing Then
+                    Localizer.Box(Me, "Choose the picture of the person who talks (click the picture box), or tick a cast character with a picture.", "Talking character")
+                    Return False
+                End If
+                Dim req = BaseRequest(r, v, "talk", scene, ShapeOf(pic, size.W, size.H))
                 Dim recording = _audioPath
-                label &= ": " & Localizer.T("talking") & " — " & Truncate(If(useRecording, Path.GetFileName(recording), words), 30)
+                label &= ": " & Localizer.T("talking") & " — " & Truncate(If(useRecording, Path.GetFileName(recording), words.Replace(vbCrLf, " ")), 30)
                 work = Async Function(prog, ct)
-                           Dim outs As New List(Of String)
-                           Dim audio = recording
-                           If Not useRecording Then
-                               audio = Await VideoMaker.SpeakAsync(words, voiceName, Sub(p, tx) prog(p \ 10, tx), ct)
-                               outs.Add(audio)
-                           End If
-                           outs.Insert(0, Await VideoMaker.TalkAsync(req, pic, audio, Sub(p, tx) prog(If(useRecording, p, 10 + p * 9 \ 10), tx), ct))
-                           Return outs
+                           If useRecording Then Return New List(Of String) From {Await VideoMaker.TalkAsync(req, pic, recording, prog, ct)}
+                           Return New List(Of String) From {Await VideoMaker.ConversationAsync(req, lines, prog, ct)}
                        End Function
 
             Case "extend"
@@ -1019,8 +1125,8 @@ Public Class StudioForm
                            If info.Width >= 256 AndAlso info.Height >= 256 Then
                                ' the video's shape, at about the chosen size (an enlarged video would be too big to make)
                                Dim k = Math.Min(1.0, Math.Sqrt(CDbl(req.Width) * req.Height / (CDbl(info.Width) * info.Height)))
-                               req.Width = Math.Max(256, CInt(info.Width * k) \ 16 * 16)
-                               req.Height = Math.Max(256, CInt(info.Height * k) \ 16 * 16)
+                               req.Width = Math.Max(256, (CInt(info.Width * k) \ 16) * 16)
+                               req.Height = Math.Max(256, (CInt(info.Height * k) \ 16) * 16)
                            End If
                            Return New List(Of String) From {Await VideoMaker.ExtendAsync(req, video, prog, ct)}
                        End Function
@@ -1142,8 +1248,17 @@ Public Class StudioForm
 
     Private Async Function RunQueueAsync() As Task
         _running = True
+        Dim doneCount = 0, failed = 0
+        Dim stopped = False
         Try
             While _queue.Count > 0
+                ' 🌙 overnight: wait until nobody uses the PC
+                While chkIdle.Checked AndAlso IdleTime() < TimeSpan.FromMinutes(5) AndAlso _queue.Count > 0
+                    lblStatus.Text = Localizer.T("🌙 Waiting until the PC is not used for 5 minutes…") & $" ({_queue.Count} " & Localizer.T("waiting") & ")"
+                    btnStop.Visible = True
+                    Await Task.Delay(5000)
+                End While
+                If _queue.Count = 0 Then Exit While
                 Dim job = _queue.Dequeue()
                 UpdateQueueLabel()
                 _cts = New CancellationTokenSource()
@@ -1161,11 +1276,14 @@ Public Class StudioForm
                         AddToGallery(outs(i), 0)
                     Next
                     If outs.Count > 0 Then ShowOutput(outs(0))
+                    doneCount += 1
                 Catch ex As OperationCanceledException
                     lblStatus.Text = Localizer.T("Stopped")
+                    stopped = True
                 Catch ex As Exception
+                    failed += 1
                     lblStatus.Text = "⚠ " & ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
-                    If _queue.Count = 0 Then Localizer.Box(Me, ex.Message, "Generation failed", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    If _queue.Count = 0 AndAlso Not chkIdle.Checked AndAlso Not chkSleep.Checked Then Localizer.Box(Me, ex.Message, "Generation failed", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 Finally
                     _cts = Nothing
                 End Try
@@ -1176,7 +1294,52 @@ Public Class StudioForm
             UpdateTaskUi()
             UpdateButtons()
         End Try
+        ' tell the user (tray balloon; the phone page shows it too) and maybe put the PC to sleep
+        If doneCount + failed > 1 OrElse chkIdle.Checked OrElse chkSleep.Checked OrElse Not ContainsFocus Then
+            Notifier.Notify(Localizer.T("LocalMind studio"), String.Format(Localizer.T("{0} done"), doneCount) & If(failed > 0, ", " & String.Format(Localizer.T("{0} failed"), failed), ""))
+        End If
+        If chkSleep.Checked AndAlso Not stopped AndAlso doneCount > 0 Then
+            chkSleep.Checked = False
+            Await Task.Delay(15000)          ' a moment to see it
+            If Not _running Then Application.SetSuspendState(PowerState.Suspend, False, False)
+        End If
     End Function
+
+    ''' <summary>Subtitles for a video: asks the languages and the style, then queues the job.</summary>
+    Private Sub QueueSubtitles(video As String)
+        Using f As New Form() With {.Text = Localizer.T("💬 Subtitles"), .Size = New Size(460, 300), .FormBorderStyle = FormBorderStyle.FixedDialog,
+                                    .StartPosition = FormStartPosition.CenterParent, .MinimizeBox = False, .MaximizeBox = False}
+            Theme.ApplyForm(f)
+            Dim langs = VideoMaker.SubtitleLanguages
+            Dim cmbSpoken As New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Location = New Point(200, 20)}
+            cmbSpoken.Items.Add(Localizer.T("Detect automatically"))
+            cmbSpoken.Items.AddRange(langs.Select(Function(l) CObj(Localizer.T(l.Name))).ToArray())
+            cmbSpoken.SelectedIndex = 0
+            Dim cmbTarget As New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 220, .Location = New Point(200, 60)}
+            cmbTarget.Items.Add(Localizer.T("Same as spoken"))
+            cmbTarget.Items.AddRange(langs.Select(Function(l) CObj(Localizer.T(l.Name))).ToArray())
+            cmbTarget.SelectedIndex = 0
+            Theme.StyleInput(cmbSpoken) : Theme.StyleInput(cmbTarget)
+            Dim l1 = Theme.MakeLabel(Localizer.T("Spoken language")) : l1.Location = New Point(16, 24)
+            Dim l2 = Theme.MakeLabel(Localizer.T("Subtitles in")) : l2.Location = New Point(16, 64)
+            Dim rbBurn As New RadioButton() With {.Text = Localizer.T("Write them into the picture (always visible)"), .AutoSize = True, .Checked = True, .ForeColor = Theme.CText, .Location = New Point(16, 104)}
+            Dim rbTrack As New RadioButton() With {.Text = Localizer.T("As a track players can turn on and off"), .AutoSize = True, .ForeColor = Theme.CText, .Location = New Point(16, 132)}
+            Dim ok = Theme.MakeButton(Localizer.T("💬 Make subtitles"), primary:=True, width:=180)
+            ok.Location = New Point(240, 200)
+            ok.DialogResult = DialogResult.OK
+            f.Controls.AddRange({l1, cmbSpoken, l2, cmbTarget, rbBurn, rbTrack, ok})
+            f.AcceptButton = ok
+            If f.ShowDialog(Me) <> DialogResult.OK Then Return
+            Dim spoken = If(cmbSpoken.SelectedIndex > 0, langs(cmbSpoken.SelectedIndex - 1).Code, "auto")
+            Dim target = If(cmbTarget.SelectedIndex > 0, langs(cmbTarget.SelectedIndex - 1).Code, "")
+            Dim burn = rbBurn.Checked
+            Enqueue(Localizer.T("💬 Subtitles") & " " & Path.GetFileName(video),
+                    Async Function(prog, ct) New List(Of String) From {(Await VideoMaker.SubtitlesAsync(video, spoken, target, burn, prog, ct)).Video})
+        End Using
+        If Not _running Then
+            Dim __ = RunQueueAsync()
+        End If
+    End Sub
 
     ''' <summary>Loads the model, task, prompt and settings a past result was made with.</summary>
     Private Sub ReuseSettings(output As String)
@@ -1232,6 +1395,12 @@ Public Class StudioForm
     Private Sub LoadGallery()
         gallery.Items.Clear()
         thumbs.Images.Clear()
+        If txtSearch IsNot Nothing AndAlso (txtSearch.Text.Trim().Length > 0 OrElse chkFavs.Checked) Then
+            For Each f In History.Find(txtSearch.Text.Trim().Replace("@", ""), chkFavs.Checked, 120)
+                AddToGallery(f, -1)
+            Next
+            Return
+        End If
         Dim files = Directory.GetFiles(MediaStudio.OutputFolder).Where(Function(f) (f.EndsWith(".png") OrElse f.EndsWith(".webm") OrElse f.EndsWith(".mp4")) AndAlso Not Path.GetFileName(f).Contains("-shot")).
                     OrderByDescending(Function(f) File.GetCreationTime(f)).Take(80)
         For Each f In files
@@ -1268,7 +1437,7 @@ Public Class StudioForm
             Return
         End Try
         Dim nm = IO.Path.GetFileNameWithoutExtension(path)
-        Dim it As New ListViewItem(nm.Substring(0, Math.Min(15, nm.Length)), key) With {.Tag = path}
+        Dim it As New ListViewItem(If(History.IsFavorite(path), "★ ", "") & nm.Substring(0, Math.Min(15, nm.Length)), key) With {.Tag = path}
         If index < 0 Then gallery.Items.Add(it) Else gallery.Items.Insert(index, it)
     End Sub
 

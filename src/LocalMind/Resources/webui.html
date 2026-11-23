@@ -82,6 +82,26 @@
     border: 1px solid #444; background: #1e1e1e; margin: 12px 0; }
   #login button { width: 100%; padding: 12px; border: 0; border-radius: 10px; background: #0e639c; color: #fff; font-weight: 600; }
   .small { font-size: 12px; color: #888; }
+  /* 🎨 studio sheet */
+  #studio { position: fixed; inset: 0; background: #1e1e1e; z-index: 12; display: none; flex-direction: column; }
+  #studio.open { display: flex; }
+  #studio .bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; padding-top: max(8px, env(safe-area-inset-top)); background: #252526; border-bottom: 1px solid #333; }
+  #studio .bar b { flex: 1; }
+  #studio .body { flex: 1; overflow: auto; padding: 10px; }
+  #sPrompt { width: 100%; box-sizing: border-box; min-height: 84px; background: #2d2d2d; border: 1px solid #444; border-radius: 10px; padding: 10px; resize: vertical; }
+  #studio .row2 { display: flex; gap: 8px; margin: 8px 0; align-items: center; flex-wrap: wrap; }
+  #studio select, #sSearch { background: #2d2d2d; border: 1px solid #444; border-radius: 8px; padding: 8px; }
+  #sSearch { flex: 1; min-width: 0; }
+  #sGo { flex: 1; padding: 11px; border: 0; border-radius: 10px; background: #0e639c; color: #fff; font-weight: 600; }
+  #sGo:disabled { opacity: .5; }
+  .chip { background: #333; border: 1px solid #444; border-radius: 14px; padding: 4px 10px; font-size: 13px; }
+  #sStatus { font-size: 13px; color: #aaa; min-height: 18px; margin: 4px 0 10px; }
+  #sGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; }
+  #sGrid .cell { position: relative; aspect-ratio: 1; background: #2a2a2a; border-radius: 8px; overflow: hidden; }
+  #sGrid img, #sGrid video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #sGrid .star { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.55); border: 0; border-radius: 12px; width: 28px; height: 28px; color: #fc3; }
+  #sGrid .vid { position: absolute; left: 4px; bottom: 4px; font-size: 14px; }
+  #toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: #0e639c; color: #fff; padding: 10px 16px; border-radius: 10px; z-index: 30; display: none; max-width: 86vw; }
 </style>
 </head>
 <body>
@@ -90,6 +110,7 @@
     <button class="icon" id="menuBtn" title="Chats">☰</button>
     <div class="title" id="title">LocalMind</div>
     <select id="model" title="Model"></select>
+    <button class="icon" id="studioBtn" title="Create pictures and videos" hidden>🎨</button>
     <button class="icon" id="newBtn" title="New chat">＋</button>
   </header>
   <main id="main"><div class="inner" id="msgs"></div></main>
@@ -107,6 +128,21 @@
   </footer>
 </div>
 
+<div id="studio">
+  <div class="bar"><b>🎨 Create</b><button class="icon" id="sClose" title="Close">✕</button></div>
+  <div class="body">
+    <textarea id="sPrompt" placeholder="Describe the picture or video… (write @Name for a saved character or place)"></textarea>
+    <div class="row2" id="sCast"></div>
+    <div class="row2">
+      <select id="sKind"><option value="picture">🖼 Picture</option><option value="video">🎬 Video</option></select>
+      <button id="sGo">Create on the PC</button>
+    </div>
+    <div id="sStatus"></div>
+    <div class="row2"><input id="sSearch" placeholder="🔍 Search your creations…"><button class="chip" id="sFav">☆ Favourites</button></div>
+    <div id="sGrid"></div>
+  </div>
+</div>
+<div id="toast"></div>
 <div id="drawer">
   <div class="shade" id="shade"></div>
   <div class="panel">
@@ -171,6 +207,7 @@
       state.features = f;
       $('imgBtn').hidden = !f.images;
       $('micBtn').hidden = !f.voiceIn;
+      $('studioBtn').hidden = !f.studio;
       state.models = info.models || [];
       var sel = $('model'); sel.innerHTML = '';
       state.models.forEach(function (mm) {
@@ -428,6 +465,71 @@
       if (!a.done && a.text) finish(a, '<p>' + esc(a.text).replace(/\n/g, '<br>') + '</p>', '', '');
     });
   }
+
+  // ---------- 🎨 studio: create pictures / videos on the PC, browse and ★ results ----------
+  var studio = { favOnly: false, job: null, searchT: null };
+  function media(name) { return '/api/outputs/' + encodeURIComponent(name) + '?pin=' + encodeURIComponent(state.pin); }
+  function loadGallery() {
+    var q = $('sSearch').value.trim();
+    api('/api/gallery?q=' + encodeURIComponent(q) + (studio.favOnly ? '&fav=1' : '')).then(function (r) { return r.json(); }).then(function (list) {
+      var g = $('sGrid'); g.innerHTML = '';
+      if (!list.length) { g.innerHTML = '<div class="small">Nothing here yet.</div>'; return; }
+      list.forEach(function (it) {
+        var c = document.createElement('div'); c.className = 'cell'; c.title = it.prompt || it.file;
+        c.innerHTML = (it.video ? '<video preload="metadata" muted playsinline src="' + media(it.file) + '#t=0.5"></video><span class="vid">🎬</span>'
+                                : '<img loading="lazy" src="' + media(it.file) + '">') +
+                      '<button class="star">' + (it.fav ? '★' : '☆') + '</button>';
+        c.querySelector(it.video ? 'video' : 'img').onclick = function () { window.open(media(it.file), '_blank'); };
+        var st = c.querySelector('.star');
+        st.onclick = function (ev) {
+          ev.stopPropagation();
+          api('/api/gallery/fav', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ file: it.file }) })
+            .then(function (r) { return r.json(); }).then(function (x) { st.textContent = x.fav ? '★' : '☆'; });
+        };
+        g.appendChild(c);
+      });
+    }).catch(function () {});
+  }
+  function loadCast() {
+    api('/api/cast').then(function (r) { return r.json(); }).then(function (list) {
+      var row = $('sCast'); row.innerHTML = '';
+      list.forEach(function (m) {
+        var b = document.createElement('button'); b.className = 'chip'; b.textContent = (m.kind === 'location' ? '📍 ' : '🎭 ') + m.name;
+        b.onclick = function () { var p = $('sPrompt'); p.value = (p.value ? p.value.replace(/\s*$/, ' ') : '') + '@' + m.name + ' '; p.focus(); };
+        row.appendChild(b);
+      });
+    }).catch(function () {});
+  }
+  $('studioBtn').onclick = function () { $('studio').classList.add('open'); loadCast(); loadGallery(); };
+  $('sClose').onclick = function () { $('studio').classList.remove('open'); };
+  $('sFav').onclick = function () { studio.favOnly = !studio.favOnly; this.textContent = (studio.favOnly ? '★' : '☆') + ' Favourites'; loadGallery(); };
+  $('sSearch').oninput = function () { clearTimeout(studio.searchT); studio.searchT = setTimeout(loadGallery, 400); };
+  $('sGo').onclick = function () {
+    var prompt = $('sPrompt').value.trim(); if (!prompt || studio.job) return;
+    $('sGo').disabled = true; $('sStatus').textContent = 'Sending to the PC…';
+    api('/api/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, kind: $('sKind').value }) })
+      .then(function (r) { return r.json(); }).then(function (x) { studio.job = x.id; pollJob(); })
+      .catch(function () { $('sGo').disabled = false; $('sStatus').textContent = '⚠ Could not reach the PC.'; });
+  };
+  function pollJob() {
+    if (!studio.job) return;
+    api('/api/create/' + studio.job).then(function (r) { return r.json(); }).then(function (j) {
+      $('sStatus').textContent = j.error ? '⚠ ' + j.error : (j.done ? '✔ Done' : '⏳ ' + j.text);
+      if (j.done) { studio.job = null; $('sGo').disabled = false; if (navigator.vibrate) navigator.vibrate(200); loadGallery(); }
+      else setTimeout(pollJob, 2500);
+    }).catch(function () { setTimeout(pollJob, 5000); });
+  }
+  // messages from the PC (e.g. the overnight queue is done)
+  var lastNote = -1;
+  function toast(text) { var t = $('toast'); t.textContent = text; t.style.display = 'block'; setTimeout(function () { t.style.display = 'none'; }, 6000); }
+  function pollNotes() {
+    if (document.hidden) { setTimeout(pollNotes, 20000); return; }
+    api('/api/notes?since=' + Math.max(0, lastNote)).then(function (r) { return r.json(); }).then(function (x) {
+      if (lastNote >= 0 && x.items.length) { toast(x.items.map(function (n) { return n.text; }).join(' · ')); if (navigator.vibrate) navigator.vibrate([150, 80, 150]); }
+      lastNote = x.last;
+    }).catch(function () {}).then(function () { setTimeout(pollNotes, 20000); });
+  }
+  setTimeout(pollNotes, 3000);
 
   init();   // shows the PIN screen on 401 (or not at all if the PC doesn't require a PIN)
 })();

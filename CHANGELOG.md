@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.12.0
+
+### New
+- **🎬 Film editor** (Studio → 🎬 Film editor, or right-click a result → 🎬 Add to film): put clips and pictures in
+  order, choose how long each picture shows, the film size (wide, phone/tall, square), fades between clips, music
+  (looped and faded out at the end) and voice-overs at any second. Export one MP4. Films can be saved and opened again.
+- **🗣 Conversations:** in a talking-character video, write one line per speaker (`@Anna: Hello!` / `@Max: Hi!`).
+  Each character speaks with their own picture and voice, and the pieces are joined with their sound.
+- **🎭 Cast voices and LoRAs:** give a character a saved (cloned) voice and their own LoRA. The voice is used when they
+  talk. The LoRA is added automatically whenever they appear and the model family matches.
+- **📸 Make more pictures** of a cast member (other angles, expressions, light), made with a picture model that
+  combines pictures.
+- **📦 LoRA training set** for a cast member: every picture with a caption and a trigger word, ready for OneTrainer,
+  kohya_ss, ai-toolkit or Civitai's online trainer.
+- **🔍 History and ★ favourites:** search all your creations by prompt, model, task or @name, and show only favourites.
+- **🌙 Overnight queue:** "Start when I'm away" waits until the PC has not been used for 5 minutes, then runs the queue.
+  "💤 Sleep the PC when all is done" puts it to sleep afterwards. A notice appears on the PC (and on the phone page)
+  when the jobs finish.
+- **💬 Subtitles** (right-click a video): Whisper writes them with timings, either in the spoken language or straight
+  into English. Other languages are translated by the chat model. They can be burned into the picture or added as a
+  track that players can turn on and off. The .srt file is saved next to the video.
+- **📱 Create from the phone:** a 🎨 button on the phone page makes pictures and videos on the PC (with @cast names),
+  shows your creations with search and ★, and shows a notice when the PC finishes a job.
+
+### Fixed
+- Extending a video made the new part far too small (a rounding mistake in the size). It now keeps the video's shape
+  at about the chosen size.
+
 ## 2.11.0
 
 ### New (Image & video studio)

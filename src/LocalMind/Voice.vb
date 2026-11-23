@@ -87,8 +87,8 @@ Public Module Voice
         Return "ggml-" & chosen & ".bin"
     End Function
 
-    ''' <summary>Transcribes a WAV file. Installs whisper.cpp and the model on first use.</summary>
-    Public Async Function TranscribeAsync(wav As String, progress As Action(Of String), ct As CancellationToken) As Task(Of String)
+    ''' <summary>Installs whisper.cpp and the speech model on first use; returns the package to run and the model.</summary>
+    Private Async Function WhisperReadyAsync(progress As Action(Of String), ct As CancellationToken) As Task(Of (Pkg As ExternalTools.ToolPackage, Model As String))
         Dim flavor = PreferredFlavor()
         Dim pkg = WhisperPackage(flavor)
         If ExternalTools.FindExe(pkg) Is Nothing Then
@@ -104,13 +104,18 @@ Public Module Voice
             End If
         End If
         If pkg.Flavor = "cuda12" Then ExternalTools.ShareCudaRuntime(ExternalTools.ToolDir(pkg))
-
         Dim model = Path.Combine(AppCore.Library.Folder, "Voice", ModelFile())
         If Not File.Exists(model) Then
             Await Downloader.DownloadFileAsync($"https://huggingface.co/ggerganov/whisper.cpp/resolve/main/{Path.GetFileName(model)}", model, Nothing,
                 Sub(d, t, s) progress?.Invoke($"Downloading speech model… {If(t > 0, d * 100 \ t, 0)}%"), ct)
         End If
+        Return (pkg, model)
+    End Function
 
+    ''' <summary>Transcribes a WAV file. Installs whisper.cpp and the model on first use.</summary>
+    Public Async Function TranscribeAsync(wav As String, progress As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Dim ready = Await WhisperReadyAsync(progress, ct)
+        Dim pkg = ready.Pkg, model = ready.Model
         progress?.Invoke("Transcribing…")
         Dim text = Await RunWhisperAsync(ExternalTools.FindExe(pkg), model, wav, ct)
         If text Is Nothing AndAlso pkg.Flavor <> "cpu" Then
@@ -121,6 +126,36 @@ Public Module Voice
         End If
         If text Is Nothing Then Throw New Exception("Speech recognition failed.")
         Return text
+    End Function
+
+    ''' <summary>
+    ''' Subtitles with timings (SRT) from a 16 kHz WAV. <paramref name="language"/> = spoken language ("auto" to
+    ''' detect); <paramref name="toEnglish"/> makes Whisper write them in English. Returns the SRT file.
+    ''' </summary>
+    Public Async Function TranscribeSrtAsync(wav As String, language As String, toEnglish As Boolean, progress As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Dim ready = Await WhisperReadyAsync(progress, ct)
+        progress?.Invoke("Writing subtitles…")
+        For Each pkg In {ready.Pkg, WhisperPackage("cpu")}.Distinct()
+            Dim exe = ExternalTools.FindExe(pkg)
+            If exe Is Nothing Then
+                Await ExternalTools.InstallAsync(pkg, progress, ct)
+                exe = ExternalTools.FindExe(pkg)
+            End If
+            If exe Is Nothing Then Continue For
+            Dim outBase = Path.Combine(Path.GetTempPath(), "localmind-srt-" & Guid.NewGuid().ToString("N"))
+            Dim lang = If(String.IsNullOrWhiteSpace(language), "auto", language)
+            Dim psi As New ProcessStartInfo(exe, $"-m ""{ready.Model}"" -f ""{wav}"" -l {lang}{If(toEnglish, " -tr", "")} -t {Math.Max(2, Environment.ProcessorCount - 2)} -np -osrt -of ""{outBase}""") With {
+                .UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardOutput = True, .RedirectStandardError = True,
+                .WorkingDirectory = Path.GetDirectoryName(exe)}
+            Using p = Process.Start(psi)
+                Dim o = p.StandardOutput.ReadToEndAsync()
+                Dim e = p.StandardError.ReadToEndAsync()
+                Await p.WaitForExitAsync(ct)
+                Await Task.WhenAll(o, e)
+                If p.ExitCode = 0 AndAlso File.Exists(outBase & ".srt") Then Return outBase & ".srt"
+            End Using
+        Next
+        Throw New Exception("Speech recognition failed.")
     End Function
 
     Private Async Function RunWhisperAsync(exe As String, model As String, wav As String, ct As CancellationToken) As Task(Of String)

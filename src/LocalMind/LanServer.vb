@@ -259,6 +259,16 @@ Public Class LanServer
     '════════════════════════════════════════════════════════════
     '  /api — used by the built-in web page
     '════════════════════════════════════════════════════════════
+    Private Class PhoneJob
+        Public Id As String
+        Public Text As String
+        Public File As String
+        Public Err As String
+        Public Done As Boolean
+    End Class
+    Private ReadOnly _phoneJobs As New ConcurrentDictionary(Of String, PhoneJob)()
+    Private ReadOnly _phoneGate As New SemaphoreSlim(1, 1)
+
     Private Async Function HandleApiAsync(ctx As HttpContext, path As String, method As String) As Task
         If path = "/api/info" Then
             Dim models As New JArray()
@@ -283,7 +293,8 @@ Public Class LanServer
                 {"features", New JObject From {
                     {"images", AppCore.Settings.EnableImages AndAlso ChatAgent.PickImageRecipe(False) IsNot Nothing},
                     {"voiceIn", OperatingSystem.IsWindows()},
-                    {"speak", True}}}
+                    {"speak", True},
+                    {"studio", AppCore.Settings.EnableImages}}}
             })
             Return
         End If
@@ -333,6 +344,97 @@ Public Class LanServer
             Finally
                 Try : IO.File.Delete(wav) : Catch : End Try
             End Try
+            Return
+        End If
+
+        ' 🎨 Studio on the phone: make pictures and videos, browse and ★ the results, see when jobs end.
+        If path = "/api/cast" AndAlso method = "GET" Then
+            Dim arr As New JArray()
+            For Each m In CastLibrary.Load()
+                arr.Add(New JObject From {{"name", m.Name}, {"kind", m.Kind}})
+            Next
+            Await WriteJsonAsync(ctx, arr)
+            Return
+        End If
+        If path = "/api/gallery" AndAlso method = "GET" Then
+            Dim q = ctx.Request.Query("q").ToString()
+            Dim fav = ctx.Request.Query("fav").ToString() = "1"
+            Dim arr As New JArray()
+            For Each f In History.Find(q.Replace("@", ""), fav, 60)
+                Dim s = MediaStudio.LoadSettingsFor(f)
+                arr.Add(New JObject From {{"file", IO.Path.GetFileName(f)}, {"video", Not f.EndsWith(".png")},
+                                          {"prompt", If(s?.Prompt, "")}, {"fav", History.IsFavorite(f)}})
+            Next
+            Await WriteJsonAsync(ctx, arr)
+            Return
+        End If
+        If path = "/api/gallery/fav" AndAlso method = "POST" Then
+            Dim b = JObject.Parse(Await ReadBodyAsync(ctx))
+            Dim name = IO.Path.GetFileName(If(b("file")?.ToString(), ""))
+            Dim file = IO.Path.Combine(MediaStudio.OutputFolder, name)
+            If name.Length = 0 OrElse Not IO.File.Exists(file) Then
+                Await WriteErrorAsync(ctx, 404, "Not found")
+                Return
+            End If
+            Await WriteJsonAsync(ctx, New JObject From {{"fav", History.ToggleFavorite(file)}})
+            Return
+        End If
+        If path = "/api/create" AndAlso method = "POST" Then
+            Dim b = JObject.Parse(Await ReadBodyAsync(ctx))
+            Dim prompt = If(b("prompt")?.ToString(), "").Trim()
+            Dim video = If(b("kind")?.ToString(), "") = "video"
+            If prompt.Length = 0 Then
+                Await WriteErrorAsync(ctx, 400, "Write what to make.")
+                Return
+            End If
+            Dim job As New PhoneJob With {.Id = Guid.NewGuid().ToString("N").Substring(0, 10), .Text = "Waiting…"}
+            _phoneJobs(job.Id) = job
+            Dim __ = Task.Run(Async Function()
+                                  Await _phoneGate.WaitAsync()
+                                  Try
+                                      While MediaStudio.IsBusy
+                                          job.Text = "Waiting for the PC to finish another picture or video…"
+                                          Await Task.Delay(3000)
+                                      End While
+                                      Dim cast = CastLibrary.Involved(prompt, New List(Of CastLibrary.CastMember)())
+                                      Dim status = Sub(t As String) job.Text = t
+                                      Dim md = If(video, Await ChatAgent.MakeVideoAsync(prompt, Nothing, status, CancellationToken.None, cast),
+                                                         Await ChatAgent.MakePictureAsync(prompt, Nothing, status, CancellationToken.None, cast))
+                                      Dim m = Text.RegularExpressions.Regex.Match(md, "outputs\.localmind/([^)\s]+)")
+                                      If m.Success Then
+                                          job.File = Uri.UnescapeDataString(m.Groups(1).Value)
+                                          job.Text = "Done"
+                                          Notifier.Notify("LocalMind", If(video, "🎬 ", "🖼 ") & "Ready: " & If(prompt.Length > 40, prompt.Substring(0, 40) & "…", prompt))
+                                      Else
+                                          job.Err = md.Trim().Trim("("c, ")"c, "_"c)
+                                      End If
+                                  Catch ex As Exception
+                                      job.Err = ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).LastOrDefault()
+                                  Finally
+                                      job.Done = True
+                                      _phoneGate.Release()
+                                  End Try
+                              End Function)
+            Await WriteJsonAsync(ctx, New JObject From {{"id", job.Id}})
+            Return
+        End If
+        If path.StartsWith("/api/create/") AndAlso method = "GET" Then
+            Dim job As PhoneJob = Nothing
+            If Not _phoneJobs.TryGetValue(path.Substring("/api/create/".Length), job) Then
+                Await WriteErrorAsync(ctx, 404, "Not found")
+                Return
+            End If
+            Await WriteJsonAsync(ctx, New JObject From {{"done", job.Done}, {"text", If(job.Text, "")}, {"file", If(job.File, "")}, {"error", If(job.Err, "")}})
+            Return
+        End If
+        If path = "/api/notes" AndAlso method = "GET" Then
+            Dim since = 0
+            Integer.TryParse(ctx.Request.Query("since").ToString(), since)
+            Dim arr As New JArray()
+            For Each n In Notifier.Since(since)
+                arr.Add(New JObject From {{"title", n.Title}, {"text", n.Text}})
+            Next
+            Await WriteJsonAsync(ctx, New JObject From {{"last", Notifier.LastId}, {"items", arr}})
             Return
         End If
 

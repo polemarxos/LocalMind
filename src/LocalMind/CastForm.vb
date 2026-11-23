@@ -5,6 +5,7 @@ Imports System.IO
 Imports System.Linq
 Imports System.Threading
 Imports System.Windows.Forms
+Imports Text_ = System.Text.RegularExpressions
 
 ''' <summary>
 ''' 🎭 Cast: your characters and locations. Tick the ones to use in the next picture or video
@@ -21,6 +22,9 @@ Public Class CastForm
     Private ReadOnly txtDesc As New TextBox() With {.Multiline = True, .Height = 90, .Width = 380, .ScrollBars = ScrollBars.Vertical}
     Private ReadOnly pics As New FlowLayoutPanel() With {.Height = 110, .Width = 380, .AutoScroll = True}
     Private ReadOnly editor As New TableLayoutPanel() With {.Dock = DockStyle.Right, .Width = 420, .ColumnCount = 1, .Padding = New Padding(12)}
+    Private ReadOnly cmbVoice As New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 185}
+    Private ReadOnly cmbLora As New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 185}
+    Private ReadOnly lblWork As Label = Theme.MakeLabel("", dim_:=True)
     Private _current As CastLibrary.CastMember
     Private _loading As Boolean
 
@@ -29,7 +33,7 @@ Public Class CastForm
 
     Public Sub New(Optional preselected As IEnumerable(Of String) = Nothing)
         Text = Localizer.T("🎭 Cast — characters and locations")
-        Size = New Size(1040, 640)
+        Size = New Size(1060, 760)
         MinimumSize = New Size(860, 520)
         StartPosition = FormStartPosition.CenterParent
         Theme.ApplyForm(Me)
@@ -66,7 +70,7 @@ Public Class CastForm
 
         ' editor on the right
         cmbKind.Items.AddRange({Localizer.T("🎭 Character"), Localizer.T("📍 Location")})
-        For Each c As Control In {txtName, txtDesc, cmbKind}
+        For Each c As Control In {txtName, txtDesc, cmbKind, cmbVoice, cmbLora}
             Theme.StyleInput(c)
         Next
         Dim btnAddPic = Theme.MakeButton(Localizer.T("🖼 Add pictures…"))
@@ -86,6 +90,57 @@ Public Class CastForm
         Dim picBar As New FlowLayoutPanel() With {.AutoSize = True}
         picBar.Controls.AddRange({btnAddPic, btnDescribe})
         editor.Controls.Add(picBar)
+        ' more pictures and LoRA training set
+        Dim btnMore = Theme.MakeButton(Localizer.T("📸 Make more pictures"))
+        Dim btnTrain = Theme.MakeButton(Localizer.T("📦 LoRA training set…"))
+        Dim moreBar As New FlowLayoutPanel() With {.AutoSize = True}
+        moreBar.Controls.AddRange({btnMore, btnTrain})
+        editor.Controls.Add(moreBar)
+        lblWork.MaximumSize = New Size(380, 0)
+        editor.Controls.Add(lblWork)
+        ' the member's voice and LoRA
+        Dim vl As New TableLayoutPanel() With {.AutoSize = True, .ColumnCount = 2}
+        vl.Controls.Add(Theme.MakeLabel(Localizer.T("Voice (talking videos)"), bold:=True), 0, 0)
+        vl.Controls.Add(Theme.MakeLabel(Localizer.T("Own LoRA (optional)"), bold:=True), 1, 0)
+        vl.Controls.Add(cmbVoice, 0, 1)
+        vl.Controls.Add(cmbLora, 1, 1)
+        editor.Controls.Add(vl)
+        AddHandler cmbVoice.SelectedIndexChanged, Sub() SaveCurrent()
+        AddHandler cmbLora.SelectedIndexChanged, Sub() SaveCurrent()
+        AddHandler btnMore.Click, Async Sub()
+                                      If _current Is Nothing Then Return
+                                      Dim m = _current
+                                      btnMore.Enabled = False
+                                      Try
+                                          Dim made = Await CastLibrary.MakeMorePicturesAsync(m, 4, Sub(p, t) BeginInvoke(Sub() lblWork.Text = t), CancellationToken.None)
+                                          CastLibrary.Save(_list)
+                                          For Each f In made
+                                              Try : IO.File.Delete(f) : Catch : End Try
+                                          Next
+                                          lblWork.Text = String.Format(Localizer.T("{0} new pictures added — right-click any that don't look right to remove them."), made.Count)
+                                          FillList()
+                                          ShowMember()
+                                      Catch ex As Exception
+                                          lblWork.Text = "⚠ " & ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                                      Finally
+                                          btnMore.Enabled = True
+                                      End Try
+                                  End Sub
+        AddHandler btnTrain.Click, Sub()
+                                       If _current Is Nothing OrElse CastLibrary.ImagePaths(_current).Count = 0 Then
+                                           Localizer.Box(Me, "Add a picture first.", "Cast")
+                                           Return
+                                       End If
+                                       Using d As New FolderBrowserDialog() With {.Description = Localizer.T("Where to save the training set")}
+                                           If d.ShowDialog(Me) <> DialogResult.OK Then Return
+                                           Dim trigger = Text_.Regex.Replace(_current.Name.ToLowerInvariant(), "[^a-z0-9]+", "") & "_lm"
+                                           If trigger = "_lm" Then trigger = "castmember_lm"
+                                           Dim dir = CastLibrary.ExportTrainingSet(_current, d.SelectedPath, trigger)
+                                           lblWork.Text = String.Format(Localizer.T("Saved {0} pictures with captions. Trigger word: {1}. Train the LoRA (see README.txt), add it in My LoRAs and pick it here."),
+                                                                        CastLibrary.ImagePaths(_current).Count, trigger)
+                                           ModelManagerForm.OpenFolder(dir)
+                                       End Using
+                                   End Sub
         AddHandler txtName.TextChanged, Sub() SaveCurrent()
         AddHandler txtDesc.TextChanged, Sub() SaveCurrent()
         AddHandler cmbKind.SelectedIndexChanged, Sub() SaveCurrent()
@@ -218,6 +273,21 @@ Public Class CastForm
         txtName.Text = If(_current?.Name, "")
         txtDesc.Text = If(_current?.Description, "")
         cmbKind.SelectedIndex = If(_current IsNot Nothing AndAlso _current.IsLocation, 1, 0)
+        cmbVoice.Items.Clear()
+        cmbVoice.Items.Add(Localizer.T("(default voice)"))
+        For Each v In VoiceLibrary.All()
+            cmbVoice.Items.Add(v.Name)
+        Next
+        Dim vi = If(String.IsNullOrEmpty(_current?.Voice), -1, cmbVoice.Items.IndexOf(_current.Voice))
+        cmbVoice.SelectedIndex = Math.Max(0, vi)
+        cmbVoice.Enabled = _current IsNot Nothing AndAlso Not _current.IsLocation
+        cmbLora.Items.Clear()
+        cmbLora.Items.Add(Localizer.T("(none)"))
+        For Each l In LoraLibrary.All()
+            cmbLora.Items.Add(l.Name)
+        Next
+        Dim li = If(String.IsNullOrEmpty(_current?.Lora), -1, cmbLora.Items.IndexOf(_current.Lora))
+        cmbLora.SelectedIndex = Math.Max(0, li)
         pics.Controls.Clear()
         If _current IsNot Nothing Then
             For Each f In CastLibrary.ImagePaths(_current)
@@ -250,6 +320,8 @@ Public Class CastForm
         _current.Name = txtName.Text.Trim()
         _current.Description = txtDesc.Text.Trim()
         _current.Kind = If(cmbKind.SelectedIndex = 1, "location", "character")
+        _current.Voice = If(cmbVoice.SelectedIndex > 0, cmbVoice.SelectedItem.ToString(), "")
+        _current.Lora = If(cmbLora.SelectedIndex > 0, cmbLora.SelectedItem.ToString(), "")
         CastLibrary.Save(_list)
         For Each it As ListViewItem In lst.Items
             If it.Tag Is _current Then it.Text = _current.ToString()

@@ -793,6 +793,12 @@ Public Module MediaStudio
         End Try
     End Sub
 
+    ''' <summary>Remembers how a result of a longer job was made (storyboards, talking videos…): for search and reuse.</summary>
+    Public Sub SaveNote(output As String, req As GenerateRequest, job As String)
+        If output Is Nothing OrElse req Is Nothing OrElse req.Recipe Is Nothing OrElse req.Variant Is Nothing Then Return
+        SaveSettingsFor(output, req, job, req.Seed)
+    End Sub
+
     Public Function LoadSettingsFor(output As String) As SavedSettings
         Try
             Dim f = SettingsFile(output)

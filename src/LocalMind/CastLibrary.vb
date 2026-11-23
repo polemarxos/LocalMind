@@ -23,6 +23,10 @@ Public Module CastLibrary
         Public Property Description As String = ""
         ''' <summary>File names inside this member's folder.</summary>
         Public Property Images As New List(Of String)()
+        ''' <summary>Saved (cloned) voice the character speaks with (talking videos).</summary>
+        Public Property Voice As String = ""
+        ''' <summary>The member's own LoRA (name in My LoRAs), used whenever the member appears.</summary>
+        Public Property Lora As String = ""
 
         <JsonIgnore> Public ReadOnly Property IsLocation As Boolean
             Get
@@ -176,5 +180,113 @@ Public Module CastLibrary
         Dim backend = AppCore.Backend
         Dim res = Await Task.Run(Function() backend.StreamChatAsync(msgs, opts, Sub(t) Return, Sub(t) Return, ct))
         Return If(res?.Content, "").Trim().Trim(""""c)
+    End Function
+    '──────────────── voices, LoRAs, dialogue, more pictures, training sets ────────────────
+    ''' <summary>The members' own LoRAs that suit the model family (their trigger words are added by the studio).</summary>
+    Public Function LorasFor(members As IEnumerable(Of CastMember), family As String) As List(Of UserLora)
+        Dim all = LoraLibrary.All()
+        Return members.Where(Function(m) Not String.IsNullOrEmpty(m.Lora)).
+                       Select(Function(m) all.FirstOrDefault(Function(l) l.Name.Equals(m.Lora, StringComparison.OrdinalIgnoreCase))).
+                       Where(Function(l) l IsNot Nothing AndAlso File.Exists(l.FullPath) AndAlso LoraLibrary.FamilyMatches(l.Family, family)).ToList()
+    End Function
+
+    ''' <summary>A member by name (case-insensitive, with or without the @).</summary>
+    Public Function Find(name As String) As CastMember
+        Dim n = If(name, "").Trim().TrimStart("@"c).Trim()
+        Return Load().FirstOrDefault(Function(m) m.Name.Equals(n, StringComparison.OrdinalIgnoreCase))
+    End Function
+
+    ''' <summary>
+    ''' Lines like "@Anna: Hello!" (or "Anna: Hello!") → who says what. Lines without a known name belong to the
+    ''' speaker before them (or to nobody).
+    ''' </summary>
+    Public Function ParseDialogue(text As String) As List(Of (Member As CastMember, Words As String))
+        Dim result As New List(Of (Member As CastMember, Words As String))
+        For Each raw In If(text, "").Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+            Dim line = raw.Trim()
+            If line.Length = 0 Then Continue For
+            Dim m = Regex.Match(line, "^@?([^:@]{1,40}?)\s*:\s*(.+)$")
+            Dim who = If(m.Success, Find(m.Groups(1).Value), Nothing)
+            If who IsNot Nothing Then
+                result.Add((who, m.Groups(2).Value.Trim()))
+            ElseIf result.Count > 0 Then
+                Dim last = result(result.Count - 1)
+                result(result.Count - 1) = (last.Member, last.Words & " " & line)
+            Else
+                result.Add((Nothing, line))
+            End If
+        Next
+        Return result
+    End Function
+
+    Private ReadOnly CharacterViews As String() = {
+        "close-up portrait, looking at the camera, neutral background",
+        "three-quarter view portrait, soft daylight",
+        "side profile, studio light",
+        "full body, standing, simple background",
+        "smiling, upper body, outdoors",
+        "serious expression, upper body, evening light",
+        "walking, full body, city street",
+        "sitting, medium shot, indoors"}
+    Private ReadOnly PlaceViews As String() = {
+        "wide shot, daytime", "wide shot, at night", "different angle, morning light", "close view of the details",
+        "rainy weather", "golden hour", "from above", "empty, quiet"}
+
+    ''' <summary>
+    ''' More pictures of a member in different views (with a picture model that combines pictures and the member's
+    ''' pictures as references): a richer set for consistent results, or for training a LoRA. Returns the new files.
+    ''' </summary>
+    Public Async Function MakeMorePicturesAsync(m As CastMember, count As Integer, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of List(Of String))
+        Dim refs = ImagePaths(m)
+        If refs.Count = 0 Then Throw New Exception(Localizer.T("Add a picture first."))
+        Dim maker = VideoMaker.CastSceneRecipe()
+        If maker Is Nothing Then Throw New Exception(Localizer.T("This needs a picture model that combines pictures (Qwen-Image Edit, FLUX.2 klein or Qwen-Image 2.1)."))
+        Dim v = MediaStudio.InstalledVariant(maker)
+        Dim fast = AppCore.Settings.MediaFast AndAlso maker.Speed IsNot Nothing
+        Dim views = If(m.IsLocation, PlaceViews, CharacterViews)
+        Dim made As New List(Of String)
+        For i = 0 To count - 1
+            ct.ThrowIfCancellationRequested()
+            Dim view = views(i Mod views.Length)
+            Dim what = If(m.IsLocation, "the same place as in the picture", "the same person as in the picture, same face, hair and clothes")
+            Dim req As New MediaStudio.GenerateRequest With {
+                .Recipe = maker, .Variant = v, .Task = "combine",
+                .Prompt = $"{what}: {If(String.IsNullOrWhiteSpace(m.Description), m.Name, m.Description)}. {view}, photorealistic, high detail",
+                .Width = 1024, .Height = 1024, .Steps = If(fast, maker.Speed.Steps, maker.Steps), .Cfg = If(fast, maker.Speed.Cfg, maker.Cfg), .Fast = fast,
+                .InputImages = refs.Take(Math.Max(1, maker.Refs)).ToList(),
+                .OutputPath = Path.Combine(Path.GetTempPath(), $"localmind-castpic-{Guid.NewGuid():N}.png")}
+            Dim k = i
+            Await MediaStudio.GenerateAsync(req, Sub(p, t) progress?.Invoke(CInt((k * 100 + p) / count), Localizer.T("📸 Picture") & $" {k + 1}/{count} — " & Localizer.T(t)), ct)
+            If File.Exists(req.OutputPath) Then
+                AddImage(m, req.OutputPath)
+                made.Add(req.OutputPath)
+            End If
+        Next
+        Return made
+    End Function
+
+    ''' <summary>
+    ''' A folder ready for LoRA training (OneTrainer, kohya_ss, ai-toolkit or Civitai's trainer): every picture with a
+    ''' caption file "trigger, description". Returns the folder.
+    ''' </summary>
+    Public Function ExportTrainingSet(m As CastMember, parent As String, trigger As String) As String
+        Dim safe = Regex.Replace(If(m.Name, "cast"), "[^\w\-]+", "_")
+        Dim dir = Path.Combine(parent, $"{safe}-lora-dataset")
+        Directory.CreateDirectory(dir)
+        Dim caption = trigger & If(String.IsNullOrWhiteSpace(m.Description), "", ", " & m.Description.Trim().TrimEnd("."c))
+        Dim i = 0
+        For Each f In ImagePaths(m)
+            i += 1
+            Dim name = $"{safe}_{i:000}"
+            File.Copy(f, Path.Combine(dir, name & Path.GetExtension(f).ToLowerInvariant()), True)
+            File.WriteAllText(Path.Combine(dir, name & ".txt"), caption)
+        Next
+        File.WriteAllText(Path.Combine(dir, "README.txt"),
+            $"Training set for '{m.Name}' made by LocalMind ({i} pictures).{Environment.NewLine}" &
+            $"Trigger word: {trigger}{Environment.NewLine}{Environment.NewLine}" &
+            "Train a LoRA with OneTrainer, kohya_ss, ai-toolkit, or online with Civitai's LoRA trainer (upload this folder as a zip)." & Environment.NewLine &
+            "15-30 varied pictures work best (different angles, expressions, light). Then in LocalMind: Studio → LoRAs → Add, and pick it" & Environment.NewLine &
+            "as this cast member's LoRA in the Cast window. It is used automatically whenever the member is in a picture or video.")
+        Return dir
     End Function
 End Module

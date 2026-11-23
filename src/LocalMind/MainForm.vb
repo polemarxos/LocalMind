@@ -155,6 +155,10 @@ Public Class MainForm
             Case "cast"
                 Dim cf As New CastForm()
                 cf.Show(Me)
+            Case "film"
+                FilmProject.AddToCurrent(IO.Path.Combine(MediaStudio.OutputFolder, "sample.png"))
+                Dim fm As New FilmForm()
+                fm.Show(Me)
         End Select
 
         ' Help → Check for updates / Update everything now, plus a quiet daily round that updates

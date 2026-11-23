@@ -167,7 +167,7 @@ Public Module VideoTools
         For i = 0 To clips.Count - 1
             inputs.Append($"-i ""{clips(i)}"" ")
             Dim trim = If(dropFirstFrame AndAlso i > 0, "trim=start_frame=1,", "")
-            filter.Append($"[{i}:v]{trim}scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},setpts=PTS-STARTPTS[v{i}];")
+            filter.Append($"[{i}:v]{trim}scale={w}:{h}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},setpts=PTS-STARTPTS[v{i}];")
         Next
         For i = 0 To clips.Count - 1
             filter.Append($"[v{i}]")
@@ -218,9 +218,134 @@ Public Module VideoTools
         Await RunAsync(ff, $"-hide_banner -loglevel error -y {src} -vf ""{String.Join(",", chain)}"" -map 0:v {audio}-c:v libx264 -crf 17 -preset veryfast -movflags +faststart ""{output}""", ct)
     End Function
 
-    Private Async Function RunAsync(exe As String, args As String, ct As CancellationToken) As Task
+    ''' <summary>Runs ffmpeg with the given arguments (optionally in a folder, so files can be named without a path).</summary>
+    Public Async Function FfmpegAsync(args As String, ct As CancellationToken, Optional workDir As String = Nothing) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Await RunAsync(ff, args, ct, workDir)
+    End Function
+
+    ''' <summary>Joins clips that all have sound (e.g. talking pieces) into one MP4, picture and sound.</summary>
+    Public Async Function JoinWithSoundAsync(clips As IList(Of String), output As String, ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        If clips.Count = 0 Then Throw New Exception("Nothing to join.")
+        Dim first = Await InfoAsync(clips(0), ct)
+        Dim w = If(first.Width > 0, first.Width, 832), h = If(first.Height > 0, first.Height, 480)
+        Dim fps = first.Fps.ToString("0.###", Globalization.CultureInfo.InvariantCulture)
+        Dim inputs As New StringBuilder()
+        Dim filter As New StringBuilder()
+        Dim pairs As New StringBuilder()
+        For i = 0 To clips.Count - 1
+            Dim info = Await InfoAsync(clips(i), ct)
+            inputs.Append($"-i ""{clips(i)}"" ")
+            filter.Append($"[{i}:v]scale={w}:{h}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},setpts=PTS-STARTPTS[v{i}];")
+            If info.HasAudio Then
+                filter.Append($"[{i}:a]aresample=44100,aformat=channel_layouts=stereo,asetpts=PTS-STARTPTS[a{i}];")
+            Else
+                filter.Append($"anullsrc=r=44100:cl=stereo,atrim=duration={info.Seconds.ToString("0.###", Globalization.CultureInfo.InvariantCulture)}[a{i}];")
+            End If
+            pairs.Append($"[v{i}][a{i}]")
+        Next
+        filter.Append(pairs).Append($"concat=n={clips.Count}:v=1:a=1[v][a]")
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y {inputs}-filter_complex ""{filter}"" -map ""[v]"" -map ""[a]"" -c:v libx264 -pix_fmt yuv420p -crf 18 -c:a aac -movflags +faststart ""{output}""", ct)
+    End Function
+
+    ''' <summary>
+    ''' One piece of a film, made uniform (size, 24 fps, stereo sound — silent when the clip has none or its sound is
+    ''' not wanted), with optional fades. Pictures are shown for <paramref name="seconds"/>.
+    ''' </summary>
+    Public Async Function FilmSegmentAsync(source As String, isPicture As Boolean, seconds As Double, width As Integer, height As Integer,
+                                           keepSound As Boolean, fades As Boolean, output As String, ct As CancellationToken) As Task(Of Double)
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim inv = Globalization.CultureInfo.InvariantCulture
+        Dim dur = seconds
+        Dim hasSound = False
+        If Not isPicture Then
+            Dim info = Await InfoAsync(source, ct)
+            dur = If(info.Seconds > 0, info.Seconds, 3)
+            hasSound = info.HasAudio AndAlso keepSound
+        End If
+        dur = Math.Max(0.5, dur)
+        Dim d = dur.ToString("0.###", inv)
+        Dim vf = $"scale={width}:{height}:force_original_aspect_ratio=decrease:force_divisible_by=2,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24,format=yuv420p"
+        If fades Then
+            Dim f = Math.Min(0.4, dur / 4).ToString("0.###", inv)
+            vf &= $",fade=t=in:st=0:d={f},fade=t=out:st={(dur - Math.Min(0.4, dur / 4)).ToString("0.###", inv)}:d={f}"
+        End If
+        Dim src = If(isPicture, $"-loop 1 -t {d} -i ""{source}""", $"-i ""{source}""")
+        Dim audio = If(hasSound, "[0:a]aresample=44100,aformat=channel_layouts=stereo,apad[a]", "[1:a]anull[a]")
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y {src} -f lavfi -t {d} -i anullsrc=r=44100:cl=stereo " &
+                           $"-filter_complex ""[0:v]{vf}[v];{audio}"" -map ""[v]"" -map ""[a]"" -t {d} " &
+                           $"-c:v libx264 -crf 18 -preset veryfast -c:a aac -ar 44100 -ac 2 ""{output}""", ct)
+        Return dur
+    End Function
+
+    ''' <summary>Joins uniform pieces (same size, rate and sound format) without re-encoding.</summary>
+    Public Async Function ConcatSameAsync(pieces As IList(Of String), output As String, ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim list = Path.Combine(Path.GetTempPath(), $"localmind-concat-{Guid.NewGuid():N}.txt")
+        File.WriteAllLines(list, pieces.Select(Function(p) "file '" & p.Replace("\", "/").Replace("'", "'\''") & "'"))
+        Try
+            Await RunAsync(ff, $"-hide_banner -loglevel error -y -f concat -safe 0 -i ""{list}"" -c copy -movflags +faststart ""{output}""", ct)
+        Finally
+            Try : File.Delete(list) : Catch : End Try
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' Puts music (looped to the length, faded out at the end) and voice-overs (each at its start second) under a
+    ''' film; the film's own sound stays (or is muted).
+    ''' </summary>
+    Public Async Function MixFilmSoundAsync(film As String, filmSeconds As Double, music As String, musicVolume As Double, keepFilmSound As Boolean,
+                                           voiceOvers As IList(Of (File As String, Start As Double)), output As String, ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim inv = Globalization.CultureInfo.InvariantCulture
+        Dim inputs As New StringBuilder($"-i ""{film}"" ")
+        Dim filter As New StringBuilder($"[0:a]volume={If(keepFilmSound, "1", "0")}[a0];")
+        Dim mixIn As New StringBuilder("[a0]")
+        Dim n = 1
+        If Not String.IsNullOrEmpty(music) AndAlso File.Exists(music) Then
+            inputs.Append($"-stream_loop -1 -i ""{music}"" ")
+            Dim fadeAt = Math.Max(0, filmSeconds - 2).ToString("0.###", inv)
+            filter.Append($"[{n}:a]aresample=44100,aformat=channel_layouts=stereo,volume={musicVolume.ToString("0.##", inv)},afade=t=out:st={fadeAt}:d=2[m];")
+            mixIn.Append("[m]")
+            n += 1
+        End If
+        Dim k = 0
+        For Each vo In voiceOvers.Where(Function(x) File.Exists(x.File))
+            inputs.Append($"-i ""{vo.File}"" ")
+            Dim ms = CLng(Math.Max(0, vo.Start) * 1000)
+            filter.Append($"[{n}:a]aresample=44100,aformat=channel_layouts=stereo,adelay={ms}|{ms}[vo{k}];")
+            mixIn.Append($"[vo{k}]")
+            n += 1 : k += 1
+        Next
+        filter.Append(mixIn).Append($"amix=inputs={n}:duration=first:normalize=0[a]")
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y {inputs}-filter_complex ""{filter}"" -map 0:v -map ""[a]"" -c:v copy -c:a aac -b:a 192k -movflags +faststart ""{output}""", ct)
+    End Function
+
+    ''' <summary>
+    ''' Adds subtitles to a video: burned into the picture (always visible), or as a subtitle track players can turn
+    ''' on and off. Writes an MP4.
+    ''' </summary>
+    Public Async Function AddSubtitlesAsync(video As String, srt As String, burn As Boolean, language As String, output As String, ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim info = Await InfoAsync(video, ct)
+        Dim audio = If(info.HasAudio, "-c:a aac ", "")
+        If burn Then
+            ' run in the subtitle's folder: the filter then needs no Windows path (drive letters and \ break it)
+            Dim style = "FontName=Segoe UI,FontSize=20,Outline=2,Shadow=0,MarginV=24"
+            Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{video}"" -vf ""subtitles={Path.GetFileName(srt)}:force_style='{style}'"" " &
+                               $"-c:v libx264 -crf 18 -preset veryfast -pix_fmt yuv420p {audio}-movflags +faststart ""{output}""", ct, Path.GetDirectoryName(srt))
+        Else
+            Dim lang = If(String.IsNullOrWhiteSpace(language), "und", language)
+            Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{video}"" -i ""{srt}"" -map 0:v -map 0:a? -map 1:s " &
+                               $"-c:v libx264 -crf 18 -preset veryfast -pix_fmt yuv420p {audio}-c:s mov_text -metadata:s:s:0 language={lang} -movflags +faststart ""{output}""", ct)
+        End If
+    End Function
+
+    Private Async Function RunAsync(exe As String, args As String, ct As CancellationToken, Optional workDir As String = Nothing) As Task
         Dim psi As New ProcessStartInfo(exe, args) With {.UseShellExecute = False, .CreateNoWindow = True,
                                                          .RedirectStandardError = True, .RedirectStandardOutput = True}
+        If workDir IsNot Nothing Then psi.WorkingDirectory = workDir
         Using p As New Process() With {.StartInfo = psi}
             Dim err As New StringBuilder()
             AddHandler p.ErrorDataReceived, Sub(s, e)

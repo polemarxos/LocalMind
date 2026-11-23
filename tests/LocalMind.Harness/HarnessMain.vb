@@ -700,6 +700,133 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "v212" Then
+            Console.WriteLine("== 2.12: film editor, conversations, cast voices/LoRAs, history, subtitles, notes")
+            Dim tmp = Path.Combine(Path.GetTempPath(), "lm-v212")
+            If Directory.Exists(tmp) Then Directory.Delete(tmp, True)
+            Directory.CreateDirectory(tmp)
+            Dim ff = Await VideoTools.EnsureFfmpegAsync(Nothing, CancellationToken.None)
+            Dim mk = Sub(cmd As String)
+                         Using p = Diagnostics.Process.Start(New Diagnostics.ProcessStartInfo(ff, "-hide_banner -loglevel error -y " & cmd) With {.UseShellExecute = False, .RedirectStandardError = True})
+                             p.StandardError.ReadToEnd()
+                             p.WaitForExit()
+                         End Using
+                     End Sub
+            Dim v1 = Path.Combine(tmp, "v1.webm"), v2 = Path.Combine(tmp, "v2.mp4"), pic = Path.Combine(tmp, "pic.png")
+            Dim music = Path.Combine(tmp, "music.wav"), vo = Path.Combine(tmp, "vo.wav")
+            mk($"-f lavfi -i testsrc=size=320x240:rate=16:duration=2 -c:v libvpx-vp9 -b:v 300k ""{v1}""")
+            mk($"-f lavfi -i testsrc2=size=480x270:rate=30:duration=1.5 -f lavfi -i sine=frequency=300:duration=1.5 -shortest -c:v libx264 -c:a aac ""{v2}""")
+            mk($"-f lavfi -i color=c=orange:size=400x400 -frames:v 1 ""{pic}""")
+            mk($"-f lavfi -i sine=frequency=500:duration=2 ""{music}""")
+            mk($"-f lavfi -i sine=frequency=800:duration=1 ""{vo}""")
+
+            ' Film: video without sound, video with sound, picture; music looped, voice-over at 1 s
+            Dim film As New FilmProject With {.Name = "Test film", .Width = 640, .Height = 360, .Fades = True, .KeepClipSound = True, .Music = music, .MusicVolume = 0.3}
+            film.Clips.Add(New FilmProject.Clip With {.File = v1})
+            film.Clips.Add(New FilmProject.Clip With {.File = v2})
+            film.Clips.Add(New FilmProject.Clip With {.File = pic, .Seconds = 2.5})
+            film.VoiceOvers.Add(New FilmProject.VoiceOver With {.File = vo, .Start = 1})
+            Dim filmOut = Await film.ExportAsync(Sub(p, t) Return, CancellationToken.None)
+            Dim fi = Await VideoTools.InfoAsync(filmOut, CancellationToken.None)
+            Check(fi.Width = 640 AndAlso fi.Height = 360 AndAlso Math.Abs(fi.Seconds - 6) < 0.3 AndAlso fi.HasAudio AndAlso Math.Abs(fi.Fps - 24) < 0.1,
+                  "film exported: 3 clips (2 s + 1.5 s + picture 2.5 s), music and voice-over", $"{fi.Width}x{fi.Height} {fi.Fps} fps {fi.Seconds:0.00}s audio={fi.HasAudio}")
+            Dim film2 As New FilmProject With {.Fades = False, .KeepClipSound = False}
+            film2.Clips.Add(New FilmProject.Clip With {.File = v2})
+            film2.Clips.Add(New FilmProject.Clip With {.File = pic, .Seconds = 1})
+            Dim filmOut2 = Await film2.ExportAsync(Sub(p, t) Return, CancellationToken.None)
+            Dim fi2 = Await VideoTools.InfoAsync(filmOut2, CancellationToken.None)
+            Check(fi2.Width = 480 AndAlso fi2.Height = 270 AndAlso Math.Abs(fi2.Seconds - 2.5) < 0.3, "film at the size of the first clip, no music", $"{fi2.Width}x{fi2.Height} {fi2.Seconds:0.00}s")
+            Dim saved = Path.Combine(tmp, "f.lmfilm")
+            film.Save(saved)
+            Dim back = FilmProject.Load(saved)
+            Check(back.Clips.Count = 3 AndAlso back.Clips(2).IsPicture AndAlso back.VoiceOvers(0).Start = 1 AndAlso back.Music = music, "film saved and opened again")
+            File.Delete(filmOut2)
+
+            ' Talking pieces joined with their sound
+            Dim t1 = Path.Combine(tmp, "t1.mp4"), t2 = Path.Combine(tmp, "t2.mp4")
+            mk($"-f lavfi -i testsrc=size=320x240:rate=16:duration=1 -f lavfi -i sine=frequency=400:duration=1:sample_rate=24000 -shortest -c:v libx264 -c:a aac ""{t1}""")
+            mk($"-f lavfi -i testsrc2=size=320x240:rate=16:duration=1.5 -f lavfi -i sine=frequency=600:duration=1.5:sample_rate=44100 -shortest -c:v libx264 -c:a aac ""{t2}""")
+            Dim conv = Path.Combine(tmp, "conv.mp4")
+            Await VideoTools.JoinWithSoundAsync({t1, t2}, conv, CancellationToken.None)
+            Dim ci = Await VideoTools.InfoAsync(conv, CancellationToken.None)
+            Check(ci.HasAudio AndAlso Math.Abs(ci.Seconds - 2.5) < 0.2, "conversation pieces (different sound rates) joined with their voices", $"{ci.Seconds:0.00}s audio={ci.HasAudio}")
+
+            ' Subtitles from an SRT: burned and as a track
+            Dim srt = Path.Combine(tmp, "subs.srt")
+            File.WriteAllText(srt, "1" & vbLf & "00:00:00,000 --> 00:00:01,000" & vbLf & "Hello there" & vbLf & vbLf & "2" & vbLf & "00:00:01,000 --> 00:00:02,400" & vbLf & "Γεια σου" & vbLf)
+            Dim burned = Path.Combine(tmp, "burned.mp4"), track = Path.Combine(tmp, "track.mp4")
+            Await VideoTools.AddSubtitlesAsync(conv, srt, True, "eng", burned, CancellationToken.None)
+            Await VideoTools.AddSubtitlesAsync(conv, srt, False, "eng", track, CancellationToken.None)
+            Dim probe = Function(f As String) As String
+                            Using p = Diagnostics.Process.Start(New Diagnostics.ProcessStartInfo(ff, $"-hide_banner -i ""{f}""") With {.UseShellExecute = False, .RedirectStandardError = True})
+                                Dim e = p.StandardError.ReadToEnd()
+                                p.WaitForExit()
+                                Return e
+                            End Using
+                        End Function
+            Check(File.Exists(burned) AndAlso New FileInfo(burned).Length > 1000 AndAlso Not probe(burned).Contains("Subtitle:"), "subtitles burned into the picture")
+            Check(probe(track).Contains("Subtitle: mov_text") AndAlso probe(track).Contains("(eng)"), "subtitles as a track players can switch")
+
+            ' Dialogue lines, cast voice / LoRA, training set
+            Dim castList = CastLibrary.Load()
+            castList.RemoveAll(Function(m) m.Name = "Nina" OrElse m.Name = "Leo")
+            Dim nina As New CastLibrary.CastMember With {.Name = "Nina", .Description = "young woman, braids", .Voice = "NinaVoice", .Lora = "nina_lora"}
+            Dim leo As New CastLibrary.CastMember With {.Name = "Leo", .Description = "old fisherman"}
+            castList.Add(nina) : castList.Add(leo)
+            CastLibrary.AddImage(nina, pic)
+            CastLibrary.AddImage(nina, pic)
+            CastLibrary.Save(castList)
+            Dim dlg = CastLibrary.ParseDialogue("@Nina: Hello, Leo!" & vbCrLf & "How are you?" & vbCrLf & "Leo: Fine, thanks." & vbCrLf & "Narrator: (not in the cast)")
+            Check(dlg.Count = 2 AndAlso dlg(0).Member.Name = "Nina" AndAlso dlg(0).Words = "Hello, Leo! How are you?" AndAlso dlg(1).Member.Name = "Leo" AndAlso
+                  dlg(1).Words.StartsWith("Fine, thanks.") AndAlso dlg(1).Words.Contains("Narrator"), "conversation lines: who says what",
+                  String.Join(" | ", dlg.Select(Function(d) $"{d.Member?.Name}: {d.Words}")))
+            Check(CastLibrary.Load().First(Function(m) m.Name = "Nina").Voice = "NinaVoice", "a cast member keeps their voice")
+            Dim set1 = CastLibrary.ExportTrainingSet(nina, tmp, "nina_lm")
+            Check(Directory.GetFiles(set1, "*.png").Length = 2 AndAlso Directory.GetFiles(set1, "*.txt").Length = 3 AndAlso
+                  File.ReadAllText(Directory.GetFiles(set1, "Nina_001.txt")(0)) = "nina_lm, young woman, braids", "LoRA training set: pictures + captions + README")
+            ' a LoRA for the member, used only with its family
+            Directory.CreateDirectory(LoraLibrary.Folder)
+            File.WriteAllBytes(Path.Combine(LoraLibrary.Folder, "nina_lora.safetensors"), New Byte(100) {})
+            Dim lib0 = LoraLibrary.All()
+            If Not lib0.Any(Function(l) l.Name = "nina_lora") Then
+                Dim imp = LoraLibrary.Import(Path.Combine(LoraLibrary.Folder, "nina_lora.safetensors"))
+            End If
+            Dim nl = LoraLibrary.All().FirstOrDefault(Function(l) l.Name = "nina_lora")
+            If nl IsNot Nothing Then
+                nl.Family = "SDXL"
+                LoraLibrary.Save()
+                Check(CastLibrary.LorasFor({nina}, "SDXL").Count = 1 AndAlso CastLibrary.LorasFor({nina}, "Wan").Count = 0, "the member's LoRA is used with its model family only")
+            Else
+                Check(False, "LoRA registered")
+            End If
+
+            ' History: search and favourites
+            Dim found = History.Find("Test_film", False, 50)
+            Check(found.Any(Function(f) f = filmOut), "history finds the film by name", String.Join(", ", found.Select(AddressOf Path.GetFileName)))
+            Dim st = History.ToggleFavorite(filmOut)
+            Check(st AndAlso History.Find("", True, 50).Contains(filmOut) AndAlso Not History.ToggleFavorite(filmOut) AndAlso Not History.Find("", True, 50).Contains(filmOut),
+                  "★ favourite on and off")
+
+            ' Notes for the phone
+            Dim before = Notifier.LastId
+            Notifier.Notify("LocalMind studio", "3 done")
+            Check(Notifier.Since(before).Count = 1 AndAlso Notifier.Since(before)(0).Text = "3 done", "job messages reach the phone page")
+
+            ' Whisper subtitles (needs the engine download; skipped where it is blocked)
+            Try
+                Dim speech = Path.Combine(tmp, "speech.mp4")
+                mk($"-f lavfi -i testsrc=size=320x240:rate=16:duration=2 -f lavfi -i sine=frequency=300:duration=2 -shortest -c:v libx264 -c:a aac ""{speech}""")
+                Dim r = Await VideoMaker.SubtitlesAsync(speech, "en", "", True, Sub(p, t) Return, CancellationToken.None)
+                Check(File.Exists(r.Video) AndAlso File.Exists(r.Srt), "subtitles with Whisper", r.Video)
+            Catch ex As Exception
+                Console.WriteLine("  SKIP Whisper subtitles (engine not available here): " & ex.Message)
+            End Try
+            castList = CastLibrary.Load()
+            castList.RemoveAll(Function(m) m.Name = "Nina" OrElse m.Name = "Leo")
+            CastLibrary.Save(castList)
+            File.Delete(filmOut)
+        End If
+
         If only = "community" Then
             Console.WriteLine("== A community model (downloaded and used like the hand-made ones)")
             Dim r = MediaStudio.Recipes().First(Function(x) x.Id = "hf-gsdf-counterfeit-v2-5")
