@@ -44,7 +44,24 @@ Public Module Theme
         ToolStripManager.Renderer = New ModernRenderer()
     End Sub
 
+    <Runtime.InteropServices.DllImport("dwmapi.dll")>
+    Private Function DwmSetWindowAttribute(hwnd As IntPtr, attr As Integer, ByRef value As Integer, size As Integer) As Integer
+    End Function
+
+    ''' <summary>Dark window title bar, matching the dark window.</summary>
+    Public Sub DarkTitleBar(f As Form)
+        Dim apply = Sub()
+                        Try
+                            Dim one = 1
+                            If DwmSetWindowAttribute(f.Handle, 20, one, 4) <> 0 Then DwmSetWindowAttribute(f.Handle, 19, one, 4)
+                        Catch
+                        End Try
+                    End Sub
+        If f.IsHandleCreated Then apply() Else AddHandler f.HandleCreated, Sub() apply()
+    End Sub
+
     Public Sub ApplyForm(f As Form)
+        DarkTitleBar(f)
         f.BackColor = CPanel
         f.ForeColor = CText
         f.Font = UiFont

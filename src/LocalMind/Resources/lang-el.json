@@ -686,5 +686,7 @@
 "Check for LocalMind updates every day": "Έλεγχος για ενημερώσεις του LocalMind κάθε μέρα",
 "Install LocalMind updates by themselves (used from the next start)": "Αυτόματη εγκατάσταση ενημερώσεων του LocalMind (ισχύουν από την επόμενη εκκίνηση)",
 "Keep the AI engines and the model list up to date automatically": "Αυτόματη ενημέρωση των μηχανών AI και της λίστας μοντέλων",
-"🎵 Music && voice": "🎵 Μουσική && φωνή"
+"🎵 Music && voice": "🎵 Μουσική && φωνή",
+"🎙": "🎙",
+"🖼 Picture": "🖼 Εικόνα"
 }

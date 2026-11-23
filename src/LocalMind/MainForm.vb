@@ -61,6 +61,7 @@ Public Class MainForm
 
     Public Sub New()
         InitializeComponent()
+        Theme.DarkTitleBar(Me)
         MediaStudio.InpaintComposer = AddressOf ImageTools.CompositeInpaint
         OnnxTools.Register()
         Try

@@ -329,6 +329,7 @@ Partial Class MainForm
 
         bottom.Controls.Add(_composer)
         bottom.Controls.Add(actions)
+        AddHandler bottom.Resize, Sub() FitComposer(bottom.Width)
 
         ' attachments (chips) above the text, the text fills the rest
         flpAttachments.BackColor = Theme.CRaised
@@ -358,6 +359,25 @@ Partial Class MainForm
         pnlInput.ResumeLayout(True)
     End Sub
 
+    Private _compactComposer As Boolean? = Nothing
+
+    ''' <summary>Narrow message card: short names for the options so none of them hides.</summary>
+    Private Sub FitComposer(width As Integer)
+        Dim compact = width < 960
+        If _compactComposer.HasValue AndAlso _compactComposer.Value = compact Then Return
+        _compactComposer = compact
+        _attachMenu.Text = ItemText(If(compact, "📎", "📎 Attach"))
+        If _btnPrompts IsNot Nothing Then _btnPrompts.Text = ItemText(If(compact, "📝", "📝 Prompts"))
+        btnThinking.Text = ItemText(If(compact, "💭 Think", "💭 Think first"))
+        If _btnWeb IsNot Nothing Then _btnWeb.Text = ItemText(If(compact, "🌐 Web", "🌐 Web search"))
+        If _btnDocs IsNot Nothing Then _btnDocs.Text = ItemText(If(compact, "📚 Docs", "📚 My documents"))
+        If _btnImage IsNot Nothing Then _btnImage.Text = ItemText(If(compact, "🖼 Picture", "🖼 Picture mode"))
+        If _btnTalk IsNot Nothing Then
+            _btnTalk.Text = If(compact, "🎙", Localizer.T("🎙 Talk"))
+            _btnTalk.Width = If(compact, 38, 78)
+        End If
+    End Sub
+
     Private Shared Function ItemTextPlain(english As String) As String
         Return Localizer.T(english)
     End Function
@@ -365,7 +385,7 @@ Partial Class MainForm
     Private Sub StyleAction(b As Button, text As String, width As Integer, tip As String, Optional primary As Boolean = False, Optional danger As Boolean = False)
         b.Text = text
         b.AutoSize = False
-        b.Width = width
+        b.Width = Math.Max(width, TextRenderer.MeasureText(text, If(primary OrElse danger, Theme.BoldFont, Theme.UiFont)).Width + 26)
         b.Height = 30
         b.Margin = New Padding(4, 0, 0, 0)
         b.Font = If(primary OrElse danger, Theme.BoldFont, Theme.UiFont)
