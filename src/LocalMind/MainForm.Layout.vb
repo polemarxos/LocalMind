@@ -369,9 +369,10 @@ Partial Class MainForm
         _attachMenu.Text = ItemText(If(compact, "📎", "📎 Attach"))
         If _btnPrompts IsNot Nothing Then _btnPrompts.Text = ItemText(If(compact, "📝", "📝 Prompts"))
         btnThinking.Text = ItemText(If(compact, "💭 Think", "💭 Think first"))
-        If _btnWeb IsNot Nothing Then _btnWeb.Text = ItemText(If(compact, "🌐 Web", "🌐 Web search"))
-        If _btnDocs IsNot Nothing Then _btnDocs.Text = ItemText(If(compact, "📚 Docs", "📚 My documents"))
-        If _btnImage IsNot Nothing Then _btnImage.Text = ItemText(If(compact, "🖼 Picture", "🖼 Picture mode"))
+        ' narrow windows: icons only (the tooltips still say what each one does)
+        If _btnWeb IsNot Nothing Then _btnWeb.Text = ItemText(If(compact, "🌐", "🌐 Web search"))
+        If _btnDocs IsNot Nothing Then _btnDocs.Text = ItemText(If(compact, "📚", "📚 My documents"))
+        If _btnImage IsNot Nothing Then _btnImage.Text = ItemText(If(compact, "🖼", "🖼 Picture mode"))
         If _btnTalk IsNot Nothing Then
             _btnTalk.Text = If(compact, "🎙", Localizer.T("🎙 Talk"))
             _btnTalk.Width = If(compact, 38, 78)

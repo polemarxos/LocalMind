@@ -133,9 +133,38 @@ Public Module Theme
     Private Function SetWindowTheme(hwnd As IntPtr, app As String, idList As String) As Integer
     End Function
 
+    <Runtime.InteropServices.DllImport("user32.dll")>
+    Private Function SendMessage(hwnd As IntPtr, msg As Integer, wParam As IntPtr, lParam As IntPtr) As IntPtr
+    End Function
+
+    ''' <summary>A progress bar in the app's colors (Windows draws it light green / white).</summary>
+    Public Sub StyleProgress(pb As ProgressBar)
+        Dim apply = Sub()
+                        Try
+                            SetWindowTheme(pb.Handle, "", "")
+                            SendMessage(pb.Handle, &H2001, IntPtr.Zero, New IntPtr(ColorTranslator.ToWin32(CRaised)))    ' PBM_SETBKCOLOR
+                            SendMessage(pb.Handle, &H409, IntPtr.Zero, New IntPtr(ColorTranslator.ToWin32(CAccent)))     ' PBM_SETBARCOLOR
+                        Catch
+                        End Try
+                    End Sub
+        If pb.IsHandleCreated Then apply() Else AddHandler pb.HandleCreated, Sub() apply()
+    End Sub
+
     ''' <summary>Dark scrollbars (Windows 10 1809+) for lists, grids, text boxes and panels on dark looks.</summary>
     Public Sub DarkScrollbars(c As Control)
+        If TypeOf c Is ProgressBar Then StyleProgress(CType(c, ProgressBar))
         If Not IsDark Then Return
+        If TypeOf c Is ListView Then
+            ' the header part right of the last column (Windows paints it white)
+            Dim lvApply = Sub()
+                              Try
+                                  Dim hdr = SendMessage(c.Handle, &H101F, IntPtr.Zero, IntPtr.Zero)      ' LVM_GETHEADER
+                                  If hdr <> IntPtr.Zero Then SetWindowTheme(hdr, "DarkMode_ItemsView", Nothing)
+                              Catch
+                              End Try
+                          End Sub
+            If c.IsHandleCreated Then lvApply() Else AddHandler c.HandleCreated, Sub() lvApply()
+        End If
         If Not (TypeOf c Is ListView OrElse TypeOf c Is DataGridView OrElse TypeOf c Is TextBoxBase OrElse TypeOf c Is ListBox OrElse
                 TypeOf c Is TreeView OrElse TypeOf c Is ScrollableControl) Then Return
         Dim apply = Sub()
@@ -520,7 +549,7 @@ Public Module Theme
                         g.FillRectangle(b, r.X + 12, headerH - 2, r.Width - 24, 3)
                     End Using
                 End If
-                DrawIconText(g, _t.TabPages(i).Text, If(selected, BoldFont, UiFont), r, If(selected, CText, CDim), True)
+                DrawIconText(g, _t.TabPages(i).Text.Replace("&&", "&"), If(selected, BoldFont, UiFont), r, If(selected, CText, CDim), True)
             Next
         End Sub
     End Class
@@ -529,9 +558,9 @@ Public Module Theme
     Public Sub StyleTabs(t As TabControl)
         _tabPainters.Add(New TabPainter(t))
         t.DrawMode = TabDrawMode.OwnerDrawFixed
-        t.SizeMode = TabSizeMode.Fixed
-        t.ItemSize = New Size(190, 38)
-        t.Padding = New Point(14, 4)
+        ' each tab as wide as its text (+ room for the icon), so all tabs fit
+        t.SizeMode = TabSizeMode.Normal
+        t.Padding = New Point(26, 10)
         AddHandler t.DrawItem,
             Sub(s, e)
                 Dim selected = (e.Index = t.SelectedIndex)
@@ -545,7 +574,7 @@ Public Module Theme
                         e.Graphics.FillRectangle(b, e.Bounds.X + 10, e.Bounds.Bottom - 3, e.Bounds.Width - 20, 3)
                     End Using
                 End If
-                DrawIconText(e.Graphics, t.TabPages(e.Index).Text, If(selected, BoldFont, UiFont), e.Bounds, If(selected, CText, CDim), True)
+                DrawIconText(e.Graphics, t.TabPages(e.Index).Text.Replace("&&", "&"), If(selected, BoldFont, UiFont), e.Bounds, If(selected, CText, CDim), True)
             End Sub
         For Each p As TabPage In t.TabPages
             p.BackColor = CPanel

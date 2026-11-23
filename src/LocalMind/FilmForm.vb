@@ -53,7 +53,7 @@ Public Class FilmForm
         Dim btnUp = Theme.MakeButton("▲"), btnDown = Theme.MakeButton("▼")
         Dim btnRemove = Theme.MakeButton(Localizer.T("🗑 Remove"))
         btnUp.Width = 40 : btnDown.Width = 40
-        top.Controls.AddRange({btnAdd, btnUp, btnDown, btnRemove, Theme.MakeLabel(Localizer.T("Picture shown for (s)")), numSeconds})
+        top.Controls.AddRange({btnAdd, btnUp, btnDown, btnRemove, Theme.MakeLabel(Localizer.T("Picture seconds")), numSeconds})
         Theme.StyleInput(numSeconds)
         lst.Columns.Add("#", 40)
         lst.Columns.Add(Localizer.T("Clip"), 420)

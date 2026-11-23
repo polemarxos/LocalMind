@@ -928,5 +928,9 @@
 "🧩 Video from reference pictures (people, places, things)": "🧩 Βίντεο από εικόνες αναφοράς (πρόσωπα, μέρη, αντικείμενα)",
 "Pictures = who and what to show. Describe the video, e.g. 'the woman from picture 1 walks the dog from picture 2 on a beach'…": "Εικόνες = ποιος και τι θα φαίνεται. Περιγράψτε το βίντεο, π.χ. 'η γυναίκα της εικόνας 1 βγάζει βόλτα τον σκύλο της εικόνας 2 στην παραλία'…",
 "Choose the reference pictures (who and what to show).": "Επιλέξτε τις εικόνες αναφοράς (ποιος και τι θα φαίνεται).",
-"Show the loading screen at start (updates, model list)": "Οθόνη φόρτωσης στην εκκίνηση (ενημερώσεις, λίστα μοντέλων)"
+"Show the loading screen at start (updates, model list)": "Οθόνη φόρτωσης στην εκκίνηση (ενημερώσεις, λίστα μοντέλων)",
+"Picture seconds": "Δευτερόλεπτα εικόνας",
+"OpenAI-compatible API at /v1 (for other apps)": "API συμβατό με OpenAI στο /v1 (για άλλες εφαρμογές)",
+"Something went wrong, but LocalMind keeps running:": "Κάτι πήγε στραβά, αλλά το LocalMind συνεχίζει να λειτουργεί:",
+"Details are saved in": "Οι λεπτομέρειες αποθηκεύτηκαν στο"
 }

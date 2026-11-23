@@ -37,7 +37,7 @@ Public Class LanForm
         txtPin = New TextBox() With {.Text = AppCore.Settings.LanPin, .Width = 120, .Font = New Font("Cascadia Code", 11.0!)}
         Dim btnNewPin = Theme.MakeButton("New PIN")
         chkPin = New CheckBox() With {.Text = "Require PIN (recommended)", .AutoSize = True, .Checked = AppCore.Settings.LanRequirePin}
-        chkApi = New CheckBox() With {.Text = "Also offer an OpenAI-compatible API at /v1 (for other apps)", .AutoSize = True, .Checked = AppCore.Settings.LanOpenAiApi}
+        chkApi = New CheckBox() With {.Text = "OpenAI-compatible API at /v1 (for other apps)", .AutoSize = True, .Checked = AppCore.Settings.LanOpenAiApi}
         Dim chkAuto As New CheckBox() With {.Text = "Start sharing automatically when the app opens", .AutoSize = True, .Checked = AppCore.Settings.LanEnabled}
         Theme.StyleInput(numPort)
         Theme.StyleInput(txtPin)
