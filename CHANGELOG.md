@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.9.1
+
+### New
+- **✔ Only models that fit my GPU** (Model Manager, both the chat and the Pictures & video tab): lists only models
+  that run fully on your graphics card with the file size picked for them; works together with every other
+  filter (category, uncensored, search…). On a PC without a graphics card it shows everything that runs.
+- More polished Model Manager: cleaner header, flat tabs with a blue underline, taller rows and roomier columns,
+  quieter grid lines, tidier downloads area.
+
 ## 2.9.0
 
 ### New
