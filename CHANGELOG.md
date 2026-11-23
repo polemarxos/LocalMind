@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.11.0
+
+### New (Image & video studio)
+- **📽 Storyboard:** write one shot per line (or write an idea and press ✨ Improve prompt to get the shots). LocalMind
+  makes every shot and joins them into one video. Each shot starts from the last frame of the shot before, so the
+  people and places carry on. With 🎭 Cast, a Wan VACE model gets the same cast sheet in every shot, and photo → video
+  models start from an opening scene that has the cast in it.
+- **🎯 Video between two pictures:** you choose the first and the last frame, and the model makes the motion in between
+  (Wan 2.2 I2V A14B, or the new Wan 2.1 FLF2V 14B).
+- **🗣 Talking character:** a picture plus words (spoken with the default voice or one of your cloned voices) or a
+  recording. The new Wan 2.2 S2V 14B model moves the lips and face to match the voice. Long speech is made in
+  5-second pieces and joined, and the voice is added as the sound.
+- **⏩ Extend a video:** continues any video from its last frame (right-click a video in the gallery → Extend).
+- **✨ Enhance a video:** twice the size (frame by frame with an AI enlarger such as Real-ESRGAN if one is downloaded,
+  otherwise a sharp plain enlargement) and / or twice the frame rate for smoother motion. Keeps the sound.
+- **✨ Improve prompt:** a chat model rewrites your idea for the chosen model: tags for SDXL / SD 1.5, sentences for
+  FLUX / Qwen / Z-Image, motion and camera for video, or a list of shots for a storyboard. @Names stay as they are.
+
+### New (chat)
+- **🎭 Cast in the chat:** "make a picture of @Anna at @Old harbor" or "a video of @Max running" uses the saved look.
+  The description is added to the prompt. Picture models that combine pictures get the cast pictures, and for videos
+  an opening scene with the cast is made first and then animated.
+
+### Notes
+- Extending a video joins only the picture: the sound of the original is not kept.
+- Sharpening frame by frame with an AI enlarger is slow on long videos. Without one, Enhance takes seconds.
+
 ## 2.10.0
 
 ### New

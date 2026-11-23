@@ -332,7 +332,7 @@ def wan_a14b(rid, name, about, repo, conv_hi, conv_lo, input_mode, tasks, spd=No
 wan_a14b("wan2.2-t2v-a14b", "Wan 2.2 T2V A14B (video)", "Best-quality text-to-video (two 14B experts). Needs lots of RAM; GPU 12 GB+.",
          "QuantStack/Wan2.2-T2V-A14B-GGUF", r"wan2\.2_t2v_high_int8_ConvRot", r"wan2\.2_t2v_low_int8_ConvRot", "none", ["create"], WAN22_T2V_SPEED())
 wan_a14b("wan2.2-i2v-a14b", "Wan 2.2 I2V A14B (video)", "Animate a photo into a video clip (two 14B experts). GPU 12 GB+.",
-         "QuantStack/Wan2.2-I2V-A14B-GGUF", r"^diffusion_models/wan2\.2_i2v_high_int8_convrot", r"^diffusion_models/wan2\.2_i2v_low_int8_convrot", "required", ["animate"], WAN22_I2V_SPEED())
+         "QuantStack/Wan2.2-I2V-A14B-GGUF", r"^diffusion_models/wan2\.2_i2v_high_int8_convrot", r"^diffusion_models/wan2\.2_i2v_low_int8_convrot", "required", ["animate","first-last"], WAN22_I2V_SPEED())
 
 # ── uncensored video ──
 NSFW_I2V = [lora("lopi999/Wan2.2-I2V_General-NSFW-LoRA", r"NSFW-22-L-e8\.safetensors$", "builtin-wan22-i2v-nsfw-low"),
@@ -340,7 +340,7 @@ NSFW_I2V = [lora("lopi999/Wan2.2-I2V_General-NSFW-LoRA", r"NSFW-22-L-e8\.safeten
 wan_a14b("wan2.2-i2v-a14b-nsfw", "Wan 2.2 I2V A14B Uncensored (video)",
          "Animate a photo with no content filter: Wan 2.2 with an NSFW LoRA (uses the same base files as Wan 2.2 I2V). GPU 12 GB+.",
          "QuantStack/Wan2.2-I2V-A14B-GGUF", r"^diffusion_models/wan2\.2_i2v_high_int8_convrot", r"^diffusion_models/wan2\.2_i2v_low_int8_convrot",
-         "required", ["animate"], WAN22_I2V_SPEED(), uncensored=True, loras=[l for l in NSFW_I2V if l])
+         "required", ["animate","first-last"], WAN22_I2V_SPEED(), uncensored=True, loras=[l for l in NSFW_I2V if l])
 nsfw14 = one("NSFW-API/NSFW_Wan_14b", r"^nsfw_wan_14b_e15_q4_k\.gguf$")
 recipe(id="nsfw-wan-14b-t2v", name="NSFW Wan 14B (text to video)", kind="video", family="Wan", uncensored=True,
        about="Uncensored text-to-video: Wan 2.1 14B fine-tuned without a content filter. GPU 12 GB+.",
@@ -417,6 +417,25 @@ for res, h, w in (("480p", 480, 832), ("720p", 720, 1280)):
            speed=speed("⚡ Lightx2v · 4 steps", 4, 1.0, [lora("lightx2v/Wan2.1-Distill-Loras", r"wan2\.1_i2v_lora_rank64_lightx2v_4step\.safetensors$", "speed-wan21-i2v-14b-lightx2v-4step")]),
            variants=variants_list(gguf_variants(f"city96/Wan2.1-I2V-14B-{res.upper()}-gguf")),
            parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5), dict(role="clip_vision", **CLIP_VISION_H)] if CLIP_VISION_H else [])
+
+# ── talking video (speech to video) and first + last frame ─────────────────
+WAV2VEC = one("Comfy-Org/Wan_2.2_ComfyUI_Repackaged", r"audio_encoders/wav2vec2_large_english_fp16\.safetensors$")
+if WAV2VEC and CLIP_VISION_H:
+    recipe(id="wan2.2-s2v-14b", name="Wan 2.2 S2V 14B (talking video)", kind="video", family="Wan-S2V",
+           about="Makes the person in a picture talk or sing to a voice recording, with matching lip and face movement. "
+                 "Longer speech is made in 5-second pieces and joined. GPU 12 GB+.",
+           steps=20, cfg=6.0, flowShift=3, width=832, height=480, frames=81, negative=WAN_NEG, input="required", fps=16,
+           tasks=["talk"],
+           speed=speed("⚡ Lightning · 4 steps", 4, 1.0, [lora("lightx2v/Wan2.2-Distill-Loras", r"wan2\.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step", "speed-wan22-i2v-low-4step")]),
+           variants=variants_list(gguf_variants("QuantStack/Wan2.2-S2V-14B-GGUF")) + convrot("noctrex/Wan2.2-S2V-14B-int8_convrot", r"\.safetensors$"),
+           parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5), dict(role="audio-encoder", **WAV2VEC)])
+    recipe(id="wan2.1-flf2v-14b-720p", name="Wan 2.1 FLF2V 14B (first + last frame)", kind="video", family="Wan",
+           about="Makes the motion between a start picture and an end picture you choose (720p model). GPU 12 GB+.",
+           steps=20, cfg=6.0, flowShift=3, width=832, height=480, frames=33, negative=WAN_NEG, fps=16, input="required",
+           tasks=["first-last"],
+           speed=speed("⚡ Lightx2v · 4 steps", 4, 1.0, [lora("lightx2v/Wan2.1-Distill-Loras", r"wan2\.1_i2v_lora_rank64_lightx2v_4step\.safetensors$", "speed-wan21-i2v-14b-lightx2v-4step")]),
+           variants=variants_list(gguf_variants("city96/Wan2.1-FLF2V-14B-720P-gguf")),
+           parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5), dict(role="clip_vision", **CLIP_VISION_H)])
 
 # ── community models from Hugging Face (copy a family's settings) ───────────
 import media_auto

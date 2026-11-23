@@ -2738,7 +2738,8 @@
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "required",
   "tasks": [
-   "animate"
+   "animate",
+   "first-last"
   ],
   "fps": 16,
   "speed": {
@@ -2962,7 +2963,8 @@
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "required",
   "tasks": [
-   "animate"
+   "animate",
+   "first-last"
   ],
   "fps": 16,
   "speed": {
@@ -4532,6 +4534,334 @@
   ],
   "dl": 24217,
   "repo": "city96/Wan2.1-I2V-14B-720P-gguf"
+ },
+ {
+  "id": "wan2.2-s2v-14b",
+  "name": "Wan 2.2 S2V 14B (talking video)",
+  "kind": "video",
+  "family": "Wan-S2V",
+  "about": "Makes the person in a picture talk or sing to a voice recording, with matching lip and face movement. Longer speech is made in 5-second pieces and joined. GPU 12 GB+.",
+  "steps": 20,
+  "cfg": 6.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 81,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "required",
+  "fps": 16,
+  "tasks": [
+   "talk"
+  ],
+  "speed": {
+   "label": "⚡ Lightning · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-i2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+     "size": 739472104
+    }
+   ]
+  },
+  "sampler": "euler",
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q2_K.gguf",
+    "size": 9510925920
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q3_K_S.gguf",
+    "size": 10724980320
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q3_K_M.gguf",
+    "size": 11386074720
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q4_0.gguf",
+    "size": 12768065120
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q4_K_S.gguf",
+    "size": 12958119520
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q4_1.gguf",
+    "size": 13469300320
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q4_K_M.gguf",
+    "size": 13861697120
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q5_K_S.gguf",
+    "size": 14347482720
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q5_0.gguf",
+    "size": 14524429920
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q5_K_M.gguf",
+    "size": 15002023520
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q5_1.gguf",
+    "size": 15225665120
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q6_K.gguf",
+    "size": 16213620320
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "noctrex/Wan2.2-S2V-14B-int8_convrot",
+    "path": "wan2.2_s2v_14B_int8_convrot.safetensors",
+    "size": 18550496738
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-S2V-14B-GGUF",
+    "path": "Wan2.2-S2V-14B-Q8_0.gguf",
+    "size": 19616577120
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   },
+   {
+    "role": "audio-encoder",
+    "repo": "Comfy-Org/Wan-2.2",
+    "path": "split_files/audio_encoders/wav2vec2_large_english_fp16.safetensors",
+    "size": 630997322
+   }
+  ],
+  "dl": 76480,
+  "repo": "QuantStack/Wan2.2-S2V-14B-GGUF"
+ },
+ {
+  "id": "wan2.1-flf2v-14b-720p",
+  "name": "Wan 2.1 FLF2V 14B (first + last frame)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Makes the motion between a start picture and an end picture you choose (720p model). GPU 12 GB+.",
+  "steps": 20,
+  "cfg": 6.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "fps": 16,
+  "input": "required",
+  "tasks": [
+   "first-last"
+  ],
+  "speed": {
+   "label": "⚡ Lightx2v · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan21-i2v-14b-lightx2v-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.1-Distill-Loras",
+     "path": "wan2.1_i2v_lora_rank64_lightx2v_4step.safetensors",
+     "size": 739472104
+    }
+   ]
+  },
+  "sampler": "euler",
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q3_K_S.gguf",
+    "size": 7928571328
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q3_K_M.gguf",
+    "size": 8589665728
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q4_0.gguf",
+    "size": 10250184128
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q4_K_S.gguf",
+    "size": 10440238528
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q4_1.gguf",
+    "size": 11082491328
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q4_K_M.gguf",
+    "size": 11343816128
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q5_K_S.gguf",
+    "size": 12091745728
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q5_0.gguf",
+    "size": 12268692928
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q5_K_M.gguf",
+    "size": 12746286528
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q5_1.gguf",
+    "size": 13101000128
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q6_K.gguf",
+    "size": 14236411328
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-Q8_0.gguf",
+    "size": 18147272128
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-BF16.gguf",
+    "size": 33286088128
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf",
+    "path": "wan2.1-flf2v-14b-720p-F16.gguf",
+    "size": 33286088128
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   },
+   {
+    "role": "clip_vision",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/clip_vision/clip_vision_h.safetensors",
+    "size": 1264219396
+   }
+  ],
+  "dl": 34824,
+  "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf"
  },
  {
   "id": "hf-atomicchat-qwen-image-2-1-turbo-uncensored-gguf-qwen-image-2-1-turbo-uncensored-ad",
@@ -40287,7 +40617,8 @@
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "required",
   "tasks": [
-   "animate"
+   "animate",
+   "first-last"
   ],
   "fps": 16,
   "speed": {
@@ -41308,7 +41639,8 @@
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "required",
   "tasks": [
-   "animate"
+   "animate",
+   "first-last"
   ],
   "fps": 16,
   "speed": {
@@ -41865,7 +42197,8 @@
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "required",
   "tasks": [
-   "animate"
+   "animate",
+   "first-last"
   ],
   "fps": 16,
   "speed": {
@@ -59682,7 +60015,8 @@
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "input": "required",
   "tasks": [
-   "animate"
+   "animate",
+   "first-last"
   ],
   "fps": 16,
   "speed": {

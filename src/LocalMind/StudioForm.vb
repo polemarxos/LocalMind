@@ -31,7 +31,12 @@ Public Class StudioForm
         ("upscale", "🔍 Enlarge a picture (4×)", False),
         ("create", "🎬 Create a video", True),
         ("animate", "🎞 Animate a picture", True),
-        ("video-edit", "✂ Edit / restyle a video", True)}
+        ("video-edit", "✂ Edit / restyle a video", True),
+        ("storyboard", "📽 Storyboard — several shots, one video", True),
+        ("first-last", "🎯 Video between two pictures (first → last)", True),
+        ("talk", "🗣 Talking character (picture + voice)", True),
+        ("extend", "⏩ Extend a video", True),
+        ("enhance", "✨ Enhance a video (sharper, smoother)", True)}
 
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
     Private ReadOnly cmbShow, cmbTask, cmbVariant, cmbSize As ComboBox
@@ -46,11 +51,18 @@ Public Class StudioForm
     Private ReadOnly btnStop As Button
     Private ReadOnly lblQueue As Label
     ''' <summary>Jobs waiting. Before (optional) makes the start picture first, e.g. a scene with the cast for a video.</summary>
-    Private ReadOnly _queue As New Queue(Of (Req As MediaStudio.GenerateRequest, Label As String, Before As MediaStudio.GenerateRequest))
+    Private ReadOnly _queue As New Queue(Of (Label As String, Work As Func(Of Action(Of Integer, String), CancellationToken, Task(Of List(Of String)))))
     ''' <summary>Characters and locations picked for the next jobs.</summary>
     Private ReadOnly _cast As New List(Of CastLibrary.CastMember)
     Private btnCast As Button
     Private lblCast As Label
+    ' talking character: the words and the voice (or a recording); enhance: what to improve
+    Private txtSay As TextBox
+    Private cmbVoice As ComboBox
+    Private chkSharper, chkSmooth As CheckBox
+    Private _audioPath As String
+    Private ReadOnly _voiceNames As New List(Of String)
+    Private _fillingVoices As Boolean
     Private _running As Boolean
 
     ''' <summary>Style presets: words added to the end of the prompt.</summary>
@@ -198,6 +210,38 @@ Public Class StudioForm
         lblCast = Theme.MakeLabel("", dim_:=True)
         AddHandler btnCast.Click, Sub() PickCast()
         opts.Controls.AddRange({btnCast, lblCast})
+        txtSay = New TextBox() With {.Width = 360, .PlaceholderText = Localizer.T("Words to say (any language)…")}
+        Theme.StyleInput(txtSay)
+        cmbVoice = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 200}
+        Theme.StyleInput(cmbVoice)
+        FillVoices()
+        AddHandler cmbVoice.DropDown, Sub()
+                                          ' voices saved in the music & voice studio meanwhile
+                                          Dim keep = cmbVoice.SelectedIndex
+                                          Dim wasRecording = keep = cmbVoice.Items.Count - 1
+                                          Dim name = PickedVoiceName()
+                                          FillVoices()
+                                          _fillingVoices = True
+                                          If wasRecording Then
+                                              cmbVoice.SelectedIndex = cmbVoice.Items.Count - 1
+                                          ElseIf name IsNot Nothing AndAlso _voiceNames.Contains(name) Then
+                                              cmbVoice.SelectedIndex = _voiceNames.IndexOf(name) + 1
+                                          End If
+                                          _fillingVoices = False
+                                      End Sub
+        AddHandler cmbVoice.SelectedIndexChanged, Sub()
+                                                      If _fillingVoices Then Return
+                                                      If cmbVoice.SelectedIndex = cmbVoice.Items.Count - 1 Then
+                                                          Using d As New OpenFileDialog() With {.Filter = "Audio|*.wav;*.mp3;*.m4a;*.ogg;*.flac;*.webm"}
+                                                              If d.ShowDialog(Me) = DialogResult.OK Then _audioPath = d.FileName
+                                                          End Using
+                                                          If _audioPath Is Nothing Then cmbVoice.SelectedIndex = 0
+                                                      End If
+                                                      UpdateTaskUi()
+                                                  End Sub
+        chkSharper = New CheckBox() With {.Text = Localizer.T("🔍 2× sharper"), .AutoSize = True, .ForeColor = Theme.CText, .Checked = True, .Margin = New Padding(8, 6, 4, 0)}
+        chkSmooth = New CheckBox() With {.Text = Localizer.T("🌊 2× smoother motion"), .AutoSize = True, .ForeColor = Theme.CText, .Checked = True, .Margin = New Padding(8, 6, 4, 0)}
+        opts.Controls.AddRange({txtSay, cmbVoice, chkSharper, chkSmooth})
         Dim genBar As New FlowLayoutPanel() With {.Dock = DockStyle.Fill}
         btnGenerate = Theme.MakeButton("🎨 Generate", primary:=True, width:=160)
         btnGenerate.Font = Theme.BoldFont
@@ -205,6 +249,9 @@ Public Class StudioForm
         Dim btnDescribe = Theme.MakeButton("📝 Describe picture")
         AddHandler btnDescribe.Click, Async Sub() Await DescribeAsync()
         genBar.Controls.Add(btnDescribe)
+        Dim btnImprove = Theme.MakeButton(Localizer.T("✨ Improve prompt"))
+        AddHandler btnImprove.Click, Async Sub() Await ImprovePromptAsync(btnImprove)
+        genBar.Controls.Add(btnImprove)
         btnStop = Theme.MakeButton("■ Stop")
         btnStop.Visible = False
         lblQueue = Theme.MakeLabel("")
@@ -305,6 +352,14 @@ Public Class StudioForm
                                       End Using
                                   End Sub
         AddHandler galleryMenu.Opening, Sub() miSound.Visible = AppCore.Settings.EnableAudio
+        Dim miExtend = galleryMenu.Items.Add(Localizer.T("⏩ Extend this video"))
+        AddHandler miExtend.Click, Sub() UseVideoFor("extend")
+        Dim miEnhance = galleryMenu.Items.Add(Localizer.T("✨ Enhance this video (sharper, smoother)"))
+        AddHandler miEnhance.Click, Sub() UseVideoFor("enhance")
+        AddHandler galleryMenu.Opening, Sub()
+                                            Dim isVid = gallery.SelectedItems.Count > 0 AndAlso IsVideoFile(CStr(gallery.SelectedItems(0).Tag))
+                                            miExtend.Visible = isVid : miEnhance.Visible = isVid
+                                        End Sub
         Dim miReuse = galleryMenu.Items.Add(Localizer.T("♻ Reuse these settings"))
         AddHandler miReuse.Click, Sub()
                                       If gallery.SelectedItems.Count > 0 Then ReuseSettings(CStr(gallery.SelectedItems(0).Tag))
@@ -328,6 +383,11 @@ Public Class StudioForm
 
     Protected Overrides Async Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        Dim previewTask = Environment.GetEnvironmentVariable("LOCALMIND_STUDIO_TASK")
+        If Not String.IsNullOrEmpty(previewTask) Then
+            Dim pi = Array.FindIndex(TaskList, Function(x) x.Id = previewTask AndAlso (x.Video OrElse previewTask <> "create"))
+            If pi >= 0 Then cmbTask.SelectedIndex = pi
+        End If
         FillGrid()
         UpdateTaskUi()
         LoadGallery()
@@ -345,9 +405,55 @@ Public Class StudioForm
     '──────────────── task ────────────────
     ''' <summary>An installed picture model that can combine reference pictures (makes cast scenes for videos).</summary>
     Private Function CastSceneRecipe() As MediaRecipe
-        Return MediaStudio.Recipes().Where(Function(x) Not x.IsVideo AndAlso x.Can("combine") AndAlso MediaStudio.InstalledVariant(x) IsNot Nothing).
-                                     OrderBy(Function(x) If(MediaStudio.Fit(x, MediaStudio.InstalledVariant(x), _hw) = FitLevel.Fits, 0, 1)).
-                                     ThenBy(Function(x) If(x.Speed IsNot Nothing AndAlso AppCore.Settings.MediaFast, x.Speed.Steps, x.Steps)).FirstOrDefault()
+        Return VideoMaker.CastSceneRecipe()
+    End Function
+
+    ''' <summary>Voices for a talking character: the default, your saved (cloned) voices, or a recording.</summary>
+    Private Sub FillVoices()
+        _fillingVoices = True
+        cmbVoice.Items.Clear()
+        _voiceNames.Clear()
+        cmbVoice.Items.Add(Localizer.T("🔊 Default voice"))
+        For Each v In VoiceLibrary.All()
+            _voiceNames.Add(v.Name)
+            cmbVoice.Items.Add("🎙 " & v.Name)
+        Next
+        cmbVoice.Items.Add(Localizer.T("🎵 Use a recording…"))
+        cmbVoice.SelectedIndex = 0
+        _fillingVoices = False
+    End Sub
+
+    Private Function UsesRecording() As Boolean
+        Return cmbVoice.SelectedIndex = cmbVoice.Items.Count - 1 AndAlso _audioPath IsNot Nothing
+    End Function
+
+    Private Function PickedVoiceName() As String
+        Dim i = cmbVoice.SelectedIndex - 1
+        Return If(i >= 0 AndAlso i < _voiceNames.Count, _voiceNames(i), Nothing)
+    End Function
+
+    ''' <summary>The gallery's video, for "Extend" or "Enhance".</summary>
+    Private Sub UseVideoFor(task As String)
+        If gallery.SelectedItems.Count = 0 Then Return
+        Dim f = CStr(gallery.SelectedItems(0).Tag)
+        If Not IsVideoFile(f) Then Return
+        cmbTask.SelectedIndex = Array.FindIndex(TaskList, Function(x) x.Id = task)
+        SetVideo(f)
+    End Sub
+
+    ''' <summary>Tasks that work on a video you choose.</summary>
+    Private Shared Function TakesVideo(t As String) As Boolean
+        Return t = "video-edit" OrElse t = "extend" OrElse t = "enhance"
+    End Function
+
+    ''' <summary>Which models a task lists.</summary>
+    Private Shared Function Suits(r As MediaRecipe, t As (Id As String, Label As String, Video As Boolean)) As Boolean
+        Select Case t.Id
+            Case "storyboard" : Return r.IsVideo AndAlso (r.Can("create") OrElse r.Can("animate"))
+            Case "extend" : Return r.IsVideo AndAlso r.Can("animate")
+            Case "enhance" : Return r.IsUpscaler
+            Case Else : Return r.Can(t.Id) AndAlso (r.IsUpscaler OrElse r.IsVideo = t.Video)
+        End Select
     End Function
 
     Private Sub PickCast()
@@ -385,15 +491,19 @@ Public Class StudioForm
         cmbStyle.Enabled = Not pictureOnly AndAlso t <> "restore"
         btnMask.Visible = t = "inpaint"
         btnMask.Text = If(_maskPath IsNot Nothing, Localizer.T("🖌 Area painted ✔"), Localizer.T("🖌 Paint area…"))
-        btnVideo.Visible = t = "video-edit"
-        lblVideo.Visible = t = "video-edit"
+        btnVideo.Visible = TakesVideo(t)
+        lblVideo.Visible = TakesVideo(t)
+        txtSay.Visible = t = "talk" AndAlso Not UsesRecording()
+        cmbVoice.Visible = t = "talk"
+        chkSharper.Visible = t = "enhance" : chkSmooth.Visible = t = "enhance"
         Dim usesControl = (t = "layout" OrElse t = "outline") AndAlso r IsNot Nothing AndAlso r.Parts.Any(Function(p) p.Control)
         lblStrength.Visible = t = "inpaint" OrElse t = "restyle" OrElse t = "video-edit" OrElse usesControl
         numStrength.Visible = lblStrength.Visible
         If t = "inpaint" Then numStrength.Value = 1D Else If t = "restyle" Then numStrength.Value = 0.6D Else If t = "video-edit" Then numStrength.Value = 1D Else If usesControl Then numStrength.Value = 0.8D
         Dim isVideo = CurrentTask().Video
-        lblFrames.Visible = isVideo : numFrames.Visible = isVideo
-        Dim upscale = pictureOnly
+        lblFrames.Visible = isVideo AndAlso t <> "talk" AndAlso t <> "enhance" : numFrames.Visible = lblFrames.Visible
+        lblFrames.Text = Localizer.T(If(t = "storyboard", "Frames per shot", "Frames"))
+        Dim upscale = pictureOnly OrElse t = "enhance"
         For Each c As Control In {numSteps, numCfg, numSeed, cmbSize, txtNeg, chkFast, btnLoras}
             c.Enabled = Not upscale
         Next
@@ -401,12 +511,17 @@ Public Class StudioForm
         txtPrompt.PlaceholderText = Localizer.T(If(t = "edit" OrElse t = "inpaint", "Describe the change, e.g. 'make it night' or 'replace the car with a horse'…",
                                                 If(t = "combine", "Say how to combine them, e.g. 'the person from picture 1 sitting in the room from picture 2'…",
                                                 If(t = "video-edit", "Describe the new look of the video, e.g. 'oil painting style'…",
+                                                If(t = "storyboard", "One shot per line, e.g. '@Anna walks into @Old harbor at dawn', next line 'Close-up: @Anna smiles'… Or write an idea and press ✨ Improve prompt to get the shots.",
+                                                If(t = "first-last", "Picture 1 = first frame, picture 2 = last frame. Describe the motion in between…",
+                                                If(t = "talk", "Picture = the person. Describe the scene (optional), e.g. 'a woman talking to the camera, warm light'…",
+                                                If(t = "extend", "What happens next in the video?…",
                                                 If(t = "pose", "Picture 1 = who, picture 2 = the pose. Add details if you like, e.g. 'in a park'…",
                                                 If(t = "layout", "Picture = the layout to copy. Describe the new picture, e.g. 'a cozy wooden cabin interior'…",
                                                 If(t = "outline", "Picture = your sketch. Describe what it should become…",
                                                 If(t = "restore", "(optional) anything special, e.g. 'colorize it'…",
-                                                If(pictureOnly, "(no description needed)", "Describe the picture or video (English works best)…")))))))))
-        btnGenerate.Text = Localizer.T(If(t = "upscale", "🔍 Enlarge", If(t = "remove-bg", "✂ Remove background", "🎨 Generate")))
+                                                If(pictureOnly OrElse t = "enhance", "(no description needed)", "Describe the picture or video (English works best)…")))))))))))))
+        btnGenerate.Text = Localizer.T(If(t = "upscale", "🔍 Enlarge", If(t = "remove-bg", "✂ Remove background", If(t = "enhance", "✨ Enhance", "🎨 Generate"))))
+        If t = "enhance" Then btnGenerate.Enabled = True
     End Sub
 
     ''' <summary>How many input pictures a task takes.</summary>
@@ -416,6 +531,10 @@ Public Class StudioForm
             Case "pose" : Return 2
             Case "edit", "inpaint", "restyle", "upscale", "animate", "layout", "outline", "restore", "remove-bg" : Return 1
             Case "video-edit" : Return 1          ' optional reference picture (e.g. a character)
+            Case "first-last" : Return 2
+            Case "talk" : Return 1
+            Case "storyboard" : Return 1          ' optional start picture
+            Case "extend", "enhance" : Return 0
             Case Else : Return 0
         End Select
     End Function
@@ -435,7 +554,7 @@ Public Class StudioForm
             Case Else : list = MediaStudio.Recipes()
         End Select
         Dim t = CurrentTask()
-        list = list.Where(Function(r) r.Can(t.Id) AndAlso (r.IsUpscaler OrElse r.IsVideo = t.Video)).ToList()
+        list = list.Where(Function(r) Suits(r, t)).ToList()
         grid.Rows.Clear()
         For Each r In list
             Dim v = MediaStudio.PickVariant(r, _hw)
@@ -447,7 +566,12 @@ Public Class StudioForm
             grid.Rows(i).Tag = r
             grid.Rows(i).Cells(3).Style.ForeColor = ModelManagerForm.FitColor(fit)
         Next
-        If grid.Rows.Count = 0 Then
+        If grid.Rows.Count = 0 AndAlso t.Id = "enhance" Then
+            lblAbout.Text = Localizer.T("No model is needed: LocalMind sharpens and smooths the video by itself. A picture enlarger (Real-ESRGAN, under 'All models') makes it even sharper.")
+            cmbVariant.Items.Clear()
+            btnGenerate.Enabled = True
+            btnDownload.Enabled = False
+        ElseIf grid.Rows.Count = 0 Then
             lblAbout.Text = Localizer.T("No model for this task fits fully on this GPU — choose 'All models' to see options that use system RAM.")
             cmbVariant.Items.Clear()
             btnGenerate.Enabled = False
@@ -537,7 +661,7 @@ Public Class StudioForm
         btnDownload.Enabled = Not installed AndAlso _cts Is Nothing
         btnDownload.Text = If(installed, Localizer.T("✔ Downloaded"), Localizer.T("⬇ Download") & $" ({Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v, fast))})")
         btnDelete.Enabled = installed AndAlso _cts Is Nothing
-        btnGenerate.Enabled = installed OrElse _cts IsNot Nothing
+        btnGenerate.Enabled = installed OrElse _cts IsNot Nothing OrElse CurrentTask().Id = "enhance"
     End Sub
 
     Private Async Function DownloadAsync() As Task
@@ -638,16 +762,24 @@ Public Class StudioForm
     Private Sub SetVideo(f As String)
         _videoPath = f
         lblVideo.Text = If(f Is Nothing, "", "🎞 " & Path.GetFileName(f))
-        Dim i = Array.FindIndex(TaskList, Function(t) t.Id = "video-edit")
-        If cmbTask.SelectedIndex <> i Then cmbTask.SelectedIndex = i
+        If Not TakesVideo(CurrentTask().Id) Then cmbTask.SelectedIndex = Array.FindIndex(TaskList, Function(t) t.Id = "video-edit")
+        UpdateTaskUi()
     End Sub
 
     '──────────────── generate ────────────────
     Private Async Function GenerateAsync() As Task
+        If CurrentTask().Id = "enhance" Then
+            If QueueEnhance() AndAlso Not _running Then Await RunQueueAsync()
+            Return
+        End If
         Dim r = SelectedRecipe()
         Dim v = SelectedVariant()
         If r Is Nothing OrElse v Is Nothing Then Return
         Dim t = CurrentTask().Id
+        If t = "storyboard" OrElse t = "first-last" OrElse t = "talk" OrElse t = "extend" Then
+            If QueueVideoJob(r, v, t) AndAlso Not _running Then Await RunQueueAsync()
+            Return
+        End If
         Dim pics = _inputs.Where(Function(x) x IsNot Nothing).ToList()
         ' 🎭 Cast: who and where (ticked, or written as @Name in the prompt)
         Dim cast = CastLibrary.Involved(txtPrompt.Text, _cast)
@@ -744,9 +876,215 @@ Public Class StudioForm
             .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = If(r.IsUpscaler OrElse r.Kind = "tool", New List(Of UserLora)(), ActiveLoras(r))}
 
         ' Queue it: jobs run one after another, so you can keep adding while one is running.
-        _queue.Enqueue((req, $"{r.Name}: {Truncate(If(txtPrompt.Text.Trim(), t), 40)}", before))
-        UpdateQueueLabel()
+        Dim pre = before
+        Dim work As Func(Of Action(Of Integer, String), CancellationToken, Task(Of List(Of String))) =
+            Async Function(prog, ct)
+                If pre IsNot Nothing Then
+                    ' the opening scene with the cast, then the video starts from it
+                    Await MediaStudio.GenerateAsync(pre, Sub(p, tx) prog(p, Localizer.T("🎭 Making the opening scene with the cast") & " — " & Localizer.T(tx)), ct)
+                    If pre.Outputs.Count > 0 Then req.InputImages = New List(Of String) From {pre.Outputs(0)}
+                End If
+                Await MediaStudio.GenerateAsync(req, prog, ct)
+                Dim outs As New List(Of String)(req.Outputs)
+                If pre IsNot Nothing Then outs.AddRange(pre.Outputs)
+                Return outs
+            End Function
+        Enqueue($"{r.Name}: {Truncate(If(txtPrompt.Text.Trim(), t), 40)}", work)
         If Not _running Then Await RunQueueAsync()
+    End Function
+
+    Private Sub Enqueue(label As String, work As Func(Of Action(Of Integer, String), CancellationToken, Task(Of List(Of String))))
+        _queue.Enqueue((label, work))
+        UpdateQueueLabel()
+    End Sub
+
+    '──────────────── longer video jobs ────────────────
+    ''' <summary>Width × height from the size box.</summary>
+    Private Function ChosenSize() As (W As Integer, H As Integer)
+        Dim w = 832, h = 480
+        If cmbSize.SelectedItem IsNot Nothing Then
+            Dim wh = cmbSize.SelectedItem.ToString().Split("×"c)
+            w = CInt(wh(0)) : h = CInt(wh(1))
+        End If
+        Return (w, h)
+    End Function
+
+    ''' <summary>About the chosen size, but with the picture's shape (multiples of 16).</summary>
+    Private Function ShapeOf(pic As String, w As Integer, h As Integer) As (W As Integer, H As Integer)
+        If pic Is Nothing Then Return (w, h)
+        Try
+            Using img = ImageTools.Load(pic)
+                Dim k = Math.Sqrt(CDbl(w) * h / (CDbl(img.Width) * img.Height))
+                Return (Math.Max(256, CInt(Math.Round(img.Width * k / 16)) * 16), Math.Max(256, CInt(Math.Round(img.Height * k / 16)) * 16))
+            End Using
+        Catch
+            Return (w, h)
+        End Try
+    End Function
+
+    ''' <summary>A request with the settings on screen (model, prompt with the cast and style, size, steps…).</summary>
+    Private Function BaseRequest(r As MediaRecipe, v As MediaVariant, task As String, prompt As String, size As (W As Integer, H As Integer)) As MediaStudio.GenerateRequest
+        Dim style = If(cmbStyle.Enabled, Styles(Math.Max(0, cmbStyle.SelectedIndex)).Words, "")
+        Return New MediaStudio.GenerateRequest With {
+            .Recipe = r, .Variant = v, .Task = task, .Prompt = CastLibrary.ComposePrompt(prompt, _cast) & style,
+            .Negative = If(String.IsNullOrWhiteSpace(txtNeg.Text), r.Negative, txtNeg.Text.Trim()),
+            .Width = size.W, .Height = size.H, .Steps = CInt(numSteps.Value), .Cfg = CDbl(numCfg.Value),
+            .Seed = CLng(numSeed.Value), .Frames = CInt(numFrames.Value),
+            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = ActiveLoras(r)}
+    End Function
+
+    ''' <summary>Storyboard, first → last, talking character or extend: checks the inputs and queues the job.</summary>
+    Private Function QueueVideoJob(r As MediaRecipe, v As MediaVariant, t As String) As Boolean
+        Dim pics = _inputs.Where(Function(x) x IsNot Nothing).ToList()
+        Dim size = ChosenSize()
+        Dim text = txtPrompt.Text.Trim()
+        Dim work As Func(Of Action(Of Integer, String), CancellationToken, Task(Of List(Of String))) = Nothing
+        Dim label = r.Name
+        Select Case t
+            Case "first-last"
+                If pics.Count < 2 Then
+                    Localizer.Box(Me, "Choose the first picture and the last picture.", "Pictures")
+                    Return False
+                End If
+                Dim req = BaseRequest(r, v, "first-last", If(text.Length > 0, text, "smooth natural motion from the first frame to the last frame"), ShapeOf(pics(0), size.W, size.H))
+                req.InputImages = pics.Take(2).ToList()
+                label &= ": " & Localizer.T("first → last")
+                work = Async Function(prog, ct)
+                           Await MediaStudio.GenerateAsync(req, prog, ct)
+                           Return req.Outputs
+                       End Function
+
+            Case "talk"
+                Dim cast = CastLibrary.Involved(text, _cast)
+                Dim pic = pics.FirstOrDefault()
+                If pic Is Nothing Then pic = cast.Where(Function(m) Not m.IsLocation).Select(Function(m) CastLibrary.ImagePaths(m).FirstOrDefault()).FirstOrDefault(Function(f) f IsNot Nothing)
+                If pic Is Nothing Then
+                    Localizer.Box(Me, "Choose the picture of the person who talks (click the picture box), or tick a cast character with a picture.", "Talking character")
+                    Return False
+                End If
+                Dim useRecording = UsesRecording()
+                Dim words = txtSay.Text.Trim()
+                Dim voiceName = PickedVoiceName()
+                If Not useRecording Then
+                    If words.Length = 0 Then
+                        txtSay.Focus()
+                        Localizer.Box(Me, "Write the words to say, or choose a recording in the voice list.", "Talking character")
+                        Return False
+                    End If
+                    If VideoMaker.SpeechModel(voiceName IsNot Nothing) Is Nothing Then
+                        Localizer.Box(Me, "To speak the words, download a voice model first (🎵 Music & voice), or choose a recording in the voice list.", "Talking character")
+                        Return False
+                    End If
+                End If
+                Dim req = BaseRequest(r, v, "talk", If(text.Length > 0, text, "a person is talking to the camera, natural lip movement and facial expressions"), ShapeOf(pic, size.W, size.H))
+                Dim recording = _audioPath
+                label &= ": " & Localizer.T("talking") & " — " & Truncate(If(useRecording, Path.GetFileName(recording), words), 30)
+                work = Async Function(prog, ct)
+                           Dim outs As New List(Of String)
+                           Dim audio = recording
+                           If Not useRecording Then
+                               audio = Await VideoMaker.SpeakAsync(words, voiceName, Sub(p, tx) prog(p \ 10, tx), ct)
+                               outs.Add(audio)
+                           End If
+                           outs.Insert(0, Await VideoMaker.TalkAsync(req, pic, audio, Sub(p, tx) prog(If(useRecording, p, 10 + p * 9 \ 10), tx), ct))
+                           Return outs
+                       End Function
+
+            Case "extend"
+                If String.IsNullOrEmpty(_videoPath) Then
+                    PickVideo()
+                    If String.IsNullOrEmpty(_videoPath) Then Return False
+                End If
+                If text.Length = 0 Then
+                    txtPrompt.Focus()
+                    Return False
+                End If
+                Dim video = _videoPath
+                Dim req = BaseRequest(r, v, "animate", text, size)
+                label &= ": " & Localizer.T("extend") & " " & Path.GetFileName(video)
+                work = Async Function(prog, ct)
+                           Dim info = Await VideoTools.InfoAsync(video, ct)
+                           If info.Width >= 256 AndAlso info.Height >= 256 Then
+                               ' the video's shape, at about the chosen size (an enlarged video would be too big to make)
+                               Dim k = Math.Min(1.0, Math.Sqrt(CDbl(req.Width) * req.Height / (CDbl(info.Width) * info.Height)))
+                               req.Width = Math.Max(256, CInt(info.Width * k) \ 16 * 16)
+                               req.Height = Math.Max(256, CInt(info.Height * k) \ 16 * 16)
+                           End If
+                           Return New List(Of String) From {Await VideoMaker.ExtendAsync(req, video, prog, ct)}
+                       End Function
+
+            Case "storyboard"
+                Dim shots = VideoMaker.SplitShots(text)
+                If shots.Count < 2 Then
+                    Localizer.Box(Me, "Write one shot per line (at least two), or write an idea and press ✨ Improve prompt to turn it into shots.", "Storyboard")
+                    Return False
+                End If
+                Dim style = If(cmbStyle.Enabled, Styles(Math.Max(0, cmbStyle.SelectedIndex)).Words, "")
+                Dim composed = shots.Select(Function(x) CastLibrary.ComposePrompt(x, _cast) & style).ToList()
+                Dim start = pics.FirstOrDefault()
+                If start IsNot Nothing Then size = ShapeOf(start, size.W, size.H)
+                Dim cast = CastLibrary.Involved(text, _cast)
+                Dim reference As String = Nothing
+                Dim opening As MediaStudio.GenerateRequest = Nothing
+                If start Is Nothing AndAlso cast.Count > 0 AndAlso CastLibrary.ReferencePictures(cast, 1).Count > 0 Then
+                    If r.Can("video-edit") Then
+                        reference = CastLibrary.ReferenceSheet(cast, size.W, size.H)        ' Wan VACE: the same cast in every shot
+                    ElseIf r.Can("animate") Then
+                        opening = VideoMaker.CastSceneRequest(shots(0), cast, size.W, size.H)
+                    End If
+                End If
+                If start Is Nothing AndAlso reference Is Nothing AndAlso opening Is Nothing AndAlso r.Input = "required" Then
+                    Localizer.Box(Me, "This model starts from a picture: choose a start picture (click the picture box), or tick cast members and download a picture model that combines pictures (Qwen-Image Edit, FLUX.2 klein or Qwen-Image 2.1).", "Storyboard")
+                    Return False
+                End If
+                Dim req = BaseRequest(r, v, "animate", "", size)
+                label &= ": " & Localizer.T("storyboard") & $" ({shots.Count} " & Localizer.T("shots") & ")"
+                work = Async Function(prog, ct) Await VideoMaker.StoryboardAsync(req, composed, start, reference, opening, prog, ct)
+        End Select
+        If work Is Nothing Then Return False
+        Enqueue(label, work)
+        Return True
+    End Function
+
+    ''' <summary>Sharper (AI enlarger if installed) and / or smoother (twice the frames) version of a video.</summary>
+    Private Function QueueEnhance() As Boolean
+        If String.IsNullOrEmpty(_videoPath) Then
+            PickVideo()
+            If String.IsNullOrEmpty(_videoPath) Then Return False
+        End If
+        If Not chkSharper.Checked AndAlso Not chkSmooth.Checked Then
+            Localizer.Box(Me, "Tick 'Sharper' or 'Smoother' (or both).", "Enhance")
+            Return False
+        End If
+        Dim sel = SelectedRecipe()
+        Dim upscaler = If(sel IsNot Nothing AndAlso sel.IsUpscaler AndAlso MediaStudio.InstalledVariant(sel) IsNot Nothing, sel, VideoMaker.InstalledUpscaler())
+        Dim video = _videoPath
+        Dim sharper = chkSharper.Checked, smoother = chkSmooth.Checked
+        Enqueue(Localizer.T("✨ Enhance") & " " & Path.GetFileName(video),
+                Async Function(prog, ct) New List(Of String) From {Await VideoMaker.EnhanceAsync(video, upscaler, sharper, smoother, prog, ct)})
+        Return True
+    End Function
+
+    ''' <summary>A chat model rewrites the idea as a strong prompt for this model (or as shots for a storyboard).</summary>
+    Private Async Function ImprovePromptAsync(btn As Button) As Task
+        Dim t = CurrentTask().Id
+        btn.Enabled = False
+        lblStatus.Text = Localizer.T("✨ Writing a better prompt…")
+        Try
+            Dim n = VideoMaker.SplitShots(txtPrompt.Text).Count
+            Dim shots = If(n >= 2, Math.Min(10, n), 4)
+            Dim text = Await VideoMaker.ImprovePromptAsync(txtPrompt.Text, SelectedRecipe(), t, shots, CancellationToken.None)
+            If text.Length > 0 Then
+                txtPrompt.Text = text.Replace(vbCrLf, vbLf).Replace(vbLf, vbCrLf)
+                lblStatus.Text = Localizer.T("Prompt improved — change anything you like and press Generate.")
+            Else
+                lblStatus.Text = Localizer.T("The chat model gave no answer — try again or choose another chat model.")
+            End If
+        Catch ex As Exception
+            lblStatus.Text = "⚠ " & ex.Message
+        Finally
+            btn.Enabled = True
+        End Try
     End Function
 
     ''' <summary>A vision chat model looks at picture 1 and writes a prompt for it (handy for restyling or "make more like this").</summary>
@@ -801,26 +1139,16 @@ Public Class StudioForm
                 btnDelete.Enabled = False
                 Dim sw = Diagnostics.Stopwatch.StartNew()
                 Try
-                    If job.Before IsNot Nothing Then
-                        ' the opening scene with the cast, then the video starts from it
-                        Await MediaStudio.GenerateAsync(job.Before, Sub(p, tx) BeginInvoke(Sub()
-                                                                                              prg.Value = Math.Max(0, Math.Min(100, p))
-                                                                                              lblStatus.Text = Localizer.T("🎭 Making the opening scene with the cast") & " — " & Localizer.T(tx)
-                                                                                          End Sub), _cts.Token)
-                        If job.Before.Outputs.Count > 0 Then
-                            AddToGallery(job.Before.Outputs(0), 0)
-                            job.Req.InputImages = New List(Of String) From {job.Before.Outputs(0)}
-                        End If
-                    End If
-                    Await MediaStudio.GenerateAsync(job.Req, Sub(p, tx) BeginInvoke(Sub()
-                                                                                       prg.Value = Math.Max(0, Math.Min(100, p))
-                                                                                       lblStatus.Text = job.Label & " — " & Localizer.T(tx)
-                                                                                   End Sub), _cts.Token)
+                    Dim outs = Await job.Work(Sub(p, tx) BeginInvoke(Sub()
+                                                                         prg.Value = Math.Max(0, Math.Min(100, p))
+                                                                         lblStatus.Text = job.Label & " — " & Localizer.T(tx)
+                                                                     End Sub), _cts.Token)
                     lblStatus.Text = Localizer.T("Done") & $" · {sw.Elapsed.TotalSeconds:0}s"
-                    For i = job.Req.Outputs.Count - 1 To 0 Step -1
-                        AddToGallery(job.Req.Outputs(i), 0)
+                    outs = outs.Where(Function(f) f IsNot Nothing AndAlso File.Exists(f)).ToList()
+                    For i = outs.Count - 1 To 0 Step -1
+                        AddToGallery(outs(i), 0)
                     Next
-                    If job.Req.Outputs.Count > 0 Then ShowOutput(job.Req.Outputs(0))
+                    If outs.Count > 0 Then ShowOutput(outs(0))
                 Catch ex As OperationCanceledException
                     lblStatus.Text = Localizer.T("Stopped")
                 Catch ex As Exception
@@ -892,7 +1220,7 @@ Public Class StudioForm
     Private Sub LoadGallery()
         gallery.Items.Clear()
         thumbs.Images.Clear()
-        Dim files = Directory.GetFiles(MediaStudio.OutputFolder).Where(Function(f) f.EndsWith(".png") OrElse f.EndsWith(".webm") OrElse f.EndsWith(".mp4")).
+        Dim files = Directory.GetFiles(MediaStudio.OutputFolder).Where(Function(f) (f.EndsWith(".png") OrElse f.EndsWith(".webm") OrElse f.EndsWith(".mp4")) AndAlso Not Path.GetFileName(f).Contains("-shot")).
                     OrderByDescending(Function(f) File.GetCreationTime(f)).Take(80)
         For Each f In files
             AddToGallery(f, -1)

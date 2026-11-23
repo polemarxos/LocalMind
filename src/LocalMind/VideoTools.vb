@@ -5,6 +5,7 @@ Imports System.Linq
 Imports System.Text
 Imports System.Threading
 Imports System.Threading.Tasks
+Imports System.Collections.Generic
 
 ''' <summary>
 ''' FFmpeg helpers for video editing: reads any video (MP4, MOV, MKV…) into frames for the video model,
@@ -106,6 +107,115 @@ Public Module VideoTools
             retry = True        ' the video has no sound of its own: use only the new soundtrack
         End Try
         If retry Then Await AddAudioAsync(video, audio, False, volume, output, progress, ct)
+    End Function
+
+    ''' <summary>Size, frame rate and length of a video (0 when unknown).</summary>
+    Public Async Function InfoAsync(file As String, ct As CancellationToken) As Task(Of (Width As Integer, Height As Integer, Fps As Double, Seconds As Double, HasAudio As Boolean))
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim psi As New ProcessStartInfo(ff, $"-hide_banner -i ""{file}""") With {.UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardError = True}
+        Using p = Process.Start(psi)
+            Dim err = Await p.StandardError.ReadToEndAsync(ct)
+            Await p.WaitForExitAsync(ct)
+            Dim inv = Globalization.CultureInfo.InvariantCulture
+            Dim w = 0, h = 0, fps = 0.0, secs = 0.0
+            Dim vline = err.Split({vbLf}, StringSplitOptions.None).FirstOrDefault(Function(l) l.Contains("Video:"))
+            If vline IsNot Nothing Then
+                Dim m = Text.RegularExpressions.Regex.Match(vline, ",\s*(\d{2,5})x(\d{2,5})")
+                If m.Success Then w = CInt(m.Groups(1).Value) : h = CInt(m.Groups(2).Value)
+                Dim f = Text.RegularExpressions.Regex.Match(vline, "([\d.]+)\s*fps")
+                If Not f.Success Then f = Text.RegularExpressions.Regex.Match(vline, "([\d.]+)\s*tbr")
+                If f.Success Then Double.TryParse(f.Groups(1).Value, Globalization.NumberStyles.Float, inv, fps)
+            End If
+            Dim d = Text.RegularExpressions.Regex.Match(err, "Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)")
+            If d.Success Then secs = CInt(d.Groups(1).Value) * 3600 + CInt(d.Groups(2).Value) * 60 + Double.Parse(d.Groups(3).Value, inv)
+            Return (w, h, If(fps > 0, fps, 16), secs, err.Contains("Audio:"))
+        End Using
+    End Function
+
+    ''' <summary>Saves the last frame of a video as a PNG (the start of the next shot).</summary>
+    Public Async Function LastFrameAsync(video As String, ct As CancellationToken) As Task(Of String)
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim png = Path.Combine(Path.GetTempPath(), $"localmind-last-{Guid.NewGuid():N}.png")
+        Try
+            Await RunAsync(ff, $"-hide_banner -loglevel error -y -sseof -1 -i ""{video}"" -update 1 ""{png}""", ct)
+        Catch ex As OperationCanceledException
+            Throw
+        Catch
+        End Try
+        If Not File.Exists(png) Then
+            ' very short clips: read the whole clip and keep the last frame
+            Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{video}"" -update 1 ""{png}""", ct)
+        End If
+        If Not File.Exists(png) Then Throw New Exception(Localizer.T("Could not read any frames from the video."))
+        Return png
+    End Function
+
+    ''' <summary>
+    ''' Joins clips into one MP4 (no sound), at the size and frame rate of the first one. With
+    ''' <paramref name="dropFirstFrame"/> the first frame of every following clip is left out: it repeats the
+    ''' last frame of the clip before (each shot starts from it).
+    ''' </summary>
+    Public Async Function JoinAsync(clips As IList(Of String), output As String, dropFirstFrame As Boolean,
+                                    progress As Action(Of String), ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(progress, ct)
+        If clips.Count = 0 Then Throw New Exception("Nothing to join.")
+        Dim first = Await InfoAsync(clips(0), ct)
+        Dim w = If(first.Width > 0, first.Width, 832), h = If(first.Height > 0, first.Height, 480)
+        Dim fps = first.Fps.ToString("0.###", Globalization.CultureInfo.InvariantCulture)
+        Dim inputs As New StringBuilder()
+        Dim filter As New StringBuilder()
+        For i = 0 To clips.Count - 1
+            inputs.Append($"-i ""{clips(i)}"" ")
+            Dim trim = If(dropFirstFrame AndAlso i > 0, "trim=start_frame=1,", "")
+            filter.Append($"[{i}:v]{trim}scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps={fps},setpts=PTS-STARTPTS[v{i}];")
+        Next
+        For i = 0 To clips.Count - 1
+            filter.Append($"[v{i}]")
+        Next
+        filter.Append($"concat=n={clips.Count}:v=1:a=0[v]")
+        progress?.Invoke("Joining the clips…")
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y {inputs}-filter_complex ""{filter}"" -map ""[v]"" -c:v libx264 -pix_fmt yuv420p -crf 18 -movflags +faststart ""{output}""", ct)
+    End Function
+
+    ''' <summary>A piece of a recording as 16 kHz mono WAV (what the talking-video model reads).</summary>
+    Public Async Function CutAudioAsync(audio As String, start As Double, seconds As Double, output As String, ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim inv = Globalization.CultureInfo.InvariantCulture
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y -ss {start.ToString("0.###", inv)} -t {seconds.ToString("0.###", inv)} -i ""{audio}"" -ar 16000 -ac 1 -c:a pcm_s16le ""{output}""", ct)
+    End Function
+
+    ''' <summary>Reads every frame of a video into a new temporary folder (frame_00001.png …). The caller deletes it.</summary>
+    Public Async Function AllFramesAsync(video As String, ct As CancellationToken) As Task(Of String)
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim dir = Path.Combine(Path.GetTempPath(), "localmind-frames-" & Guid.NewGuid().ToString("N").Substring(0, 8))
+        Directory.CreateDirectory(dir)
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{video}"" ""{Path.Combine(dir, "frame_%05d.png")}""", ct)
+        Return dir
+    End Function
+
+    ''' <summary>
+    ''' Sharper and / or smoother video: frames enlarged by an AI model (up_00001.png … in framesDir) or a plain 2×
+    ''' enlargement, and motion interpolation to twice the frame rate. Keeps the sound. Writes an MP4.
+    ''' </summary>
+    Public Async Function EnhanceAsync(video As String, framesDir As String, upscale As Boolean, smooth As Boolean,
+                                       output As String, progress As Action(Of String), ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(progress, ct)
+        Dim info = Await InfoAsync(video, ct)
+        Dim inv = Globalization.CultureInfo.InvariantCulture
+        Dim fps = info.Fps.ToString("0.###", inv)
+        Dim w2 = Math.Max(16, info.Width * 2), h2 = Math.Max(16, info.Height * 2)
+        Dim aiFrames = upscale AndAlso framesDir IsNot Nothing
+        Dim chain As New List(Of String)
+        Dim interp = $"minterpolate=fps={(info.Fps * 2).ToString("0.###", inv)}:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1"
+        ' cheapest order: AI frames (4×) are brought down to 2× first; plain videos get the new frames before enlarging
+        If aiFrames Then chain.Add($"scale={w2}:{h2}:flags=lanczos")
+        If smooth Then chain.Add(interp)
+        If upscale AndAlso Not aiFrames Then chain.Add($"scale={w2}:{h2}:flags=lanczos,unsharp=5:5:0.6:5:5:0.0")
+        chain.Add("format=yuv420p")
+        Dim src = If(aiFrames, $"-framerate {fps} -i ""{Path.Combine(framesDir, "up_%05d.png")}"" -i ""{video}""", $"-i ""{video}""")
+        Dim audio = If(info.HasAudio, If(aiFrames, "-map 1:a? ", "-map 0:a? ") & "-c:a aac ", "")
+        progress?.Invoke(If(smooth, "Making the motion smoother…", "Sharpening the video…"))
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y {src} -vf ""{String.Join(",", chain)}"" -map 0:v {audio}-c:v libx264 -crf 17 -preset veryfast -movflags +faststart ""{output}""", ct)
     End Function
 
     Private Async Function RunAsync(exe As String, args As String, ct As CancellationToken) As Task

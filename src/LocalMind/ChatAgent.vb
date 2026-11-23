@@ -50,10 +50,10 @@ Public Module ChatAgent
         Dim list As New JArray()
         If s.EnableImages Then
             list.Add(Tool("generate_image", "Create a picture with the local image model. Use it only when the user asks for a picture, drawing, photo, logo or illustration.",
-                New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the picture: subject, setting, style, lighting. Keep any text that must appear exactly."}}}},
+                New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the picture: subject, setting, style, lighting. Keep any text that must appear exactly. Keep every @Name exactly as the user wrote it (saved characters and places)."}}}},
                 {"prompt"}))
             list.Add(Tool("generate_video", "Create a short video clip (a few seconds) with the local video model. If the user attached a photo, it is animated. Use it only when the user asks for a video, clip or animation.",
-                New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the video: subject, action and motion, camera movement, setting, style, lighting."}}}},
+                New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the video: subject, action and motion, camera movement, setting, style, lighting. Keep every @Name exactly as the user wrote it (saved characters and places)."}}}},
                 {"prompt"}))
         End If
         If s.EnableAudio AndAlso AudioStudio.Models().Any(Function(m) m.IsMusic AndAlso AudioStudio.IsInstalled(m)) Then
@@ -108,6 +108,8 @@ Public Module ChatAgent
 
         Dim md As New Text.StringBuilder()
         Dim sources As List(Of SourceRef) = Nothing
+        ' 🎭 Cast: characters and places the user wrote as @Name keep their look (description + pictures)
+        Dim cast = CastLibrary.Involved(userText, New List(Of CastLibrary.CastMember)())
         For Each tc In result.ToolCalls
             Dim args As JObject
             Try
@@ -118,9 +120,9 @@ Public Module ChatAgent
             Try
                 Select Case tc.Name
                     Case "generate_image"
-                        md.AppendLine().AppendLine().Append(Await MakePictureAsync(If(args.Value(Of String)("prompt"), ""), Nothing, status, ct))
+                        md.AppendLine().AppendLine().Append(Await MakePictureAsync(If(args.Value(Of String)("prompt"), ""), Nothing, status, ct, cast))
                     Case "generate_video"
-                        md.AppendLine().AppendLine().Append(Await MakeVideoAsync(If(args.Value(Of String)("prompt"), ""), LastPhoto(payload), status, ct))
+                        md.AppendLine().AppendLine().Append(Await MakeVideoAsync(If(args.Value(Of String)("prompt"), ""), LastPhoto(payload), status, ct, cast))
                     Case "make_song"
                         md.AppendLine().AppendLine().Append(Await MakeSongAsync(If(args.Value(Of String)("style"), ""), args.Value(Of String)("lyrics"), status, ct))
                     Case "web_search"
@@ -160,15 +162,29 @@ Public Module ChatAgent
     End Function
 
     ''' <summary>Makes a picture (or edits the photo) and returns Markdown that shows it.</summary>
-    Public Async Function MakePictureAsync(prompt As String, photoFile As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)
+    Public Async Function MakePictureAsync(prompt As String, photoFile As String, status As Action(Of String), ct As CancellationToken,
+                                           Optional cast As List(Of CastLibrary.CastMember) = Nothing) As Task(Of String)
+        cast = If(cast, New List(Of CastLibrary.CastMember)())
+        If cast.Count > 0 Then prompt = CastLibrary.ComposePrompt(prompt, cast)
+        Dim castPics = If(photoFile Is Nothing, CastLibrary.ReferencePictures(cast, 3), New List(Of String)())
         Dim r = PickImageRecipe(photoFile IsNot Nothing)
+        Dim combine = False
+        If castPics.Count > 0 Then
+            ' a model that takes reference pictures puts the same faces and places in the picture
+            Dim c = VideoMaker.CastSceneRecipe()
+            If c IsNot Nothing Then
+                r = If(r IsNot Nothing AndAlso r.Can("combine"), r, c)
+                combine = True
+            End If
+        End If
         If r Is Nothing Then Return Localizer.T("(No picture model is downloaded yet — open 🎨 Create to get one.)")
         Dim v = MediaStudio.InstalledVariant(r)
         Dim fast = AppCore.Settings.MediaFast AndAlso r.Speed IsNot Nothing
         status?.Invoke(If(photoFile IsNot Nothing, "Editing the picture…", "Drawing…"))
         Dim req As New MediaStudio.GenerateRequest With {
             .Recipe = r, .Variant = v, .Prompt = If(String.IsNullOrWhiteSpace(prompt), "a beautiful picture", prompt), .Negative = r.Negative,
-            .Task = MediaStudio.GuessTask(r, photoFile IsNot Nothing, False, False),
+            .Task = If(combine, "combine", MediaStudio.GuessTask(r, photoFile IsNot Nothing, False, False)),
+            .InputImages = If(combine, castPics.Take(Math.Max(1, r.Refs)).ToList(), New List(Of String)()),
             .Width = If(r.Width > 0, r.Width, 1024), .Height = If(r.Height > 0, r.Height, 1024),
             .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast, .Strength = 0.6,
             .InputImage = photoFile, .Loras = LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()}
@@ -202,7 +218,21 @@ Public Module ChatAgent
     End Function
 
     ''' <summary>Makes a short video (animates the photo if one is given) and returns Markdown with a player.</summary>
-    Public Async Function MakeVideoAsync(prompt As String, photoFile As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)
+    Public Async Function MakeVideoAsync(prompt As String, photoFile As String, status As Action(Of String), ct As CancellationToken,
+                                         Optional cast As List(Of CastLibrary.CastMember) = Nothing) As Task(Of String)
+        cast = If(cast, New List(Of CastLibrary.CastMember)())
+        If cast.Count > 0 AndAlso photoFile Is Nothing Then
+            ' with the cast: first the opening scene with their pictures, then it is animated
+            Dim animator = PickVideoRecipe(True)
+            If animator IsNot Nothing AndAlso animator.Can("animate") Then
+                Dim scene = VideoMaker.CastSceneRequest(prompt, cast, If(animator.Width > 0, animator.Width, 832), If(animator.Height > 0, animator.Height, 480))
+                If scene IsNot Nothing Then
+                    status?.Invoke("🎭 Making the opening scene with the cast…")
+                    photoFile = Await MediaStudio.GenerateAsync(scene, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
+                End If
+            End If
+        End If
+        If cast.Count > 0 Then prompt = CastLibrary.ComposePrompt(prompt, cast)
         Dim r = PickVideoRecipe(photoFile IsNot Nothing)
         If r Is Nothing Then
             Dim animOnly = MediaStudio.Recipes().Any(Function(x) x.IsVideo AndAlso MediaStudio.InstalledVariant(x) IsNot Nothing)

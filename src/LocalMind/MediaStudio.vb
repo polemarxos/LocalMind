@@ -489,6 +489,21 @@ Public Module MediaStudio
         Public Property Outputs As New List(Of String)()
         ''' <summary>The user's own LoRAs to apply (their trigger words are added to the prompt).</summary>
         Public Property Loras As New List(Of UserLora)()
+        ''' <summary>first-last: the picture the video ends on (or picture 2 of InputImages).</summary>
+        Public Property EndImage As String
+        ''' <summary>talk: the voice recording (WAV) that drives the mouth and face.</summary>
+        Public Property AudioFile As String
+        ''' <summary>Where to save the result (for steps of a longer job); empty = a new file in Outputs.</summary>
+        Public Property OutputPath As String
+
+        ''' <summary>A copy with its own lists (for the shots of a storyboard, the pieces of a talking video…).</summary>
+        Public Function Clone() As GenerateRequest
+            Dim c = CType(MemberwiseClone(), GenerateRequest)
+            c.InputImages = New List(Of String)(InputImages)
+            c.Loras = New List(Of UserLora)(Loras)
+            c.Outputs = New List(Of String)()
+            Return c
+        End Function
     End Class
 
     Private _proc As Process
@@ -547,7 +562,7 @@ Public Module MediaStudio
 
         Dim isVideoOut = r.IsVideo
         Dim stamp = $"{DateTime.Now:yyyyMMdd-HHmmss}-{r.Id}"
-        Dim out = Path.Combine(OutputFolder, stamp & If(isVideoOut, ".webm", ".png"))
+        Dim out = If(String.IsNullOrEmpty(req.OutputPath), Path.Combine(OutputFolder, stamp & If(isVideoOut, ".webm", ".png")), req.OutputPath)
         Dim a As New StringBuilder()
         Dim framesDir As String = Nothing
 
@@ -632,6 +647,14 @@ Public Module MediaStudio
                     If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} " & FormattableString.Invariant($"--strength {Math.Clamp(req.Strength, 0.05, 1.0)} "))
                 Case "animate"
                     If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} ")
+                Case "first-last"
+                    Dim lastPic = If(Not String.IsNullOrEmpty(req.EndImage) AndAlso File.Exists(req.EndImage), req.EndImage, imgs.Skip(1).FirstOrDefault())
+                    If imgs.Count = 0 OrElse lastPic Is Nothing Then Throw New Exception(Localizer.T("Choose the first and the last picture."))
+                    a.Append($"-i {Q(imgs(0))} --end-img {Q(lastPic)} ")
+                Case "talk"
+                    If imgs.Count = 0 Then Throw New Exception(Localizer.T("Choose the picture of the person who talks."))
+                    If String.IsNullOrEmpty(req.AudioFile) OrElse Not File.Exists(req.AudioFile) Then Throw New Exception(Localizer.T("Choose or make the voice recording first."))
+                    a.Append($"-i {Q(imgs(0))} --audio {Q(req.AudioFile)} ")
                 Case "video-edit"
                     If String.IsNullOrEmpty(req.InputVideo) OrElse Not File.Exists(req.InputVideo) Then Throw New Exception(Localizer.T("Choose a video to edit first."))
                     progress?.Invoke(0, "Reading the video…")
@@ -725,9 +748,11 @@ Public Module MediaStudio
             Next
         End If
         ' Remember how each result was made, so it can be made again or tweaked ("Reuse settings").
-        For i = 0 To req.Outputs.Count - 1
-            SaveSettingsFor(req.Outputs(i), req, job, req.Seed + i)
-        Next
+        If String.IsNullOrEmpty(req.OutputPath) Then
+            For i = 0 To req.Outputs.Count - 1
+                SaveSettingsFor(req.Outputs(i), req, job, req.Seed + i)
+            Next
+        End If
         progress?.Invoke(100, "Done")
         Return out
     End Function

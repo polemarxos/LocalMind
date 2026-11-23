@@ -73,6 +73,15 @@ jobs:
                 Shot "window-$pv"
                 Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
               }
+              foreach ($tk in @('storyboard', 'talk', 'enhance')) {
+                $env:LOCALMIND_PREVIEW = 'studio'
+                $env:LOCALMIND_STUDIO_TASK = $tk
+                $p = Start-Process publish/LocalMind.exe -PassThru
+                Start-Sleep -Seconds 25
+                Shot "studio-$tk"
+                Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
+              }
+              $env:LOCALMIND_STUDIO_TASK = ''
               $env:LOCALMIND_PREVIEW = ''
 
             }

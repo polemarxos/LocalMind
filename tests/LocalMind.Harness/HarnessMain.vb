@@ -608,6 +608,98 @@ Module HarnessMain
             Check(msg.Contains("video model"), "no video model yet: a helpful note instead of an error", msg)
         End If
 
+        If only = "v211" Then
+            Console.WriteLine("== 2.11: storyboard, first → last, talking characters, extend, enhance, cast in chat")
+            Check(VideoMaker.FramesFor(5, 16, 81) = 81 AndAlso VideoMaker.FramesFor(1.2, 16, 81) = 21 AndAlso VideoMaker.FramesFor(0.05, 16, 81) = 5 AndAlso
+                  VideoMaker.FramesFor(9, 16, 81) = 81, "frame counts are 4n+1 and capped",
+                  $"{VideoMaker.FramesFor(5, 16, 81)} {VideoMaker.FramesFor(1.2, 16, 81)} {VideoMaker.FramesFor(0.05, 16, 81)}")
+            Dim shots = VideoMaker.SplitShots("1. a cat wakes up" & vbCrLf & "- it stretches" & vbLf & "Shot 3: it jumps" & vbCrLf & vbCrLf & "  2) it runs away  " & vbLf & "Πλάνο 5: τέλος")
+            Check(shots.SequenceEqual({"a cat wakes up", "it stretches", "it jumps", "it runs away", "τέλος"}), "storyboard shots: one per line, numbers and bullets removed", String.Join(" | ", shots))
+            Dim s2v = MediaStudio.Recipes().FirstOrDefault(Function(r) r.Id = "wan2.2-s2v-14b")
+            Check(s2v IsNot Nothing AndAlso s2v.IsVideo AndAlso s2v.Can("talk") AndAlso s2v.Parts.Any(Function(p) p.Role = "audio-encoder") AndAlso s2v.Variants.Count >= 5,
+                  "talking-video model (Wan 2.2 S2V) with its voice encoder", If(s2v Is Nothing, "missing", String.Join(", ", s2v.Variants.Select(Function(v) v.Label))))
+            Dim flf = MediaStudio.Recipes().FirstOrDefault(Function(r) r.Id = "wan2.1-flf2v-14b-720p")
+            Check(flf IsNot Nothing AndAlso flf.Can("first-last") AndAlso flf.Parts.Any(Function(p) p.Role = "clip_vision") AndAlso
+                  MediaStudio.Recipes().First(Function(r) r.Id = "wan2.2-i2v-a14b").Can("first-last"), "first → last frame models (Wan 2.1 FLF2V, Wan 2.2 I2V)")
+            Check(Not MediaStudio.Recipes().Any(Function(r) r.Can("talk") AndAlso (r.Can("create") OrElse r.Can("animate"))), "the talking model is only offered for talking")
+            Check(ChatAgent.PickVideoRecipe(False) Is Nothing OrElse Not ChatAgent.PickVideoRecipe(False).Can("talk"), "the chat never picks the talking model for a plain video")
+
+            ' Video helpers on real files (ffmpeg)
+            Dim tmp = Path.Combine(Path.GetTempPath(), "lm-v211")
+            If Directory.Exists(tmp) Then Directory.Delete(tmp, True)
+            Directory.CreateDirectory(tmp)
+            Dim ff = Await VideoTools.EnsureFfmpegAsync(Nothing, CancellationToken.None)
+            Dim mk = Sub(cmd As String)
+                         Using p = Diagnostics.Process.Start(New Diagnostics.ProcessStartInfo(ff, "-hide_banner -loglevel error -y " & cmd) With {.UseShellExecute = False, .RedirectStandardError = True})
+                             p.StandardError.ReadToEnd()
+                             p.WaitForExit()
+                         End Using
+                     End Sub
+            Dim a = Path.Combine(tmp, "a.webm"), b = Path.Combine(tmp, "b.webm"), snd = Path.Combine(tmp, "voice.wav")
+            mk($"-f lavfi -i testsrc=size=64x48:rate=16:duration=2 -c:v libvpx-vp9 -b:v 200k ""{a}""")
+            mk($"-f lavfi -i testsrc2=size=96x64:rate=16:duration=1 -c:v libvpx-vp9 -b:v 200k ""{b}""")
+            mk($"-f lavfi -i sine=frequency=440:duration=7 -ar 44100 ""{snd}""")
+            Dim ia = Await VideoTools.InfoAsync(a, CancellationToken.None)
+            Check(ia.Width = 64 AndAlso ia.Height = 48 AndAlso Math.Abs(ia.Fps - 16) < 0.01 AndAlso Math.Abs(ia.Seconds - 2) < 0.2 AndAlso Not ia.HasAudio,
+                  "video size, frame rate and length are read", $"{ia.Width}x{ia.Height} {ia.Fps} fps {ia.Seconds:0.00}s audio={ia.HasAudio}")
+            Dim lastPng = Await VideoTools.LastFrameAsync(a, CancellationToken.None)
+            Check(File.Exists(lastPng) AndAlso New FileInfo(lastPng).Length > 100, "last frame saved (start of the next shot)", lastPng)
+            Dim joined = Path.Combine(tmp, "joined.mp4")
+            Await VideoTools.JoinAsync({a, b}, joined, True, Nothing, CancellationToken.None)
+            Dim ij = Await VideoTools.InfoAsync(joined, CancellationToken.None)
+            Check(ij.Width = 64 AndAlso ij.Height = 48 AndAlso Math.Abs(ij.Seconds - 47 / 16.0) < 0.15, "clips of different sizes joined (repeated first frame dropped)",
+                  $"{ij.Width}x{ij.Height} {ij.Seconds:0.000}s (expected {47 / 16.0:0.000}s)")
+            Dim piece = Path.Combine(tmp, "piece.wav")
+            Await VideoTools.CutAudioAsync(snd, 5, 5, piece, CancellationToken.None)
+            Dim ip = Await VideoTools.InfoAsync(piece, CancellationToken.None)
+            Check(Math.Abs(ip.Seconds - 2) < 0.1, "last 2 s of a 7 s recording cut for the talking model", $"{ip.Seconds:0.00}s")
+            Dim enh = Path.Combine(tmp, "enh.mp4")
+            Await VideoTools.EnhanceAsync(a, Nothing, True, True, enh, Nothing, CancellationToken.None)
+            Dim ie = Await VideoTools.InfoAsync(enh, CancellationToken.None)
+            Check(ie.Width = 128 AndAlso ie.Height = 96 AndAlso Math.Abs(ie.Fps - 32) < 0.01, "enhance: twice the size and twice the frame rate", $"{ie.Width}x{ie.Height} {ie.Fps} fps {ie.Seconds:0.00}s")
+            ' with sound: the sound is kept
+            Dim withSound = Path.Combine(tmp, "withsound.mp4")
+            Await VideoTools.AddAudioAsync(joined, snd, False, 1.0, withSound, Nothing, CancellationToken.None)
+            Dim enh2 = Path.Combine(tmp, "enh2.mp4")
+            Await VideoTools.EnhanceAsync(withSound, Nothing, False, True, enh2, Nothing, CancellationToken.None)
+            Dim ie2 = Await VideoTools.InfoAsync(enh2, CancellationToken.None)
+            Check(ie2.HasAudio AndAlso ie2.Width = 64 AndAlso Math.Abs(ie2.Fps - 32) < 0.01, "smoother only: same size, sound kept", $"{ie2.Width}x{ie2.Height} {ie2.Fps} fps audio={ie2.HasAudio}")
+
+            ' AI enlarger frame by frame (Real-ESRGAN with sd-cli)
+            Dim up = MediaStudio.Recipes().FirstOrDefault(Function(r) r.Id = "upscale-realesrgan")
+            If up IsNot Nothing Then
+              Try
+                Await MediaStudio.DownloadAsync(up, up.Variants(0), Sub(p, t) Return, CancellationToken.None)
+                Dim tiny = Path.Combine(tmp, "tiny.webm")
+                mk($"-f lavfi -i testsrc=size=64x48:rate=8:duration=0.5 -c:v libvpx-vp9 -b:v 200k ""{tiny}""")
+                Dim outAi = Await VideoMaker.EnhanceAsync(tiny, up, True, False, Sub(p, t) Return, CancellationToken.None)
+                Dim iai = Await VideoTools.InfoAsync(outAi, CancellationToken.None)
+                Check(iai.Width = 128 AndAlso iai.Height = 96 AndAlso iai.Seconds > 0.3, "enhance with the AI enlarger, frame by frame", $"{outAi} {iai.Width}x{iai.Height} {iai.Seconds:0.00}s")
+                Check(Not Directory.GetFiles(MediaStudio.OutputFolder, "up_*.png").Any(), "no frame files left in the outputs folder")
+              Catch ex As Exception
+                Console.WriteLine("  SKIP AI enlarger (engine not available here): " & ex.Message)
+              End Try
+            End If
+
+            ' Cast in the chat: @Name gets the description; no picture model → a note, not an error
+            Dim castList = CastLibrary.Load()
+            castList.RemoveAll(Function(m) m.Name = "Zoe")
+            Dim zoe As New CastLibrary.CastMember With {.Name = "Zoe", .Description = "a girl with curly black hair and a yellow raincoat"}
+            castList.Add(zoe)
+            CastLibrary.Save(castList)
+            CastLibrary.AddImage(zoe, lastPng)
+            CastLibrary.Save(castList)
+            Dim inv = CastLibrary.Involved("draw @Zoe in the rain", New List(Of CastLibrary.CastMember)())
+            Check(inv.Count = 1 AndAlso CastLibrary.ComposePrompt("@Zoe jumps in a puddle", inv).Contains("yellow raincoat"), "@Name in a chat request brings the character's look",
+                  CastLibrary.ComposePrompt("@Zoe jumps in a puddle", inv))
+            Check(CastLibrary.ComposePrompt("Zoe jumps in a puddle", inv).Contains("Character: Zoe (a girl with curly"), "even when the chat model drops the @",
+                  CastLibrary.ComposePrompt("Zoe jumps in a puddle", inv))
+            Dim note = Await ChatAgent.MakePictureAsync("@Zoe in the rain", Nothing, Sub(t) Return, CancellationToken.None, inv)
+            Check(note.Length > 0, "picture request with the cast runs", note.Split({vbLf}, StringSplitOptions.None)(0))
+            castList.RemoveAll(Function(m) m.Name = "Zoe")
+            CastLibrary.Save(castList)
+        End If
+
         If only = "community" Then
             Console.WriteLine("== A community model (downloaded and used like the hand-made ones)")
             Dim r = MediaStudio.Recipes().First(Function(x) x.Id = "hf-gsdf-counterfeit-v2-5")
