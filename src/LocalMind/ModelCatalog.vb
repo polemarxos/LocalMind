@@ -127,6 +127,8 @@ End Class
 Public Class RepoFiles
     Public Property Quants As New List(Of QuantOption)()
     Public Property Mmproj As RepoFile
+    ''' <summary>Multi-token-prediction head for faster generation (llama.cpp --spec-type draft-mtp).</summary>
+    Public Property Mtp As RepoFile
 End Class
 
 Public Module ModelCatalog
@@ -202,10 +204,10 @@ Public Module ModelCatalog
 
     Public Function FitText(f As FitLevel, Optional cpuOnly As Boolean = False) As String
         Select Case f
-            Case FitLevel.Fits : Return "✔ Fits in VRAM"
-            Case FitLevel.MoeOffload : Return "◐ MoE offload (good)"
-            Case FitLevel.PartialOffload : Return If(cpuOnly, "◐ Runs on CPU", "◐ GPU+CPU (slower)")
-            Case Else : Return "✖ Too big"
+            Case FitLevel.Fits : Return Localizer.T("✔ Fits in VRAM")
+            Case FitLevel.MoeOffload : Return Localizer.T("◐ MoE offload (good)")
+            Case FitLevel.PartialOffload : Return Localizer.T(If(cpuOnly, "◐ Runs on CPU", "◐ GPU+CPU (slower)"))
+            Case Else : Return Localizer.T("✖ Too big")
         End Select
     End Function
 
@@ -495,6 +497,7 @@ Public Module ModelCatalog
         Dim r As New RepoFiles()
         Dim groups As New Dictionary(Of String, QuantOption)(StringComparer.OrdinalIgnoreCase)
         Dim mmprojs As New List(Of RepoFile)
+        Dim mtps As New List(Of RepoFile)
 
         For Each f In arr
             If f.Value(Of String)("type") <> "file" Then Continue For
@@ -510,7 +513,11 @@ Public Module ModelCatalog
                 mmprojs.Add(rf)
                 Continue For
             End If
-            If fileName.StartsWith("mtp-") OrElse p.StartsWith("MTP/", StringComparison.OrdinalIgnoreCase) OrElse fileName.Contains("imatrix") Then Continue For
+            If fileName.StartsWith("mtp-") OrElse p.StartsWith("MTP/", StringComparison.OrdinalIgnoreCase) Then
+                If fileName.StartsWith("mtp-") Then mtps.Add(rf)
+                Continue For
+            End If
+            If fileName.Contains("imatrix") Then Continue For
 
             Dim q = ParseQuant(fileName)
             If q = "" Then q = IO.Path.GetFileNameWithoutExtension(fileName)
@@ -527,6 +534,8 @@ Public Module ModelCatalog
         Next
         r.Quants = groups.Values.OrderBy(Function(q) q.TotalBytes).ToList()
         r.Mmproj = mmprojs.OrderBy(Function(m) ModelLibrary.MmprojRank(m.Path)).FirstOrDefault()
+        ' Smallest MTP head (usually Q8_0) is plenty for drafting.
+        r.Mtp = mtps.OrderBy(Function(m) m.Size).FirstOrDefault()
         Return r
     End Function
 End Module

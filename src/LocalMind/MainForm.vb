@@ -126,6 +126,12 @@ Public Class MainForm
         AddHandler Me.DragEnter, AddressOf Files_DragEnter
         AddHandler Me.DragDrop, AddressOf Files_DragDrop
 
+        Localizer.Apply(Me)
+        If _tray?.ContextMenuStrip IsNot Nothing Then
+            For Each it As ToolStripItem In _tray.ContextMenuStrip.Items
+                Localizer.WalkItem(it)
+            Next
+        End If
         ShowEmptyState()
         SetStatus("Ready")
 
@@ -158,13 +164,13 @@ Public Class MainForm
             Settings.LastUpdateCheck = DateTime.Now
             AppCore.SaveSettings()
             If info Is Nothing Then
-                If manual Then MessageBox.Show(Me, $"You have the latest version ({Updater.CurrentVersion}).", "Updates",
+                If manual Then Localizer.Box(Me, $"You have the latest version ({Updater.CurrentVersion}).", "Updates",
                                                MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
             Dim notes = If(info.Notes, "")
             If notes.Length > 700 Then notes = notes.Substring(0, 700) & "…"
-            If MessageBox.Show(Me, $"LocalMind {info.Tag} is available (you have {Updater.CurrentVersion})." & vbCrLf & vbCrLf &
+            If Localizer.Box(Me, $"LocalMind {info.Tag} is available (you have {Updater.CurrentVersion})." & vbCrLf & vbCrLf &
                                notes & vbCrLf & vbCrLf & "Update now? LocalMind will restart; your chats and models are kept.",
                                "Update available", MessageBoxButtons.YesNo, MessageBoxIcon.Information) <> DialogResult.Yes Then Return
             If Not AppPaths.IsPortable Then
@@ -172,14 +178,14 @@ Public Class MainForm
                 Return
             End If
             If _isGenerating Then
-                MessageBox.Show(Me, "Wait for the current answer to finish, then use Help → Check for updates.", "Update")
+                Localizer.Box(Me, "Wait for the current answer to finish, then use Help → Check for updates.", "Update")
                 Return
             End If
             Dim exe = Await Updater.InstallAsync(info, Sub(p) SetStatus($"Downloading update… {p}%"), CancellationToken.None)
             Updater.Restart(exe)
             Close()
         Catch ex As Exception
-            If manual Then MessageBox.Show(Me, "Update failed: " & ex.Message, "Update", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            If manual Then Localizer.Box(Me, "Update failed: " & ex.Message, "Update", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Finally
             _updating = False
         End Try
@@ -188,7 +194,7 @@ Public Class MainForm
     ''' <summary>One-time welcome: offer the built-in engine (v1 users) or the Model Manager (new users).</summary>
     Private Async Function FirstRunAsync() As Task
         If Settings.UpgradedFromV1 Then
-            Dim ans = MessageBox.Show(Me,
+            Dim ans = Localizer.Box(Me,
                 "OllamaChat is now LocalMind — with a built-in AI engine, so Ollama is no longer required." & vbCrLf & vbCrLf &
                 "• Yes = switch to the built-in engine (you can download models in Models → Model Manager)" & vbCrLf &
                 "• No = keep using Ollama (change any time in Tools → Settings)",
@@ -207,7 +213,7 @@ Public Class MainForm
             Settings.FirstRunDone = True
             AppCore.SaveSettings()
             If Settings.Backend = BackendKind.BuiltIn AndAlso AppCore.Library.All().Count = 0 Then
-                MessageBox.Show(Me,
+                Localizer.Box(Me,
                     "Welcome! This app runs AI models directly on your PC." & vbCrLf & vbCrLf &
                     "Next, the Model Manager opens: press '★ Recommend for my PC' (or tick any model), " &
                     "then 'Download'. Everything else is set up automatically.",
@@ -486,9 +492,10 @@ Public Class MainForm
             AddHandler webChat.CoreWebView2.NavigationCompleted, handler
             webChat.CoreWebView2.NavigateToString(MarkdownRenderer.ShellHtml())
             Await Task.WhenAny(tcs.Task, Task.Delay(5000))
+            Await webChat.ExecuteScriptAsync("L = " & Localizer.ChatViewStrings() & ";")
             RemoveHandler webChat.CoreWebView2.NavigationCompleted, handler
         Catch ex As Exception
-            MessageBox.Show("WebView2 runtime not found." & vbCrLf & ex.Message,
+            Localizer.Box("WebView2 runtime not found." & vbCrLf & ex.Message,
                             "WebView2", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Function
@@ -544,10 +551,10 @@ Public Class MainForm
         If _isGenerating Then Return
         If cmbModels.SelectedIndex < 0 Then
             If Settings.Backend = BackendKind.BuiltIn Then
-                If MessageBox.Show(Me, "No model is downloaded yet. Open the Model Manager now?", "No model",
+                If Localizer.Box(Me, "No model is downloaded yet. Open the Model Manager now?", "No model",
                                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then OpenModelManager()
             Else
-                MessageBox.Show(Me, "Select a model first. Check that the server in Tools → Settings is reachable.")
+                Localizer.Box(Me, "Select a model first. Check that the server in Tools → Settings is reachable.")
             End If
             Return
         End If
@@ -849,7 +856,7 @@ Public Class MainForm
         ' Dropping .gguf files imports models instead of attaching them.
         Dim ggufs = files.Where(Function(f) f.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase)).ToArray()
         If ggufs.Length > 0 Then
-            If MessageBox.Show(Me, $"Add {ggufs.Length} GGUF model file(s) to your models folder (copy)?", "Import models",
+            If Localizer.Box(Me, $"Add {ggufs.Length} GGUF model file(s) to your models folder (copy)?", "Import models",
                                MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
                 Dim target = Path.Combine(AppCore.Library.Folder, "imported")
                 Directory.CreateDirectory(target)
@@ -857,7 +864,7 @@ Public Class MainForm
                     Try
                         File.Copy(f, Path.Combine(target, Path.GetFileName(f)), True)
                     Catch ex As Exception
-                        MessageBox.Show(Me, ex.Message, "Import", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                        Localizer.Box(Me, ex.Message, "Import", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                     End Try
                 Next
                 AppCore.Library.Refresh()
@@ -950,7 +957,7 @@ Public Class MainForm
 
     Private Sub miExport_Click(sender As Object, e As EventArgs) Handles miExport.Click
         If _session Is Nothing OrElse _session.Messages.Count = 0 Then
-            MessageBox.Show("Nothing to export yet — send a message first.")
+            Localizer.Box("Nothing to export yet — send a message first.")
             Return
         End If
         Using dlg As New SaveFileDialog()
@@ -964,14 +971,14 @@ Public Class MainForm
                 ChatFileIO.ExportToFile(_session, dlg.FileName)
                 SetStatus("Exported → " & Path.GetFileName(dlg.FileName))
             Catch ex As Exception
-                MessageBox.Show("Export failed:" & vbCrLf & ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Localizer.Box("Export failed:" & vbCrLf & ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End Using
     End Sub
 
     Private Async Sub miImport_Click(sender As Object, e As EventArgs) Handles miImport.Click
         If _isGenerating Then
-            MessageBox.Show("Wait for the current response to finish or press Stop first.")
+            Localizer.Box("Wait for the current response to finish or press Stop first.")
             Return
         End If
         Using dlg As New OpenFileDialog()
@@ -982,7 +989,7 @@ Public Class MainForm
                 If _session IsNot Nothing AndAlso _session.Messages.Count > 0 Then AppCore.History.Save(_session)
                 Dim imported = ChatFileIO.ImportFromFile(dlg.FileName)
                 If imported.Messages.Count = 0 Then
-                    MessageBox.Show("The file did not contain any messages.", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                    Localizer.Box("The file did not contain any messages.", "Import", MessageBoxButtons.OK, MessageBoxIcon.Information)
                     Return
                 End If
                 AppCore.History.Save(imported)
@@ -991,7 +998,7 @@ Public Class MainForm
                 Await RebuildChatDisplayAsync()
                 SetStatus($"Imported {imported.Messages.Count} messages from {Path.GetFileName(dlg.FileName)}")
             Catch ex As Exception
-                MessageBox.Show("Import failed:" & vbCrLf & ex.Message, "Import", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Localizer.Box("Import failed:" & vbCrLf & ex.Message, "Import", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End Using
     End Sub
@@ -1056,7 +1063,7 @@ Public Class MainForm
     Private Sub DeleteSelectedChat(sender As Object, e As EventArgs)
         Dim item = TryCast(lstChats.SelectedItem, ChatListItem)
         If item Is Nothing Then Return
-        If MessageBox.Show("Delete this conversation?" & vbCrLf & vbCrLf & item.Session.Title,
+        If Localizer.Box("Delete this conversation?" & vbCrLf & vbCrLf & item.Session.Title,
                            "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
         AppCore.History.Delete(item.Session.Id)
         If _session IsNot Nothing AndAlso _session.Id = item.Session.Id Then
@@ -1072,10 +1079,10 @@ Public Class MainForm
     Private Sub ClearAllHistory(sender As Object, e As EventArgs)
         Dim all = AppCore.History.ListAll()
         If all.Count = 0 Then
-            MessageBox.Show("No saved conversations to delete.")
+            Localizer.Box("No saved conversations to delete.")
             Return
         End If
-        If MessageBox.Show($"Delete ALL {all.Count} saved conversations?" & vbCrLf & vbCrLf & "This cannot be undone.",
+        If Localizer.Box($"Delete ALL {all.Count} saved conversations?" & vbCrLf & vbCrLf & "This cannot be undone.",
                            "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
         For Each s In all
             AppCore.History.Delete(s.Id)
@@ -1141,7 +1148,7 @@ Public Class MainForm
         Next
         If added > 0 Then SetStatus($"Attached {added} file(s)")
         If skipped.Count > 0 Then
-            MessageBox.Show("Could not attach:" & vbCrLf & String.Join(vbCrLf, skipped), "Attach", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Localizer.Box("Could not attach:" & vbCrLf & String.Join(vbCrLf, skipped), "Attach", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         End If
         Dim selected = AppCore.Library.FindByName(cmbModels.SelectedItem?.ToString())
         If Settings.Backend = BackendKind.BuiltIn AndAlso selected IsNot Nothing AndAlso Not selected.IsVision AndAlso
@@ -1189,7 +1196,7 @@ Public Class MainForm
 
     Private Sub miModelManager_Click(sender As Object, e As EventArgs) Handles miModelManager.Click, btnGetModels.Click
         If Settings.Backend <> BackendKind.BuiltIn Then
-            If MessageBox.Show(Me, "Downloaded models are used by the built-in engine, but you are using " &
+            If Localizer.Box(Me, "Downloaded models are used by the built-in engine, but you are using " &
                                AppCore.Backend.DisplayName & "." & vbCrLf & vbCrLf & "Switch to the built-in engine?",
                                "Model Manager", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
                 Settings.Backend = BackendKind.BuiltIn
@@ -1221,6 +1228,16 @@ Public Class MainForm
         PrepareEngineInBackground()
     End Sub
 
+    Private Sub OpenCompare()
+        Dim models = cmbModels.Items.Cast(Of Object)().Select(Function(o) o.ToString()).ToList()
+        If models.Count < 2 Then
+            Localizer.Box(Me, "Download at least two models to compare them.", "Compare models")
+            Return
+        End If
+        Dim f As New CompareForm(models)
+        f.Show(Me)
+    End Sub
+
     Private Sub miEngineLog_Click(sender As Object, e As EventArgs) Handles miEngineLog.Click
         Dim f As New EngineLogForm()
         f.Show(Me)
@@ -1250,7 +1267,7 @@ Public Class MainForm
     End Sub
 
     Private Sub miTips_Click(sender As Object, e As EventArgs) Handles miTips.Click
-        MessageBox.Show(Me,
+        Localizer.Box(Me,
             "Ctrl+Enter  send" & vbCrLf &
             "Esc  stop the answer" & vbCrLf &
             "Ctrl+V  paste text, screenshots or copied files" & vbCrLf &
@@ -1267,7 +1284,7 @@ Public Class MainForm
 
     Private Sub miAbout_Click(sender As Object, e As EventArgs) Handles miAbout.Click
         Dim engine = AppCore.Engine.InstalledVersion()
-        MessageBox.Show("LocalMind " & Application.ProductVersion.Split("+"c)(0) & vbCrLf &
+        Localizer.Box("LocalMind " & Application.ProductVersion.Split("+"c)(0) & vbCrLf &
                         "Local AI chat for Windows — built-in llama.cpp engine, Ollama or any OpenAI-compatible server." & vbCrLf & vbCrLf &
                         "Backend: " & AppCore.Backend.DisplayName & vbCrLf &
                         "Engine: " & If(engine, "not installed") & vbCrLf &
@@ -1284,7 +1301,7 @@ Public Class MainForm
             End Try
             Return
         End If
-        lblStatus.Text = text
+        lblStatus.Text = Localizer.T(text)
     End Sub
 
     Private Shared Function FirstLine(s As String) As String
@@ -1308,7 +1325,7 @@ Public Class MainForm
     Protected Overrides Sub OnFormClosing(e As FormClosingEventArgs)
         If HandleCloseToTray(e) Then Return
         If AppCore.Downloads.ActiveCount > 0 AndAlso e.CloseReason = CloseReason.UserClosing Then
-            If MessageBox.Show(Me, "Downloads are still running. They will resume next time you open the app." & vbCrLf & vbCrLf &
+            If Localizer.Box(Me, "Downloads are still running. They will resume next time you open the app." & vbCrLf & vbCrLf &
                                "Close anyway?", "Downloads running", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
                 e.Cancel = True
                 Return

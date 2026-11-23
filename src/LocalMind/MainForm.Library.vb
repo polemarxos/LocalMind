@@ -46,6 +46,8 @@ Partial Class MainForm
                                        End Using
                                    End Sub
         _btnPrompts.DropDownItems.AddRange({miSave, miManage})
+        Localizer.WalkItem(miSave)
+        Localizer.WalkItem(miManage)
     End Sub
 
     '──────────────── Folders ────────────────

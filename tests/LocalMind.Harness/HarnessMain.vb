@@ -107,6 +107,10 @@ Module HarnessMain
             Check(upd IsNot Nothing AndAlso upd.ZipUrl IsNot Nothing AndAlso upd.Version > Updater.CurrentVersion,
                   "finds newer release than this build", $"current {Updater.CurrentVersion} → {upd?.Tag} ({upd?.ZipUrl})")
 
+            Dim gf = Await ModelCatalog.GetRepoFilesAsync("unsloth/gemma-4-12b-it-GGUF", Nothing, CancellationToken.None)
+            Check(gf.Mtp IsNot Nothing AndAlso gf.Mtp.Path.Contains("mtp-") AndAlso gf.Quants.All(Function(q) q.Files.All(Function(f) Not f.Path.Contains("mtp-"))),
+                  "MTP speed-up file detected and kept out of the quant list", $"{gf.Mtp?.Path} ({Downloader.FormatBytes(If(gf.Mtp?.Size, 0L))})")
+
             Console.WriteLine("== Auto quant on real files")
             For Each repoName In {"unsloth/gemma-4-12b-it-GGUF", "unsloth/Qwen3.6-35B-A3B-GGUF", "bartowski/Meta-Llama-3.1-8B-Instruct-GGUF"}
                 Dim e = live.FirstOrDefault(Function(x) x.Repo = repoName)

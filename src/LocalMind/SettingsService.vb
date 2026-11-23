@@ -67,6 +67,12 @@ Public Class AppSettings
     Public Property VoiceLanguage As String = "auto"  ' auto | el | en | …
     Public Property TtsVoice As String = ""
     Public Property AutoReadAnswers As Boolean = False
+
+    ' ── Speed / language ──
+    ''' <summary>auto = MTP head if the model has one, otherwise n-gram drafting; mtp; ngram; off.</summary>
+    Public Property SpeedUpMode As String = "auto"
+    Public Property DownloadSpeedUpFiles As Boolean = True
+    Public Property Language As String = "auto"   ' auto | en | el
     Public Property LastUpdateCheck As DateTime
 
     ''' <summary>True when settings.json came from v1 (Ollama-only) — used to offer the built-in engine once.</summary>

@@ -203,6 +203,8 @@ Public Module MarkdownRenderer
     End Function
 
     Private Const Js As String = "
+  var L = {};
+  function tr(s) { return L[s] || s; }
   function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   // Only auto-scroll when the user is already at the bottom, so they can read back while a reply streams.
   function nearBottom() { return (window.innerHeight + window.scrollY) >= document.body.scrollHeight - 120; }
@@ -222,7 +224,7 @@ Public Module MarkdownRenderer
     if (imgs && imgs.length) {
       thumbs = '<div class=""thumbs"">' + imgs.map(function (s) { return '<img src=""' + s + '"" onclick=""zoom(this.src)"">'; }).join('') + '</div>';
     }
-    d.innerHTML = '<div><div class=""role"">You</div>' + thumbs + (text ? '<div class=""bubble"">' + esc(text) + '</div>' : '') + '</div>';
+    d.innerHTML = '<div><div class=""role"">' + tr('You') + '</div>' + thumbs + (text ? '<div class=""bubble"">' + esc(text) + '</div>' : '') + '</div>';
     return d;
   }
   function appendUser(text, imgs) { removeEmpty(); body().appendChild(userNode(text, imgs)); scroll(true); }
@@ -230,7 +232,7 @@ Public Module MarkdownRenderer
   function assistantNode(id) {
     var d = document.createElement('div');
     d.className = 'msg assistant'; d.id = id;
-    d.innerHTML = '<div><div class=""role"">Assistant</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
+    d.innerHTML = '<div><div class=""role"">' + tr('Assistant') + '</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
     return d;
   }
   function appendAssistantStart(id) {
@@ -247,7 +249,7 @@ Public Module MarkdownRenderer
     if (!bubble) return null;
     var details = document.createElement('details');
     details.id = id + '-thinking'; details.className = 'thinking'; details.open = true;
-    details.innerHTML = '<summary>💭 Thinking…</summary><div class=""thinking-content"" id=""' + id + '-thinking-body""></div>';
+    details.innerHTML = '<summary>' + tr('💭 Thinking…') + '</summary><div class=""thinking-content"" id=""' + id + '-thinking-body""></div>';
     bubble.parentElement.insertBefore(details, bubble);
     var w = bubble.querySelector('.waiting'); if (w) w.remove();
     return details;
@@ -262,7 +264,7 @@ Public Module MarkdownRenderer
     var panel = document.getElementById(id + '-thinking');
     if (!panel) return;
     panel.open = false;
-    var s = panel.querySelector('summary'); if (s) s.textContent = '💭 Thinking (click to expand)';
+    var s = panel.querySelector('summary'); if (s) s.textContent = tr('💭 Thinking (click to expand)');
   }
   function setAssistantHtml(id, html) {
     var b = document.getElementById(id + '-bubble');
@@ -279,7 +281,7 @@ Public Module MarkdownRenderer
   }
 
   function copyToClipboard(text, btn) {
-    function flash() { if (!btn) return; var old = btn.textContent; btn.textContent = 'Copied!'; setTimeout(function () { btn.textContent = old; }, 1200); }
+    function flash() { if (!btn) return; var old = btn.textContent; btn.textContent = tr('Copied!'); setTimeout(function () { btn.textContent = old; }, 1200); }
     try {
       if (window.chrome && window.chrome.webview && window.chrome.webview.postMessage) {
         window.chrome.webview.postMessage({ type: 'copy', text: text }); flash(); return;
@@ -312,7 +314,7 @@ Public Module MarkdownRenderer
       if (codeEl && window.hljs) { try { hljs.highlightElement(codeEl); } catch (e) {} }
       if (pre.querySelector('.copy-btn')) return;
       var btn = document.createElement('button');
-      btn.className = 'copy-btn'; btn.textContent = 'Copy';
+      btn.className = 'copy-btn'; btn.textContent = tr('Copy');
       btn.onclick = function (ev) { ev.stopPropagation(); copyToClipboard(codeEl ? codeEl.innerText : pre.innerText, btn); };
       pre.appendChild(btn);
     });
@@ -327,16 +329,16 @@ Public Module MarkdownRenderer
       if (panel) {
         var tb = document.getElementById(id + '-thinking-body'); if (tb) { tb.innerHTML = thinkingHtml; renderMath(tb); }
         panel.open = false;
-        var s = panel.querySelector('summary'); if (s) s.textContent = '💭 Thinking (click to expand)';
+        var s = panel.querySelector('summary'); if (s) s.textContent = tr('💭 Thinking (click to expand)');
       }
     }
     var m = document.getElementById(id + '-meta');
     if (m) {
       m.innerHTML = '';
-      var c = document.createElement('button'); c.textContent = 'Copy answer';
+      var c = document.createElement('button'); c.textContent = tr('Copy answer');
       c.onclick = function () { copyToClipboard(b.innerText, c); };
       m.appendChild(c);
-      var r = document.createElement('button'); r.textContent = '🔊 Read'; r.title = 'Read aloud (click again to stop)';
+      var r = document.createElement('button'); r.textContent = tr('🔊 Read'); r.title = tr('Read aloud (click again to stop)');
       r.onclick = function () { try { window.chrome.webview.postMessage({ type: 'speak', text: b.innerText }); } catch (e) {} };
       m.appendChild(r);
       if (meta) { var sp = document.createElement('span'); sp.textContent = meta; m.appendChild(sp); }

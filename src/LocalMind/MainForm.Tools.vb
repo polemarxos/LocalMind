@@ -45,6 +45,9 @@ Partial Class MainForm
                                                    AppCore.SaveSettings()
                                                    If Not _miAutoRead.Checked Then Voice.StopSpeaking()
                                                End Sub
+        Dim miCompare As New ToolStripMenuItem("Compare models…")
+        AddHandler miCompare.Click, Sub() OpenCompare()
+        menuTools.DropDownItems.Insert(0, miCompare)
         menuTools.DropDownItems.Insert(0, New ToolStripSeparator())
         menuTools.DropDownItems.Insert(0, _miAutoRead)
         menuTools.DropDownItems.Insert(0, miDocs)
@@ -86,7 +89,7 @@ Partial Class MainForm
             End If
         Catch ex As Exception
             SetStatus("🎤 " & ex.Message)
-            MessageBox.Show(Me, ex.Message, "Voice input", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Localizer.Box(Me, ex.Message, "Voice input", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Finally
             _micBusy = False
             _btnMic.Text = "🎤 Speak"

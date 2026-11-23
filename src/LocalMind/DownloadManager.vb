@@ -27,6 +27,7 @@ Public Class DownloadJob
     Public Property IncludeVision As Boolean = True
     Public Property Files As New List(Of RepoFile)()
     Public Property Mmproj As RepoFile
+    Public Property Mtp As RepoFile
     Public Property TargetDir As String
 
     <JsonIgnore> Public Property Status As DownloadStatus = DownloadStatus.Queued
@@ -234,6 +235,7 @@ Public Class DownloadManager
                 job.Quant = pick.Label
                 job.Files = pick.Files.ToList()
                 job.Mmproj = If(job.IncludeVision, repoFiles.Mmproj, Nothing)
+                job.Mtp = If(s.DownloadSpeedUpFiles, repoFiles.Mtp, Nothing)
                 job.TargetDir = Path.Combine(_library.Folder, ModelLibrary.SafeFolderName(job.Repo) & "__" & job.Quant)
             End If
 
@@ -251,6 +253,7 @@ Public Class DownloadManager
             ' 2) Download every file (model parts + vision projector)
             Dim all = job.Files.ToList()
             If job.Mmproj IsNot Nothing Then all.Add(job.Mmproj)
+            If job.Mtp IsNot Nothing Then all.Add(job.Mtp)
             job.BytesTotal = all.Sum(Function(f) f.Size)
             job.Status = DownloadStatus.Downloading
             RaiseEvent JobChanged(job)
@@ -287,6 +290,7 @@ Public Class DownloadManager
                 .DisplayName = job.ModelName & " · " & job.Quant,
                 .MainFile = Path.GetFileName(job.Files(0).Path),
                 .MmprojFile = If(job.Mmproj IsNot Nothing, Path.GetFileName(job.Mmproj.Path), Nothing),
+                .MtpFile = If(job.Mtp IsNot Nothing, Path.GetFileName(job.Mtp.Path), Nothing),
                 .Repo = job.Repo, .Quant = job.Quant,
                 .SizeBytes = job.BytesTotal, .Params = job.Params,
                 .DownloadedAt = DateTime.Now,

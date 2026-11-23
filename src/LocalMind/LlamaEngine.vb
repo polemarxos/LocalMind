@@ -364,6 +364,14 @@ Public Class LlamaEngine
         If Not String.IsNullOrWhiteSpace(s.KvCacheType) AndAlso s.KvCacheType <> "f16" Then
             args.Append($" -ctk {s.KvCacheType} -ctv {s.KvCacheType}")
         End If
+        ' Faster generation: speculative decoding (same output, produced faster).
+        Dim speed = If(s.SpeedUpMode, "auto").ToLowerInvariant()
+        Dim hasMtp = Not String.IsNullOrEmpty(model.MtpFile) AndAlso File.Exists(model.MtpFile)
+        If hasMtp AndAlso (speed = "auto" OrElse speed = "mtp") Then
+            args.Append($" --spec-type draft-mtp --spec-draft-model ""{model.MtpFile}""")
+        ElseIf speed = "auto" OrElse speed = "ngram" Then
+            args.Append(" --spec-type ngram-mod")
+        End If
         If Not String.IsNullOrWhiteSpace(s.ExtraEngineArgs) Then args.Append(" " & s.ExtraEngineArgs.Trim())
 
         AppendLog("> llama-server " & args.ToString())

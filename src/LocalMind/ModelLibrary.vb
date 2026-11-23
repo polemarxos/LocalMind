@@ -10,6 +10,7 @@ Public Class LocalModel
     Public Property DisplayName As String
     Public Property MainFile As String          ' first file (part 1 for split models)
     Public Property MmprojFile As String        ' vision projector, if any
+    Public Property MtpFile As String           ' speed-up head (multi-token prediction), if any
     Public Property Repo As String
     Public Property Quant As String
     Public Property SizeBytes As Long
@@ -97,6 +98,7 @@ Public Class ModelLibrary
                 m.Folder = Path.GetDirectoryName(meta)
                 m.MainFile = Path.Combine(m.Folder, Path.GetFileName(m.MainFile))
                 If Not String.IsNullOrEmpty(m.MmprojFile) Then m.MmprojFile = Path.Combine(m.Folder, Path.GetFileName(m.MmprojFile))
+                If Not String.IsNullOrEmpty(m.MtpFile) Then m.MtpFile = Path.Combine(m.Folder, Path.GetFileName(m.MtpFile))
                 If Not File.Exists(m.MainFile) Then Continue For
                 found.Add(m)
                 For Each f In Directory.GetFiles(m.Folder, "*.gguf")
@@ -123,8 +125,9 @@ Public Class ModelLibrary
                 size = Directory.GetFiles(dir, prefix & "-*-of-*.gguf").Sum(Function(x) New FileInfo(x).Length)
             End If
             Dim display = Path.GetFileNameWithoutExtension(If(sp.Success, name.Substring(0, sp.Index) & ".gguf", name))
+            Dim mtp = Directory.GetFiles(dir, "mtp-*.gguf").OrderBy(Function(x) New FileInfo(x).Length).FirstOrDefault()
             found.Add(New LocalModel With {
-                .DisplayName = display, .MainFile = f, .MmprojFile = mm, .Folder = dir,
+                .DisplayName = display, .MainFile = f, .MmprojFile = mm, .MtpFile = mtp, .Folder = dir,
                 .SizeBytes = size, .Quant = ModelCatalog.ParseQuant(name),
                 .DownloadedAt = File.GetCreationTime(f)})
         Next

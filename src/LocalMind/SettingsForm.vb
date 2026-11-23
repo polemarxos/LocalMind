@@ -23,8 +23,10 @@ Public Class SettingsForm
     Private txtModels As TextBox
     Private numCtx, numSlots, numIdle, numMinCtx As NumericUpDown
     Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray As CheckBox
+    Private cmbLang As ComboBox
     Private txtHotkey As TextBox
-    Private cmbNgl, cmbKv As ComboBox
+    Private cmbNgl, cmbKv, cmbSpeed As ComboBox
+    Private chkMtp As CheckBox
     Private txtExtra, txtHfToken As TextBox
     Private chkVerify, chkResume As CheckBox
     ' Chat
@@ -182,6 +184,12 @@ Public Class SettingsForm
         Row(t, "Parallel chats", numSlots, "How many people (e.g. LAN users) can chat at the same time")
         numIdle = Num(0, 1440, _s.UnloadAfterIdleMinutes)
         Row(t, "Unload after idle (min)", numIdle, "0 = keep loaded. Frees VRAM for games etc.")
+        cmbSpeed = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 330}
+        cmbSpeed.Items.AddRange({"auto  (MTP file if the model has one, else n-gram)", "mtp  (only with an MTP file)", "ngram  (no extra file)", "off"})
+        cmbSpeed.SelectedIndex = Math.Max(0, Array.IndexOf({"auto", "mtp", "ngram", "off"}, If(_s.SpeedUpMode, "auto")))
+        Row(t, "Faster generation", cmbSpeed, "Speculative decoding: same answers, up to ~2x faster")
+        chkMtp = New CheckBox() With {.Text = "Download MTP speed-up files with models (when available)", .Checked = _s.DownloadSpeedUpFiles, .AutoSize = True}
+        Row(t, "", chkMtp)
         txtExtra = New TextBox() With {.Text = _s.ExtraEngineArgs, .Width = 360}
         Row(t, "Extra engine arguments", txtExtra, "Advanced llama-server flags, e.g. --n-cpu-moe 20")
         txtHfToken = New TextBox() With {.Text = _s.HuggingFaceToken, .Width = 360, .UseSystemPasswordChar = True}
@@ -225,7 +233,7 @@ Public Class SettingsForm
         Catch ex As OperationCanceledException
             UpdateEngineLabel()
         Catch ex As Exception
-            MessageBox.Show(Me, ex.Message, "Engine install", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Localizer.Box(Me, ex.Message, "Engine install", MessageBoxButtons.OK, MessageBoxIcon.Error)
             UpdateEngineLabel()
         Finally
             _installCts = Nothing
@@ -247,6 +255,10 @@ Public Class SettingsForm
         Row(t, "Top-p", numTopP)
         numMaxTok = Num(0, 262144, _s.MaxTokens, inc:=256)
         Row(t, "Max answer tokens", numMaxTok, "0 = no limit")
+        cmbLang = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 180}
+        cmbLang.Items.AddRange({"auto (Windows)", "English", "Ελληνικά"})
+        cmbLang.SelectedIndex = Math.Max(0, Array.IndexOf({"auto", "en", "el"}, If(_s.Language, "auto")))
+        Row(t, "Interface language", cmbLang)
         chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates at startup", .Checked = _s.CheckForUpdates, .AutoSize = True}
         Row(t, "Updates", chkUpdates)
         chkMinTray = New CheckBox() With {.Text = "Minimize to the system tray", .Checked = _s.MinimizeToTray, .AutoSize = True}
@@ -308,7 +320,7 @@ Public Class SettingsForm
 
     '──────────────── Save ────────────────
     Private Sub SaveAndClose(sender As Object, e As EventArgs)
-        Dim engineBefore = (_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, _s.MinAutoContext)
+        Dim engineBefore = (_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, (_s.MinAutoContext, _s.SpeedUpMode))
         Dim backendBefore = (_s.Backend, _s.OllamaUrl, _s.OpenAiUrl, _s.OpenAiKey)
         Dim folderBefore = _s.EffectiveModelsFolder
 
@@ -323,6 +335,11 @@ Public Class SettingsForm
         _s.AutoContext = chkAutoCtx.Checked
         _s.MinAutoContext = CInt(numMinCtx.Value)
         _s.CheckForUpdates = chkUpdates.Checked
+        Dim newLang = {"auto", "en", "el"}(Math.Max(0, cmbLang.SelectedIndex))
+        If newLang <> If(_s.Language, "auto") Then
+            _s.Language = newLang
+            Localizer.Box(Me, "Restart LocalMind to change the language.", "Language")
+        End If
         _s.WebSearchProvider = cmbSearch.SelectedItem.ToString().Split(" "c)(0)
         _s.BraveApiKey = txtBrave.Text.Trim()
         _s.SearxngUrl = txtSearx.Text.Trim()
@@ -338,6 +355,8 @@ Public Class SettingsForm
         _s.ParallelSlots = CInt(numSlots.Value)
         _s.UnloadAfterIdleMinutes = CInt(numIdle.Value)
         _s.ExtraEngineArgs = txtExtra.Text.Trim()
+        _s.SpeedUpMode = cmbSpeed.SelectedItem.ToString().Split(" "c)(0)
+        _s.DownloadSpeedUpFiles = chkMtp.Checked
         _s.HuggingFaceToken = txtHfToken.Text.Trim()
         _s.VerifyDownloads = chkVerify.Checked
         _s.AutoResumeDownloads = chkResume.Checked
@@ -350,7 +369,7 @@ Public Class SettingsForm
 
         If Not backendBefore.Equals((_s.Backend, _s.OllamaUrl, _s.OpenAiUrl, _s.OpenAiKey)) Then AppCore.ResetBackend()
         If Not String.Equals(folderBefore, _s.EffectiveModelsFolder, StringComparison.OrdinalIgnoreCase) Then AppCore.Library.Refresh()
-        If Not engineBefore.Equals((_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, _s.MinAutoContext)) Then
+        If Not engineBefore.Equals((_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, (_s.MinAutoContext, _s.SpeedUpMode))) Then
             ' Reload with the new settings on the next message.
             Dim unused = AppCore.Engine.StopAsync()
             AppCore.ResetBackend()

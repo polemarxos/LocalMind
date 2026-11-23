@@ -21,6 +21,8 @@ Public Module Theme
         f.BackColor = CPanel
         f.ForeColor = CText
         f.Font = UiFont
+        ' Translate every window once its controls exist.
+        AddHandler f.Load, Sub() Localizer.Apply(f)
         Try
             f.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath)
         Catch

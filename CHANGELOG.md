@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.3.0
+
+### New
+- **Greek interface:** menus, windows, buttons, messages and the chat view are available in Greek
+  (Settings → Chat → Interface language; "auto" follows Windows).
+- **Compare models:** Tools → Compare models… asks 2–3 models the same question and shows the answers side by side,
+  with speed, total time and time to the first word.
+- **Faster generation:** speculative decoding gives the same answers, produced faster. Models that provide an
+  MTP speed-up file download it automatically and use it. Other models use n-gram drafting, which needs no extra file.
+  Can be changed in Settings → Built-in engine → Faster generation.
+
 ## 2.2.0
 
 ### New

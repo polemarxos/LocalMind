@@ -19,6 +19,11 @@ Public Class PersonaEditorForm
     Private _suppressListEvents As Boolean
     Private _saved As Boolean = False
 
+    Protected Overrides Sub OnLoad(e As EventArgs)
+        MyBase.OnLoad(e)
+        Localizer.Apply(Me)
+    End Sub
+
     Public Sub New(personas As List(Of Persona))
         Try
             Me.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath)
@@ -189,7 +194,7 @@ Public Class PersonaEditorForm
             Dim svc As New PersonaService()
             svc.Save(_working)
         Catch ex As Exception
-            MessageBox.Show("Could not save personas:" & vbCrLf & vbCrLf & ex.Message,
+            Localizer.Box("Could not save personas:" & vbCrLf & vbCrLf & ex.Message,
                             "Save failed", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Return
         End Try
@@ -264,7 +269,7 @@ Public Class PersonaEditorForm
         Dim i = lst.SelectedIndex
         If i < 0 Then Return
         Dim name = If(String.IsNullOrWhiteSpace(_working(i).Name), "(unnamed)", _working(i).Name)
-        Dim ans = MessageBox.Show("Delete persona """ & name & """?",
+        Dim ans = Localizer.Box("Delete persona """ & name & """?",
                                   "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question)
         If ans <> DialogResult.Yes Then Return
         _working.RemoveAt(i)

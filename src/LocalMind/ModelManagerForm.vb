@@ -130,7 +130,7 @@ Public Class ModelManagerForm
         cmbSort.SelectedIndex = 0
         Theme.StyleInput(cmbSort)
         cmbShow = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 230, .Margin = New Padding(3, 6, 3, 3)}
-        cmbShow.Items.AddRange({"★ Best that fit my GPU", "Everything that runs on this PC", "All models (show everything)"})
+        cmbShow.Items.AddRange({"★ Best that fit my GPU", "Everything that runs on this PC", "All models (show everything)"}.Select(Function(x) Localizer.T(x)).ToArray())
         cmbShow.SelectedIndex = 0
         Theme.StyleInput(cmbShow)
         btnRefresh = Theme.MakeButton("⟳ Update list")
@@ -347,7 +347,7 @@ Public Class ModelManagerForm
                 ApplyFilter()
             End If
         Catch ex As Exception
-            If force Then MessageBox.Show(Me, "Could not reach Hugging Face:" & vbCrLf & ex.Message & vbCrLf & vbCrLf &
+            If force Then Localizer.Box(Me, "Could not reach Hugging Face:" & vbCrLf & ex.Message & vbCrLf & vbCrLf &
                                           "The built-in list is still available offline.", "Update list", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Finally
             btnRefresh.Enabled = True
@@ -364,7 +364,7 @@ Public Class ModelManagerForm
             Return
         End If
         If q.Length < 2 Then
-            MessageBox.Show(Me, "Type a model name in the search box first (e.g. 'mistral', 'phi', 'llama 70b').", "Search")
+            Localizer.Box(Me, "Type a model name in the search box first (e.g. 'mistral', 'phi', 'llama 70b').", "Search")
             txtFilter.Focus()
             Return
         End If
@@ -376,7 +376,7 @@ Public Class ModelManagerForm
             ApplyFilter(ignoreText:=True)
             lblInfo.Text = $"{_searchResults.Count} Hugging Face results for '{q}' (any uploader — prefer known quantizers). Clear the search box and press the button to go back."
         Catch ex As Exception
-            MessageBox.Show(Me, "Search failed: " & ex.Message, "Search", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Localizer.Box(Me, "Search failed: " & ex.Message, "Search", MessageBoxButtons.OK, MessageBoxIcon.Warning)
         Finally
             btnHub.Enabled = True
         End Try
@@ -490,7 +490,7 @@ Public Class ModelManagerForm
     End Sub
 
     Private Sub UpdateDownloadButton()
-        btnDownload.Text = $"⬇  Download selected ({_checked.Count})"
+        btnDownload.Text = Localizer.T("⬇  Download selected") & $" ({_checked.Count})"
         btnDownload.Enabled = _checked.Count > 0
     End Sub
 
@@ -605,7 +605,7 @@ Public Class ModelManagerForm
         add(Function(e) e.IsCoder AndAlso e.Downloads > 10000)                  ' coding
         add(Function(e) e.ParamsB <= 4.5 AndAlso e.Downloads > 50000)           ' fast small model
         If picks.Count = 0 Then
-            MessageBox.Show(Me, "No recommendation available — try 'Update list'.", "Recommend")
+            Localizer.Box(Me, "No recommendation available — try 'Update list'.", "Recommend")
             Return
         End If
         For Each p In picks
@@ -615,7 +615,7 @@ Public Class ModelManagerForm
         txtFilter.Text = ""
         If picks.Any(Function(p) Not _best.Contains(p.Repo)) Then cmbShow.SelectedIndex = 1
         ApplyFilter()
-        MessageBox.Show(Me, "Selected for you:" & vbCrLf & vbCrLf &
+        Localizer.Box(Me, "Selected for you:" & vbCrLf & vbCrLf &
                         String.Join(vbCrLf, picks.Select(Function(p) "• " & p.Name & "   " & p.Badges)) & vbCrLf & vbCrLf &
                         "Untick anything you don't want, then press Download.", "Recommended for " & $"{_hw.VramGB:0} GB VRAM",
                         MessageBoxButtons.OK, MessageBoxIcon.Information)
@@ -631,7 +631,7 @@ Public Class ModelManagerForm
         Dim tooBig = sel.Where(Function(e) e.Params > 0 AndAlso
             ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, QuantFor(e)), _hw, ctx) = FitLevel.TooBig).ToList()
         If tooBig.Count > 0 Then
-            Dim ans = MessageBox.Show(Me, "These probably won't run on this PC (not enough VRAM + RAM):" & vbCrLf & vbCrLf &
+            Dim ans = Localizer.Box(Me, "These probably won't run on this PC (not enough VRAM + RAM):" & vbCrLf & vbCrLf &
                                       String.Join(vbCrLf, tooBig.Select(Function(e) "• " & e.Name)) & vbCrLf & vbCrLf &
                                       "Download them anyway?", "Too big", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning)
             If ans = DialogResult.Cancel Then Return
@@ -738,13 +738,13 @@ Public Class ModelManagerForm
     ''' <summary>Benchmarks the selected models (or all) one after another.</summary>
     Private Async Function RunSpeedTestsAsync(btn As Button) As Task
         If AppCore.Settings.Backend <> BackendKind.BuiltIn Then
-            MessageBox.Show(Me, "The speed test uses the built-in engine (Tools → Settings → Backend).", "Speed test")
+            Localizer.Box(Me, "The speed test uses the built-in engine (Tools → Settings → Backend).", "Speed test")
             Return
         End If
         Dim models = lstInstalled.SelectedItems.Cast(Of ListViewItem)().Select(Function(i) CType(i.Tag, LocalModel)).ToList()
         If models.Count = 0 Then models = AppCore.Library.All()
         If models.Count = 0 Then Return
-        If models.Count > 1 AndAlso MessageBox.Show(Me, $"Test {models.Count} models? Each one is loaded once (this can take a few minutes).",
+        If models.Count > 1 AndAlso Localizer.Box(Me, $"Test {models.Count} models? Each one is loaded once (this can take a few minutes).",
                                                     "Speed test", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then Return
         btn.Enabled = False
         Try
@@ -755,7 +755,7 @@ Public Class ModelManagerForm
                 Try
                     Dim r = Await SpeedTest.RunAsync(m, CancellationToken.None)
                 Catch ex As Exception
-                    MessageBox.Show(Me, m.DisplayName & ": " & ex.Message, "Speed test", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                    Localizer.Box(Me, m.DisplayName & ": " & ex.Message, "Speed test", MessageBoxButtons.OK, MessageBoxIcon.Warning)
                 End Try
                 RefreshInstalled()
             Next
@@ -772,7 +772,7 @@ Public Class ModelManagerForm
     Private Async Sub DeleteInstalled(sender As Object, e As EventArgs)
         Dim m = SelectedInstalled()
         If m Is Nothing Then Return
-        If MessageBox.Show(Me, $"Delete {m.DisplayName} ({Downloader.FormatBytes(m.SizeBytes)}) from disk?", "Delete model",
+        If Localizer.Box(Me, $"Delete {m.DisplayName} ({Downloader.FormatBytes(m.SizeBytes)}) from disk?", "Delete model",
                            MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
         Try
             If AppCore.Engine.CurrentModel IsNot Nothing AndAlso
@@ -783,14 +783,14 @@ Public Class ModelManagerForm
             RefreshInstalled()
             ApplyFilter()
         Catch ex As Exception
-            MessageBox.Show(Me, "Could not delete: " & ex.Message, "Delete", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            Localizer.Box(Me, "Could not delete: " & ex.Message, "Delete", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 
     Private Sub ImportGguf(sender As Object, e As EventArgs)
         Using dlg As New OpenFileDialog() With {.Filter = "GGUF models (*.gguf)|*.gguf", .Multiselect = True, .Title = "Import GGUF model files"}
             If dlg.ShowDialog(Me) <> DialogResult.OK Then Return
-            Dim move = MessageBox.Show(Me, "Move the files into the models folder?" & vbCrLf & vbCrLf &
+            Dim move = Localizer.Box(Me, "Move the files into the models folder?" & vbCrLf & vbCrLf &
                                        "Yes = move (no extra disk space)   No = copy", "Import",
                                        MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question)
             If move = DialogResult.Cancel Then Return
@@ -803,7 +803,7 @@ Public Class ModelManagerForm
                     If move = DialogResult.Yes Then File.Move(f, dest, True) Else File.Copy(f, dest, True)
                 Next
             Catch ex As Exception
-                MessageBox.Show(Me, "Import failed: " & ex.Message, "Import", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                Localizer.Box(Me, "Import failed: " & ex.Message, "Import", MessageBoxButtons.OK, MessageBoxIcon.Error)
             Finally
                 Cursor = Cursors.Default
             End Try
