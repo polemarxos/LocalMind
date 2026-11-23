@@ -193,7 +193,8 @@ def build(R, used_repos):
         for m in listing(f"filter=gguf&pipeline_tag={pipe}&sort=downloads&limit=1000&expand[]=gguf&expand[]=downloads&expand[]=tags", pages=2):
             cands.setdefault(m["id"], (m, pipe))
     # repos without a pipeline tag (e.g. Chroma, Krea 2) — by name
-    for q in ("chroma", "krea", "z-image", "qwen-image", "flux", "wan2", "wan2.1", "wan2.2", "fusionx", "skyreels", "anima"):
+    for q in ("chroma", "krea", "z-image", "qwen-image", "flux", "wan2", "wan2.1", "wan2.2", "fusionx", "skyreels", "anima",
+              "nsfw", "uncensored", "porn", "hentai", "lewd", "nude", "erotic", "abliterated"):
         for m in listing(f"search={q}&filter=gguf&sort=downloads&limit=300&expand[]=gguf&expand[]=downloads&expand[]=tags"):
             cands.setdefault(m["id"], (m, ""))
     print("  gguf candidates:", len(cands), file=sys.stderr)
@@ -207,45 +208,49 @@ def build(R, used_repos):
     with ThreadPoolExecutor(3) as ex:
         trees = dict(zip([j[0] for j in jobs], ex.map(lambda j: tree(j[0]), jobs)))
     for repo, m, pipe, arch in jobs:
-        files = [f for f in trees[repo] if f["path"].lower().endswith(".gguf") and not SKIP_WORDS.search(os.path.basename(f["path"]))]
+        files = [f for f in trees[repo] if f["path"].lower().endswith(".gguf") and not SKIP_WORDS.search(os.path.basename(f["path"]))
+                 and not re.search(r"text_?encoders?/|/vae/|^vae/|clip|mmproj|lora", f["path"], re.I)]
         if not files:
             continue
-        low, high = {}, {}
-        single = {}
+        # one repo can hold several models (e.g. a collection of merges): group the files by model
+        groups = {}
         for f in files:
             mm = QUANT.search(os.path.basename(f["path"]))
             if not mm:
                 continue
-            label = mm.group(1).upper()
-            if label == "F32":
-                continue
-            p = f["path"].lower()
-            entry = {"repo": repo, "path": f["path"], "size": size_of(f)}
-            if "high" in p:
-                high[label] = entry
-            elif "low" in p:
-                low[label] = entry
-            else:
-                single[label] = entry
-        stems = {re.sub(r"(high|low)[-_]?noise|[-_.]?(high|low)\b", "", QUANT.sub("", os.path.basename(f["path"])).lower())
-                 for f in files if QUANT.search(os.path.basename(f["path"]))}
-        if len(stems) > 1:
-            continue     # a collection of different models in one repo
-        dual = bool(high and low)
+            stem = re.sub(r"(high|low)[-_]?noise|[-_.]?(high|low)\b|[-_.]?[hl]$", "", QUANT.sub("", os.path.basename(f["path"])), flags=re.I).strip("-_. ")
+            groups.setdefault(stem.lower(), (stem, []))[1].append((f, mm.group(1).upper()))
         is_video = bool(re.search(r"wan|ltx|skyreels|fusionx", repo, re.I)) and not re.search(r"image", repo, re.I)
-        if is_video:
-            tid = classify_video(repo, arch, dual)
-        else:
-            tid = classify_image(repo, arch)
-        if not tid:
-            continue
-        if dual and tid.startswith("wan2.2-") and "a14b" in tid:
-            variants = [dict(label=k, format="gguf", **low[k], high=high[k], size_total=low[k]["size"] + high[k]["size"]) for k in low if k in high]
-        else:
-            if tid in ("wan2.2-t2v-a14b", "wan2.2-i2v-a14b", "wan2.2-vace-fun-a14b"):
+        if is_video and len(groups) > 1:
+            continue     # several video models in one repo: too easy to mix up
+        for gkey, (stem, gfiles) in groups.items():
+            low, high, single = {}, {}, {}
+            for f, label in gfiles:
+                if label == "F32":
+                    continue
+                p = f["path"].lower()
+                entry = {"repo": repo, "path": f["path"], "size": size_of(f)}
+                if "high" in p:
+                    high[label] = entry
+                elif "low" in p:
+                    low[label] = entry
+                else:
+                    single[label] = entry
+            dual = bool(high and low)
+            if is_video:
+                tid = classify_video(repo, arch, dual)
+            else:
+                tid = classify_image(repo + " " + stem, arch)
+            if not tid:
                 continue
-            variants = [dict(label=k, format="gguf", **v) for k, v in single.items() if v["size"] < 4e10]
-        make(tid, repo, clean_name(repo), variants, m.get("downloads", 0), m.get("tags", []))
+            if dual and tid.startswith("wan2.2-") and "a14b" in tid:
+                variants = [dict(label=k, format="gguf", **low[k], high=high[k], size_total=low[k]["size"] + high[k]["size"]) for k in low if k in high]
+            else:
+                if tid in ("wan2.2-t2v-a14b", "wan2.2-i2v-a14b", "wan2.2-vace-fun-a14b"):
+                    continue
+                variants = [dict(label=k, format="gguf", **v) for k, v in single.items() if v["size"] < 4e10]
+            name = clean_name(repo) if len(groups) == 1 else f"{stem.replace('_', ' ')} · {clean_name(repo)}"
+            make(tid, repo, name, variants, m.get("downloads", 0), m.get("tags", []), key_id=repo + "-" + gkey if len(groups) > 1 else None)
 
     # 2) INT8 ConvRot models
     conv = {}
@@ -290,6 +295,10 @@ def build(R, used_repos):
     for flt, pages in (("stable-diffusion-xl", 3), ("stable-diffusion", 2)):
         for m in listing(f"filter={flt}&filter=text-to-image&sort=downloads&limit=1000&expand[]=downloads&expand[]=tags&expand[]=siblings", pages=pages):
             ck.setdefault(m["id"], m)
+    # uncensored / NSFW checkpoints (shown under "🔓 Uncensored")
+    for q in ("nsfw", "uncensored", "porn", "hentai", "lewd", "nude", "erotic", "pony", "illustrious", "realistic"):
+        for m in listing(f"search={q}&filter=text-to-image&sort=downloads&limit=500&expand[]=downloads&expand[]=tags&expand[]=siblings"):
+            ck.setdefault(m["id"], m)
     print("  checkpoint candidates:", len(ck), file=sys.stderr)
     kj = []
     for repo, m in ck.items():
@@ -302,7 +311,7 @@ def build(R, used_repos):
                 and not re.search(r"lora|vae|ema-only-unet|inpaint|refiner|lcm|turbo|lightning", s["rfilename"], re.I)]
         if root:
             kj.append((repo, m, root))
-    kj = kj[:900]
+    kj = kj[:1400]
     with ThreadPoolExecutor(3) as ex:
         ktrees = dict(zip([j[0] for j in kj], ex.map(lambda j: _get(f"https://huggingface.co/api/models/{j[0]}/tree/main"), kj)))
     for repo, m, root in kj:

@@ -32,6 +32,8 @@ Public Class MediaModelsPanel
     Private _cts As CancellationTokenSource
     Private _suppress As Boolean
     Private ReadOnly _filterTimer As New System.Windows.Forms.Timer() With {.Interval = 250}
+    Private ReadOnly details As New MediaDetailsView() With {.Dock = DockStyle.Fill}
+    Private ReadOnly chkNsfw As New CheckBox() With {.AutoSize = True, .Margin = New Padding(10, 9, 3, 3), .ForeColor = Theme.CText}
 
     ''' <summary>Raised after downloads, so the Studio can refresh.</summary>
     Public Event Downloaded()
@@ -69,7 +71,17 @@ Public Class MediaModelsPanel
                                             f.Activate()
                                         End If
                                     End Sub
-        top.Controls.AddRange({cmbShow, cmbType, txtFilter, btnStudio})
+        chkNsfw.Text = Localizer.T("🔓 Show NSFW / uncensored")
+        chkNsfw.Checked = AppCore.Settings.ShowNsfw
+        details.ShowNsfw = chkNsfw.Checked
+        AddHandler chkNsfw.CheckedChanged, Sub()
+                                               AppCore.Settings.ShowNsfw = chkNsfw.Checked
+                                               AppCore.SaveSettings()
+                                               details.ShowNsfw = chkNsfw.Checked
+                                               Fill()
+                                               ShowAbout()
+                                           End Sub
+        top.Controls.AddRange({cmbShow, cmbType, txtFilter, chkNsfw, btnStudio})
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False
@@ -80,6 +92,8 @@ Public Class MediaModelsPanel
         grid.Columns.Add(New DataGridViewCheckBoxColumn() With {.Name = "sel", .HeaderText = "", .Width = 32})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "name", .HeaderText = Localizer.T("Model"), .ReadOnly = True, .AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, .MinimumWidth = 220})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "type", .HeaderText = Localizer.T("Can do"), .ReadOnly = True, .Width = 170})
+        grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "steps", .HeaderText = Localizer.T("Steps"), .ReadOnly = True, .Width = 70,
+                                                               .ToolTipText = Localizer.T("Steps LocalMind uses (⚡ = with the fast mode)")})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "family", .HeaderText = Localizer.T("Family"), .ReadOnly = True, .Width = 110})
         grid.Columns.Add(New DataGridViewComboBoxColumn() With {.Name = "variant", .HeaderText = Localizer.T("File"), .Width = 120, .FlatStyle = FlatStyle.Flat,
                                                                 .DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing,
@@ -121,7 +135,30 @@ Public Class MediaModelsPanel
         AddHandler btnCancel.Click, Sub() _cts?.Cancel()
         actions.Controls.AddRange({btnDownload, btnCancel, bar, lblStatus})
 
-        Controls.Add(grid)
+        Dim split As New SplitContainer() With {.Dock = DockStyle.Fill, .Orientation = Orientation.Vertical, .FixedPanel = FixedPanel.Panel2,
+                                                .BackColor = Theme.CBorder, .SplitterWidth = 3}
+        split.Panel1.Controls.Add(grid)
+        split.Panel2.Controls.Add(details)
+        split.Panel1.BackColor = Theme.CPanel
+        split.Panel2.BackColor = Theme.CPanel
+        AddHandler split.HandleCreated, Sub()
+                                            Try
+                                                split.SplitterDistance = Math.Max(300, split.Width - 430)
+                                            Catch
+                                            End Try
+                                        End Sub
+        AddHandler details.VariantPicked, Sub(rr, label)
+                                              _variantChoice(rr.Id) = label
+                                              For Each row As DataGridViewRow In grid.Rows
+                                                  If row.Tag Is rr Then
+                                                      _suppress = True
+                                                      row.Cells(grid.Columns("variant").Index).Value = label
+                                                      _suppress = False
+                                                      FillFit(row, rr)
+                                                  End If
+                                              Next
+                                          End Sub
+        Controls.Add(split)
         Controls.Add(lblAbout)
         Controls.Add(lblInfo)
         Controls.Add(top)
@@ -170,6 +207,7 @@ Public Class MediaModelsPanel
             Case "name" : Return r.Name.ToLowerInvariant()
             Case "type" : Return TypeText(r)
             Case "family" : Return If(r.Family, "")
+            Case "steps" : Return r.Steps + r.HighSteps
             Case "variant" : Return ChosenVariant(r).Label
             Case "size" : Return ChosenVariant(r).Total
             Case "fit" : Return CLng(MediaStudio.Fit(r, ChosenVariant(r), _hw)) * 1000000000000L + ChosenVariant(r).Total
@@ -184,8 +222,9 @@ Public Class MediaModelsPanel
         Dim test = Types(Math.Max(0, cmbType.SelectedIndex)).Test
         Dim list As IEnumerable(Of MediaRecipe) = all.Where(test)
         Select Case cmbShow.SelectedIndex
-            Case 0 : If q.Length = 0 Then list = list.Where(Function(r) Not r.Uncensored AndAlso (Not r.Auto OrElse r.Downloads >= 2000) AndAlso
+            Case 0 : If q.Length = 0 Then list = list.Where(Function(r) (chkNsfw.Checked OrElse Not r.Uncensored) AndAlso (Not r.Auto OrElse r.Downloads >= 2000) AndAlso
                                                                   MediaStudio.Fit(r, MediaStudio.PickVariant(r, _hw), _hw) <> FitLevel.TooBig)
+            Case 1 : If Not chkNsfw.Checked Then list = list.Where(Function(r) Not r.Uncensored)
             Case 2 : list = list.Where(Function(r) r.Uncensored)
             Case 3 : list = list.Where(Function(r) MediaStudio.InstalledVariant(r) IsNot Nothing)
         End Select
@@ -211,16 +250,17 @@ Public Class MediaModelsPanel
             row.Cells(0).Value = _checked.Contains(r.Id)
             row.Cells(1).Value = If(installed, "✔ ", "") & r.Name & If(r.Speed IsNot Nothing, " ⚡", "")
             row.Cells(2).Value = TypeText(r)
-            row.Cells(3).Value = r.Family
-            Dim cell = CType(row.Cells(4), DataGridViewComboBoxCell)
+            row.Cells(grid.Columns("steps").Index).Value = StepsText(r)
+            row.Cells(grid.Columns("family").Index).Value = r.Family
+            Dim cell = CType(row.Cells(grid.Columns("variant").Index), DataGridViewComboBoxCell)
             cell.Items.Add("Auto")
             For Each v In r.Variants
                 cell.Items.Add(v.Label)
             Next
             Dim chosen As String = Nothing
             cell.Value = If(_variantChoice.TryGetValue(r.Id, chosen) AndAlso cell.Items.Contains(chosen), chosen, "Auto")
-            row.Cells(7).Value = FormatCount(r.Downloads)
-            row.Cells(8).Value = If(r.Repo, "").Split("/"c)(0)
+            row.Cells(grid.Columns("dl").Index).Value = FormatCount(r.Downloads)
+            row.Cells(grid.Columns("src").Index).Value = If(r.Repo, "").Split("/"c)(0)
             FillFit(row, r)
             rows.Add(row)
         Next
@@ -239,9 +279,9 @@ Public Class MediaModelsPanel
     Private Sub FillFit(row As DataGridViewRow, r As MediaRecipe)
         Dim v = ChosenVariant(r)
         Dim fit = MediaStudio.Fit(r, v, _hw)
-        row.Cells(5).Value = Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v))
-        row.Cells(6).Value = ModelCatalog.FitText(fit, _hw.VramBytes = 0) & "  (" & v.Label & ")"
-        row.Cells(6).Style.ForeColor = ModelManagerForm.FitColor(fit)
+        row.Cells(grid.Columns("size").Index).Value = Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v))
+        row.Cells(grid.Columns("fit").Index).Value = ModelCatalog.FitText(fit, _hw.VramBytes = 0) & "  (" & v.Label & ")"
+        row.Cells(grid.Columns("fit").Index).Style.ForeColor = ModelManagerForm.FitColor(fit)
         row.Cells(1).Style.ForeColor = If(fit = FitLevel.TooBig, Theme.CDim, Theme.CText)
     End Sub
 
@@ -259,8 +299,8 @@ Public Class MediaModelsPanel
         If e.ColumnIndex = 0 Then
             If CBool(row.Cells(0).Value) Then _checked.Add(r.Id) Else _checked.Remove(r.Id)
             UpdateButton()
-        ElseIf e.ColumnIndex = 4 Then
-            _variantChoice(r.Id) = If(row.Cells(4).Value?.ToString(), "Auto")
+        ElseIf grid.Columns(e.ColumnIndex).Name = "variant" Then
+            _variantChoice(r.Id) = If(row.Cells(grid.Columns("variant").Index).Value?.ToString(), "Auto")
             FillFit(row, r)
             ShowAbout()
         End If
@@ -271,7 +311,20 @@ Public Class MediaModelsPanel
         If r Is Nothing Then Return
         Dim v = ChosenVariant(r)
         lblAbout.Text = r.About & "   " & MediaStudio.RequirementText(r, v, _hw)
+        If _shown IsNot r Then
+            _shown = r
+            details.ShowRecipe(r, v)
+        End If
     End Sub
+
+    Private _shown As MediaRecipe
+
+    Private Shared Function StepsText(r As MediaRecipe) As String
+        If r.IsUpscaler OrElse r.Kind = "tool" Then Return "—"
+        Dim s = If(r.HighSteps > 0, $"{r.HighSteps}+{r.Steps}", r.Steps.ToString())
+        If r.Speed IsNot Nothing Then s &= $" (⚡{If(r.Speed.HighSteps > 0, r.Speed.HighSteps & "+", "")}{r.Speed.Steps})"
+        Return s
+    End Function
 
     Private Sub UpdateButton()
         btnDownload.Text = Localizer.T("⬇  Download selected") & $" ({_checked.Count})"

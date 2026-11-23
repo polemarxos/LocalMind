@@ -588,6 +588,22 @@ Module HarnessMain
             Check(allMedia.Any(Function(r) r.Variants.Any(Function(v) v.Path.Contains("qwen_image_edit_2511_int8_convrot"))) AndAlso
                   allMedia.Any(Function(r) r.Variants.Any(Function(v) v.Path.ToLowerInvariant().Contains("krea2-turbo-int8"))), "ConvRot models like qwen_image_edit_2511 and Krea2-Turbo are listed")
             Check(bestMedia.Count >= 20 AndAlso bestMedia.Count < 400, "Studio 'best for my GPU' stays a short list", bestMedia.Count & " models")
+            ' Model pages: description, sample pictures, settings
+            For Each id In {"realvisxl-v5", "flux1-dev", "hf-rundiffusion-juggernaut-xl-v9", "wan2.2-i2v-a14b"}
+                Dim rr = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = id)
+                If rr Is Nothing Then Continue For
+                Dim inf = Await ModelDetails.GetAsync(rr, False, CancellationToken.None)
+                Dim firstImg = False
+                If inf.Samples.Count > 0 Then
+                    Try
+                        firstImg = (Await Downloader.Http.GetByteArrayAsync(inf.Samples(0).Url)).Length > 1000
+                    Catch
+                    End Try
+                End If
+                Check(inf.Description.Length > 50 AndAlso (firstImg OrElse rr.IsVideo OrElse rr.Id = "flux1-dev"), $"model page for {rr.Name}",
+                      $"{inf.Samples.Count} pictures (first loads: {firstImg}), {inf.Description.Length} chars, likes {inf.Likes}, " &
+                      $"civitai: {If(inf.CivitaiUrl, "")} {inf.CivitaiSteps} | author: {inf.AuthorSettings} | {String.Join(" / ", ModelDetails.SettingsLines(rr).Take(2))}")
+            Next
             Dim msg = Await ChatAgent.MakeVideoAsync("a cat", Nothing, Sub(t) Return, CancellationToken.None)
             Check(msg.Contains("video model"), "no video model yet: a helpful note instead of an error", msg)
         End If

@@ -30,7 +30,7 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 - **Speed test:** see how fast each model runs on your PC.
 - **Auto context:** each model uses the largest conversation memory that fits your GPU.
 - **Image & video studio:** make pictures and short videos offline with Z-Image, FLUX.2 klein, Qwen-Image, Krea 2,
-  Anima, SDXL and Wan 2.x, plus a **🔓 Uncensored** list and about 775 picture & video models in all (community GGUF, INT8 ConvRot and SDXL / SD 1.5 checkpoints).
+  Anima, SDXL and Wan 2.x, plus a **🔓 Uncensored** list and about 1,150 picture & video models in all (community GGUF, INT8 ConvRot and SDXL / SD 1.5 checkpoints).
   You get GGUF and **INT8 ConvRot** versions, picked to fit your VRAM.
   Or switch on **🖼 Image** in the chat: the chat model unloads to free the GPU, and the picture appears in the conversation.
 - **Edit pictures and videos:** describe a change, paint an area, combine pictures, enlarge 4×, restyle your own videos.

@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.9.0
+
+### New
+- **Model pages** (Model Manager → 🎨 Pictures & video): click a model to see, like on Civitai:
+  - **Sample pictures** (from the Hugging Face model card, the base model, or the matching Civitai model); hover for
+    the prompt and settings, click to enlarge.
+  - **The settings LocalMind uses:** steps (and ⚡ fast-mode steps), CFG, sampler, flow shift, size, video length,
+    CLIP skip / v-prediction, words added to the prompt, negative prompt.
+  - **What the author recommends** (steps, CFG, sampler, CLIP skip — read from the description), trigger words,
+    likes, downloads, license, base model, last update, description and links to Hugging Face and Civitai.
+  - The model's files with size and how each runs on your PC — click one to choose it.
+- **Steps column** in the list (click it to sort).
+- **🔓 Show NSFW / uncensored** switch: uncensored picture and video models appear in every list and their sample
+  pictures are shown unblurred (otherwise NSFW samples are blurred until you click them). Civitai lookups use
+  civitai.red when it is on.
+- **More uncensored models:** 1,159 picture & video models now (173 uncensored). Repos that hold several models
+  (e.g. collections of FLUX.2 klein or Chroma merges) are split into one entry per model.
+
 ## 2.8.0
 
 ### New

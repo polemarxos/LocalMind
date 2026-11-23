@@ -72,6 +72,8 @@ Public Class AppSettings
     ' ── Misc ──
     Public Property FirstRunDone As Boolean = False
     Public Property CheckForUpdates As Boolean = True
+    ''' <summary>Show uncensored / NSFW picture and video models (and their sample pictures unblurred).</summary>
+    Public Property ShowNsfw As Boolean = False
     ''' <summary>Download and install LocalMind updates by themselves (used from the next start).</summary>
     Public Property AutoInstallUpdates As Boolean = True
     Public Property MinimizeToTray As Boolean = True
