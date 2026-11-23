@@ -1,0 +1,1528 @@
+[
+ {
+  "id": "z-image-turbo",
+  "name": "Z-Image Turbo",
+  "kind": "image",
+  "family": "Z-Image",
+  "about": "Fast photorealistic images in 8 steps, great text rendering. Best all-rounder for most GPUs.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "leejet/Z-Image-Turbo-GGUF",
+    "path": "z_image_turbo-Q2_K.gguf",
+    "size": 2592442304
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "leejet/Z-Image-Turbo-GGUF",
+    "path": "z_image_turbo-Q3_K.gguf",
+    "size": 3143559104
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "leejet/Z-Image-Turbo-GGUF",
+    "path": "z_image_turbo-Q4_0.gguf",
+    "size": 3683370944
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "leejet/Z-Image-Turbo-GGUF",
+    "path": "z_image_turbo-Q4_K.gguf",
+    "size": 3864250304
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "leejet/Z-Image-Turbo-GGUF",
+    "path": "z_image_turbo-Q5_0.gguf",
+    "size": 4542547904
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "leejet/Z-Image-Turbo-GGUF",
+    "path": "z_image_turbo-Q6_K.gguf",
+    "size": 5263239104
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/z_image_turbo_int8_convrot.safetensors",
+    "size": 6299127240
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "leejet/Z-Image-Turbo-GGUF",
+    "path": "z_image_turbo-Q8_0.gguf",
+    "size": 6577440704
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/z_image_turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "size": 2497281120
+   }
+  ]
+ },
+ {
+  "id": "z-image",
+  "name": "Z-Image (base)",
+  "kind": "image",
+  "family": "Z-Image",
+  "about": "Higher-quality, more controllable Z-Image (slower: 28 steps, uses negative prompts).",
+  "steps": 28,
+  "cfg": 5.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "blurry, low quality, watermark",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "input": "none",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q2_K.gguf",
+    "size": 2311657536
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q3_K_M.gguf",
+    "size": 3334564416
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q4_K_M.gguf",
+    "size": 3850115136
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q3_K_S.gguf",
+    "size": 4361818176
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q4_0.gguf",
+    "size": 4585244736
+   },
+   {
+    "label": "Q3_K_L",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q3_K_L.gguf",
+    "size": 4605642816
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q4_K_S.gguf",
+    "size": 4789148736
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q4_1.gguf",
+    "size": 4850665536
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q5_0.gguf",
+    "size": 5263542336
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q5_K_S.gguf",
+    "size": 5291274816
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q5_1.gguf",
+    "size": 5528963136
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q5_K_M.gguf",
+    "size": 5576771136
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q6_K.gguf",
+    "size": 6102927936
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-Q8_0.gguf",
+    "size": 7224707136
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-BF16.gguf",
+    "size": 12311939136
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "unsloth/Z-Image-GGUF",
+    "path": "z-image-F16.gguf",
+    "size": 12311939136
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/z_image_turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "size": 2497281120
+   }
+  ]
+ },
+ {
+  "id": "flux2-klein-4b",
+  "name": "FLUX.2 klein 4B",
+  "kind": "image",
+  "family": "FLUX.2",
+  "about": "Small, very fast FLUX.2 (4 steps). Text-to-image and image editing. Good on 6–8 GB.",
+  "steps": 4,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "leejet/FLUX.2-klein-4B-GGUF",
+    "path": "flux-2-klein-4b-Q4_0.gguf",
+    "size": 2460378560
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "leejet/FLUX.2-klein-4B-GGUF",
+    "path": "flux-2-klein-4b-Q8_0.gguf",
+    "size": 4300629440
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/flux2-dev",
+    "path": "split_files/vae/flux2-vae.safetensors",
+    "size": 336213556
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-GGUF",
+    "path": "Qwen3-4B-Q4_K_M.gguf",
+    "size": 2497281312
+   }
+  ]
+ },
+ {
+  "id": "flux2-klein-9b",
+  "name": "FLUX.2 klein 9B",
+  "kind": "image",
+  "family": "FLUX.2",
+  "about": "Sharper FLUX.2 (4 steps) with editing. INT8 ConvRot gives near-full quality at half the size.",
+  "steps": 4,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "leejet/FLUX.2-klein-9B-GGUF",
+    "path": "flux-2-klein-9b-Q4_0.gguf",
+    "size": 5616208032
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/flux-2-klein-9b_int8_convrot.safetensors",
+    "size": 9439894544
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "leejet/FLUX.2-klein-9B-GGUF",
+    "path": "flux-2-klein-9b-Q8_0.gguf",
+    "size": 9978284192
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/flux2-dev",
+    "path": "split_files/vae/flux2-vae.safetensors",
+    "size": 336213556
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-8B-GGUF",
+    "path": "Qwen3-8B-Q4_K_M.gguf",
+    "size": 5027784512
+   }
+  ]
+ },
+ {
+  "id": "qwen-image-2.1",
+  "name": "Qwen-Image 2.1",
+  "kind": "image",
+  "family": "Qwen-Image",
+  "about": "Top prompt following and perfect text in images (English, Chinese…). Supports editing.",
+  "steps": 20,
+  "cfg": 6.0,
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "leejet/Qwen-Image-2.1-GGUF",
+    "path": "qwen_image_2.1-Q2_K.gguf",
+    "size": 2561716256
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "leejet/Qwen-Image-2.1-GGUF",
+    "path": "qwen_image_2.1-Q3_K.gguf",
+    "size": 3270553632
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "leejet/Qwen-Image-2.1-GGUF",
+    "path": "qwen_image_2.1-Q4_0.gguf",
+    "size": 4197494816
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "leejet/Qwen-Image-2.1-GGUF",
+    "path": "qwen_image_2.1-Q4_K.gguf",
+    "size": 4197494816
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "leejet/Qwen-Image-2.1-GGUF",
+    "path": "qwen_image_2.1-Q5_0.gguf",
+    "size": 5069910048
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "leejet/Qwen-Image-2.1-GGUF",
+    "path": "qwen_image_2.1-Q6_K.gguf",
+    "size": 5996851232
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "Comfy-Org/Qwen-Image-2.1",
+    "path": "diffusion_models/qwen_image_2.1_int8_convrot.safetensors",
+    "size": 7256783064
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "leejet/Qwen-Image-2.1-GGUF",
+    "path": "qwen_image_2.1-Q8_0.gguf",
+    "size": 7687155744
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Qwen-Image-2.1",
+    "path": "vae/qwen_image_2.1_vae_bf16.safetensors",
+    "size": 675509688
+   },
+   {
+    "role": "llm",
+    "repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+    "path": "Qwen3VL-8B-Instruct-Q4_K_M.gguf",
+    "size": 5027784800
+   }
+  ]
+ },
+ {
+  "id": "qwen-image-2.1-turbo",
+  "name": "Qwen-Image 2.1 Turbo",
+  "kind": "image",
+  "family": "Qwen-Image",
+  "about": "Fast Qwen-Image 2.1 (8 steps) with the same excellent text rendering.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "input": "none",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "Comfy-Org/Qwen-Image-2.1",
+    "path": "diffusion_models/qwen_image_2.1_turbo_int8_convrot.safetensors",
+    "size": 7256787829
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Qwen-Image-2.1",
+    "path": "vae/qwen_image_2.1_vae_bf16.safetensors",
+    "size": 675509688
+   },
+   {
+    "role": "llm",
+    "repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+    "path": "Qwen3VL-8B-Instruct-Q4_K_M.gguf",
+    "size": 5027784800
+   }
+  ]
+ },
+ {
+  "id": "qwen-image-2512",
+  "name": "Qwen-Image 2512",
+  "kind": "image",
+  "family": "Qwen-Image",
+  "about": "Large 20B Qwen-Image release: rich detail and layouts. Needs a big GPU or offloading.",
+  "steps": 20,
+  "cfg": 2.5,
+  "flowShift": 3,
+  "width": 1024,
+  "height": 1024,
+  "negative": "",
+  "sampler": "euler",
+  "frames": 0,
+  "highSteps": 0,
+  "input": "none",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q2_K.gguf",
+    "size": 7737166368
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q3_K_M.gguf",
+    "size": 9012955680
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q3_K_S.gguf",
+    "size": 9279482400
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q4_0.gguf",
+    "size": 11852773920
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q4_K_S.gguf",
+    "size": 12322974240
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q4_1.gguf",
+    "size": 12843678240
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q4_K_M.gguf",
+    "size": 13299575328
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q5_K_S.gguf",
+    "size": 14298184224
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q5_0.gguf",
+    "size": 14400813600
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q5_1.gguf",
+    "size": 15391717920
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q5_K_M.gguf",
+    "size": 15395441184
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q6_K.gguf",
+    "size": 17948936736
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/qwen-image-2512-int8-ConvRot.safetensors",
+    "size": 20499138856
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-Q8_0.gguf",
+    "size": 22354590240
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-BF16.gguf",
+    "size": 40872114720
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "unsloth/Qwen-Image-2512-GGUF",
+    "path": "qwen-image-2512-F16.gguf",
+    "size": 40872114720
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+    "path": "split_files/vae/qwen_image_vae.safetensors",
+    "size": 253806246
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   }
+  ]
+ },
+ {
+  "id": "krea2-turbo",
+  "name": "Krea 2 Turbo",
+  "kind": "image",
+  "family": "Krea",
+  "about": "Aesthetic, photographic Krea 2 in few steps.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "input": "none",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "realrebelai/KREA-2_GGUFs",
+    "path": "TURBO/Krea-2-Turbo-Q3_K_M.gguf",
+    "size": 5514578016
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "realrebelai/KREA-2_GGUFs",
+    "path": "TURBO/Krea-2-Turbo-Q3_K_S.gguf",
+    "size": 5514578016
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "realrebelai/KREA-2_GGUFs",
+    "path": "TURBO/Krea-2-Turbo-Q4_K_M.gguf",
+    "size": 7216993376
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "realrebelai/KREA-2_GGUFs",
+    "path": "TURBO/Krea-2-Turbo-Q5_K_S.gguf",
+    "size": 8819266656
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "realrebelai/KREA-2_GGUFs",
+    "path": "TURBO/Krea-2-Turbo-Q6_K.gguf",
+    "size": 10521682016
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "realrebelai/KREA-2_GGUFs",
+    "path": "TURBO/Krea-2-Turbo-Q8_0.gguf",
+    "size": 13625717856
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/Krea2-Turbo-int8-ConvRot.safetensors",
+    "size": 14132233992
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "llm",
+    "repo": "Qwen/Qwen3-VL-4B-Instruct-GGUF",
+    "path": "Qwen3VL-4B-Instruct-Q4_K_M.gguf",
+    "size": 2497281664
+   }
+  ]
+ },
+ {
+  "id": "anima",
+  "name": "Anima (anime)",
+  "kind": "image",
+  "family": "Anima",
+  "about": "Anime and illustration style model. Small and fast.",
+  "steps": 30,
+  "cfg": 6.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "worst quality, low quality, blurry",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "input": "none",
+  "variants": [
+   {
+    "label": "Q3_K_L",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview-Q3_K_L.gguf",
+    "size": 1146410112
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview-Q4_0.gguf",
+    "size": 1272635520
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview-Q4_K_S.gguf",
+    "size": 1306321024
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview-Q4_1.gguf",
+    "size": 1370046592
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview3-base-Q4_K_M.gguf",
+    "size": 1421648000
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview3-base-Q5_K_S.gguf",
+    "size": 1499570304
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview-Q5_0.gguf",
+    "size": 1531682944
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview3-base-Q5_K_M.gguf",
+    "size": 1592877184
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview-Q5_1.gguf",
+    "size": 1629094016
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview3-base-Q6_K.gguf",
+    "size": 1774808192
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Bedovyy/Anima-GGUF",
+    "path": "anima-preview3-base-Q8_0.gguf",
+    "size": 2276712576
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/anima-preview3-base-int8-ConvRot.safetensors",
+    "size": 2423557579
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Qwen-Image_ComfyUI",
+    "path": "split_files/vae/qwen_image_vae.safetensors",
+    "size": 253806246
+   },
+   {
+    "role": "llm",
+    "repo": "mradermacher/Qwen3-0.6B-Base-GGUF",
+    "path": "Qwen3-0.6B-Base.Q8_0.gguf",
+    "size": 639447232
+   }
+  ]
+ },
+ {
+  "id": "flux1-schnell",
+  "name": "FLUX.1 schnell",
+  "kind": "image",
+  "family": "FLUX.1",
+  "about": "Classic fast FLUX.1 (4 steps), Apache-2.0 licensed.",
+  "steps": 4,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "input": "none",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q2_K.gguf",
+    "size": 4010296352
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q3_K_S.gguf",
+    "size": 5212210208
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q4_0.gguf",
+    "size": 6770707360
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q4_K_S.gguf",
+    "size": 6783943712
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q4_1.gguf",
+    "size": 7510346656
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q5_0.gguf",
+    "size": 8249985952
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q5_K_S.gguf",
+    "size": 8263222304
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q5_1.gguf",
+    "size": 8989625248
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q6_K.gguf",
+    "size": 9834955808
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-Q8_0.gguf",
+    "size": 12687821728
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "city96/FLUX.1-schnell-gguf",
+    "path": "flux1-schnell-F16.gguf",
+    "size": 23782411168
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/z_image_turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "clip_l",
+    "repo": "comfyanonymous/flux_text_encoders",
+    "path": "clip_l.safetensors",
+    "size": 246144152
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/t5-v1_1-xxl-encoder-gguf",
+    "path": "t5-v1_1-xxl-encoder-Q8_0.gguf",
+    "size": 5061584064
+   }
+  ]
+ },
+ {
+  "id": "sdxl",
+  "name": "Stable Diffusion XL",
+  "kind": "image",
+  "family": "SDXL",
+  "about": "The classic SDXL base model. Runs on 6 GB GPUs; huge community of styles.",
+  "steps": 30,
+  "cfg": 7.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "blurry, low quality, deformed",
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "variants": [
+   {
+    "label": "FP16",
+    "format": "checkpoint",
+    "repo": "stabilityai/stable-diffusion-xl-base-1.0",
+    "path": "sd_xl_base_1.0.safetensors",
+    "size": 6938078334
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "madebyollin/sdxl-vae-fp16-fix",
+    "path": "sdxl.vae.safetensors",
+    "size": 334641162
+   }
+  ]
+ },
+ {
+  "id": "wan2.2-ti2v-5b",
+  "name": "Wan 2.2 TI2V 5B (video)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Text or image to video on mid-range GPUs. ~2 s clips at 832×480.",
+  "steps": 20,
+  "cfg": 6.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "sampler": "euler",
+  "highSteps": 0,
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q2_K.gguf",
+    "size": 1853862240
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q3_K_S.gguf",
+    "size": 2294755680
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q3_K_M.gguf",
+    "size": 2547790176
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q4_0.gguf",
+    "size": 3029086560
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q4_K_S.gguf",
+    "size": 3116380512
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q4_1.gguf",
+    "size": 3253219680
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q4_K_M.gguf",
+    "size": 3433116000
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q5_K_S.gguf",
+    "size": 3559928160
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q5_0.gguf",
+    "size": 3642503520
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q5_K_M.gguf",
+    "size": 3810603360
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q5_1.gguf",
+    "size": 3866636640
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q6_K.gguf",
+    "size": 4211683680
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-TI2V-5B-GGUF",
+    "path": "Wan2.2-TI2V-5B-Q8_0.gguf",
+    "size": 5400179040
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan_2.2_ComfyUI_Repackaged",
+    "path": "split_files/vae/wan2.2_vae.safetensors",
+    "size": 1409400960
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "wan2.1-t2v-1.3b",
+  "name": "Wan 2.1 T2V 1.3B (video)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Smallest video model: short clips even on 8 GB GPUs.",
+  "steps": 20,
+  "cfg": 6.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "sampler": "euler",
+  "highSteps": 0,
+  "input": "none",
+  "variants": [
+   {
+    "label": "FP16",
+    "format": "safetensors",
+    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "path": "split_files/diffusion_models/wan2.1_t2v_1.3B_fp16.safetensors",
+    "size": 2838303560
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "wan2.2-t2v-a14b",
+  "name": "Wan 2.2 T2V A14B (video)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Best-quality text-to-video (two 14B experts). Needs lots of RAM; GPU 12 GB+.",
+  "steps": 10,
+  "highSteps": 8,
+  "cfg": 3.5,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "none",
+  "sampler": "euler",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q2_K.gguf",
+    "size": 5299319296,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q2_K.gguf",
+     "size": 5299319296
+    },
+    "size_total": 10598638592
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q3_K_S.gguf",
+    "size": 6513373696,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q3_K_S.gguf",
+     "size": 6513373696
+    },
+    "size_total": 13026747392
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q3_K_M.gguf",
+    "size": 7174468096,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q3_K_M.gguf",
+     "size": 7174468096
+    },
+    "size_total": 14348936192
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q4_0.gguf",
+    "size": 8556458496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q4_0.gguf",
+     "size": 8556458496
+    },
+    "size_total": 17112916992
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q4_K_S.gguf",
+    "size": 8746512896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q4_K_S.gguf",
+     "size": 8746512896
+    },
+    "size_total": 17493025792
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q4_1.gguf",
+    "size": 9257693696,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q4_1.gguf",
+     "size": 9257693696
+    },
+    "size_total": 18515387392
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q4_K_M.gguf",
+    "size": 9650090496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q4_K_M.gguf",
+     "size": 9650090496
+    },
+    "size_total": 19300180992
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q5_K_S.gguf",
+    "size": 10135876096,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q5_K_S.gguf",
+     "size": 10135876096
+    },
+    "size_total": 20271752192
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q5_0.gguf",
+    "size": 10312823296,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q5_0.gguf",
+     "size": 10312823296
+    },
+    "size_total": 20625646592
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q5_K_M.gguf",
+    "size": 10790416896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q5_K_M.gguf",
+     "size": 10790416896
+    },
+    "size_total": 21580833792
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q5_1.gguf",
+    "size": 11014058496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q5_1.gguf",
+     "size": 11014058496
+    },
+    "size_total": 22028116992
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q6_K.gguf",
+    "size": 12002013696,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q6_K.gguf",
+     "size": 12002013696
+    },
+    "size_total": 24004027392
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/wan2.2_t2v_low_int8_ConvRot.safetensors",
+    "size": 14535898712,
+    "high": {
+     "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+     "path": "diffusion_models/wan2.2_t2v_high_int8_ConvRot.safetensors",
+     "size": 14535898712
+    },
+    "size_total": 29071797424
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-T2V-A14B-LowNoise-Q8_0.gguf",
+    "size": 15404970496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-T2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-T2V-A14B-HighNoise-Q8_0.gguf",
+     "size": 15404970496
+    },
+    "size_total": 30809940992
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ },
+ {
+  "id": "wan2.2-i2v-a14b",
+  "name": "Wan 2.2 I2V A14B (video)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Animate a photo into a video clip (two 14B experts). GPU 12 GB+.",
+  "steps": 10,
+  "highSteps": 8,
+  "cfg": 3.5,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "required",
+  "sampler": "euler",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q2_K.gguf",
+    "size": 5300957696,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q2_K.gguf",
+     "size": 5300957696
+    },
+    "size_total": 10601915392
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q3_K_S.gguf",
+    "size": 6515012096,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q3_K_S.gguf",
+     "size": 6515012096
+    },
+    "size_total": 13030024192
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q3_K_M.gguf",
+    "size": 7176106496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q3_K_M.gguf",
+     "size": 7176106496
+    },
+    "size_total": 14352212992
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q4_K_S.gguf",
+    "size": 8748151296,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q4_K_S.gguf",
+     "size": 8748151296
+    },
+    "size_total": 17496302592
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q4_K_M.gguf",
+    "size": 9651728896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q4_K_M.gguf",
+     "size": 9651728896
+    },
+    "size_total": 19303457792
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_K_S.gguf",
+    "size": 10137514496,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_K_S.gguf",
+     "size": 10137514496
+    },
+    "size_total": 20275028992
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_0.gguf",
+    "size": 10314461696,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_0.gguf",
+     "size": 10314461696
+    },
+    "size_total": 20628923392
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_K_M.gguf",
+    "size": 10792055296,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_K_M.gguf",
+     "size": 10792055296
+    },
+    "size_total": 21584110592
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q5_1.gguf",
+    "size": 11015696896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q5_1.gguf",
+     "size": 11015696896
+    },
+    "size_total": 22031393792
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q6_K.gguf",
+    "size": 12003652096,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q6_K.gguf",
+     "size": 12003652096
+    },
+    "size_total": 24007304192
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+    "path": "diffusion_models/wan2.2_i2v_low_int8_convrot.safetensors",
+    "size": 14538222688,
+    "high": {
+     "repo": "milo01/ComfyUI-Native-INT8_ConvRot",
+     "path": "diffusion_models/wan2.2_i2v_high_int8_convrot.safetensors",
+     "size": 14538222688
+    },
+    "size_total": 29076445376
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+    "path": "LowNoise/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf",
+    "size": 15406608896,
+    "high": {
+     "repo": "QuantStack/Wan2.2-I2V-A14B-GGUF",
+     "path": "HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf",
+     "size": 15406608896
+    },
+    "size_total": 30813217792
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan_2.1_ComfyUI_repackaged",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ]
+ }
+]

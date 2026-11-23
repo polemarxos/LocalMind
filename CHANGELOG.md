@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.4.0
+
+### New
+- **Image & video studio** (🎨 Create, or Tools → Image & video studio): make pictures and short videos on your own PC.
+  15 model families: Z-Image Turbo / base, FLUX.2 klein 4B / 9B, Qwen-Image 2.1 / 2.1 Turbo / 2512, Krea 2 Turbo,
+  Anima (anime), FLUX.1 schnell, Stable Diffusion XL, and video with Wan 2.2 TI2V 5B, Wan 2.1 T2V 1.3B and
+  Wan 2.2 T2V / I2V A14B.
+- Each model has several sizes: GGUF quants (Q2–Q8) and **INT8 ConvRot** builds, which are close to full quality
+  and fast on NVIDIA RTX cards (20-series and newer).
+- **Best for my GPU** (the default list) shows only models that fit your VRAM and picks the right size for each.
+  *All models* shows everything, marked green / yellow / red.
+- One click downloads the model with its VAE and text encoder into `Models\Images`. The image engine
+  (stable-diffusion.cpp, CUDA / Vulkan / CPU) installs itself into `Engine\sd`.
+- Text-to-image, image-to-image (with strength), reference image editing for models that support it,
+  text-to-video and image-to-video. Results go to the `Outputs` folder and show in a gallery.
+- **🖼 Image in chat:** turn on the 🖼 Image switch and your message becomes a picture right in the conversation.
+  The chat model first turns your words (Greek too) into a detailed English prompt. An attached photo becomes the
+  starting image. Choose the model in Tools → Image in chat.
+- **Shares one graphics card:** before drawing, LocalMind waits for any running answer, unloads the chat model if both
+  don't fit in VRAM, runs the image model, and reloads the chat model on your next text message. You can also choose
+  to always unload it or to keep it loaded (Tools → Image in chat → Graphics card memory).
+- INT8 ConvRot files that leave out the rotation group size are fixed automatically after download, so
+  stable-diffusion.cpp can load them (ComfyUI's default, 256, is written in).
+- Release builds can be code-signed through SignPath (see docs/CODE-SIGNING.md).
+
 ## 2.3.0
 
 ### New

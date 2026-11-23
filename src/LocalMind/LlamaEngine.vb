@@ -294,6 +294,50 @@ Public Class LlamaEngine
         End Try
     End Function
 
+    ''' <summary>
+    ''' Makes room on the GPU for another program (image / video generation). Waits until running answers
+    ''' finish, then unloads the chat model if both would not fit together (or always / never, per settings).
+    ''' Chat requests wait until the returned lease is disposed; the chat model reloads on the next message.
+    ''' </summary>
+    Public Async Function ReserveGpuAsync(needBytes As Long, status As Action(Of String), ct As CancellationToken) As Task(Of IDisposable)
+        Await _switchLock.WaitAsync(ct)
+        Try
+            If Volatile.Read(_activeRequests) > 0 Then status?.Invoke("Waiting for the chat answer to finish…")
+            While Volatile.Read(_activeRequests) > 0
+                Await Task.Delay(200, ct)
+            End While
+            Dim m = _CurrentModel
+            If _proc IsNot Nothing AndAlso m IsNot Nothing Then
+                Dim mode = _settings().ImageGpuSharing   ' 0 auto, 1 always unload, 2 keep loaded
+                Dim vram = HardwareInfo.Current().VramBytes
+                Dim chatBytes = CLng(m.SizeBytes * 1.15 + 600L * 1024 * 1024)
+                Dim unload = mode = 1 OrElse (mode = 0 AndAlso (vram <= 0 OrElse chatBytes + needBytes > vram * 0.92))
+                If unload Then
+                    status?.Invoke("Unloading the chat model to free the GPU…")
+                    AppendLog($"Unloading {m.DisplayName} to make room for image generation")
+                    Await StopAsync()
+                End If
+            End If
+        Catch
+            _switchLock.Release()
+            Throw
+        End Try
+        Return New GpuLease(Me)
+    End Function
+
+    Private Class GpuLease
+        Implements IDisposable
+        Private _e As LlamaEngine
+        Public Sub New(e As LlamaEngine)
+            _e = e
+        End Sub
+        Public Sub Dispose() Implements IDisposable.Dispose
+            If _e Is Nothing Then Return
+            _e._switchLock.Release()
+            _e = Nothing
+        End Sub
+    End Class
+
     ''' <summary>Pre-loads a model (e.g. when it is picked in the toolbar) without starting a request.</summary>
     Public Async Function EnsureModelAsync(model As LocalModel, ct As CancellationToken) As Task
         If model Is Nothing Then Throw New ArgumentNullException(NameOf(model))
@@ -662,7 +706,7 @@ Public Class LlamaEngine
         End Try
     End Sub
 
-    Private Sub AssignToJob(p As Process)
+    Friend Sub AssignToJob(p As Process)
         Try
             If _job <> IntPtr.Zero Then AssignProcessToJobObject(_job, p.Handle)
         Catch

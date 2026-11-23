@@ -27,6 +27,9 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
   LocalMind waits in the system tray.
 - **Speed test:** see how fast each model runs on your PC.
 - **Auto context:** each model uses the largest conversation memory that fits your GPU.
+- **Image & video studio:** make pictures and short videos offline with Z-Image, FLUX.2 klein, Qwen-Image, Krea 2,
+  Anima, SDXL and Wan 2.x. You get GGUF and **INT8 ConvRot** versions, picked to fit your VRAM.
+  Or switch on **🖼 Image** in the chat: the chat model unloads to free the GPU, and the picture appears in the conversation.
 - **Auto-update** from GitHub Releases.
 - **Other backends:** you can also connect to Ollama or any OpenAI-compatible server (LM Studio, vLLM,
   or another PC running LocalMind).
@@ -91,3 +94,4 @@ Upgrading from **OllamaChat**: your old data is moved over automatically the fir
 
 On GitHub open **Actions → Build → Run workflow** and enter a version such as `v2.1.0`, or push a tag with that name.
 GitHub Actions builds `LocalMind.exe` and attaches it to a new Release.
+Once SignPath is set up, the exe is signed automatically (see [docs/CODE-SIGNING.md](docs/CODE-SIGNING.md)).

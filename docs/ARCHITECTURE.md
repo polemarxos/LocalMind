@@ -28,6 +28,8 @@ LlamaEngine ── llama-server.exe (127.0.0.1:random port)
 | `LanServer.vb` | Phone page, `/api/*` (JSON + Server-Sent Events) and the `/v1/*` proxy. PIN check with lockout. |
 | `MarkdownRenderer.vb` | Markdig (raw HTML disabled) plus the chat view's HTML, CSS and JS shell. |
 | `ModelManagerForm.vb`, `SettingsForm.vb`, `LanForm.vb`, `Theme.vb` | User interface. |
+| `MediaStudio.vb`, `StudioForm.vb` | Image & video studio. Recipes come from `Resources/media_catalog.json` (built by `tools/build_media_catalog.py`). Each recipe lists variants (GGUF quants, INT8 ConvRot safetensors) plus shared parts (VAE, text encoder). `PickVariant` / `BestForGpu` choose by VRAM and prefer ConvRot on NVIDIA cards with compute capability 7.5 or higher. Generation runs stable-diffusion.cpp `sd-cli` from `Engine\sd\<flavor>` and reads step progress from its output. |
+| `Knowledge.vb`, `WebSearch.vb`, `Voice.vb` | Document index (embeddings + cosine search), web search providers, Whisper voice input and SAPI read-aloud. |
 
 ## Choosing a quantization
 

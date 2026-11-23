@@ -278,6 +278,37 @@ Module HarnessMain
             Check(Not AppCore.Lan.IsRunning, "LAN server stops cleanly")
         End If
 
+        If only = "media" Then
+            Console.WriteLine("== Image & video catalog")
+            Dim recs = MediaStudio.Recipes()
+            Check(recs.Count >= 15 AndAlso recs.All(Function(r) r.Variants.Count > 0 AndAlso r.Parts.Count > 0), "recipes load", recs.Count & " models")
+            For Each prof In {(0.0, 16.0), (8.0, 32.0), (12.0, 32.0), (16.0, 64.0), (24.0, 64.0)}
+                Dim h = Hw(prof.Item1, prof.Item2)
+                Dim best = MediaStudio.BestForGpu(h)
+                Dim picks = best.Select(Function(r) $"{r.Name} [{MediaStudio.PickVariant(r, h).Label}]")
+                Check(prof.Item1 = 0 OrElse best.All(Function(r) MediaStudio.Fit(r, MediaStudio.PickVariant(r, h), h) = FitLevel.Fits),
+                      $"{prof.Item1:0}GB VRAM/{prof.Item2:0}GB RAM: {best.Count} shown", String.Join(", ", picks))
+            Next
+            Dim anima = recs.First(Function(r) r.Id = "anima")
+            Dim small = anima.Variants.OrderBy(Function(v) v.Size).First()
+            If Environment.GetEnvironmentVariable("LM_CONVROT") = "1" Then small = anima.Variants.First(Function(v) v.Label.Contains("ConvRot"))
+            Await MediaStudio.DownloadAsync(anima, small, Sub(p, t) Return, CancellationToken.None)
+            Check(MediaStudio.IsInstalled(anima, small) AndAlso MediaStudio.InstalledVariant(anima) Is small, "download Anima " & small.Label & " + VAE + text encoder",
+                  String.Join(", ", MediaStudio.FilesFor(anima, small).Select(Function(f) IO.Path.GetFileName(MediaStudio.LocalPath(f)))))
+            If ExternalTools.FindExe(New ExternalTools.ToolPackage With {.Name = "sd", .Flavor = "cpu", .ExeName = "sd-cli.exe"}) IsNot Nothing Then
+                Dim last = ""
+                Dim sw = Diagnostics.Stopwatch.StartNew()
+                Dim out = Await MediaStudio.GenerateAsync(New MediaStudio.GenerateRequest With {
+                    .Recipe = anima, .Variant = small, .Prompt = "a red apple on a wooden table, illustration", .Negative = anima.Negative,
+                    .Width = 384, .Height = 384, .Steps = 6, .Cfg = anima.Cfg, .Seed = 42}, Sub(p, t) last = $"{p}% {t}", CancellationToken.None)
+                Dim ok = File.Exists(out) AndAlso New FileInfo(out).Length > 10000
+                Check(ok, "generated an image with sd.cpp", $"{out} ({If(ok, New FileInfo(out).Length \ 1024, 0)} KB, {sw.Elapsed.TotalSeconds:0}s, last progress: {last})")
+                If ok Then File.Copy(out, "/tmp/anima-test.png", True)
+            Else
+                Console.WriteLine("  SKIP generation (no sd-cli in Engine/sd/cpu)")
+            End If
+        End If
+
         If only = "docs" Then
             Console.WriteLine("== Chat with documents (real embedding model)")
             Dim dir = Path.Combine(Path.GetTempPath(), "lm-docs")
@@ -350,6 +381,26 @@ Module HarnessMain
             Check(r3.Thinking.Trim().Length = 0, "thinking off honoured", $"thinking {r3.Thinking.Length} chars; answer: {r3.Content.Trim().Replace(vbLf, " ")}")
 
             Check(AppCore.Engine.LoadedContext > 0, "auto context read from engine", AppCore.Engine.LoadedContext & " tokens")
+
+            Console.WriteLine("== Sharing the GPU with image generation")
+            AppCore.Settings.ImageGpuSharing = 2
+            Using lease = Await AppCore.Engine.ReserveGpuAsync(4L << 30, Nothing, CancellationToken.None)
+                Check(AppCore.Engine.CurrentModel IsNot Nothing, "keep-loaded mode leaves the chat model", AppCore.Engine.CurrentModel?.DisplayName)
+            End Using
+            AppCore.Settings.ImageGpuSharing = 1
+            Dim msgs As New List(Of String)
+            Dim leaseG = Await AppCore.Engine.ReserveGpuAsync(4L << 30, Sub(t) msgs.Add(t), CancellationToken.None)
+            Check(AppCore.Engine.CurrentModel Is Nothing AndAlso msgs.Any(Function(m) m.StartsWith("Unloading")), "chat model unloaded for the image", String.Join(" | ", msgs))
+            Dim waiting = backend.StreamChatAsync(
+                New List(Of ChatMessage) From {New ChatMessage With {.Role = "user", .Content = "Say hi."}},
+                New ChatRequestOptions With {.Model = qwen.DisplayName, .MaxTokens = 20, .EnableThinking = False},
+                Sub(t) Return, Sub(t) Return, CancellationToken.None)
+            Await Task.Delay(1500)
+            Check(Not waiting.IsCompleted, "chat waits while the image is drawn", "")
+            leaseG.Dispose()
+            Dim after = Await waiting
+            Check(after.Content.Length > 0 AndAlso AppCore.Engine.CurrentModel IsNot Nothing, "chat model reloads afterwards", after.Content.Trim().Replace(vbLf, " "))
+            AppCore.Settings.ImageGpuSharing = 0
             Console.WriteLine("== Speed test")
             Dim sp = Await SpeedTest.RunAsync(smol, CancellationToken.None)
             Check(sp.GenTokensPerSecond > 0 AndAlso sp.PromptTokensPerSecond > 0 AndAlso SpeedTest.GetResult(smol) IsNot Nothing,

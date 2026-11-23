@@ -45,12 +45,30 @@ Partial Class MainForm
                                                    AppCore.SaveSettings()
                                                    If Not _miAutoRead.Checked Then Voice.StopSpeaking()
                                                End Sub
+        Dim miStudio As New ToolStripMenuItem("Image & video studio…")
+        AddHandler miStudio.Click, Sub() OpenStudio()
+        menuTools.DropDownItems.Insert(0, miStudio)
+        Dim btnStudio As New ToolStripButton("🎨 Create") With {.ToolTipText = "Create images and videos (Image & video studio)"}
+        AddHandler btnStudio.Click, Sub() OpenStudio()
+        toolTop.Items.Insert(toolTop.Items.IndexOf(_btnWeb) + 1, btnStudio)
+        BuildImageUi(btnStudio, miStudio)
         Dim miCompare As New ToolStripMenuItem("Compare models…")
         AddHandler miCompare.Click, Sub() OpenCompare()
         menuTools.DropDownItems.Insert(0, miCompare)
         menuTools.DropDownItems.Insert(0, New ToolStripSeparator())
         menuTools.DropDownItems.Insert(0, _miAutoRead)
         menuTools.DropDownItems.Insert(0, miDocs)
+    End Sub
+
+    Private _studio As StudioForm
+
+    Private Sub OpenStudio()
+        If _studio Is Nothing OrElse _studio.IsDisposed Then
+            _studio = New StudioForm()
+            _studio.Show(Me)
+        Else
+            _studio.Activate()
+        End If
     End Sub
 
     Private Sub OpenKnowledge()

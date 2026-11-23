@@ -476,6 +476,11 @@ Public Class MainForm
             webChat.CoreWebView2.Settings.AreDevToolsEnabled = False
             webChat.CoreWebView2.Settings.IsStatusBarEnabled = False
             AddHandler webChat.CoreWebView2.WebMessageReceived, AddressOf OnWebMessage
+            Try
+                webChat.CoreWebView2.SetVirtualHostNameToFolderMapping("outputs.localmind", MediaStudio.OutputFolder,
+                                                                      CoreWebView2HostResourceAccessKind.Allow)
+            Catch
+            End Try
             ' Links in answers open in the real browser, not inside the chat view.
             AddHandler webChat.CoreWebView2.NewWindowRequested, Sub(s, a)
                                                                     a.Handled = True
@@ -585,7 +590,11 @@ Public Class MainForm
 
         txtInput.Clear()
         ClearAttachments()
-        Await GenerateAsync()
+        If _btnImage IsNot Nothing AndAlso _btnImage.Checked Then
+            Await GenerateImageAsync(text, userMsg)
+        Else
+            Await GenerateAsync()
+        End If
     End Function
 
     Private Async Function GenerateAsync() As Task

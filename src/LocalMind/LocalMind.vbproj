@@ -13,7 +13,7 @@
     <OptionExplicit>On</OptionExplicit>
     <OptionInfer>On</OptionInfer>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>2.3.0</Version>
+    <Version>2.4.0</Version>
 
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -44,6 +44,7 @@
     <EmbeddedResource Include="Resources\katex.min.js" LogicalName="katex.min.js" />
     <EmbeddedResource Include="Resources\katex.min.css" LogicalName="katex.min.css" />
     <EmbeddedResource Include="Resources\lang-el.json" LogicalName="lang-el.json" />
+    <EmbeddedResource Include="Resources\media_catalog.json" LogicalName="media_catalog.json" />
     <EmbeddedResource Include="Resources\webui.html" LogicalName="webui.html" />
     <EmbeddedResource Include="Resources\catalog.json" LogicalName="catalog.json" />
   </ItemGroup>

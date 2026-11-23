@@ -38,6 +38,11 @@ Public Class AppSettings
     Public Property KvCacheType As String = "f16"      ' f16 | q8_0 | q4_0
     Public Property ExtraEngineArgs As String = ""
     Public Property UnloadAfterIdleMinutes As Integer = 0  ' 0 = never
+    ''' <summary>Image generation: 0 = unload the chat model only when both do not fit, 1 = always, 2 = never.</summary>
+    Public Property ImageGpuSharing As Integer = 0
+    ''' <summary>Image model used by the 🎨 Image switch in chat (recipe id; empty = best installed).</summary>
+    Public Property ChatImageModel As String = ""
+    Public Property ImproveImagePrompt As Boolean = True
     Public Property HuggingFaceToken As String = ""
     Public Property VerifyDownloads As Boolean = True
     Public Property AutoResumeDownloads As Boolean = True
