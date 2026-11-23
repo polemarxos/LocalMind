@@ -187,7 +187,7 @@ Public Class ModelManagerForm
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "name", .HeaderText = "Model", .ReadOnly = True, .AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill, .MinimumWidth = 220})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "params", .HeaderText = "Size", .ReadOnly = True, .Width = 70})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "badges", .HeaderText = "Abilities", .ReadOnly = True, .Width = 230})
-        grid.Columns.Add(New DataGridViewComboBoxColumn() With {.Name = "quant", .HeaderText = "Quant", .Width = 95, .FlatStyle = FlatStyle.Flat, .DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton})
+        grid.Columns.Add(New DataGridViewComboBoxColumn() With {.Name = "quant", .HeaderText = "Quant", .Width = 95, .FlatStyle = FlatStyle.Flat, .DisplayStyle = DataGridViewComboBoxDisplayStyle.Nothing, .ToolTipText = "Click to choose the file size (quant). Auto picks the best one for your PC."})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "file", .HeaderText = "Download", .ReadOnly = True, .Width = 85})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "fit", .HeaderText = "On this PC", .ReadOnly = True, .Width = 165})
         grid.Columns.Add(New DataGridViewTextBoxColumn() With {.Name = "dl", .HeaderText = "Downloads", .ReadOnly = True, .Width = 85})

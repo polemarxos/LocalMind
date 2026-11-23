@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.7.1
+
+### New
+- **14× more chat models:** about 9,900 models (was 689) from 36 sources on Hugging Face: the main quantizers
+  (unsloth, bartowski, LM Studio, ggml-org), the AI labs (Qwen, Google, Mistral, IBM, NVIDIA…) and popular community
+  uploaders (mradermacher, MaziyarPanahi, QuantFactory, DavidAU, TheDrummer, huihui-ai…), refreshed every day.
+- **★ Best that fit my GPU** shows about 3× more picks (157 instead of 54 on a 16 GB card), still only from the main
+  quantizers and labs; the **🔓 Uncensored** category has its own list of up to 200.
+- **Ollama-style names** in the search box: type `Qwen3.8-27B-Uncensored:iq4_xs` (or `hf.co/user/model:Q4_K_M`) and
+  that model is found with that file size picked (and ticked when it is the only match).
+- Typing a name searches all models, not only the best ones for your GPU.
+
+### Fixes
+- Model Manager: the toolbar wraps instead of cutting off **⟳ Update list** at the default window size.
+- Dark headers in the "Available files" list; the quant column shows its choices when clicked.
+
 ## 2.7.0
 
 ### New look

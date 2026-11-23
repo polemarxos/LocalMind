@@ -164,6 +164,21 @@ Public Module Theme
         l.FullRowSelect = True
         l.View = View.Details
         l.HideSelection = False
+        ' Dark column headers (Windows draws them white).
+        l.OwnerDraw = True
+        AddHandler l.DrawColumnHeader, Sub(s, e)
+                                           Using b As New SolidBrush(CRaised)
+                                               e.Graphics.FillRectangle(b, e.Bounds)
+                                           End Using
+                                           Using p As New Pen(CBorder)
+                                               e.Graphics.DrawLine(p, e.Bounds.Right - 1, e.Bounds.Top + 4, e.Bounds.Right - 1, e.Bounds.Bottom - 4)
+                                               e.Graphics.DrawLine(p, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1)
+                                           End Using
+                                           TextRenderer.DrawText(e.Graphics, e.Header.Text, BoldFont, New Rectangle(e.Bounds.X + 6, e.Bounds.Y, e.Bounds.Width - 8, e.Bounds.Height),
+                                                                 CText, TextFormatFlags.VerticalCenter Or TextFormatFlags.EndEllipsis Or TextFormatFlags.NoPrefix)
+                                       End Sub
+        AddHandler l.DrawItem, Sub(s, e) e.DrawDefault = True
+        AddHandler l.DrawSubItem, Sub(s, e) e.DrawDefault = True
     End Sub
 
     ''' <summary>Simple dark tab control that owner-draws its headers.</summary>
