@@ -67,4 +67,5 @@ jobs:
           VERSION: ${{ inputs.version != '' && inputs.version || github.ref_name }}
         run: |
           Compress-Archive -Path publish/LocalMind.exe -DestinationPath LocalMind-win-x64.zip
-          gh release create "$env:VERSION" LocalMind-win-x64.zip --target "${{ github.sha }}" --title "LocalMind $env:VERSION" --notes-file CHANGELOG.md
+          python tools/release_notes.py "$env:VERSION" | Out-File -Encoding utf8 notes.md
+          gh release create "$env:VERSION" LocalMind-win-x64.zip --target "${{ github.sha }}" --title "LocalMind $env:VERSION" --notes-file notes.md

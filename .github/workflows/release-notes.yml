@@ -1,0 +1,23 @@
+name: Fix release notes
+
+# Rewrites the notes of every release: download link first, then only that version's changes.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rewrite notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for tag in $(gh release list --limit 100 --json tagName --jq '.[].tagName'); do
+            python3 tools/release_notes.py "$tag" > notes.md
+            gh release edit "$tag" --notes-file notes.md
+            echo "updated $tag"
+          done
