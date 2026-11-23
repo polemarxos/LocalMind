@@ -6,6 +6,11 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version to publish (e.g. v2.0.0). Leave empty to only build.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -28,12 +33,14 @@ jobs:
           name: LocalMind-win-x64
           path: publish/LocalMind.exe
 
-      # Push a tag like v2.0.0 to publish a GitHub Release with the exe attached.
+      # Publish a GitHub Release with the exe attached, either by pushing a tag like v2.0.0
+      # or from the Actions tab: Build → Run workflow → enter a version.
       - name: Create release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.version != ''
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version != '' && inputs.version || github.ref_name }}
         run: |
           Compress-Archive -Path publish/LocalMind.exe -DestinationPath LocalMind-win-x64.zip
-          gh release create "${{ github.ref_name }}" LocalMind-win-x64.zip --title "LocalMind ${{ github.ref_name }}" --generate-notes
+          gh release create "$env:VERSION" LocalMind-win-x64.zip --target "${{ github.sha }}" --title "LocalMind $env:VERSION" --notes-file CHANGELOG.md

@@ -73,4 +73,5 @@ Upgrading from **OllamaChat**: your old folders are moved over automatically the
 
 ## Releasing
 
-Push a tag such as `v2.0.0`. GitHub Actions builds `LocalMind.exe` and attaches it to a new Release.
+On GitHub open **Actions → Build → Run workflow** and enter a version such as `v2.1.0`, or push a tag with that name.
+GitHub Actions builds `LocalMind.exe` and attaches it to a new Release.
