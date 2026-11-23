@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.14.4
+
+### Fixed (full bug and visual check)
+- **No more sudden closing:** an unexpected error is now logged to `Data\errors.log` and shown in a message, and
+  LocalMind keeps running. Before, any unhandled error closed the app.
+- Closing a window (Studio, Film editor, Cast, Music & voice, Civitai, Documents…) while it was still working could
+  crash LocalMind when the next progress update arrived. Progress updates now go nowhere once a window is closed.
+- The creations history and favourites could get corrupted when the PC and the phone searched them at the same time.
+- Settings: all five tabs fit (two were hidden behind scroll arrows), and "Web & voice" no longer shows a double "&".
+- List headers stay dark to the right of the last column. Progress bars use the app's colors instead of white.
+- Share on network: a checkbox text was cut off.
+- The buttons above the message box show only icons on narrow windows instead of overflowing.
+
 ## 2.14.3
 
 ### Changed
