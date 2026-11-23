@@ -158,8 +158,7 @@ Public Class MediaModelsPanel
                                                   End If
                                               Next
                                           End Sub
-        Controls.Add(split)
-        Controls.Add(lblAbout)
+        Controls.Add(split)      ' (the model page on the right replaces the old one-line description)
         Controls.Add(lblInfo)
         Controls.Add(top)
         Controls.Add(actions)
