@@ -1,0 +1,54 @@
+name: Update test
+
+# Builds this code as an older version, starts it, and checks that it updates itself from the
+# latest GitHub release without any clicks (the exe is replaced, LocalMind.old.exe is left behind).
+on:
+  workflow_dispatch:
+    inputs:
+      fake_version:
+        description: 'Version to build as (must be lower than the latest release)'
+        required: false
+        default: '2.0.0'
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Publish as an old version
+        run: dotnet publish src/LocalMind/LocalMind.vbproj -c Release -r win-x64 -p:PublishSingleFile=true -p:Version=${{ inputs.fake_version }} -o app
+      - name: Start it and wait for the automatic update
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+          New-Item -ItemType Directory -Force app/Data, shots | Out-Null
+          @{ FeaturesAsked = $true; FirstRunDone = $true; Language = 'en' } | ConvertTo-Json | Set-Content -Encoding utf8 app/Data/settings.json
+          $before = (Get-Item app/LocalMind.exe).VersionInfo.ProductVersion
+          Write-Host "Before: $before"
+          $p = Start-Process app/LocalMind.exe -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 36; $i++) {
+            Start-Sleep -Seconds 5
+            if (Test-Path app/LocalMind.old.exe) { $ok = $true; break }
+          }
+          Start-Sleep -Seconds 5
+          $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+          [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+          $bmp.Save("shots/after-update.png")
+          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+          $after = (Get-Item app/LocalMind.exe).VersionInfo.ProductVersion
+          Write-Host "After: $after  old.exe present: $ok"
+          Get-ChildItem app | Format-Table Name, Length
+          if (-not $ok) { throw "LocalMind did not update itself" }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: update-test
+          path: shots/
