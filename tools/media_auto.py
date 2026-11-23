@@ -153,16 +153,22 @@ def build(R, used_repos):
     """Adds community recipes to R (the list of hand-made recipes)."""
     templates = {r["id"]: r for r in R}
     added = []
-    seen_names = {r["name"].lower() for r in R}
+    norm = lambda n: re.sub(r"[^a-z0-9]", "", re.sub(r"gguf|int8|convrot", "", n.lower()))
+    seen_names = {norm(r["name"]) for r in R}
+    seen_files = {(os.path.basename(v["path"]).lower(), v.get("size")) for r in R for v in r["variants"]}
 
     def make(tid, repo, name, variants, dl, tags, key_id=None):
         t = templates.get(tid)
         if not t or not variants:
             return
-        key = name.lower()
+        key = norm(name)
         if key in seen_names:
             return
+        sigs = {(os.path.basename(v["path"]).lower(), v.get("size")) for v in variants}
+        if sigs & seen_files:
+            return       # the same files uploaded again by someone else
         seen_names.add(key)
+        seen_files.update(sigs)
         r = copy.deepcopy(t)
         r["id"] = "hf-" + re.sub(r"[^a-z0-9]+", "-", (key_id or repo).lower()).strip("-")
         r["name"] = name
@@ -318,7 +324,7 @@ def build(R, used_repos):
             tid = "realvisxl-v5"
         if not xl and re.search(r"real|photo", repo, re.I):
             tid = "realistic-vision-v6"
-        v = [dict(label="FP16" if "fp16" in best[0].lower() or best[1] < (7e9 if xl else 2.3e9) else "FP32", format="checkpoint",
+        v = [dict(label="FP16" if "fp16" in best[0].lower() or best[1] < (9e9 if xl else 3e9) else "FP32", format="checkpoint",
                   repo=repo, path=best[0], size=best[1])]
         make(tid, repo, clean_name(repo), v, m.get("downloads", 0), m.get("tags", []))
 

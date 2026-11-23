@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.Linq
@@ -59,6 +59,7 @@ Public Class MediaModelsPanel
         txtFilter.PlaceholderText = Localizer.T("Search, e.g. flux, krea, wan i2v, convrot")
         Theme.StyleInput(txtFilter)
         Dim btnStudio = Theme.MakeButton(Localizer.T("🎨 Open the Pictures & video studio"))
+        btnStudio.UseMnemonic = False
         AddHandler btnStudio.Click, Sub()
                                         Dim f = Application.OpenForms.OfType(Of StudioForm)().FirstOrDefault()
                                         If f Is Nothing Then

@@ -582,7 +582,7 @@ Module HarnessMain
             Dim installedCount = allMedia.Where(Function(r) MediaStudio.InstalledVariant(r) IsNot Nothing).Count()
             Dim t1 = sw2.Elapsed.TotalSeconds
             Dim bestMedia = MediaStudio.BestForGpu(Hw(16, 32))
-            Check(allMedia.Count >= 700, "picture & video models: about 25x more", $"{allMedia.Count} models ({allMedia.Where(Function(r) r.IsVideo).Count()} video, {allMedia.Where(Function(r) r.Uncensored).Count()} uncensored), {installedCount} installed, checked in {t1:0.0} s")
+            Check(allMedia.Count >= 700, "picture & video models: about 20x more", $"{allMedia.Count} models ({allMedia.Where(Function(r) r.IsVideo).Count()} video, {allMedia.Where(Function(r) r.Uncensored).Count()} uncensored), {installedCount} installed, checked in {t1:0.0} s")
             Check(t1 < 5, "checking what is installed stays fast", $"{t1:0.00} s")
             Check(allMedia.Where(Function(r) r.Auto).All(Function(r) r.Variants.Count > 0 AndAlso Not String.IsNullOrEmpty(r.Family)), "every community model has files and a family")
             Check(allMedia.Any(Function(r) r.Variants.Any(Function(v) v.Path.Contains("qwen_image_edit_2511_int8_convrot"))) AndAlso

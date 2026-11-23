@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.8.0
+
+### New
+- **Pictures & video models in the Model Manager:** a new **🎨 Pictures & video** tab lists every picture,
+  picture-editing and video model, with what each can do (create, edit, text→video, photo→video, video editing),
+  the best file for your PC (or pick one, e.g. INT8 ConvRot or a GGUF size), download size, how it runs on your PC
+  and popularity. Click column titles to sort; filter by type, search, or show only uncensored or installed ones;
+  tick models and download them in one go.
+- **About 22× more picture and video models: 775** (was 35):
+  - Community **GGUF** models from Hugging Face for FLUX.1, FLUX.2 klein, Qwen-Image (2512, 2.1, Edit), Z-Image,
+    Krea 2, Chroma, Anima and Wan (2.1 / 2.2 text→video, photo→video, VACE; SkyReels, FusionX, Turbo…).
+  - **INT8 ConvRot** models of all those families (e.g. Krea-2 Turbo/Raw, Qwen-Image-Edit-2511 Lightning,
+    FLUX.1-dev, flux.1-krea-dev, Z-Image-Turbo, Chroma, Anima, krea2 fine-tunes…).
+  - Hundreds of single-file **SDXL** (incl. Pony / Illustrious) and **SD 1.5** checkpoints.
+  - New base models: **FLUX.1 dev**, **Wan 2.1 T2V 14B**, **Wan 2.1 I2V 14B 480P / 720P**.
+  - Each community model uses the settings and shared parts of its family, so files like the VAE and text
+    encoder are downloaded once. Copies of the same file uploaded by different people are shown once.
+- The Studio's "★ Best for my GPU" keeps a short list (popular models); "All models" shows everything.
+
 ## 2.7.3
 
 ### New
