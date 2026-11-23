@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+- Portable layout: the engine downloads to `Engine\` and models to `Models\` next to `LocalMind.exe`.
+  Existing engine and models are moved there automatically when they are on the same drive.
+- Release builds publish only `LocalMind.exe`.
+
 ## 2.0.0 — renamed from OllamaChat to LocalMind
 
 ### New

@@ -14,7 +14,7 @@ dotnet run -- engine     # LlamaEngine end-to-end: start, model switching, think
 
 - `download` must run before `server` and `engine`, because they use the models it downloads.
 - `engine` expects a llama.cpp build in LocalMind's engine folder
-  (`<LocalAppData>/LocalMind/engine/cpu/llama-server[.exe]`). The app installs one there automatically on Windows.
+  (`Engine/cpu/llama-server[.exe]` next to the harness executable, in `bin/Debug/net10.0/`). The app installs one there automatically on Windows.
 - `server` expects you to start one yourself, for example:
   `llama-server -m Qwen3-0.6B-Q4_K_M.gguf --host 127.0.0.1 --port 18080 -c 8192 -np 2 --no-webui`
 - One concurrency check depends on timing: with a tiny model the first answer can occasionally finish

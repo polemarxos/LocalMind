@@ -1,5 +1,6 @@
 Imports System
 Imports System.IO
+Imports System.Linq
 Imports Newtonsoft.Json
 
 Public Enum BackendKind
@@ -55,7 +56,7 @@ Public Class AppSettings
     Public ReadOnly Property EffectiveModelsFolder As String
         Get
             If Not String.IsNullOrWhiteSpace(ModelsFolder) Then Return ModelsFolder
-            Return Path.Combine(AppPaths.LocalData, "models")
+            Return AppPaths.DefaultModelsFolder
         End Get
     End Property
 End Class
@@ -109,7 +110,80 @@ Public Module AppPaths
         Directory.CreateDirectory(current)
         Return current
     End Function
+    '────────────────────────────────────────────────────────────
+    '  Portable folders next to LocalMind.exe
+    '────────────────────────────────────────────────────────────
+    Private _engineDir As String
+    Private _modelsDir As String
+
+    ''' <summary>Folder that contains LocalMind.exe.</summary>
+    Public ReadOnly Property AppDir As String
+        Get
+            Dim p = Environment.ProcessPath
+            Return If(String.IsNullOrEmpty(p), AppContext.BaseDirectory, Path.GetDirectoryName(p))
+        End Get
+    End Property
+
+    ''' <summary>&lt;exe folder&gt;\Engine — the llama.cpp engine.</summary>
+    Public ReadOnly Property EngineFolder As String
+        Get
+            SyncLock _lock
+                If _engineDir Is Nothing Then _engineDir = PortableFolder("Engine", "engine")
+                Return _engineDir
+            End SyncLock
+        End Get
+    End Property
+
+    ''' <summary>&lt;exe folder&gt;\Models — default place for downloaded models.</summary>
+    Public ReadOnly Property DefaultModelsFolder As String
+        Get
+            SyncLock _lock
+                If _modelsDir Is Nothing Then _modelsDir = PortableFolder("Models", "models")
+                Return _modelsDir
+            End SyncLock
+        End Get
+    End Property
+
+    ''' <summary>
+    ''' Uses &lt;exe folder&gt;\name. Data from the previous location (%LocalAppData%\LocalMind\legacyName)
+    ''' is moved over when it is on the same drive (instant). If the exe folder is read-only
+    ''' (e.g. Program Files), falls back to %LocalAppData%\LocalMind\legacyName.
+    ''' </summary>
+    Private Function PortableFolder(name As String, legacyName As String) As String
+        Dim fallback = Path.Combine(LocalData, legacyName)
+        Dim target = Path.Combine(AppDir, name)
+        If Not CanWrite(AppDir) Then
+            Directory.CreateDirectory(fallback)
+            Return fallback
+        End If
+        If Not Directory.Exists(target) AndAlso Directory.Exists(fallback) AndAlso
+           Directory.EnumerateFileSystemEntries(fallback).Any() Then
+            If String.Equals(Path.GetPathRoot(target), Path.GetPathRoot(fallback), StringComparison.OrdinalIgnoreCase) Then
+                Try
+                    Directory.Move(fallback, target)
+                Catch
+                    Return fallback   ' in use — keep working from the old place
+                End Try
+            ElseIf legacyName = "models" Then
+                Return fallback       ' don't copy many GB across drives behind the user's back
+            End If
+        End If
+        Directory.CreateDirectory(target)
+        Return target
+    End Function
+
+    Private Function CanWrite(dir As String) As Boolean
+        Try
+            Dim probe = Path.Combine(dir, ".write-test-" & Guid.NewGuid().ToString("N"))
+            File.WriteAllText(probe, "")
+            File.Delete(probe)
+            Return True
+        Catch
+            Return False
+        End Try
+    End Function
 End Module
+
 
 Public Class SettingsService
 

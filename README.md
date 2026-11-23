@@ -33,7 +33,7 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
 ## Quick start
 
 1. Download `LocalMind.exe` from [Releases](https://github.com/polemarxos/LocalMind/releases), or build it yourself (see below).
-2. Run it. On first start the Model Manager opens. Press **★ Recommend for my PC**, then **Download**.
+2. Put it in its own folder (for example `D:\LocalMind`) and run it. On first start the Model Manager opens. Press **★ Recommend for my PC**, then **Download**.
 3. When the download finishes, pick the model in the toolbar and start chatting. Press **Ctrl+Enter** to send.
 
 ## Use it from your phone
@@ -63,13 +63,21 @@ This produces a single self-contained `publish\LocalMind.exe`. You can also open
 
 ## Where LocalMind keeps its data
 
-| Folder | Contents |
-|---|---|
-| `%AppData%\LocalMind` | Settings, chats, personas |
-| `%LocalAppData%\LocalMind\engine` | llama.cpp engine |
-| `%LocalAppData%\LocalMind\models` | Downloaded models (you can move this in Settings) |
+LocalMind is portable. The engine and models live next to the exe:
 
-Upgrading from **OllamaChat**: your old folders are moved over automatically the first time LocalMind starts.
+```
+LocalMind\
+├─ LocalMind.exe
+├─ Engine\    llama.cpp engine (downloaded automatically, 50–700 MB)
+└─ Models\    downloaded AI models (can be changed in Settings)
+```
+
+Settings, chats and personas are kept in `%AppData%\LocalMind`.
+If the exe is in a folder Windows doesn't allow writing to (such as `C:\Program Files`), the engine and models
+go to `%LocalAppData%\LocalMind` instead. Put LocalMind in a normal folder, such as `D:\LocalMind`, on a drive
+with plenty of free space.
+
+Upgrading from **OllamaChat**: your old data is moved over automatically the first time LocalMind starts.
 
 ## Releasing
 

@@ -150,7 +150,7 @@ Public Class SettingsForm
         Theme.StyleInput(txtModels)
         pm.Controls.AddRange({txtModels, btnBrowse})
         AddHandler btnBrowse.Click, Sub()
-                                        Using d As New FolderBrowserDialog() With {.SelectedPath = txtModels.Text, .Description = "Folder for downloaded models (pick a big drive)"}
+                                        Using d As New FolderBrowserDialog() With {.SelectedPath = txtModels.Text, .Description = "Folder for downloaded models (default: the Models folder next to LocalMind.exe)"}
                                             If d.ShowDialog(Me) = DialogResult.OK Then txtModels.Text = d.SelectedPath
                                         End Using
                                     End Sub
@@ -248,7 +248,7 @@ Public Class SettingsForm
         _s.OpenAiKey = txtOpenAiKey.Text.Trim()
         _s.EngineVariant = SelectedVariant()
         Dim folder = txtModels.Text.Trim()
-        _s.ModelsFolder = If(String.Equals(folder, Path.Combine(AppPaths.LocalData, "models"), StringComparison.OrdinalIgnoreCase), "", folder)
+        _s.ModelsFolder = If(String.Equals(folder, AppPaths.DefaultModelsFolder, StringComparison.OrdinalIgnoreCase), "", folder)
         _s.ContextSize = CInt(numCtx.Value)
         _s.GpuLayers = If(String.IsNullOrWhiteSpace(cmbNgl.Text), "auto", cmbNgl.Text.Trim())
         _s.KvCacheType = cmbKv.SelectedItem.ToString()

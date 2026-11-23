@@ -75,9 +75,7 @@ Public Class LlamaEngine
     '════════════════════════════════════════════════════════════
     Public Shared ReadOnly Property EngineRoot As String
         Get
-            Dim d = Path.Combine(AppPaths.LocalData, "engine")
-            Directory.CreateDirectory(d)
-            Return d
+            Return AppPaths.EngineFolder
         End Get
     End Property
 
