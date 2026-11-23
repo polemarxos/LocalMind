@@ -502,7 +502,7 @@ Public Class StudioForm
         chkSharper.Visible = t = "enhance" : chkSmooth.Visible = t = "enhance"
         ' only the settings a task uses (keeps the options on screen)
         Dim enhance = t = "enhance"
-        For Each c As Control In {lblSize, cmbSize, lblSteps, numSteps, lblCfg, numCfg, lblSeed, numSeed, lblStyle, cmbStyle, btnLoras, btnCast, lblCast, btnImprove}
+        For Each c As Control In {lblSize, cmbSize, lblSteps, numSteps, lblCfg, numCfg, lblSeed, numSeed, lblStyle, cmbStyle, btnLoras, btnCast, lblCast, btnImprove, txtNeg}
             c.Visible = Not enhance
         Next
         chkFast.Visible = Not enhance AndAlso r IsNot Nothing AndAlso r.Speed IsNot Nothing
