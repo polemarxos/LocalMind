@@ -2,6 +2,7 @@
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
+Imports System.Linq
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
@@ -22,6 +23,8 @@ Public Class SettingsForm
     Private prgInstall As ProgressBar
     Private txtModels As TextBox
     Private numCtx, numSlots, numIdle, numMinCtx As NumericUpDown
+    Private cmbTheme As ComboBox
+    Private chkSplash As CheckBox
     Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent, chkAutoInstall As CheckBox
     Private cmbLang As ComboBox
     Private txtHotkey As TextBox
@@ -46,13 +49,15 @@ Public Class SettingsForm
         Dim tEngine As New TabPage("Built-in engine")
         Dim tChat As New TabPage("Chat")
         Dim tTools As New TabPage("Web && voice")
-        tabs.TabPages.AddRange({tBackend, tEngine, tChat, tTools})
+        Dim tLook As New TabPage("Appearance")
+        tabs.TabPages.AddRange({tBackend, tEngine, tChat, tTools, tLook})
         Theme.StyleTabs(tabs)
 
         BuildBackend(tBackend)
         BuildEngine(tEngine)
         BuildChat(tChat)
         BuildTools(tTools)
+        BuildLook(tLook)
 
         Dim bottom As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 46, .FlowDirection = FlowDirection.RightToLeft, .Padding = New Padding(8)}
         Dim btnOk = Theme.MakeButton("Save", primary:=True, width:=100)
@@ -99,6 +104,41 @@ Public Class SettingsForm
         Return New NumericUpDown() With {.Minimum = min, .Maximum = max, .DecimalPlaces = dec, .Increment = inc,
                                          .Value = Math.Max(min, Math.Min(max, val)), .Width = 110}
     End Function
+
+    '──────────────── Appearance tab ────────────────
+    Private Sub BuildLook(page As TabPage)
+        Dim t = Grid(page)
+        cmbTheme = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260, .MaxDropDownItems = 16}
+        For i = 0 To ThemePresets.All.Count - 1
+            cmbTheme.Items.Add($"{i + 1}. {ThemePresets.All(i).Name}" & If(ThemePresets.All(i).Dark, "", "  ☀"))
+        Next
+        cmbTheme.SelectedIndex = Math.Max(0, ThemePresets.All.FindIndex(Function(p) p.Name = ThemePresets.Find(_s.ThemeName).Name))
+        Row(t, "Look", cmbTheme, "Colors and font of every window and the chat. Used after a restart.")
+        Dim swatch As New Panel() With {.Width = 420, .Height = 120, .Margin = New Padding(3, 8, 3, 3)}
+        AddHandler swatch.Paint, Sub(s, e)
+                                     Dim p = ThemePresets.All(Math.Max(0, cmbTheme.SelectedIndex))
+                                     Dim g = e.Graphics
+                                     g.SmoothingMode = Drawing2D.SmoothingMode.AntiAlias
+                                     Using b As New SolidBrush(p.Panel) : g.FillRectangle(b, 0, 0, swatch.Width, swatch.Height) : End Using
+                                     Using b As New SolidBrush(p.Raised) : g.FillRectangle(b, 0, 0, swatch.Width, 28) : End Using
+                                     Using b As New SolidBrush(p.Back) : g.FillRectangle(b, 12, 40, 250, 66) : End Using
+                                     Dim fam = ThemePresets.FontOrDefault(p.Font)
+                                     Using f As New Font(fam, 9.5!), fb As New Font(fam, 9.5!, FontStyle.Bold)
+                                         TextRenderer.DrawText(g, "LocalMind", fb, New Point(10, 6), p.Text)
+                                         TextRenderer.DrawText(g, "Hello! How can I help?", f, New Point(22, 50), p.Text)
+                                         TextRenderer.DrawText(g, "dim details · 7B · Q4_K_M", f, New Point(22, 76), p.Dimmed)
+                                         Using b As New SolidBrush(p.Accent) : g.FillRectangle(b, 280, 44, 120, 28) : End Using
+                                         TextRenderer.DrawText(g, "Generate", fb, New Rectangle(280, 44, 120, 28), If(ThemePresets.Lum(p.Accent) > 0.55, Color.Black, Color.White),
+                                                               TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter)
+                                         Using b As New SolidBrush(p.Control) : g.FillRectangle(b, 280, 78, 120, 28) : End Using
+                                         TextRenderer.DrawText(g, "Cancel", f, New Rectangle(280, 78, 120, 28), p.Text, TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter)
+                                     End Using
+                                 End Sub
+        AddHandler cmbTheme.SelectedIndexChanged, Sub() swatch.Invalidate()
+        Row(t, "Preview", swatch)
+        chkSplash = New CheckBox() With {.Text = "Show the loading screen at start (updates, model list, loading the model)", .Checked = _s.ShowStartupScreen, .AutoSize = True}
+        Row(t, "Start", chkSplash)
+    End Sub
 
     '──────────────── Backend tab ────────────────
     Private Sub BuildBackend(page As TabPage)
@@ -339,6 +379,18 @@ Public Class SettingsForm
     End Sub
 
     '──────────────── Save ────────────────
+    Private _themeChanged As Boolean
+
+    Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)
+        MyBase.OnFormClosed(e)
+        If _themeChanged AndAlso Localizer.Box(Owner, "The new look is used after a restart. Restart LocalMind now?", "Appearance",
+                                               MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then
+            Dim mf = TryCast(Owner, MainForm)
+            If mf Is Nothing Then mf = Application.OpenForms.OfType(Of MainForm)().FirstOrDefault()
+            mf?.RestartApp()
+        End If
+    End Sub
+
     Private Sub SaveAndClose(sender As Object, e As EventArgs)
         Dim engineBefore = (_s.EngineVariant, _s.ContextSize, _s.GpuLayers, _s.KvCacheType, _s.ParallelSlots, _s.ExtraEngineArgs, _s.AutoContext, (_s.MinAutoContext, _s.SpeedUpMode))
         Dim backendBefore = (_s.Backend, _s.OpenAiUrl, _s.OpenAiKey)
@@ -356,6 +408,12 @@ Public Class SettingsForm
         _s.CheckForUpdates = chkUpdates.Checked
         _s.AutoUpdateEngines = chkEngUpd.Checked
         _s.AutoInstallUpdates = chkAutoInstall.Checked
+        _s.ShowStartupScreen = chkSplash.Checked
+        Dim newTheme = ThemePresets.All(Math.Max(0, cmbTheme.SelectedIndex)).Name
+        If newTheme <> Theme.PresetName Then
+            _s.ThemeName = newTheme
+            _themeChanged = True
+        End If
         _s.AgentTools = chkAgent.Checked
         _s.EnableImages = chkImages.Checked
         _s.EnableAudio = chkAudio.Checked

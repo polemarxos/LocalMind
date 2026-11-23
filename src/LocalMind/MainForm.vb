@@ -133,6 +133,7 @@ Public Class MainForm
         miNewChat.ShortcutKeys = Keys.Control Or Keys.N
         ApplyModernLayout()
         Localizer.Apply(Me)
+        Theme.Recolor(Me)
         If _tray?.ContextMenuStrip IsNot Nothing Then
             For Each it As ToolStripItem In _tray.ContextMenuStrip.Items
                 Localizer.WalkItem(it)
@@ -170,6 +171,18 @@ Public Class MainForm
         menuHelp.DropDownItems.Insert(0, miUpdateAll)
         menuHelp.DropDownItems.Insert(0, miUpdate)
         AutoUpdateEverythingLater()
+        LoadDone.TrySetResult(True)
+    End Sub
+
+    ''' <summary>Set when the window has finished loading (the loading screen waits for it).</summary>
+    <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public ReadOnly Property LoadDone As New TaskCompletionSource(Of Boolean)()
+
+    ''' <summary>Closes LocalMind and opens it again (e.g. for a new look).</summary>
+    Public Sub RestartApp()
+        Updater.Restart(Environment.ProcessPath)
+        _reallyExit = True
+        Close()
     End Sub
 
     Private _updating As Boolean

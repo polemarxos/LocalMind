@@ -100,6 +100,7 @@ Public Module MarkdownRenderer
         ' KaTeX (fonts inlined) → formulas render offline.
         sb.AppendLine("<style>" & ReadResource("katex.min.css") & "</style>")
         sb.AppendLine("<script>" & ReadResource("katex.min.js") & "</script>")
+        Dim cssStart = sb.Length
         sb.AppendLine("<style>")
         sb.AppendLine("  * { box-sizing: border-box; }")
         sb.AppendLine("  :root { color-scheme: dark; }")
@@ -195,7 +196,7 @@ Public Module MarkdownRenderer
         sb.AppendLine("  blockquote p { margin: 4px 0; }")
         sb.AppendLine("  table { border-collapse: collapse; margin: 12px 0; width: 100%; font-size: 0.95em; }")
         sb.AppendLine("  th, td { border: 1px solid #3a3a3a; padding: 8px 12px; text-align: left; }")
-        sb.AppendLine("  th { background: #2d2d30; color: #fff; font-weight: 600; }")
+        sb.AppendLine("  th { background: #2d2d30; color: #e4e4e7; font-weight: 600; }")
         sb.AppendLine("  tr:nth-child(even) td { background: #232324; }")
         sb.AppendLine("  hr { border: none; border-top: 1px solid #3a3a3a; margin: 20px 0; }")
         sb.AppendLine("  img { max-width: 100%; border-radius: 6px; margin: 8px 0; }")
@@ -218,6 +219,9 @@ Public Module MarkdownRenderer
         sb.AppendLine("  .thinking-content h1, .thinking-content h2, .thinking-content h3, .thinking-content h4, .thinking-content h5, .thinking-content h6 { color: #b8aaf5; font-size: 13px; margin: 8px 0 4px 0; }")
         sb.AppendLine("  .thinking-content ul, .thinking-content ol { padding-left: 20px; margin: 4px 0; }")
         sb.AppendLine("</style>")
+        Dim themed = Theme.MapCss(sb.ToString(cssStart, sb.Length - cssStart))
+        sb.Length = cssStart
+        sb.Append(themed)
         sb.AppendLine("</head>")
         sb.AppendLine("<body>")
         sb.AppendLine("<div id='chatBody'></div>")

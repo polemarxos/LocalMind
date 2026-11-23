@@ -23,6 +23,7 @@ jobs:
         run: |
           Add-Type -AssemblyName System.Windows.Forms, System.Drawing
           New-Item -ItemType Directory -Force shots | Out-Null
+          $env:LOCALMIND_NOSPLASH = '1'
           function Shot($name) {
             $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
             $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height

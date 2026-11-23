@@ -67,13 +67,13 @@ Public Module Localizer
     Public Function Box(owner As IWin32Window, text As String, Optional caption As String = "",
                         Optional buttons As MessageBoxButtons = MessageBoxButtons.OK,
                         Optional icon As MessageBoxIcon = MessageBoxIcon.None) As DialogResult
-        Return MessageBox.Show(owner, T(text), T(caption), buttons, icon)
+        Return BoxForm.Ask(owner, T(text), T(caption), buttons, icon)
     End Function
 
     Public Function Box(text As String, Optional caption As String = "",
                         Optional buttons As MessageBoxButtons = MessageBoxButtons.OK,
                         Optional icon As MessageBoxIcon = MessageBoxIcon.None) As DialogResult
-        Return MessageBox.Show(T(text), T(caption), buttons, icon)
+        Return BoxForm.Ask(Nothing, T(text), T(caption), buttons, icon)
     End Function
 
     ''' <summary>Strings used inside the chat view (JavaScript).</summary>

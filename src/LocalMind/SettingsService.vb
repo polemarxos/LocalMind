@@ -78,6 +78,10 @@ Public Class AppSettings
     Public Property OnlyFitGpu As Boolean = False
     ''' <summary>Download and install LocalMind updates by themselves (used from the next start).</summary>
     Public Property AutoInstallUpdates As Boolean = True
+    ''' <summary>The look (Settings → Appearance), one of ThemePresets.All.</summary>
+    Public Property ThemeName As String = "Midnight"
+    ''' <summary>The loading screen at start (checks updates, model list, loads the model).</summary>
+    Public Property ShowStartupScreen As Boolean = True
     Public Property MinimizeToTray As Boolean = True
     Public Property CloseToTray As Boolean = False
     Public Property QuickAskHotkey As String = "Ctrl+Alt+Space"

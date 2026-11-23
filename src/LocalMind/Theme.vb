@@ -1,28 +1,173 @@
 ﻿Imports System.Drawing
 Imports System.Drawing.Drawing2D
 Imports System.Windows.Forms
+Imports System.Linq
+Imports System.Collections.Generic
 
 ''' <summary>Shared dark styling so every window matches the main form.</summary>
 Public Module Theme
-    ' A calm, neutral dark palette with one blue accent.
-    Public ReadOnly CBack As Color = Color.FromArgb(24, 24, 27)
-    Public ReadOnly CPanel As Color = Color.FromArgb(31, 31, 35)
-    Public ReadOnly CRaised As Color = Color.FromArgb(41, 42, 47)
-    Public ReadOnly CControl As Color = Color.FromArgb(54, 56, 62)
-    Public ReadOnly CHover As Color = Color.FromArgb(66, 68, 75)
-    Public ReadOnly CBorder As Color = Color.FromArgb(58, 60, 66)
-    Public ReadOnly CText As Color = Color.FromArgb(232, 232, 236)
-    Public ReadOnly CDim As Color = Color.FromArgb(150, 152, 162)
-    Public ReadOnly CAccent As Color = Color.FromArgb(37, 99, 235)
-    Public ReadOnly CAccentHover As Color = Color.FromArgb(59, 130, 246)
-    Public ReadOnly CAccentSoft As Color = Color.FromArgb(30, 52, 96)
-    Public ReadOnly CGood As Color = Color.FromArgb(110, 200, 120)
-    Public ReadOnly CWarn As Color = Color.FromArgb(230, 180, 80)
-    Public ReadOnly CBad As Color = Color.FromArgb(220, 100, 100)
-    Public ReadOnly UiFont As New Font("Segoe UI", 9.5!)
-    Public ReadOnly BoldFont As New Font("Segoe UI Semibold", 9.5!)
-    Public ReadOnly SmallFont As New Font("Segoe UI", 8.5!)
-    Public ReadOnly InputFont As New Font("Segoe UI", 11.0!)
+    ' The look in use (Settings → Appearance); "Midnight" is the default. Set once by UsePreset at startup.
+    Public CBack As Color = Color.FromArgb(24, 24, 27)
+    Public CPanel As Color = Color.FromArgb(31, 31, 35)
+    Public CRaised As Color = Color.FromArgb(41, 42, 47)
+    Public CControl As Color = Color.FromArgb(54, 56, 62)
+    Public CHover As Color = Color.FromArgb(66, 68, 75)
+    Public CBorder As Color = Color.FromArgb(58, 60, 66)
+    Public CText As Color = Color.FromArgb(232, 232, 236)
+    Public CDim As Color = Color.FromArgb(150, 152, 162)
+    Public CAccent As Color = Color.FromArgb(37, 99, 235)
+    Public CAccentHover As Color = Color.FromArgb(59, 130, 246)
+    Public CAccentSoft As Color = Color.FromArgb(30, 52, 96)
+    ''' <summary>Text on accent-colored buttons (white, or black on bright accents).</summary>
+    Public CAccentText As Color = Color.White
+    Public CGood As Color = Color.FromArgb(110, 200, 120)
+    Public CWarn As Color = Color.FromArgb(230, 180, 80)
+    Public CBad As Color = Color.FromArgb(220, 100, 100)
+    Public UiFont As New Font("Segoe UI", 9.5!)
+    Public BoldFont As New Font("Segoe UI Semibold", 9.5!)
+    Public SmallFont As New Font("Segoe UI", 8.5!)
+    Public InputFont As New Font("Segoe UI", 11.0!)
+    Public IsDark As Boolean = True
+    Public PresetName As String = "Midnight"
+
+    ' the original palette (what the designer files and older code use), to map to the chosen look
+    Private ReadOnly Original As Color() = {Color.FromArgb(24, 24, 27), Color.FromArgb(31, 31, 35), Color.FromArgb(41, 42, 47),
+                                            Color.FromArgb(54, 56, 62), Color.FromArgb(66, 68, 75), Color.FromArgb(58, 60, 66),
+                                            Color.FromArgb(232, 232, 236), Color.FromArgb(150, 152, 162), Color.FromArgb(37, 99, 235),
+                                            Color.FromArgb(59, 130, 246), Color.FromArgb(30, 52, 96), Color.FromArgb(110, 200, 120),
+                                            Color.FromArgb(230, 180, 80), Color.FromArgb(220, 100, 100)}
+
+    ''' <summary>Uses a look from ThemePresets (call before any window is made).</summary>
+    Public Sub UsePreset(name As String)
+        Dim p = ThemePresets.Find(name)
+        PresetName = p.Name
+        IsDark = p.Dark
+        CBack = p.Back : CPanel = p.Panel : CRaised = p.Raised : CControl = p.Control
+        CText = p.Text : CDim = p.Dimmed : CAccent = p.Accent
+        CHover = ThemePresets.Mix(p.Control, p.Text, If(p.Dark, 0.1, 0.07))
+        CBorder = ThemePresets.Mix(p.Raised, p.Text, If(p.Dark, 0.13, 0.14))
+        CAccentHover = ThemePresets.Mix(p.Accent, If(p.Dark, Color.White, Color.Black), If(p.Dark, 0.16, 0.12))
+        CAccentSoft = ThemePresets.Mix(p.Back, p.Accent, If(p.Dark, 0.28, 0.14))
+        CAccentText = If(ThemePresets.Lum(p.Accent) > 0.55, Color.FromArgb(20, 20, 20), Color.White)
+        CGood = p.Good : CWarn = p.Warn : CBad = p.Bad
+        Dim fam = ThemePresets.FontOrDefault(p.Font)
+        Dim semi = If(fam.StartsWith("Segoe UI"), ThemePresets.FontOrDefault(fam & " Semibold"), fam)
+        If semi = "Segoe UI" AndAlso fam <> "Segoe UI" Then semi = fam
+        UiFont = New Font(fam, p.FontSize)
+        BoldFont = If(semi <> fam, New Font(semi, p.FontSize), New Font(fam, p.FontSize, FontStyle.Bold))
+        SmallFont = New Font(fam, p.FontSize - 1.0!)
+        InputFont = New Font(fam, p.FontSize + 1.5!)
+    End Sub
+
+    ''' <summary>A color from the original palette (or a gray / white / blue in code) in the chosen look.</summary>
+    Public Function MapColor(c As Color, isBack As Boolean) As Color
+        If c.A < 255 OrElse PresetName = "Midnight" Then Return c
+        Dim current = {CBack, CPanel, CRaised, CControl, CHover, CBorder, CText, CDim, CAccent, CAccentHover, CAccentSoft, CGood, CWarn, CBad}
+        For i = 0 To Original.Length - 1
+            If Original(i).ToArgb() = c.ToArgb() Then Return current(i)
+        Next
+        If ThemePresets.IsGray(c) Then
+            Dim l = ThemePresets.Lum(c)
+            If isBack Then
+                If l < 0.105 Then Return CBack
+                If l < 0.135 Then Return CPanel
+                If l < 0.185 Then Return CRaised
+                If l < 0.235 Then Return CControl
+                If l < 0.35 Then Return CHover
+                Return c
+            Else
+                If l > 0.75 Then Return CText
+                If l > 0.38 Then Return CDim
+                Return c
+            End If
+        End If
+        ' blues of the old accent
+        If Math.Abs(CInt(c.R) - 37) + Math.Abs(CInt(c.G) - 99) + Math.Abs(CInt(c.B) - 235) < 90 Then Return If(isBack, CAccent, CAccent)
+        Return c
+    End Function
+
+    ''' <summary>Puts a window (made with fixed colors) into the chosen look; also dark scrollbars on dark looks.</summary>
+    Public Sub Recolor(root As Control)
+        If root Is Nothing Then Return
+        For Each c As Control In root.Controls
+            Recolor(c)
+        Next
+        If PresetName <> "Midnight" Then
+            Dim accentBack = root.BackColor.ToArgb() = CAccent.ToArgb() OrElse root.BackColor.ToArgb() = Original(8).ToArgb()
+            root.BackColor = MapColor(root.BackColor, True)
+            If accentBack Then
+                root.ForeColor = CAccentText
+            Else
+                root.ForeColor = MapColor(root.ForeColor, False)
+            End If
+            If TypeOf root Is Button AndAlso Not accentBack Then
+                Dim b = CType(root, Button)
+                If b.FlatStyle = FlatStyle.Flat AndAlso b.FlatAppearance.MouseOverBackColor.A = 255 Then
+                    b.FlatAppearance.MouseOverBackColor = MapColor(b.FlatAppearance.MouseOverBackColor, True)
+                    b.FlatAppearance.MouseDownBackColor = MapColor(b.FlatAppearance.MouseDownBackColor, True)
+                End If
+            End If
+        End If
+        DarkScrollbars(root)
+    End Sub
+
+    ''' <summary>The chat page's colors (written for the default look) in the chosen look.</summary>
+    Public Function MapCss(css As String) As String
+        If PresetName = "Midnight" Then Return css
+        Dim hex = Function(c As Color) $"#{c.R:x2}{c.G:x2}{c.B:x2}"
+        Dim link = If(IsDark, ThemePresets.Mix(CAccent, Color.White, 0.35), CAccent)
+        Dim map As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+            {"#18181b", hex(CBack)}, {"#1f1f23", hex(CPanel)}, {"#1e1e1e", hex(CBack)}, {"#222327", hex(CRaised)}, {"#2a2a2e", hex(CRaised)},
+            {"#2d2d30", hex(CRaised)}, {"#2a2b31", hex(CControl)}, {"#34363b", hex(CControl)}, {"#3a3a3a", hex(CControl)}, {"#3a3c42", hex(CControl)},
+            {"#333", hex(CControl)}, {"#444", hex(CHover)}, {"#4a4c54", hex(CHover)},
+            {"#fafafa", hex(CText)}, {"#ffffff", hex(CText)}, {"#e4e4e7", hex(CText)}, {"#ddd", hex(CText)}, {"#ccc", hex(CText)}, {"#e0e0e0", hex(CText)},
+            {"#a1a1aa", hex(CDim)}, {"#a0a0a8", hex(CDim)}, {"#9a9aa2", hex(CDim)}, {"#888", hex(CDim)}, {"#777", hex(CDim)}, {"#bbb", hex(CDim)},
+            {"#2563eb", hex(CAccent)}, {"#4ea1ff", hex(link)}, {"#fff", hex(CAccentText)}}
+        Dim result = System.Text.RegularExpressions.Regex.Replace(css, "#[0-9a-fA-F]{6}(?![0-9a-fA-F])|#[0-9a-fA-F]{3}(?![0-9a-fA-F])",
+                     Function(m) If(map.ContainsKey(m.Value), map(m.Value), m.Value))
+        result = result.Replace("color-scheme: dark;", If(IsDark, "color-scheme: dark;", "color-scheme: light;"))
+        Return result.Replace("font-family: 'Segoe UI', 'Inter'", $"font-family: '{UiFont.FontFamily.Name}', 'Segoe UI', 'Inter'")
+    End Function
+
+    <Runtime.InteropServices.DllImport("uxtheme.dll", CharSet:=Runtime.InteropServices.CharSet.Unicode)>
+    Private Function SetWindowTheme(hwnd As IntPtr, app As String, idList As String) As Integer
+    End Function
+
+    ''' <summary>Dark scrollbars (Windows 10 1809+) for lists, grids, text boxes and panels on dark looks.</summary>
+    Public Sub DarkScrollbars(c As Control)
+        If Not IsDark Then Return
+        If Not (TypeOf c Is ListView OrElse TypeOf c Is DataGridView OrElse TypeOf c Is TextBoxBase OrElse TypeOf c Is ListBox OrElse
+                TypeOf c Is TreeView OrElse TypeOf c Is ScrollableControl) Then Return
+        Dim apply = Sub()
+                        Try
+                            SetWindowTheme(c.Handle, "DarkMode_Explorer", Nothing)
+                            If TypeOf c Is DataGridView Then
+                                For Each sb In c.Controls.OfType(Of ScrollBar)()
+                                    SetWindowTheme(sb.Handle, "DarkMode_Explorer", Nothing)
+                                Next
+                            End If
+                        Catch
+                        End Try
+                    End Sub
+        If c.IsHandleCreated Then apply() Else AddHandler c.HandleCreated, Sub() apply()
+    End Sub
+
+    ''' <summary>
+    ''' Makes a list exactly tall enough for its rows (up to <paramref name="maxRows"/>), measured after it exists,
+    ''' so it is right at every Windows display scale.
+    ''' </summary>
+    Public Sub FitListHeight(lv As ListView, maxRows As Integer)
+        Dim fit = Sub()
+                      Try
+                          If lv.Items.Count = 0 Then Return
+                          Dim r = lv.GetItemRect(0)
+                          Dim rows = Math.Min(maxRows, lv.Items.Count)
+                          lv.Height = r.Top + r.Height * rows + 4 + If(lv.Items.Count > maxRows, 0, 0)
+                      Catch
+                      End Try
+                  End Sub
+        If lv.IsHandleCreated Then fit() Else AddHandler lv.HandleCreated, Sub() lv.BeginInvoke(fit)
+    End Sub
 
     Private _appIcon As Icon
 
@@ -52,7 +197,7 @@ Public Module Theme
     Public Sub DarkTitleBar(f As Form)
         Dim apply = Sub()
                         Try
-                            Dim one = 1
+                            Dim one = If(IsDark, 1, 0)
                             If DwmSetWindowAttribute(f.Handle, 20, one, 4) <> 0 Then DwmSetWindowAttribute(f.Handle, 19, one, 4)
                         Catch
                         End Try
@@ -66,7 +211,10 @@ Public Module Theme
         f.ForeColor = CText
         f.Font = UiFont
         ' Translate every window once its controls exist.
-        AddHandler f.Load, Sub() Localizer.Apply(f)
+        AddHandler f.Load, Sub()
+                               Localizer.Apply(f)
+                               Recolor(f)
+                           End Sub
         Try
             f.Icon = AppIcon()
         Catch
@@ -78,7 +226,7 @@ Public Module Theme
             .Text = caption,
             .FlatStyle = FlatStyle.Flat,
             .BackColor = If(primary, CAccent, CControl),
-            .ForeColor = Color.White,
+            .ForeColor = If(primary, CAccentText, CText),
             .Height = 30,
             .AutoSize = (width = 0),
             .AutoSizeMode = AutoSizeMode.GrowOnly,
@@ -103,13 +251,13 @@ Public Module Theme
         ElseIf primary Then
             b.BackColor = CAccent
             b.FlatAppearance.MouseOverBackColor = CAccentHover
-            b.FlatAppearance.MouseDownBackColor = Color.FromArgb(29, 78, 216)
+            b.FlatAppearance.MouseDownBackColor = ThemePresets.Mix(CAccent, Color.Black, 0.2)
         Else
             b.BackColor = CControl
             b.FlatAppearance.MouseOverBackColor = CHover
             b.FlatAppearance.MouseDownBackColor = CRaised
         End If
-        b.ForeColor = Color.White
+        b.ForeColor = If(primary, CAccentText, If(danger, Color.White, CText))
     End Sub
 
     Public Function MakeLabel(caption As String, Optional bold As Boolean = False, Optional dim_ As Boolean = False) As Label
@@ -126,12 +274,13 @@ Public Module Theme
         c.ForeColor = CText
         If TypeOf c Is TextBox Then CType(c, TextBox).BorderStyle = BorderStyle.FixedSingle
         If TypeOf c Is ComboBox Then DarkCombo(CType(c, ComboBox))
+        DarkScrollbars(c)
     End Sub
 
     Public Sub StyleGrid(g As DataGridView)
         g.BackgroundColor = CBack
         g.BorderStyle = BorderStyle.None
-        g.GridColor = Color.FromArgb(44, 45, 50)
+        g.GridColor = ThemePresets.Mix(CBack, CText, 0.1)
         g.EnableHeadersVisualStyles = False
         g.ColumnHeadersDefaultCellStyle.BackColor = CRaised
         g.ColumnHeadersDefaultCellStyle.ForeColor = CText
@@ -147,10 +296,11 @@ Public Module Theme
         g.AdvancedColumnHeadersBorderStyle.Bottom = DataGridViewAdvancedCellBorderStyle.Single
         g.DefaultCellStyle.BackColor = CBack
         g.DefaultCellStyle.ForeColor = CText
-        g.DefaultCellStyle.SelectionBackColor = Color.FromArgb(38, 52, 82)
-        g.DefaultCellStyle.SelectionForeColor = Color.White
-        g.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(27, 27, 31)
-        g.GridColor = Color.FromArgb(38, 39, 44)
+        g.DefaultCellStyle.SelectionBackColor = CAccentSoft
+        g.DefaultCellStyle.SelectionForeColor = CText
+        g.AlternatingRowsDefaultCellStyle.BackColor = ThemePresets.Mix(CBack, CText, 0.025)
+        g.GridColor = ThemePresets.Mix(CBack, CText, 0.07)
+        DarkScrollbars(g)
         g.RowHeadersVisible = False
         g.AllowUserToAddRows = False
         g.AllowUserToDeleteRows = False
@@ -170,6 +320,7 @@ Public Module Theme
         l.FullRowSelect = True
         l.View = View.Details
         l.HideSelection = False
+        DarkScrollbars(l)
         ' Dark column headers (Windows draws them white).
         l.OwnerDraw = True
         AddHandler l.DrawColumnHeader, Sub(s, e)
@@ -206,7 +357,7 @@ Public Module Theme
                         e.Graphics.FillRectangle(b, e.Bounds.X + 10, e.Bounds.Bottom - 3, e.Bounds.Width - 20, 3)
                     End Using
                 End If
-                TextRenderer.DrawText(e.Graphics, t.TabPages(e.Index).Text, If(selected, BoldFont, UiFont), e.Bounds, If(selected, Color.White, CDim),
+                TextRenderer.DrawText(e.Graphics, t.TabPages(e.Index).Text, If(selected, BoldFont, UiFont), e.Bounds, If(selected, CText, CDim),
                                       TextFormatFlags.HorizontalCenter Or TextFormatFlags.VerticalCenter Or TextFormatFlags.NoPrefix)
             End Sub
         For Each p As TabPage In t.TabPages
@@ -368,7 +519,7 @@ Public Module Theme
             If primary Then
                 Pill(e.Graphics, New Rectangle(Point.Empty, e.Item.Size), If(e.Item.Selected, CAccentHover, CAccent))
             ElseIf btn IsNot Nothing AndAlso btn.Checked Then
-                Pill(e.Graphics, New Rectangle(Point.Empty, e.Item.Size), If(e.Item.Selected, Color.FromArgb(38, 66, 120), CAccentSoft), CAccent)
+                Pill(e.Graphics, New Rectangle(Point.Empty, e.Item.Size), If(e.Item.Selected, ThemePresets.Mix(CAccentSoft, CAccent, 0.3), CAccentSoft), CAccent)
             ElseIf btn IsNot Nothing AndAlso btn.CheckOnClick Then
                 ' an option you can switch on: outlined so it reads as a toggle
                 Pill(e.Graphics, New Rectangle(Point.Empty, e.Item.Size), If(e.Item.Selected, CControl, Color.Transparent), CBorder)
@@ -407,9 +558,11 @@ Public Module Theme
             ElseIf TypeOf e.Item Is ToolStripStatusLabel Then
                 If e.Item.ForeColor = Color.White OrElse e.Item.ForeColor = SystemColors.ControlText Then e.TextColor = CDim
             ElseIf Not e.Item.Enabled Then
-                e.TextColor = Color.FromArgb(105, 107, 115)
-            ElseIf CStr(e.Item.Tag) = PrimaryTag OrElse (TypeOf e.Item Is ToolStripButton AndAlso CType(e.Item, ToolStripButton).Checked) Then
-                e.TextColor = Color.White
+                e.TextColor = ThemePresets.Mix(CDim, CPanel, 0.4)
+            ElseIf CStr(e.Item.Tag) = PrimaryTag Then
+                e.TextColor = CAccentText
+            ElseIf TypeOf e.Item Is ToolStripButton AndAlso CType(e.Item, ToolStripButton).Checked Then
+                e.TextColor = CText
             Else
                 e.TextColor = CText
             End If

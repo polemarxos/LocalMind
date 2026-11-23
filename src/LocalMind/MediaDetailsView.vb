@@ -107,6 +107,7 @@ Public Class MediaDetailsView
                                                 If lv.SelectedItems.Count > 0 Then RaiseEvent VariantPicked(r, CStr(lv.SelectedItems(0).Tag))
                                             End Sub
         flow.Controls.Add(lv)
+        Theme.FitListHeight(lv, 6)          ' measured: right at every display scale
 
         Dim lblStats = Text_(Localizer.T("Loading details…"), dim_:=True)
         flow.Controls.Add(Heading(Localizer.T("About")))
