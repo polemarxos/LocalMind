@@ -1,0 +1,13 @@
+# Build output
+bin/
+obj/
+publish/
+*.user
+.vs/
+*.suo
+*.pubxml.user
+TestResults/
+
+# Local AI files never belong in git
+*.gguf
+*.part

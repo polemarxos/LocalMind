@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>LocalMind</RootNamespace>
+    <AssemblyName>LocalMind</AssemblyName>
+    <UseWindowsForms>true</UseWindowsForms>
+    <StartupObject>LocalMind.Program</StartupObject>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <OptionStrict>Off</OptionStrict>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionInfer>On</OptionInfer>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>2.0.0</Version>
+
+    <PlatformTarget>x64</PlatformTarget>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <WebView2LoaderPreference>Static</WebView2LoaderPreference>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <!-- Lets the project compile on non-Windows build machines (CI). Harmless on Windows. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="app.ico" />
+  </ItemGroup>
+
+  <!-- Offline assets: highlight.js, the LAN web UI and the fallback model catalog are
+       compiled into the exe so the app works with no internet connection. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\hljs.min.js" LogicalName="hljs.min.js" />
+    <EmbeddedResource Include="Resources\hljs-dark.min.css" LogicalName="hljs-dark.min.css" />
+    <EmbeddedResource Include="Resources\webui.html" LogicalName="webui.html" />
+    <EmbeddedResource Include="Resources\catalog.json" LogicalName="catalog.json" />
+  </ItemGroup>
+
+  <!-- Kestrel web server for LAN access (no admin rights / URL ACL needed, unlike HttpListener). -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4370.26" />
+    <PackageReference Include="Markdig" Version="1.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <PackageReference Include="QRCoder" Version="1.9.0" />
+  </ItemGroup>
+
+  <!--
+    WORKAROUND: Microsoft.Web.WebView2's build targets add the WPF assembly
+    (Microsoft.Web.WebView2.Wpf.dll) to every project, even pure WinForms ones.
+    That WPF assembly is compiled against WindowsBase 5.0.0.0, but .NET 10
+    ships a WindowsBase 4.0.0.0 facade, producing the MSB3277 conflict that
+    blocks single-file publish.
+  -->
+  <Target Name="RemoveWebView2WpfReference" BeforeTargets="ResolveAssemblyReferences" Condition="'$(UseWindowsForms)' == 'true' and '$(UseWPF)' != 'true'">
+    <ItemGroup>
+      <_WebView2WpfReference Include="@(Reference)" Condition="'%(FileName)' == 'Microsoft.Web.WebView2.Wpf'" />
+      <Reference Remove="@(_WebView2WpfReference)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

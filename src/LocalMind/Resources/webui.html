@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e1e1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>LocalMind</title>
+<link rel="stylesheet" href="/assets/hljs.css">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; background: #1e1e1e; color: #d4d4d4;
+    font-family: 'Segoe UI', system-ui, -apple-system, Roboto, sans-serif; font-size: 15px; line-height: 1.6; }
+  button, select, textarea, input { font: inherit; color: inherit; }
+  #app { display: flex; flex-direction: column; height: 100%; height: 100dvh; }
+  header { display: flex; align-items: center; gap: 8px; padding: 8px 10px; padding-top: max(8px, env(safe-area-inset-top));
+    background: #252526; border-bottom: 1px solid #333; }
+  header .title { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+  .icon { background: #333; border: 0; border-radius: 8px; width: 40px; height: 40px; font-size: 18px; cursor: pointer; flex: none; }
+  .icon:active { background: #444; }
+  select { background: #2d2d30; border: 1px solid #444; border-radius: 8px; padding: 8px; max-width: 46vw; }
+  main { flex: 1; overflow-y: auto; padding: 14px 12px 20px; -webkit-overflow-scrolling: touch; }
+  .inner { max-width: 900px; margin: 0 auto; }
+  .msg { margin-bottom: 18px; }
+  .user { display: flex; flex-direction: column; align-items: flex-end; }
+  .user .bubble { background: #0e639c; color: #fff; padding: 9px 14px; border-radius: 16px 16px 4px 16px;
+    max-width: 88%; white-space: pre-wrap; word-wrap: break-word; }
+  .user img { max-width: 60vw; max-height: 220px; border-radius: 10px; margin-bottom: 6px; }
+  .assistant .bubble { background: #252526; border: 1px solid #333; padding: 12px 15px; border-radius: 16px 16px 16px 4px; overflow-wrap: anywhere; }
+  .bubble p { margin: 0 0 10px; } .bubble p:last-child { margin: 0; }
+  .bubble pre { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px; overflow-x: auto; position: relative; font-size: 13px; }
+  .bubble code { font-family: 'Cascadia Code', Consolas, monospace; font-size: 13px; }
+  .bubble :not(pre) > code { background: #2d2d30; color: #ce9178; padding: 1px 5px; border-radius: 4px; }
+  .bubble pre code.hljs { background: transparent; padding: 0; }
+  .bubble table { border-collapse: collapse; display: block; overflow-x: auto; }
+  .bubble th, .bubble td { border: 1px solid #3a3a3a; padding: 6px 10px; }
+  .bubble a { color: #4ea1ff; }
+  .bubble h1, .bubble h2, .bubble h3 { color: #fff; line-height: 1.3; margin: 14px 0 8px; }
+  .bubble blockquote { border-left: 3px solid #4ea1ff; margin: 8px 0; padding: 4px 12px; color: #bbb; background: #2a2a2b; }
+  .streaming { white-space: pre-wrap; }
+  .copy { position: absolute; top: 6px; right: 6px; background: #3c3c3c; border: 1px solid #555; border-radius: 5px; font-size: 12px; padding: 2px 8px; }
+  details.think { background: #17171a; border-left: 3px solid #7c6cd4; border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; font-size: 13px; color: #9a9aa2; }
+  details.think summary { color: #9d8ee8; font-weight: 600; cursor: pointer; }
+  details.think .tbody { white-space: pre-wrap; max-height: 260px; overflow-y: auto; }
+  .meta { font-size: 12px; color: #777; margin-top: 4px; display: flex; gap: 10px; align-items: center; }
+  .meta button { background: #333; border: 1px solid #444; border-radius: 5px; font-size: 12px; padding: 1px 8px; }
+  .err { color: #f48771; }
+  .empty { text-align: center; color: #777; margin-top: 20vh; }
+  .empty b { display: block; color: #9cdcfe; font-size: 20px; margin-bottom: 6px; }
+  footer { background: #252526; border-top: 1px solid #333; padding: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  #thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+  #thumbs div { position: relative; }
+  #thumbs img { height: 56px; border-radius: 8px; border: 1px solid #444; }
+  #thumbs span { position: absolute; top: -6px; right: -6px; background: #c33; color: #fff; border-radius: 50%; width: 20px; height: 20px;
+    text-align: center; line-height: 20px; font-size: 12px; cursor: pointer; }
+  .row { display: flex; gap: 8px; align-items: flex-end; max-width: 900px; margin: 0 auto; }
+  textarea { flex: 1; resize: none; background: #1e1e1e; border: 1px solid #444; border-radius: 12px; padding: 10px 12px;
+    max-height: 40vh; min-height: 44px; outline: none; }
+  textarea:focus { border-color: #0e639c; }
+  #send { background: #0e639c; color: #fff; }
+  #send.stop { background: #a1260d; }
+  #drawer { position: fixed; inset: 0; display: none; z-index: 10; }
+  #drawer.open { display: block; }
+  #drawer .shade { position: absolute; inset: 0; background: rgba(0,0,0,.5); }
+  #drawer .panel { position: absolute; top: 0; bottom: 0; left: 0; width: min(330px, 86vw); background: #252526; padding: 12px;
+    padding-top: max(12px, env(safe-area-inset-top)); display: flex; flex-direction: column; gap: 10px; }
+  #drawer .panel select { max-width: none; width: 100%; }
+  #chatList { flex: 1; overflow-y: auto; }
+  .chat { padding: 9px 10px; border-radius: 8px; cursor: pointer; display: flex; gap: 6px; align-items: center; }
+  .chat:hover, .chat.active { background: #37373d; }
+  .chat .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chat .d { color: #888; font-size: 12px; }
+  .chat .x { background: none; border: 0; color: #888; font-size: 16px; padding: 0 4px; }
+  .newbtn { background: #0e639c; color: #fff; border: 0; border-radius: 8px; padding: 10px; font-weight: 600; }
+  label.tog { display: flex; align-items: center; gap: 8px; }
+  #login { position: fixed; inset: 0; background: #1e1e1e; display: none; align-items: center; justify-content: center; z-index: 20; }
+  #login.show { display: flex; }
+  #login form { background: #252526; padding: 24px; border-radius: 14px; width: min(340px, 90vw); text-align: center; }
+  #login input { width: 100%; font-size: 24px; letter-spacing: 6px; text-align: center; padding: 10px; border-radius: 10px;
+    border: 1px solid #444; background: #1e1e1e; margin: 12px 0; }
+  #login button { width: 100%; padding: 12px; border: 0; border-radius: 10px; background: #0e639c; color: #fff; font-weight: 600; }
+  .small { font-size: 12px; color: #888; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button class="icon" id="menuBtn" title="Chats">☰</button>
+    <div class="title" id="title">LocalMind</div>
+    <select id="model" title="Model"></select>
+    <button class="icon" id="newBtn" title="New chat">＋</button>
+  </header>
+  <main id="main"><div class="inner" id="msgs"></div></main>
+  <footer>
+    <div class="row"><div id="thumbs"></div></div>
+    <div class="row">
+      <button class="icon" id="attachBtn" title="Add photo">📷</button>
+      <input type="file" id="file" accept="image/*" multiple hidden>
+      <textarea id="input" rows="1" placeholder="Message…" enterkeyhint="send"></textarea>
+      <button class="icon" id="send" title="Send">➤</button>
+    </div>
+  </footer>
+</div>
+
+<div id="drawer">
+  <div class="shade" id="shade"></div>
+  <div class="panel">
+    <button class="newbtn" id="newBtn2">＋ New chat</button>
+    <div id="chatList"></div>
+    <div class="small">Persona</div>
+    <select id="persona"></select>
+    <label class="tog"><input type="checkbox" id="think"> 💭 Show thinking (for reasoning models)</label>
+    <div class="small" id="backendInfo"></div>
+    <button class="icon" style="width:auto;padding:0 12px" id="logoutBtn">Forget PIN</button>
+  </div>
+</div>
+
+<div id="login"><form id="loginForm">
+  <div style="font-size:18px;font-weight:600">🔒 Enter PIN</div>
+  <div class="small">Shown on the PC in Tools → Share on network</div>
+  <input id="pin" inputmode="numeric" autocomplete="one-time-code" maxlength="32">
+  <button type="submit">Unlock</button>
+  <div class="small err" id="loginErr"></div>
+</form></div>
+
+<script src="/assets/hljs.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var state = { pin: '', chatId: null, models: [], busy: false, abort: null, images: [] };
+
+  // PIN from QR code (#pin=…) → remember it and hide it from the address bar.
+  var m = location.hash.match(/pin=([^&]+)/);
+  if (m) { localStorage.setItem('oc_pin', decodeURIComponent(m[1])); history.replaceState(null, '', location.pathname); }
+  state.pin = localStorage.getItem('oc_pin') || '';
+  state.chatId = sessionStorage.getItem('oc_chat') || null;
+
+  function esc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'X-Pin': state.pin }, opts.headers || {});
+    return fetch(path, opts).then(function (r) {
+      if (r.status === 401) { showLogin('Wrong or missing PIN'); throw new Error('auth'); }
+      if (r.status === 429) { showLogin('Too many attempts — wait a few minutes'); throw new Error('locked'); }
+      return r;
+    });
+  }
+  function showLogin(msg) { $('login').classList.add('show'); $('loginErr').textContent = msg || ''; $('pin').focus(); }
+  $('loginForm').onsubmit = function (e) {
+    e.preventDefault();
+    state.pin = $('pin').value.trim();
+    fetch('/api/login', { method: 'POST', headers: { 'X-Pin': state.pin } }).then(function (r) {
+      if (r.ok) { localStorage.setItem('oc_pin', state.pin); $('login').classList.remove('show'); init(); }
+      else showLogin(r.status === 429 ? 'Too many attempts — wait a few minutes' : 'Wrong PIN');
+    });
+  };
+  $('logoutBtn').onclick = function () { localStorage.removeItem('oc_pin'); state.pin = ''; closeDrawer(); showLogin(''); };
+
+  // ---------- init ----------
+  function init() {
+    api('/api/info').then(function (r) { return r.json(); }).then(function (info) {
+      state.models = info.models || [];
+      var sel = $('model'); sel.innerHTML = '';
+      state.models.forEach(function (mm) {
+        var o = document.createElement('option'); o.value = mm.name; o.textContent = (mm.vision ? '👁 ' : '') + mm.name; sel.appendChild(o);
+      });
+      var saved = localStorage.getItem('oc_model');
+      sel.value = state.models.some(function (x) { return x.name === saved; }) ? saved : info.current;
+      if (!sel.value && state.models.length) sel.selectedIndex = 0;
+      var ps = $('persona'); ps.innerHTML = '<option value="">(No persona)</option>';
+      (info.personas || []).forEach(function (p) { var o = document.createElement('option'); o.value = p; o.textContent = p; ps.appendChild(o); });
+      ps.value = localStorage.getItem('oc_persona') || info.persona || '';
+      var t = localStorage.getItem('oc_think'); $('think').checked = t === null ? !!info.thinking : t === '1';
+      $('backendInfo').textContent = 'Running on: ' + info.backend;
+      if (!state.models.length) empty('<b>No models on the PC yet</b>Open the Model Manager on the PC to download one.');
+      else if (state.chatId) openChat(state.chatId); else empty();
+      loadChats();
+    }).catch(function () {});
+  }
+  function empty(html) {
+    $('msgs').innerHTML = '<div class="empty">' + (html || '<b>' + esc($('model').value) + '</b>Ask anything. Tap 📷 to send a photo.') + '</div>';
+    $('title').textContent = 'New chat';
+  }
+  $('model').onchange = function () { localStorage.setItem('oc_model', this.value); if (!state.chatId) empty(); };
+  $('persona').onchange = function () { localStorage.setItem('oc_persona', this.value); };
+  $('think').onchange = function () { localStorage.setItem('oc_think', this.checked ? '1' : '0'); };
+
+  // ---------- chats drawer ----------
+  function openDrawer() { $('drawer').classList.add('open'); loadChats(); }
+  function closeDrawer() { $('drawer').classList.remove('open'); }
+  $('menuBtn').onclick = openDrawer; $('shade').onclick = closeDrawer;
+  function newChat() { if (state.busy) return; state.chatId = null; sessionStorage.removeItem('oc_chat'); empty(); closeDrawer(); $('input').focus(); }
+  $('newBtn').onclick = newChat; $('newBtn2').onclick = newChat;
+
+  function loadChats() {
+    api('/api/chats').then(function (r) { return r.json(); }).then(function (list) {
+      var el = $('chatList'); el.innerHTML = '';
+      list.forEach(function (c) {
+        var d = document.createElement('div'); d.className = 'chat' + (c.id === state.chatId ? ' active' : '');
+        var when = new Date(c.updated);
+        d.innerHTML = '<div class="t">' + esc(c.title) + '<div class="d">' + when.toLocaleDateString() + ' ' +
+          when.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</div></div><button class="x" title="Delete">✕</button>';
+        d.onclick = function () { openChat(c.id); closeDrawer(); };
+        d.querySelector('.x').onclick = function (ev) {
+          ev.stopPropagation();
+          if (!confirm('Delete "' + c.title + '"?')) return;
+          api('/api/chats/' + c.id, { method: 'DELETE' }).then(function () { if (c.id === state.chatId) newChat(); loadChats(); });
+        };
+        el.appendChild(d);
+      });
+    }).catch(function () {});
+  }
+
+  function openChat(id) {
+    api('/api/chats/' + id).then(function (r) { if (!r.ok) throw new Error('gone'); return r.json(); }).then(function (s) {
+      state.chatId = s.id; sessionStorage.setItem('oc_chat', s.id);
+      $('title').textContent = s.title;
+      if (s.model && state.models.some(function (x) { return x.name === s.model; })) $('model').value = s.model;
+      var box = $('msgs'); box.innerHTML = '';
+      s.messages.forEach(function (msg) {
+        if (msg.role === 'user') addUser(msg.content, msg.images);
+        else if (msg.role === 'assistant') { var a = addAssistant(); finish(a, msg.html, msg.thinkingHtml, ''); }
+      });
+      scrollDown(true);
+    }).catch(function () { state.chatId = null; sessionStorage.removeItem('oc_chat'); empty(); });
+  }
+
+  // ---------- rendering ----------
+  var stick = true;
+  $('main').addEventListener('scroll', function () { var m = $('main'); stick = m.scrollTop + m.clientHeight >= m.scrollHeight - 120; });
+  function scrollDown(force) { if (force || stick) { var m = $('main'); m.scrollTop = m.scrollHeight; } }
+  function clearEmpty() { var e = document.querySelector('.empty'); if (e) e.remove(); }
+
+  function addUser(text, imgs) {
+    clearEmpty();
+    var d = document.createElement('div'); d.className = 'msg user';
+    var h = '';
+    (imgs || []).forEach(function (src) { h += '<img src="' + src + '">'; });
+    if (text) h += '<div class="bubble">' + esc(text) + '</div>';
+    d.innerHTML = h; $('msgs').appendChild(d); scrollDown(true);
+  }
+  function addAssistant() {
+    clearEmpty();
+    var d = document.createElement('div'); d.className = 'msg assistant';
+    d.innerHTML = '<details class="think" hidden><summary>💭 Thinking…</summary><div class="tbody"></div></details>' +
+                  '<div class="bubble"><span class="streaming">…</span></div><div class="meta"></div>';
+    $('msgs').appendChild(d); scrollDown(true);
+    return { el: d, text: '', think: '' };
+  }
+  function finish(a, html, thinkingHtml, meta) {
+    var b = a.el.querySelector('.bubble');
+    b.innerHTML = html || '';
+    var t = a.el.querySelector('.think');
+    if (thinkingHtml) { t.hidden = false; t.open = false; t.querySelector('summary').textContent = '💭 Thinking'; t.querySelector('.tbody').innerHTML = thinkingHtml; t.querySelector('.tbody').style.whiteSpace = 'normal'; }
+    else t.hidden = true;
+    b.querySelectorAll('pre').forEach(function (pre) {
+      var code = pre.querySelector('code');
+      if (code && window.hljs) try { hljs.highlightElement(code); } catch (e) {}
+      var c = document.createElement('button'); c.className = 'copy'; c.textContent = 'Copy';
+      c.onclick = function () { copy(code ? code.innerText : pre.innerText, c); }; pre.appendChild(c);
+    });
+    var m = a.el.querySelector('.meta'); m.innerHTML = '';
+    var cb = document.createElement('button'); cb.textContent = 'Copy'; cb.onclick = function () { copy(b.innerText, cb); }; m.appendChild(cb);
+    if (meta) { var s = document.createElement('span'); s.textContent = meta; m.appendChild(s); }
+    scrollDown();
+  }
+  function copy(text, btn) {
+    function ok() { var o = btn.textContent; btn.textContent = '✓'; setTimeout(function () { btn.textContent = o; }, 1000); }
+    if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(text).then(ok); return; }
+    var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); ok(); } catch (e) {} ta.remove();
+  }
+
+  // ---------- images (resized on the phone before upload) ----------
+  $('attachBtn').onclick = function () { $('file').click(); };
+  $('file').onchange = function () {
+    Array.prototype.forEach.call(this.files, function (f) { resize(f, 1600, function (url) { state.images.push(url); drawThumbs(); }); });
+    this.value = '';
+    var cur = state.models.filter(function (x) { return x.name === $('model').value; })[0];
+    if (cur && !cur.vision) alert('Note: this model cannot see images. Pick a model marked 👁.');
+  };
+  function resize(file, max, cb) {
+    var img = new Image(), url = URL.createObjectURL(file);
+    img.onload = function () {
+      var s = Math.min(1, max / Math.max(img.width, img.height));
+      var c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url); cb(c.toDataURL('image/jpeg', 0.85));
+    };
+    img.src = url;
+  }
+  function drawThumbs() {
+    var t = $('thumbs'); t.innerHTML = '';
+    state.images.forEach(function (src, i) {
+      var d = document.createElement('div'); d.innerHTML = '<img src="' + src + '"><span>✕</span>';
+      d.querySelector('span').onclick = function () { state.images.splice(i, 1); drawThumbs(); };
+      t.appendChild(d);
+    });
+  }
+
+  // ---------- composer ----------
+  var input = $('input');
+  input.addEventListener('input', function () { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, window.innerHeight * 0.4) + 'px'; });
+  input.addEventListener('keydown', function (e) {
+    // Desktop browsers: Enter sends, Shift+Enter = new line. Phones: the keyboard's send/enter key adds a line; use ➤.
+    if (e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)) { e.preventDefault(); send(); }
+  });
+  $('send').onclick = function () { if (state.busy) { if (state.abort) state.abort.abort(); } else send(); };
+
+  function setBusy(b) { state.busy = b; var s = $('send'); s.textContent = b ? '■' : '➤'; s.classList.toggle('stop', b); s.title = b ? 'Stop' : 'Send'; }
+
+  function send() {
+    var text = input.value.trim();
+    if (!text && !state.images.length) return;
+    if (!$('model').value) { alert('No model selected.'); return; }
+    var imgs = state.images.slice();
+    addUser(text, imgs);
+    input.value = ''; input.style.height = 'auto'; state.images = []; drawThumbs();
+    var a = addAssistant();
+    setBusy(true);
+    state.abort = new AbortController();
+    var started = Date.now();
+
+    fetch('/api/chat', {
+      method: 'POST', signal: state.abort.signal,
+      headers: { 'Content-Type': 'application/json', 'X-Pin': state.pin },
+      body: JSON.stringify({ chatId: state.chatId, model: $('model').value, persona: $('persona').value,
+                             message: text, images: imgs, think: $('think').checked })
+    }).then(function (r) {
+      if (r.status === 401) { showLogin('PIN changed — enter it again'); throw new Error('auth'); }
+      if (!r.ok) return r.json().then(function (j) { throw new Error((j.error && j.error.message) || ('HTTP ' + r.status)); });
+      var reader = r.body.getReader(), dec = new TextDecoder(), buf = '';
+      var stream = a.el.querySelector('.streaming'), tb = a.el.querySelector('.tbody'), th = a.el.querySelector('.think');
+      var pending = false;
+      function paint() { pending = false; stream.textContent = a.text || '…'; tb.textContent = a.think; scrollDown(); }
+      function pump() {
+        return reader.read().then(function (res) {
+          if (res.done) return;
+          buf += dec.decode(res.value, { stream: true });
+          var parts = buf.split('\n\n'); buf = parts.pop();
+          parts.forEach(function (p) {
+            if (p.indexOf('data: ') !== 0) return;
+            var ev; try { ev = JSON.parse(p.substring(6)); } catch (e) { return; }
+            if (ev.type === 'start') { state.chatId = ev.chatId; sessionStorage.setItem('oc_chat', ev.chatId); $('title').textContent = ev.title; }
+            else if (ev.type === 'thinking') { a.think += ev.t; if (th.hidden) { th.hidden = false; th.open = true; } }
+            else if (ev.type === 'token') { if (!a.text && !th.hidden) th.open = false; a.text += ev.t; }
+            else if (ev.type === 'done' || ev.type === 'error') {
+              var meta = $('model').value + (ev.tps ? ' · ' + ev.tps + ' tok/s' : '');
+              finish(a, ev.html, ev.thinkingHtml, meta);
+              if (ev.type === 'error') a.el.querySelector('.bubble').classList.add('err');
+              a.done = true;
+            }
+            if (!pending && !a.done) { pending = true; requestAnimationFrame(paint); }
+          });
+          return pump();
+        });
+      }
+      return pump();
+    }).catch(function (e) {
+      if (e.name === 'AbortError') { finish(a, '<p>' + esc(a.text) + '</p><p><em>[stopped]</em></p>', '', ''); }
+      else if (e.message !== 'auth') { finish(a, '<p class="err">⚠ ' + esc(e.message) + '</p>', '', ''); }
+    }).then(function () {
+      setBusy(false); state.abort = null;
+      if (!a.done && a.text) finish(a, '<p>' + esc(a.text).replace(/\n/g, '<br>') + '</p>', '', '');
+    });
+  }
+
+  init();   // shows the PIN screen on 401 (or not at all if the PC doesn't require a PIN)
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+* text=auto
+*.vb text eol=crlf
+*.vbproj text eol=crlf
+*.slnx text eol=crlf
+*.resx text eol=crlf
+*.bat text eol=crlf
+*.ico binary

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>LocalMind</RootNamespace>
+    <OptionStrict>Off</OptionStrict>
+    <OptionInfer>On</OptionInfer>
+    <StartupObject>LocalMind.HarnessMain</StartupObject>
+    <NoWarn>CA1416;BC42353;BC42105</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Markdig" Version="1.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../src/LocalMind/ChatBackend.vb;../../src/LocalMind/ModelCatalog.vb;../../src/LocalMind/Downloader.vb;../../src/LocalMind/ModelLibrary.vb;../../src/LocalMind/SettingsService.vb;../../src/LocalMind/Models.vb;../../src/LocalMind/HardwareInfo.vb;../../src/LocalMind/LlamaEngine.vb;../../src/LocalMind/OpenAiCompatService.vb;../../src/LocalMind/OllamaService.vb;../../src/LocalMind/HistoryService.vb;../../src/LocalMind/PersonaService.vb;../../src/LocalMind/AppCore.vb;../../src/LocalMind/LanServer.vb;../../src/LocalMind/MarkdownRenderer.vb;../../src/LocalMind/DownloadManager.vb;../../src/LocalMind/DocumentService.vb" />
+    <EmbeddedResource Include="../../src/LocalMind/Resources/hljs.min.js" LogicalName="hljs.min.js" />
+    <EmbeddedResource Include="../../src/LocalMind/Resources/hljs-dark.min.css" LogicalName="hljs-dark.min.css" />
+    <EmbeddedResource Include="../../src/LocalMind/Resources/webui.html" LogicalName="webui.html" />
+    <EmbeddedResource Include="../../src/LocalMind/Resources/catalog.json" LogicalName="catalog.json" />
+  </ItemGroup>
+</Project>
