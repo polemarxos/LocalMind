@@ -474,6 +474,121 @@ h3("hyperflow-h3-flash-ref2va", "HyperFlow H3 Flash Ref2VA (fast, from pictures)
    variants_list(gguf_variants(HF, folder="ref2va_gguf")), H3_TE4, steps=6, cfg=1.0, extra="--sigmas hyperflow-h3-flash-6",
    tasks=["create", "reference"], refs=3)
 
+# ── more uncensored video: 10Eros, PinkCherry, AfterMidnight (MiniMax H3 + LTX-2.3), NSFW Wan 2.2 merges ──
+def cr_list(repo, items):
+    """[(label, regex)] -> ConvRot variants that exist."""
+    out = []
+    for label, rx in items:
+        f = one(repo, rx)
+        if f: out.append(dict(label=label, format="convrot", **f))
+    return out
+ER = "Abiray/"
+h3("10eros-max-h3", "10Eros Max · MiniMax H3 (NSFW, sound)",
+   "10Eros Max: the most popular uncensored MiniMax H3 fine-tune (motion and detail from LTX-2.3, Wan 2.2 and Krea 2). "
+   "Video with sound from text, a start picture, or first + last picture. No content filter. GPU 12 GB+ and 32 GB RAM.",
+   variants_list(gguf_variants(ER + "10Eros-Max-GGUF")) +
+   cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot", r"^10Eros_Max_h3_fl2va_beta2_pruned_int8_convrot\.safetensors$")]),
+   H3_TE_UNC, uncensored=True)
+h3("10eros-max-h3-turbo", "10Eros Max Turbo · MiniMax H3 (NSFW, 8 steps)",
+   "10Eros Max Turbo beta 7: uncensored MiniMax H3 with sound in only 8 steps (several times faster). Keep the guidance at 1.",
+   variants_list(gguf_variants(ER + "10Eros-Max-Turbo-Beta7-GGUF")), H3_TE_UNC, uncensored=True, steps=8, cfg=1.0)
+h3("10eros-max-h3-turbo-hybrid", "10Eros Max Turbo Hybrid · MiniMax H3 (NSFW, fast)",
+   "10Eros Max Turbo Hybrid beta 5: fast (8 steps) uncensored MiniMax H3 with more motion variety.",
+   variants_list(gguf_variants(ER + "10Eros-Max-Turbo-Hybrid-Beta5-GGUF")) +
+   cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot (beta 3)", r"^10Eros_Max_h3_TURBO-hybrid_beta3_int8_convrot\.safetensors$")]),
+   H3_TE_UNC, uncensored=True, steps=8, cfg=1.0)
+h3("10eros-max-h3-hybrid", "10Eros Max Hybrid · MiniMax H3 (NSFW)",
+   "10Eros Max Hybrid beta 5 at full quality (20 steps): uncensored MiniMax H3 with sound.",
+   variants_list(gguf_variants(ER + "10Eros-Max-Hybrid-Beta5-GGUF")), H3_TE_UNC, uncensored=True)
+h3("10eros-max-h3-ref2va", "10Eros Max Ref2VA · MiniMax H3 (NSFW, from pictures)",
+   "Uncensored 10Eros Max that puts the people of your reference pictures (or your 🎭 cast) into a video with sound.",
+   variants_list(gguf_variants(ER + "10Eros-Max-ref2va-Beta2-GGUF")) +
+   cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot", r"^10Eros_Max_h3_ref2va_beta2_pruned_int8_convrot\.safetensors$")]),
+   H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3)
+h3("10eros-max-h3-turbo-ref2va", "10Eros Max Turbo Ref2VA · MiniMax H3 (NSFW, fast, from pictures)",
+   "Fast (8 steps) uncensored 10Eros Max for your reference pictures or 🎭 cast.",
+   cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot", r"^10Eros_Max_h3_TURBO_ref2va_beta2_int8_convrot\.safetensors$")]),
+   H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3, steps=8, cfg=1.0)
+PC = "SexGod1979/PinkCherry-NSFW_MiniMax-H3"
+h3("pinkcherry-h3", "PinkCherry · MiniMax H3 (NSFW, sound)",
+   "PinkCherry: an uncensored MiniMax H3 fine-tune for adult scenes, with sound. Text, start picture or first + last picture.",
+   cr_list(PC, [("INT8 ConvRot", r"^beta-0\.6-fl2va/PinkCherry_fl2va_MiniMax_H3_pruned_int8_convrot-beta-0\.6\.safetensors$")]),
+   H3_TE_UNC, uncensored=True)
+h3("pinkcherry-h3-ref2va", "PinkCherry Ref2VA · MiniMax H3 (NSFW, from pictures)",
+   "Uncensored PinkCherry that uses your reference pictures or 🎭 cast.",
+   cr_list(PC, [("INT8 ConvRot", r"^ref2va-beta-06/pinkcherrry_minimax_h3_ref2va_beta-0\.6_int8_convrot\.safetensors$")]),
+   H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3)
+AM = "SexGod1979/AfterMidnight-MiniMax-H3-NSFW"
+h3("aftermidnight-h3-ref2va", "AfterMidnight · MiniMax H3 Ref2VA (NSFW LoRA)",
+   "MiniMax H3 Ref2VA with the AfterMidnight NSFW LoRA (adult scenes, coherent motion) and the uncensored encoder. Uses your reference pictures or 🎭 cast.",
+   ref2va, H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3,
+   loras=[lora(AM, r"sexytime_rank64-v1\.2\.safetensors$", "builtin-h3-aftermidnight-v1.2")])
+
+# LTX-2.3 dev fine-tunes (10Eros, PinkCherry): dev parts; a distilled LoRA makes them fast
+L23_DEV = [dict(role="vae", **one(LTX, r"vae/ltx-2\.3-22b-dev_video_vae")),
+           dict(role="audio-vae", **one(LTX, r"vae/ltx-2\.3-22b-dev_audio_vae")),
+           dict(role="llm", **GEMMA3_12B),
+           dict(role="embeddings-connectors", **one(LTX, r"text_encoders/ltx-2\.3-22b-dev_embeddings_connectors"))]
+def ltx23(rid, name, about, variants, spd, **k):
+    recipe(id=rid, name=name, kind="video", family="LTX", about=about, uncensored=True,
+           steps=k.pop("steps", 30), cfg=k.pop("cfg", 3.0), width=1280, height=704, frames=97, input="optional", fps=24,
+           negative="worst quality, low quality, blurry, distorted, artifacts, subtitles, text",
+           tasks=["create", "animate"], speed=spd, variants=variants, parts=L23_DEV, **k)
+DMD = lambda: speed("⚡ DMD · 8 steps", 8, 1.0, [lora("TenStrip/LTX2.3_DMD_Lora", r"LTX2\.3_DMD_hybrid_v2\.safetensors$", "speed-ltx23-dmd-hybrid-v2")])
+ltx23("ltx-2.3-10eros-1.5", "10Eros 1.5 · LTX-2.3 (NSFW, sound)",
+      "10Eros v1.5: the popular uncensored LTX-2.3 fine-tune with sound, best for picture to video. Write detailed, directive prompts. GPU 12 GB+ and 32 GB RAM.",
+      variants_list(gguf_variants("vantagewithai/LTX2.3-10Eros-1.5-GGUF")), DMD())
+ltx23("ltx-2.3-10eros", "10Eros v1 · LTX-2.3 (NSFW, sound)",
+      "The first 10Eros LTX-2.3 remix: uncensored video with sound from text or a picture.",
+      variants_list(gguf_variants("vantagewithai/LTX2.3-10Eros-GGUF")), DMD())
+ltx23("pinkcherry-ltx-2.3", "PinkCherry · LTX-2.3 (NSFW, sound)",
+      "PinkCherry v1.8: uncensored LTX-2.3 fine-tune for adult scenes, with sound. Text or picture to video.",
+      variants_list(gguf_variants("SexGod1979/PinkCherry_NSFW_LTX23", folder="v1.8/")),
+      speed("⚡ Distilled · 8 steps", 8, 1.0, [lora("SexGod1979/PinkCherry_NSFW_LTX23", r"distil_lora/.*condsafe\.safetensors$", "speed-ltx23-distilled-condsafe")]))
+for r in R:
+    if r["id"] == "pinkcherry-ltx-2.3":
+        for v in r["variants"]: v["label"] = v["label"].split("_V")[0]
+recipe(id="ltx-2.3-nsfw-motion", name="LTX-2.3 NSFW motion (fast, sound)", kind="video", family="LTX", uncensored=True,
+       about="The fast LTX-2.3 distilled model with an NSFW motion LoRA: uncensored video with sound in 8 steps.",
+       steps=8, cfg=1.0, width=1280, height=704, frames=97, input="optional", fps=24,
+       negative="worst quality, low quality, blurry, distorted, artifacts",
+       tasks=["create", "animate"],
+       loras=[lora("lynaNSFW/LTX2.3_NSFW_motion", r"NSFWMOTION_00750\.safetensors$", "builtin-ltx23-nsfw-motion")],
+       variants=variants_list(gguf_variants(LTX, folder="distilled-1.1/", include=r"^(?!.*UD-)")),
+       parts=[dict(role="vae", **one(LTX, r"vae/ltx-2\.3-22b-distilled_video_vae")),
+              dict(role="audio-vae", **one(LTX, r"vae/ltx-2\.3-22b-distilled_audio_vae")),
+              dict(role="llm", **GEMMA3_12B),
+              dict(role="embeddings-connectors", **one(LTX, r"text_encoders/ltx-2\.3-22b-distilled_embeddings_connectors"))])
+
+# Wan 2.2 NSFW merges (speed already built in: 4 + 4 steps, guidance 1)
+NOCONV = r"^\b$"   # (no ConvRot copy)
+wan_a14b("smoothmix-wan2.2-i2v", "SmoothMix Wan 2.2 I2V (NSFW, fast)",
+         "SmoothMix: a popular uncensored Wan 2.2 merge with smooth motion and the speed-up built in (4 + 4 steps). Photo or text to video. GPU 12 GB+.",
+         "Bedovyy/smoothMixWan22-I2V-GGUF", NOCONV, NOCONV, "optional", ["animate", "create", "first-last"], uncensored=True)
+wan_a14b("dasiwa-wan2.2-i2v", "DaSiWa Wan 2.2 I2V Midnight Flirt (NSFW, fast)",
+         "DaSiWa Midnight Flirt: uncensored Wan 2.2 merge with the Lightspeed speed-up built in (4 + 4 steps). Animates a photo. GPU 12 GB+.",
+         "Bedovyy/dasiwaWAN22I2V14B-GGUF", NOCONV, NOCONV, "required", ["animate", "first-last"], uncensored=True)
+for rid in ("smoothmix-wan2.2-i2v", "dasiwa-wan2.2-i2v"):
+    for r in R:
+        if r["id"] == rid: r.update(steps=4, highSteps=4, cfg=1.0, flowShift=5)
+EN = "gfaione/wan2.2_enhanced_nsfw"
+ehi, elo = one(EN, r"FASTMOVEQ6KHigh\.gguf$"), one(EN, r"FASTMOVEQ6KLow\.gguf$")
+ehi2, elo2 = one(EN, r"FASTMOVEV2Q4KMH\.gguf$"), one(EN, r"FASTMOVEV2Q4KML\.gguf$")
+recipe(id="wan2.2-enhanced-nsfw-fastmove", name="Wan 2.2 Enhanced NSFW FastMove (fast)", kind="video", family="Wan", uncensored=True,
+       about="Enhanced NSFW SVI Camera FastMove: uncensored Wan 2.2 with more camera and body motion, speed-up built in (4 + 4 steps). GPU 12 GB+.",
+       steps=4, highSteps=4, cfg=1.0, flowShift=5, width=832, height=480, frames=81, negative=WAN_NEG, input="optional", fps=16,
+       tasks=["animate", "create", "first-last"],
+       variants=([dict(label="Q4_K_M (v2)", format="gguf", **elo2, high=ehi2, size_total=elo2["size"] + ehi2["size"])] if elo2 and ehi2 else []) +
+                ([dict(label="Q6_K", format="gguf", **elo, high=ehi, size_total=elo["size"] + ehi["size"])] if elo and ehi else []),
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+recipe(id="wan2.2-rapid-aio-nsfw", name="Wan 2.2 Rapid AIO NSFW v10 (4 steps)", kind="video", family="Wan", uncensored=True,
+       about="Phr00t's Rapid All-In-One NSFW v10: one uncensored 14B Wan 2.2 model (no second expert) that makes video in only 4 steps. Photo or text to video.",
+       steps=4, cfg=1.0, flowShift=5, width=832, height=480, frames=81, negative=WAN_NEG, input="optional", fps=16,
+       tasks=["animate", "create"],
+       variants=variants_list(gguf_variants("desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10")),
+       parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5)])
+
+
 L25 = "unsloth/LTX-2.5-GGUF"
 L25_PARTS = [dict(role="vae", **one("Lightricks/LTX-2.5", r"^vae/ltx-2\.5-video-vae-conv-bf16\.safetensors$")),
              dict(role="audio-vae", **one("Lightricks/LTX-2.5", r"^vae/ltx-2\.5-audio-vae-bf16\.safetensors$")),
@@ -566,6 +681,11 @@ audio("yue2-3b", "YuE2 3B (songs)", "music",
 audio("minimax-music3", "MiniMax Music 3 (songs)", "music",
       "High-quality songs with vocals from a description and lyrics, 44.1 kHz stereo. Needs 16 GB+ VRAM or lots of RAM.",
       "ggml-org/MiniMax-Music3-GGUF", r"^MiniMax-Music3-Q8_0\.gguf$", r"^mmproj-MiniMax-Music3-BF16\.gguf$")
+for a in A:     # popularity, for the "most popular" list
+    try:
+        a["dl"] = media_auto._get(f"https://huggingface.co/api/models/{a['model']['repo']}?expand[]=downloads")["data"].get("downloads", 0)
+    except Exception:
+        a["dl"] = 0
 adest = os.path.join(os.path.dirname(dest), "audio_catalog.json")
 json.dump(A, open(adest, "w"), ensure_ascii=False, indent=1)
 print(len(A), "voice/music models ->", adest, file=sys.stderr)

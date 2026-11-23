@@ -335,6 +335,13 @@ Public Module MediaStudio
         Return FilesFor(r, v, False, withSpeed).Where(Function(f) Not IsPresent(f)).Sum(Function(f) f.Size)
     End Function
 
+    Private ReadOnly _gates As New System.Collections.Concurrent.ConcurrentDictionary(Of String, SemaphoreSlim)(StringComparer.OrdinalIgnoreCase)
+
+    ''' <summary>One download at a time per file (two models that share a part never write it together).</summary>
+    Friend Function FileGate(path As String) As SemaphoreSlim
+        Return _gates.GetOrAdd(path, Function(k) New SemaphoreSlim(1, 1))
+    End Function
+
     Public Async Function DownloadAsync(r As MediaRecipe, v As MediaVariant, progress As Action(Of Integer, String), ct As CancellationToken,
                                         Optional forEdit As Boolean = False, Optional withSpeed As Boolean = False) As Task
         Dim todo = FilesFor(r, v, forEdit, withSpeed).Where(Function(f) Not IsPresent(f)).ToList()
@@ -343,10 +350,19 @@ Public Module MediaStudio
         For Each f In todo
             Dim url = $"https://huggingface.co/{f.Repo}/resolve/main/" & String.Join("/", f.Path.Split("/"c).Select(AddressOf Uri.EscapeDataString))
             Dim b = before
-            Await Downloader.DownloadFileAsync(url, LocalPath(f), AppCore.Settings.HuggingFaceToken,
-                Sub(done, size, speed) progress?.Invoke(CInt((b + done) * 100 \ total),
-                    $"{IO.Path.GetFileName(f.Path)}  {Downloader.FormatBytes(b + done)} / {Downloader.FormatBytes(total)}  ·  {Downloader.FormatBytes(CLng(speed))}/s"),
-                ct, f.Size)
+            ' Several models can download at the same time; a shared part (VAE, text encoder) is fetched once.
+            Dim gate = FileGate(LocalPath(f))
+            Await gate.WaitAsync(ct)
+            Try
+                If Not IsPresent(f) Then
+                    Await Downloader.DownloadFileAsync(url, LocalPath(f), AppCore.Settings.HuggingFaceToken,
+                        Sub(done, size, speed) progress?.Invoke(CInt((b + done) * 100 \ total),
+                            $"{IO.Path.GetFileName(f.Path)}  {Downloader.FormatBytes(b + done)} / {Downloader.FormatBytes(total)}  ·  {Downloader.FormatBytes(CLng(speed))}/s"),
+                        ct, f.Size)
+                End If
+            Finally
+                gate.Release()
+            End Try
             before += f.Size
         Next
         If v.Format = "convrot" Then

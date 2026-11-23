@@ -186,17 +186,59 @@ Public Module Theme
     ''' so it is right at every Windows display scale.
     ''' </summary>
     Public Sub FitListHeight(lv As ListView, maxRows As Integer)
+        ' Measured from the header and one row (the first row's rectangle is not reliable right after the
+        ' list is created), with the last column filling the width so no horizontal scrollbar hides the rows.
         Dim fit = Sub()
                       Try
                           If lv.Items.Count = 0 Then Return
-                          Dim r = lv.GetItemRect(0)
+                          Dim used = 0
+                          For i = 0 To lv.Columns.Count - 2
+                              used += lv.Columns(i).Width
+                          Next
+                          Dim scroll = If(lv.Items.Count > maxRows, SystemInformation.VerticalScrollBarWidth, 0)
+                          If lv.Columns.Count > 0 Then lv.Columns(lv.Columns.Count - 1).Width = Math.Max(60, lv.ClientSize.Width - used - scroll - 2)
+                          Dim headerH = 0
+                          Dim hdr = SendMessage(lv.Handle, &H101F, IntPtr.Zero, IntPtr.Zero)      ' LVM_GETHEADER
+                          Dim hr As RECT
+                          If hdr <> IntPtr.Zero AndAlso GetWindowRect(hdr, hr) Then headerH = hr.Bottom - hr.Top
+                          If headerH <= 0 Then headerH = lv.Font.Height + 10
+                          Dim rowH = 0
+                          Try
+                              rowH = lv.GetItemRect(0).Height
+                          Catch
+                          End Try
+                          If rowH <= 0 OrElse rowH > lv.Font.Height * 3 Then rowH = lv.Font.Height + 6
                           Dim rows = Math.Min(maxRows, lv.Items.Count)
-                          lv.Height = r.Top + r.Height * rows + 4 + If(lv.Items.Count > maxRows, 0, 0)
+                          lv.Height = headerH + rowH * rows + (lv.Height - lv.ClientSize.Height) + 4
                       Catch
                       End Try
                   End Sub
-        If lv.IsHandleCreated Then fit() Else AddHandler lv.HandleCreated, Sub() lv.BeginInvoke(fit)
+        If lv.IsHandleCreated Then
+            fit()
+            lv.BeginInvoke(fit)          ' again once the list has its final width
+        Else
+            AddHandler lv.HandleCreated, Sub() lv.BeginInvoke(fit)
+        End If
+        AddHandler lv.SizeChanged, Sub()
+                                       If lv.IsHandleCreated AndAlso lv.Columns.Count > 0 Then
+                                           Dim used = 0
+                                           For i = 0 To lv.Columns.Count - 2
+                                               used += lv.Columns(i).Width
+                                           Next
+                                           Dim w = Math.Max(60, lv.ClientSize.Width - used - 2)
+                                           If Math.Abs(lv.Columns(lv.Columns.Count - 1).Width - w) > 2 Then lv.Columns(lv.Columns.Count - 1).Width = w
+                                       End If
+                                   End Sub
     End Sub
+
+    <System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)>
+    Private Structure RECT
+        Public Left, Top, Right, Bottom As Integer
+    End Structure
+
+    <System.Runtime.InteropServices.DllImport("user32.dll")>
+    Private Function GetWindowRect(hwnd As IntPtr, ByRef r As RECT) As Boolean
+    End Function
 
     Private _appIcon As Icon
 

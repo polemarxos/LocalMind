@@ -196,11 +196,19 @@ Public Class DownloadManager
         Return n
     End Function
 
+    ' Up to three models download at the same time.
+    Private Const Parallel As Integer = 3
+    Private ReadOnly _workers As New List(Of Task)
+
     Private Sub EnsureWorker()
         ' caller holds _lock
-        If _worker Is Nothing OrElse _worker.IsCompleted Then
-            _worker = Task.Run(AddressOf WorkLoopAsync)
-        End If
+        _workers.RemoveAll(Function(w) w.IsCompleted)
+        Dim waiting = Enumerable.Count(_jobs, Function(j As DownloadJob) j.Status = DownloadStatus.Queued)
+        While _workers.Count < Parallel AndAlso waiting > 0
+            _workers.Add(Task.Run(AddressOf WorkLoopAsync))
+            waiting -= 1
+        End While
+        _worker = _workers.LastOrDefault()
     End Sub
 
     Private Async Function WorkLoopAsync() As Task
@@ -208,6 +216,7 @@ Public Class DownloadManager
             Dim job As DownloadJob
             SyncLock _lock
                 job = _jobs.FirstOrDefault(Function(j) j.Status = DownloadStatus.Queued)
+                If job IsNot Nothing Then job.Status = DownloadStatus.Resolving     ' claimed: no other worker takes it
             End SyncLock
             If job Is Nothing Then Return
             Await RunJobAsync(job)

@@ -62,6 +62,17 @@ jobs:
               $null = $ws.AppActivate($p.Id); Start-Sleep 1
               $ws.SendKeys('^m'); Start-Sleep -Seconds 15
               Shot "models-media"
+              Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
+              foreach ($kind in @('video', 'music')) {
+                $env:LOCALMIND_MODELS_KIND = $kind
+                $p = Start-Process publish/LocalMind.exe -PassThru
+                Start-Sleep -Seconds 20
+                $null = $ws.AppActivate($p.Id); Start-Sleep 1
+                $ws.SendKeys('^m'); Start-Sleep -Seconds 15
+                Shot "models-media-$kind"
+                Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
+              }
+              $env:LOCALMIND_MODELS_KIND = ''
               $env:LOCALMIND_MODELS_TAB = ''
               Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
               # the Studio and the Cast window

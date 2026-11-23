@@ -5462,6 +5462,1899 @@
   "repo": "VideoRebirthAI/hyperflow-h3-flash"
  },
  {
+  "id": "10eros-max-h3",
+  "name": "10Eros Max · MiniMax H3 (NSFW, sound)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "10Eros Max: the most popular uncensored MiniMax H3 fine-tune (motion and detail from LTX-2.3, Wan 2.2 and Krea 2). Video with sound from text, a start picture, or first + last picture. No content filter. GPU 12 GB+ and 32 GB RAM.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-GGUF",
+    "path": "10Eros-Max-Test4-Pruned-Q3_K_M.gguf",
+    "size": 8902845536
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-GGUF",
+    "path": "10Eros-Max-Test4-Pruned-Q4_K_M.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-GGUF",
+    "path": "10Eros-Max-Test4-Pruned-Q5_K_M.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-GGUF",
+    "path": "10Eros-Max-Test4-Pruned-Q6_K.gguf",
+    "size": 16730301536
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "cicalooo/10Eros-Max-h3-int8-convrot",
+    "path": "10Eros_Max_h3_fl2va_beta2_pruned_int8_convrot.safetensors",
+    "size": 20197375168
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-GGUF",
+    "path": "10Eros-Max-Test4-Pruned-Q8_0.gguf",
+    "size": 21583324256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 1715,
+  "repo": "Abiray/10Eros-Max-GGUF"
+ },
+ {
+  "id": "10eros-max-h3-turbo",
+  "name": "10Eros Max Turbo · MiniMax H3 (NSFW, 8 steps)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "10Eros Max Turbo beta 7: uncensored MiniMax H3 with sound in only 8 steps (several times faster). Keep the guidance at 1.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Beta7-GGUF",
+    "path": "10Eros-Max-Turbo-Beta7-Q3_K_M.gguf",
+    "size": 8902845536
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Beta7-GGUF",
+    "path": "10Eros-Max-Turbo-Beta7-Q4_K_M.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Beta7-GGUF",
+    "path": "10Eros-Max-Turbo-Beta7-Q4_K_S.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Beta7-GGUF",
+    "path": "10Eros-Max-Turbo-Beta7-Q5_K_M.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Beta7-GGUF",
+    "path": "10Eros-Max-Turbo-Beta7-Q5_K_S.gguf",
+    "size": 14068966496
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 11276,
+  "repo": "Abiray/10Eros-Max-Turbo-Beta7-GGUF"
+ },
+ {
+  "id": "10eros-max-h3-turbo-hybrid",
+  "name": "10Eros Max Turbo Hybrid · MiniMax H3 (NSFW, fast)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "10Eros Max Turbo Hybrid beta 5: fast (8 steps) uncensored MiniMax H3 with more motion variety.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Turbo-Beta5-Q3_K_M.gguf",
+    "size": 8902942464
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Turbo-Beta5-Q4_K_M.gguf",
+    "size": 11564277504
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Turbo-Beta5-Q4_K_S.gguf",
+    "size": 11564277504
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Turbo-Beta5-Q5_K_M.gguf",
+    "size": 14069063424
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Turbo-Beta5-Q5_K_S.gguf",
+    "size": 14069063424
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Turbo-Beta5-Q6_K.gguf",
+    "size": 16730398464
+   },
+   {
+    "label": "INT8 ConvRot (beta 3)",
+    "format": "convrot",
+    "repo": "cicalooo/10Eros-Max-h3-int8-convrot",
+    "path": "10Eros_Max_h3_TURBO-hybrid_beta3_int8_convrot.safetensors",
+    "size": 20973147816
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 6257,
+  "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF"
+ },
+ {
+  "id": "10eros-max-h3-hybrid",
+  "name": "10Eros Max Hybrid · MiniMax H3 (NSFW)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "10Eros Max Hybrid beta 5 at full quality (20 steps): uncensored MiniMax H3 with sound.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Beta5-Q3_K_M.gguf",
+    "size": 8902942464
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Beta5-Q4_K_M.gguf",
+    "size": 11564277504
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Beta5-Q4_K_S.gguf",
+    "size": 11564277504
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Beta5-Q5_K_M.gguf",
+    "size": 14069063424
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Beta5-Q5_K_S.gguf",
+    "size": 14069063424
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Beta5-Q6_K.gguf",
+    "size": 16730398464
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
+    "path": "10Eros-Max-Beta5-Q8_0.gguf",
+    "size": 21583421184
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 2719,
+  "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF"
+ },
+ {
+  "id": "10eros-max-h3-ref2va",
+  "name": "10Eros Max Ref2VA · MiniMax H3 (NSFW, from pictures)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Uncensored 10Eros Max that puts the people of your reference pictures (or your 🎭 cast) into a video with sound.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
+    "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q3_K_M.gguf",
+    "size": 8902845536
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
+    "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q4_K_M.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
+    "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q4_K_S.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
+    "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q5_K_M.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
+    "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q5_K_S.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
+    "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q6_K.gguf",
+    "size": 16730301536
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "cicalooo/10Eros-Max-h3-int8-convrot",
+    "path": "10Eros_Max_h3_ref2va_beta2_pruned_int8_convrot.safetensors",
+    "size": 20967588712
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
+    "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q8_0.gguf",
+    "size": 21583324256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 1186,
+  "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF"
+ },
+ {
+  "id": "10eros-max-h3-turbo-ref2va",
+  "name": "10Eros Max Turbo Ref2VA · MiniMax H3 (NSFW, fast, from pictures)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Fast (8 steps) uncensored 10Eros Max for your reference pictures or 🎭 cast.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "cicalooo/10Eros-Max-h3-int8-convrot",
+    "path": "10Eros_Max_h3_TURBO_ref2va_beta2_int8_convrot.safetensors",
+    "size": 20973099200
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 0,
+  "repo": "cicalooo/10Eros-Max-h3-int8-convrot"
+ },
+ {
+  "id": "pinkcherry-h3",
+  "name": "PinkCherry · MiniMax H3 (NSFW, sound)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "PinkCherry: an uncensored MiniMax H3 fine-tune for adult scenes, with sound. Text, start picture or first + last picture.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "SexGod1979/PinkCherry-NSFW_MiniMax-H3",
+    "path": "beta-0.6-fl2va/PinkCherry_fl2va_MiniMax_H3_pruned_int8_convrot-beta-0.6.safetensors",
+    "size": 20970380016
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 1226,
+  "repo": "SexGod1979/PinkCherry-NSFW_MiniMax-H3"
+ },
+ {
+  "id": "pinkcherry-h3-ref2va",
+  "name": "PinkCherry Ref2VA · MiniMax H3 (NSFW, from pictures)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Uncensored PinkCherry that uses your reference pictures or 🎭 cast.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "SexGod1979/PinkCherry-NSFW_MiniMax-H3",
+    "path": "ref2va-beta-06/pinkcherrry_minimax_h3_ref2va_beta-0.6_int8_convrot.safetensors",
+    "size": 20978672808
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 1226,
+  "repo": "SexGod1979/PinkCherry-NSFW_MiniMax-H3"
+ },
+ {
+  "id": "aftermidnight-h3-ref2va",
+  "name": "AfterMidnight · MiniMax H3 Ref2VA (NSFW LoRA)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "MiniMax H3 Ref2VA with the AfterMidnight NSFW LoRA (adult scenes, coherent motion) and the uncensored encoder. Uses your reference pictures or 🎭 cast.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "loras": [
+   {
+    "name": "builtin-h3-aftermidnight-v1.2",
+    "high": false,
+    "weight": 1.0,
+    "repo": "SexGod1979/AfterMidnight-MiniMax-H3-NSFW",
+    "path": "AfterMidnight_ref2va_h3_sexytime_rank64-v1.2.safetensors",
+    "size": 1192828320
+   }
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q2_K.gguf",
+    "size": 6678171744
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q3_K.gguf",
+    "size": 8716105824
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q4_K.gguf",
+    "size": 11381096544
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q5_0.gguf",
+    "size": 13889323104
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q6_K.gguf",
+    "size": 16554313824
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q8_0.gguf",
+    "size": 21414002784
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 3563159,
+  "repo": "unsloth/MiniMax-H3-GGUF"
+ },
+ {
+  "id": "ltx-2.3-10eros-1.5",
+  "name": "10Eros 1.5 · LTX-2.3 (NSFW, sound)",
+  "kind": "video",
+  "family": "LTX",
+  "about": "10Eros v1.5: the popular uncensored LTX-2.3 fine-tune with sound, best for picture to video. Write detailed, directive prompts. GPU 12 GB+ and 32 GB RAM.",
+  "uncensored": true,
+  "steps": 30,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, subtitles, text",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "speed": {
+   "label": "⚡ DMD · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-ltx23-dmd-hybrid-v2",
+     "high": false,
+     "weight": 1.0,
+     "repo": "TenStrip/LTX2.3_DMD_Lora",
+     "path": "LTX2.3_DMD_hybrid_v2.safetensors",
+     "size": 5095398920
+    }
+   ]
+  },
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q3_K_S.gguf",
+    "size": 10339465824
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q3_K_M.gguf",
+    "size": 11130419808
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q4_0.gguf",
+    "size": 12980919904
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q4_K_S.gguf",
+    "size": 13201120864
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q4_1.gguf",
+    "size": 13903216224
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q4_K_M.gguf",
+    "size": 14296161888
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q5_K_S.gguf",
+    "size": 15043616352
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q5_0.gguf",
+    "size": 15261720160
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q5_K_M.gguf",
+    "size": 16141486688
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q5_1.gguf",
+    "size": 16184016480
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q6_K.gguf",
+    "size": 17774931552
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF",
+    "path": "10Eros_v1.5-Q8_0.gguf",
+    "size": 22755565152
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-dev_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-dev_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-dev_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 25360,
+  "repo": "vantagewithai/LTX2.3-10Eros-1.5-GGUF"
+ },
+ {
+  "id": "ltx-2.3-10eros",
+  "name": "10Eros v1 · LTX-2.3 (NSFW, sound)",
+  "kind": "video",
+  "family": "LTX",
+  "about": "The first 10Eros LTX-2.3 remix: uncensored video with sound from text or a picture.",
+  "uncensored": true,
+  "steps": 30,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, subtitles, text",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "speed": {
+   "label": "⚡ DMD · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-ltx23-dmd-hybrid-v2",
+     "high": false,
+     "weight": 1.0,
+     "repo": "TenStrip/LTX2.3_DMD_Lora",
+     "path": "LTX2.3_DMD_hybrid_v2.safetensors",
+     "size": 5095398920
+    }
+   ]
+  },
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q3_K_S.gguf",
+    "size": 10339464608
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q3_K_M.gguf",
+    "size": 11130418592
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q4_0.gguf",
+    "size": 12980918688
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q4_K_S.gguf",
+    "size": 13201119648
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q4_1.gguf",
+    "size": 13903215008
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q4_K_M.gguf",
+    "size": 14296160672
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q5_K_S.gguf",
+    "size": 15043615136
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q5_0.gguf",
+    "size": 15261718944
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q5_K_M.gguf",
+    "size": 16141485472
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q5_1.gguf",
+    "size": 16184015264
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q6_K.gguf",
+    "size": 17774930336
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX2.3-10Eros-GGUF",
+    "path": "10Eros_v1-Q8_0.gguf",
+    "size": 22755563936
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-dev_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-dev_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-dev_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 9479,
+  "repo": "vantagewithai/LTX2.3-10Eros-GGUF"
+ },
+ {
+  "id": "pinkcherry-ltx-2.3",
+  "name": "PinkCherry · LTX-2.3 (NSFW, sound)",
+  "kind": "video",
+  "family": "LTX",
+  "about": "PinkCherry v1.8: uncensored LTX-2.3 fine-tune for adult scenes, with sound. Text or picture to video.",
+  "uncensored": true,
+  "steps": 30,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, subtitles, text",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "speed": {
+   "label": "⚡ Distilled · 8 steps",
+   "steps": 8,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-ltx23-distilled-condsafe",
+     "high": false,
+     "weight": 1.0,
+     "repo": "SexGod1979/PinkCherry_NSFW_LTX23",
+     "path": "v1/distil_lora/ltx-2.3-22b-distilled-lora-1.1_fro90_ceil72_condsafe.safetensors",
+     "size": 662072824
+    }
+   ]
+  },
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "SexGod1979/PinkCherry_NSFW_LTX23",
+    "path": "v1.8/PinkCherry_FineTune_Q5_K_M_v18_LTX23.gguf",
+    "size": 15930424768
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "SexGod1979/PinkCherry_NSFW_LTX23",
+    "path": "v1.8/PinkCherry_FineTune_Q8_0_v1_8_LTX23.gguf",
+    "size": 22755540416
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-dev_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-dev_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-dev_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 106429,
+  "repo": "SexGod1979/PinkCherry_NSFW_LTX23"
+ },
+ {
+  "id": "ltx-2.3-nsfw-motion",
+  "name": "LTX-2.3 NSFW motion (fast, sound)",
+  "kind": "video",
+  "family": "LTX",
+  "uncensored": true,
+  "about": "The fast LTX-2.3 distilled model with an NSFW motion LoRA: uncensored video with sound in 8 steps.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "loras": [
+   {
+    "name": "builtin-ltx23-nsfw-motion",
+    "high": false,
+    "weight": 1.0,
+    "repo": "lynaNSFW/LTX2.3_NSFW_motion",
+    "path": "LTX2.3-NSFWMOTION_00750.safetensors",
+    "size": 1107655568
+   }
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q2_K.gguf",
+    "size": 7935826976
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q3_K_S.gguf",
+    "size": 9741626400
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q3_K_M.gguf",
+    "size": 10629508128
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_0.gguf",
+    "size": 12716211232
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_K_S.gguf",
+    "size": 12961578016
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_1.gguf",
+    "size": 13758266400
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q4_K_M.gguf",
+    "size": 14194441248
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_K_S.gguf",
+    "size": 15043591200
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_0.gguf",
+    "size": 15286860832
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_K_M.gguf",
+    "size": 15930424352
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q5_1.gguf",
+    "size": 16328916000
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q6_K.gguf",
+    "size": 17774906400
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-Q8_0.gguf",
+    "size": 22755540000
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-BF16.gguf",
+    "size": 42035412000
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "distilled-1.1/ltx-2.3-22b-distilled-1.1-F16.gguf",
+    "size": 42035412000
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 551187,
+  "repo": "unsloth/LTX-2.3-GGUF"
+ },
+ {
+  "id": "smoothmix-wan2.2-i2v",
+  "name": "SmoothMix Wan 2.2 I2V (NSFW, fast)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "SmoothMix: a popular uncensored Wan 2.2 merge with smooth motion and the speed-up built in (4 + 4 steps). Photo or text to video. GPU 12 GB+.",
+  "steps": 4,
+  "highSteps": 4,
+  "cfg": 1.0,
+  "flowShift": 5,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "tasks": [
+   "animate",
+   "create",
+   "first-last"
+  ],
+  "fps": 16,
+  "uncensored": true,
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q2_K.gguf",
+    "size": 5300957696,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q2_K.gguf",
+     "size": 5300957696
+    },
+    "size_total": 10601915392
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q3_K_S.gguf",
+    "size": 6515012096,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q3_K_S.gguf",
+     "size": 6515012096
+    },
+    "size_total": 13030024192
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q3_K_M.gguf",
+    "size": 7176106496,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q3_K_M.gguf",
+     "size": 7176106496
+    },
+    "size_total": 14352212992
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q4_0.gguf",
+    "size": 8558096896,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q4_0.gguf",
+     "size": 8558096896
+    },
+    "size_total": 17116193792
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q4_K_S.gguf",
+    "size": 8748151296,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q4_K_S.gguf",
+     "size": 8748151296
+    },
+    "size_total": 17496302592
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q4_K_M.gguf",
+    "size": 9651728896,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q4_K_M.gguf",
+     "size": 9651728896
+    },
+    "size_total": 19303457792
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q5_K_S.gguf",
+    "size": 10137514496,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q5_K_S.gguf",
+     "size": 10137514496
+    },
+    "size_total": 20275028992
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q5_K_M.gguf",
+    "size": 10792055296,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q5_K_M.gguf",
+     "size": 10792055296
+    },
+    "size_total": 21584110592
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q6_K.gguf",
+    "size": 12003652096,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q6_K.gguf",
+     "size": 12003652096
+    },
+    "size_total": 24007304192
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+    "path": "LowNoise/smoothMixWan22I2VT2V_i2vLow-Q8_0.gguf",
+    "size": 15406608896,
+    "high": {
+     "repo": "Bedovyy/smoothMixWan22-I2V-GGUF",
+     "path": "HighNoise/smoothMixWan22I2VT2V_i2vHigh-Q8_0.gguf",
+     "size": 15406608896
+    },
+    "size_total": 30813217792
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ],
+  "dl": 21848,
+  "repo": "Bedovyy/smoothMixWan22-I2V-GGUF"
+ },
+ {
+  "id": "dasiwa-wan2.2-i2v",
+  "name": "DaSiWa Wan 2.2 I2V Midnight Flirt (NSFW, fast)",
+  "kind": "video",
+  "family": "Wan",
+  "about": "DaSiWa Midnight Flirt: uncensored Wan 2.2 merge with the Lightspeed speed-up built in (4 + 4 steps). Animates a photo. GPU 12 GB+.",
+  "steps": 4,
+  "highSteps": 4,
+  "cfg": 1.0,
+  "flowShift": 5,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "required",
+  "tasks": [
+   "animate",
+   "first-last"
+  ],
+  "fps": 16,
+  "uncensored": true,
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q2_K.gguf",
+    "size": 5300957696,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q2_K.gguf",
+     "size": 5300957696
+    },
+    "size_total": 10601915392
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q3_K_S.gguf",
+    "size": 6515012096,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q3_K_S.gguf",
+     "size": 6515012096
+    },
+    "size_total": 13030024192
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q3_K_M.gguf",
+    "size": 7176106496,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q3_K_M.gguf",
+     "size": 7176106496
+    },
+    "size_total": 14352212992
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q4_0.gguf",
+    "size": 8558096896,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q4_0.gguf",
+     "size": 8558096896
+    },
+    "size_total": 17116193792
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q4_K_S.gguf",
+    "size": 8748151296,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q4_K_S.gguf",
+     "size": 8748151296
+    },
+    "size_total": 17496302592
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q4_K_M.gguf",
+    "size": 9651728896,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q4_K_M.gguf",
+     "size": 9651728896
+    },
+    "size_total": 19303457792
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q5_K_S.gguf",
+    "size": 10137514496,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q5_K_S.gguf",
+     "size": 10137514496
+    },
+    "size_total": 20275028992
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q5_K_M.gguf",
+    "size": 10792055296,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q5_K_M.gguf",
+     "size": 10792055296
+    },
+    "size_total": 21584110592
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q6_K.gguf",
+    "size": 12003652096,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q6_K.gguf",
+     "size": 12003652096
+    },
+    "size_total": 24007304192
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+    "path": "LowNoise/dasiwaWAN22I2V14B_midnightflirtLow-Q8_0.gguf",
+    "size": 15406608896,
+    "high": {
+     "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF",
+     "path": "HighNoise/dasiwaWAN22I2V14B_midnightflirtHigh-Q8_0.gguf",
+     "size": 15406608896
+    },
+    "size_total": 30813217792
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ],
+  "dl": 7487,
+  "repo": "Bedovyy/dasiwaWAN22I2V14B-GGUF"
+ },
+ {
+  "id": "wan2.2-enhanced-nsfw-fastmove",
+  "name": "Wan 2.2 Enhanced NSFW FastMove (fast)",
+  "kind": "video",
+  "family": "Wan",
+  "uncensored": true,
+  "about": "Enhanced NSFW SVI Camera FastMove: uncensored Wan 2.2 with more camera and body motion, speed-up built in (4 + 4 steps). GPU 12 GB+.",
+  "steps": 4,
+  "highSteps": 4,
+  "cfg": 1.0,
+  "flowShift": 5,
+  "width": 832,
+  "height": 480,
+  "frames": 81,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "fps": 16,
+  "tasks": [
+   "animate",
+   "create",
+   "first-last"
+  ],
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M (v2)",
+    "format": "gguf",
+    "repo": "gfaione/wan2.2_enhanced_nsfw",
+    "path": "wan22EnhancedNSFWSVICamera_nsfwFASTMOVEV2Q4KML.gguf",
+    "size": 9651739136,
+    "high": {
+     "repo": "gfaione/wan2.2_enhanced_nsfw",
+     "path": "wan22EnhancedNSFWSVICamera_nsfwFASTMOVEV2Q4KMH.gguf",
+     "size": 9651739136
+    },
+    "size_total": 19303478272
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "gfaione/wan2.2_enhanced_nsfw",
+    "path": "wan22EnhancedNSFWSVICamera_nsfwFASTMOVEQ6KLow.gguf",
+    "size": 12003662336,
+    "high": {
+     "repo": "gfaione/wan2.2_enhanced_nsfw",
+     "path": "wan22EnhancedNSFWSVICamera_nsfwFASTMOVEQ6KHigh.gguf",
+     "size": 12003662336
+    },
+    "size_total": 24007324672
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ],
+  "dl": 7735,
+  "repo": "gfaione/wan2.2_enhanced_nsfw"
+ },
+ {
+  "id": "wan2.2-rapid-aio-nsfw",
+  "name": "Wan 2.2 Rapid AIO NSFW v10 (4 steps)",
+  "kind": "video",
+  "family": "Wan",
+  "uncensored": true,
+  "about": "Phr00t's Rapid All-In-One NSFW v10: one uncensored 14B Wan 2.2 model (no second expert) that makes video in only 4 steps. Photo or text to video.",
+  "steps": 4,
+  "cfg": 1.0,
+  "flowShift": 5,
+  "width": 832,
+  "height": 480,
+  "frames": 81,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "optional",
+  "fps": 16,
+  "tasks": [
+   "animate",
+   "create"
+  ],
+  "sampler": "euler",
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q2_K.gguf",
+    "size": 6006761216
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q3_K_S.gguf",
+    "size": 7433807616
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q3_K_M.gguf",
+    "size": 8094902016
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q4_0.gguf",
+    "size": 9755420416
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q4_K_S.gguf",
+    "size": 9945474816
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q4_1.gguf",
+    "size": 10587727616
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q4_K_M.gguf",
+    "size": 10849052416
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q5_K_S.gguf",
+    "size": 11596982016
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q5_0.gguf",
+    "size": 11773929216
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q5_K_M.gguf",
+    "size": 12251522816
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q5_1.gguf",
+    "size": 12606236416
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q6_K.gguf",
+    "size": 13741647616
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-Q8_0.gguf",
+    "size": 17652508416
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10",
+    "path": "wan2.2-i2v-rapid-aio-v10-nsfw-F16.gguf",
+    "size": 32791324416
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ],
+  "dl": 57476,
+  "repo": "desirel/WAN2.2-14B-Rapid-AllInOne-GGUF-NSFW-v10"
+ },
+ {
   "id": "ltx-2.5-distilled",
   "name": "LTX-2.5 distilled (video + sound)",
   "kind": "video",

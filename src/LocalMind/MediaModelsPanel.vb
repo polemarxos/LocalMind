@@ -31,21 +31,64 @@ Public Class MediaModelsPanel
     Private _sortDesc As Boolean = True
     Private _cts As CancellationTokenSource
     Private _suppress As Boolean
+    Private _suppressType As Boolean
     Private ReadOnly _filterTimer As New System.Windows.Forms.Timer() With {.Interval = 250}
     Private ReadOnly details As New MediaDetailsView() With {.Dock = DockStyle.Fill}
     Private ReadOnly chkNsfw As New CheckBox() With {.AutoSize = True, .Margin = New Padding(10, 9, 3, 3), .ForeColor = Theme.CText}
+    Private ReadOnly cmbTop As ComboBox = Popular.MakeCombo()
     Private ReadOnly chkFit As New CheckBox() With {.AutoSize = True, .Margin = New Padding(10, 9, 3, 3), .ForeColor = Theme.CText}
 
     ''' <summary>Raised after downloads, so the Studio can refresh.</summary>
     Public Event Downloaded()
 
-    Private Shared ReadOnly Types As (Label As String, Test As Func(Of MediaRecipe, Boolean))() = {
-        ("All types", Function(r) True),
-        ("🖼 Create pictures", Function(r) Not r.IsVideo AndAlso r.Can("create")),
-        ("✏️ Edit pictures", Function(r) Not r.IsVideo AndAlso (r.Can("edit") OrElse r.Can("inpaint"))),
-        ("🎬 Make videos", Function(r) r.IsVideo AndAlso (r.Can("create") OrElse r.Can("animate"))),
-        ("🎞 Edit videos", Function(r) r.Can("video-edit")),
+    ' Pictures and videos are listed apart (the two buttons above the list); each has its own kinds.
+    Private Shared ReadOnly PictureTypes As (Label As String, Test As Func(Of MediaRecipe, Boolean))() = {
+        ("All picture models", Function(r) True),
+        ("🖼 Create pictures", Function(r) r.Can("create")),
+        ("✏️ Edit pictures", Function(r) r.Can("edit") OrElse r.Can("inpaint")),
         ("🔍 Enlarge / tools", Function(r) r.IsUpscaler OrElse r.Kind = "tool")}
+    Private Shared ReadOnly VideoTypes As (Label As String, Test As Func(Of MediaRecipe, Boolean))() = {
+        ("All video models", Function(r) True),
+        ("🎬 Make videos", Function(r) r.Can("create") OrElse r.Can("animate")),
+        ("🗣 Talking videos", Function(r) r.Can("talk")),
+        ("🎞 Edit videos", Function(r) r.Can("video-edit"))}
+    Private ReadOnly optPictures As New RadioButton() With {.Appearance = Appearance.Button, .AutoSize = True, .Checked = True, .Margin = New Padding(3, 5, 0, 3),
+                                                             .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter}
+    Private ReadOnly optVideos As New RadioButton() With {.Appearance = Appearance.Button, .AutoSize = True, .Margin = New Padding(0, 5, 8, 3),
+                                                           .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter}
+
+    Private ReadOnly optMusic As New RadioButton() With {.Appearance = Appearance.Button, .AutoSize = True, .Margin = New Padding(0, 5, 8, 3),
+                                                          .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .TextAlign = ContentAlignment.MiddleCenter}
+    Private Shared ReadOnly AudioTypes As (Label As String, Test As Func(Of AudioModel, Boolean))() = {
+        ("All music & voice models", Function(m) True),
+        ("🎵 Songs & music", Function(m) m.IsMusic),
+        ("🗣 Voices (read aloud, cloning)", Function(m) Not m.IsMusic)}
+    Private ReadOnly _checkedAudio As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+
+    Private ReadOnly Property Types As (Label As String, Test As Func(Of MediaRecipe, Boolean))()
+        Get
+            Return If(optVideos.Checked, VideoTypes, PictureTypes)
+        End Get
+    End Property
+
+    Private Sub FillTypes()
+        cmbType.Items.Clear()
+        If optMusic.Checked Then
+            cmbType.Items.AddRange(AudioTypes.Select(Function(t) CObj(Localizer.T(t.Label))).ToArray())
+        Else
+            cmbType.Items.AddRange(Types.Select(Function(t) CObj(Localizer.T(t.Label))).ToArray())
+        End If
+        cmbType.SelectedIndex = 0
+    End Sub
+
+    Private Sub StyleKind(o As RadioButton)
+        o.FlatAppearance.BorderColor = Theme.CBorder
+        o.FlatAppearance.CheckedBackColor = Theme.CAccent
+        o.FlatAppearance.MouseOverBackColor = Theme.CHover
+        o.BackColor = Theme.CControl
+        o.ForeColor = If(o.Checked, Color.White, Theme.CText)
+        o.Font = If(o.Checked, Theme.BoldFont, Me.Font)
+    End Sub
 
     Public Sub New()
         Dock = DockStyle.Fill
@@ -56,8 +99,24 @@ Public Class MediaModelsPanel
         cmbShow.Items.AddRange({Localizer.T("★ Best for my GPU"), Localizer.T("All models (show everything)"), Localizer.T("🔓 Uncensored"), Localizer.T("✔ Installed")})
         cmbShow.SelectedIndex = 0
         Theme.StyleInput(cmbShow)
-        cmbType.Items.AddRange(Types.Select(Function(t) Localizer.T(t.Label)).ToArray())
-        cmbType.SelectedIndex = 0
+        optPictures.Text = Localizer.T("🖼 Picture models")
+        optVideos.Text = Localizer.T("🎬 Video models")
+        optVideos.Margin = New Padding(0, 5, 0, 3)
+        optMusic.Text = Localizer.T("🎵 Music & voice models")
+        FillTypes()
+        StyleKind(optPictures) : StyleKind(optVideos) : StyleKind(optMusic)
+        For Each o In {optPictures, optVideos, optMusic}
+            AddHandler o.CheckedChanged, Sub(s, e)
+                                             Dim rb = CType(s, RadioButton)
+                                             StyleKind(rb)
+                                             If Not rb.Checked Then Return
+                                             _suppressType = True
+                                             FillTypes()
+                                             _suppressType = False
+                                             Fill()
+                                             ShowAbout()
+                                         End Sub
+        Next
         Theme.StyleInput(cmbType)
         txtFilter.PlaceholderText = Localizer.T("Search, e.g. flux, krea, wan i2v, convrot")
         Theme.StyleInput(txtFilter)
@@ -89,7 +148,7 @@ Public Class MediaModelsPanel
                                               AppCore.SaveSettings()
                                               Fill()
                                           End Sub
-        top.Controls.AddRange({cmbShow, cmbType, txtFilter, chkFit, chkNsfw, btnStudio})
+        top.Controls.AddRange({optPictures, optVideos, optMusic, cmbShow, cmbTop, cmbType, txtFilter, chkFit, chkNsfw, btnStudio})
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False
@@ -172,7 +231,10 @@ Public Class MediaModelsPanel
         Controls.Add(actions)
 
         AddHandler cmbShow.SelectedIndexChanged, Sub() Fill()
-        AddHandler cmbType.SelectedIndexChanged, Sub() Fill()
+        AddHandler cmbType.SelectedIndexChanged, Sub()
+                                                     If Not _suppressType Then Fill()
+                                                 End Sub
+        AddHandler cmbTop.SelectedIndexChanged, Sub() Fill()
         AddHandler _filterTimer.Tick, Sub()
                                           _filterTimer.Stop()
                                           Fill()
@@ -182,6 +244,11 @@ Public Class MediaModelsPanel
                                               _filterTimer.Start()
                                           End Sub
         Fill()
+        ' (screenshot checks)
+        Select Case Environment.GetEnvironmentVariable("LOCALMIND_MODELS_KIND")
+            Case "video" : optVideos.Checked = True
+            Case "music" : optMusic.Checked = True
+        End Select
     End Sub
 
     Private Shared Function TypeText(r As MediaRecipe) As String
@@ -224,8 +291,14 @@ Public Class MediaModelsPanel
     End Function
 
     Public Sub Fill()
+        If optMusic.Checked Then
+            FillAudio()
+            Return
+        End If
+        grid.Columns("variant").Visible = True
+        grid.Columns("steps").Visible = True
         Dim q = txtFilter.Text.Trim().ToLowerInvariant()
-        Dim all = MediaStudio.Recipes()
+        Dim all = MediaStudio.Recipes().Where(Function(r) r.IsVideo = optVideos.Checked).ToList()
         Dim test = Types(Math.Max(0, cmbType.SelectedIndex)).Test
         Dim list As IEnumerable(Of MediaRecipe) = all.Where(test)
         Select Case cmbShow.SelectedIndex
@@ -244,6 +317,10 @@ Public Class MediaModelsPanel
                                   Dim hay = (r.Name & " " & r.Family & " " & r.Repo & " " & r.Id & " " & String.Join(" ", r.Variants.Select(Function(v) v.Label & " " & v.Format))).ToLowerInvariant()
                                   Return words.All(Function(w) hay.Contains(w))
                               End Function)
+        End If
+        ' Only the most downloaded ones (a search, or the Installed list, shows everything that matches).
+        If q.Length = 0 AndAlso cmbShow.SelectedIndex <> 3 Then
+            list = Popular.Top(list, Popular.Count(cmbTop), Function(r) r.Downloads, Function(r) MediaStudio.InstalledVariant(r) IsNot Nothing)
         End If
         list = If(_sortDesc, list.OrderByDescending(AddressOf SortKey), list.OrderBy(AddressOf SortKey))
         Dim items = list.ToList()
@@ -282,7 +359,65 @@ Public Class MediaModelsPanel
         Next
         grid.ResumeLayout()
         _suppress = False
-        lblInfo.Text = String.Format(Localizer.T("Showing {0} of {1} picture and video models · click a column title to sort"), items.Count, all.Count)
+        lblInfo.Text = String.Format(Localizer.T(If(optVideos.Checked, "Showing {0} of {1} video models · click a column title to sort", "Showing {0} of {1} picture models · click a column title to sort")), items.Count, all.Count)
+        UpdateButton()
+    End Sub
+
+    ''' <summary>The voice and music models (read aloud, voice cloning, songs) in the same list.</summary>
+    Private Sub FillAudio()
+        Dim q = txtFilter.Text.Trim().ToLowerInvariant()
+        Dim all = AudioStudio.Models()
+        Dim test = AudioTypes(Math.Max(0, Math.Min(AudioTypes.Length - 1, cmbType.SelectedIndex))).Test
+        Dim list As IEnumerable(Of AudioModel) = all.Where(test)
+        If cmbShow.SelectedIndex = 3 Then list = list.Where(AddressOf AudioStudio.IsInstalled)
+        If cmbShow.SelectedIndex = 0 OrElse chkFit.Checked Then list = list.Where(Function(m) AudioStudio.Fit(m, _hw) <> FitLevel.TooBig OrElse AudioStudio.IsInstalled(m))
+        If q.Length > 0 Then
+            Dim words = q.Split(" "c, StringSplitOptions.RemoveEmptyEntries)
+            list = list.Where(Function(m) words.All(Function(w) (m.Name & " " & m.Kind & " " & m.Model.Repo & " " & m.Id & " " & String.Join(" ", m.Langs)).ToLowerInvariant().Contains(w)))
+        ElseIf cmbShow.SelectedIndex <> 3 Then
+            list = Popular.Top(list, Popular.Count(cmbTop), Function(m) m.Downloads, AddressOf AudioStudio.IsInstalled)
+        End If
+        Dim key As Func(Of AudioModel, IComparable)
+        Select Case _sortCol
+            Case "name" : key = Function(m) m.Name.ToLowerInvariant()
+            Case "type", "family" : key = Function(m) m.Kind
+            Case "size" : key = Function(m) m.Size
+            Case "fit" : key = Function(m) CLng(AudioStudio.Fit(m, _hw)) * 1000000000000L + m.Size
+            Case "src" : key = Function(m) m.Model.Repo
+            Case Else : key = Function(m) m.Downloads
+        End Select
+        Dim items = If(_sortDesc, list.OrderByDescending(key), list.OrderBy(key)).ToList()
+
+        _suppress = True
+        grid.SuspendLayout()
+        grid.Rows.Clear()
+        grid.Columns("variant").Visible = False
+        grid.Columns("steps").Visible = False
+        For Each m In items
+            Dim row As New DataGridViewRow()
+            row.CreateCells(grid)
+            row.Tag = m
+            Dim installed = AudioStudio.IsInstalled(m)
+            row.Cells(0).Value = _checkedAudio.Contains(m.Id)
+            row.Cells(1).Value = If(installed, "✔ ", "") & m.Name
+            row.Cells(2).Value = If(m.IsMusic, Localizer.T("🎵 Songs"), Localizer.T("🗣 Voice") & If(m.Clone, " · " & Localizer.T("cloning"), ""))
+            row.Cells(grid.Columns("family").Index).Value = If(m.IsMusic, Localizer.T("Music"), Localizer.T("Voice"))
+            row.Cells(grid.Columns("size").Index).Value = Downloader.FormatBytes(AudioStudio.BytesToDownload(m))
+            Dim fit = AudioStudio.Fit(m, _hw)
+            row.Cells(grid.Columns("fit").Index).Value = ModelCatalog.FitText(fit, _hw.VramBytes = 0)
+            row.Cells(grid.Columns("fit").Index).Style.ForeColor = ModelManagerForm.FitColor(fit)
+            row.Cells(grid.Columns("dl").Index).Value = If(m.Downloads > 0, FormatCount(m.Downloads), "—")
+            row.Cells(grid.Columns("src").Index).Value = m.Model.Repo.Split("/"c)(0)
+            grid.Rows.Add(row)
+        Next
+        For Each c As DataGridViewColumn In grid.Columns
+            If c.SortMode = DataGridViewColumnSortMode.Programmatic Then
+                c.HeaderCell.SortGlyphDirection = If(c.Name <> _sortCol, SortOrder.None, If(_sortDesc, SortOrder.Descending, SortOrder.Ascending))
+            End If
+        Next
+        grid.ResumeLayout()
+        _suppress = False
+        lblInfo.Text = String.Format(Localizer.T("Showing {0} of {1} music and voice models · click a column title to sort"), items.Count, all.Count)
         UpdateButton()
     End Sub
 
@@ -304,6 +439,14 @@ Public Class MediaModelsPanel
     Private Sub CellChanged(sender As Object, e As DataGridViewCellEventArgs)
         If _suppress OrElse e.RowIndex < 0 Then Return
         Dim row = grid.Rows(e.RowIndex)
+        Dim am = TryCast(row.Tag, AudioModel)
+        If am IsNot Nothing Then
+            If e.ColumnIndex = 0 Then
+                If CBool(row.Cells(0).Value) Then _checkedAudio.Add(am.Id) Else _checkedAudio.Remove(am.Id)
+                UpdateButton()
+            End If
+            Return
+        End If
         Dim r = TryCast(row.Tag, MediaRecipe)
         If r Is Nothing Then Return
         If e.ColumnIndex = 0 Then
@@ -317,6 +460,13 @@ Public Class MediaModelsPanel
     End Sub
 
     Private Sub ShowAbout()
+        Dim am = TryCast(grid.CurrentRow?.Tag, AudioModel)
+        If am IsNot Nothing Then
+            lblAbout.Text = am.About & "   " & AudioStudio.RequirementText(am, _hw)
+            _shown = Nothing
+            details.ShowAudio(am)
+            Return
+        End If
         Dim r = TryCast(grid.CurrentRow?.Tag, MediaRecipe)
         If r Is Nothing Then Return
         Dim v = ChosenVariant(r)
@@ -337,43 +487,87 @@ Public Class MediaModelsPanel
     End Function
 
     Private Sub UpdateButton()
-        btnDownload.Text = Localizer.T("⬇  Download selected") & $" ({_checked.Count})"
+        Dim n = _checked.Count + _checkedAudio.Count
+        btnDownload.Text = Localizer.T("⬇  Download selected") & $" ({n})"
+        btnDownload.Enabled = _cts Is Nothing
     End Sub
 
+    ''' <summary>
+    ''' Downloads everything ticked in the picture, video and music lists at the same time (three at once;
+    ''' a part two models share is fetched only once). One failing model does not stop the others.
+    ''' </summary>
     Private Async Function DownloadSelectedAsync() As Task
-        Dim picks = MediaStudio.Recipes().Where(Function(r) _checked.Contains(r.Id)).ToList()
-        If picks.Count = 0 Then
-            Localizer.Box(Me, "Tick one or more models first.", "Download")
+        Dim jobs As New List(Of (Name As String, Work As Func(Of Action(Of Integer, String), CancellationToken, Task), Done As Action))
+        For Each r In MediaStudio.Recipes().Where(Function(x) _checked.Contains(x.Id)).ToList()
+            Dim rr = r, v = ChosenVariant(r)
+            jobs.Add((rr.Name, Function(p, c) MediaStudio.DownloadAsync(rr, v, p, c, forEdit:=rr.Can("edit")), Sub() _checked.Remove(rr.Id)))
+        Next
+        For Each m In AudioStudio.Models().Where(Function(x) _checkedAudio.Contains(x.Id)).ToList()
+            Dim mm = m
+            jobs.Add((mm.Name, Function(p, c) AudioStudio.DownloadAsync(mm, p, c), Sub() _checkedAudio.Remove(mm.Id)))
+        Next
+        If jobs.Count = 0 Then
+            Localizer.Box(Me, "Tick one or more models first (in any of the picture, video or music lists).", "Download")
             Return
         End If
         _cts = New CancellationTokenSource()
+        Dim ct = _cts.Token
         btnDownload.Enabled = False
         btnCancel.Visible = True
         bar.Visible = True
-        Dim done = 0
+        bar.Value = 0
+        Dim pct(jobs.Count - 1) As Integer
+        Dim lines(jobs.Count - 1) As String
+        Dim ok = 0, failed As New List(Of String)
+        Dim gate As New SemaphoreSlim(3, 3)
+        Dim report = Sub()
+                         Dim running = Enumerable.Range(0, jobs.Count).Where(Function(i) pct(i) > 0 AndAlso pct(i) < 100).ToList()
+                         Dim all = CInt(pct.Sum() / jobs.Count)
+                         Me.Post(Sub()
+                                     bar.Value = Math.Max(0, Math.Min(100, all))
+                                     lblStatus.Text = String.Format(Localizer.T("{0} of {1} ready · downloading: {2}"), ok, jobs.Count,
+                                                                    If(running.Count = 0, "…", String.Join("  |  ", running.Select(Function(i) $"{jobs(i).Name} {pct(i)}%"))))
+                                 End Sub)
+                     End Sub
+        Dim tasks = Enumerable.Range(0, jobs.Count).Select(
+            Async Function(i)
+                Await gate.WaitAsync(ct)
+                Try
+                    Await jobs(i).Work(Sub(p, t)
+                                           pct(i) = Math.Max(1, Math.Min(99, p))
+                                           report()
+                                       End Sub, ct)
+                    pct(i) = 100
+                    Interlocked.Increment(ok)
+                    Me.Post(jobs(i).Done)
+                Catch ex As OperationCanceledException
+                Catch ex As Exception
+                    pct(i) = 100
+                    SyncLock failed
+                        failed.Add(jobs(i).Name & ": " & ex.Message)
+                    End SyncLock
+                    Safety.Log(ex, "Model download: " & jobs(i).Name)
+                Finally
+                    gate.Release()
+                    report()
+                End Try
+            End Function).ToList()
         Try
-            For Each r In picks
-                Dim v = ChosenVariant(r)
-                Dim name = r.Name
-                Await MediaStudio.DownloadAsync(r, v,
-                    Sub(p, t) Me.Post(Sub()
-                                              bar.Value = Math.Max(0, Math.Min(100, p))
-                                              lblStatus.Text = $"{done + 1}/{picks.Count} · {name} · {Localizer.T(t)}"
-                                          End Sub),
-                    _cts.Token, forEdit:=r.Can("edit"))
-                done += 1
-                _checked.Remove(r.Id)
-            Next
-            lblStatus.Text = String.Format(Localizer.T("Done: {0} model(s) ready in the Pictures & video studio."), done)
+            Await Task.WhenAll(tasks)
+            If ct.IsCancellationRequested Then
+                lblStatus.Text = Localizer.T("Download cancelled.")
+            ElseIf failed.Count > 0 Then
+                lblStatus.Text = String.Format(Localizer.T("{0} ready, {1} failed."), ok, failed.Count) & "  ⚠ " & failed(0)
+            Else
+                lblStatus.Text = String.Format(Localizer.T("Done: {0} model(s) ready."), ok)
+            End If
         Catch ex As OperationCanceledException
             lblStatus.Text = Localizer.T("Download cancelled.")
-        Catch ex As Exception
-            lblStatus.Text = "⚠ " & ex.Message
         Finally
-            btnDownload.Enabled = True
             btnCancel.Visible = False
             bar.Visible = False
             _cts = Nothing
+            btnDownload.Enabled = True
             Fill()
             RaiseEvent Downloaded()
         End Try

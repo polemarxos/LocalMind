@@ -21,6 +21,7 @@ Public Class AudioModel
     <JsonProperty("clone")> Public Property Clone As Boolean
     <JsonProperty("langs")> Public Property Langs As New List(Of String)()
     <JsonProperty("transcript")> Public Property Transcript As Boolean ' cloning is closer with the words of the recording
+    <JsonProperty("dl")> Public Property Downloads As Long
     <JsonProperty("design")> Public Property Design As Boolean         ' "(voice description)Text" designs a voice
 
     <JsonIgnore> Public ReadOnly Property IsMusic As Boolean

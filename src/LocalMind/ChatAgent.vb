@@ -199,6 +199,9 @@ Public Module ChatAgent
         Dim all = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
         Dim ok = all.Where(Function(r) If(withPhoto, r.Can("animate"), r.Can("create") AndAlso r.Input <> "required")).ToList()
         If ok.Count = 0 AndAlso withPhoto Then ok = all.Where(Function(r) r.Can("create") AndAlso r.Input <> "required").ToList()
+        ' the default the user chose (if it can do this kind of video)
+        Dim chosen = ok.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatVideoModel)
+        If chosen IsNot Nothing Then Return chosen
         Return ok.OrderBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.InstalledVariant(r), hw) = FitLevel.Fits, 0, 1)).
                   ThenBy(Function(r) If(r.Uncensored, 1, 0)).
                   ThenBy(Function(r) If(r.Speed IsNot Nothing AndAlso AppCore.Settings.MediaFast, r.Speed.Steps, r.Steps)).FirstOrDefault()

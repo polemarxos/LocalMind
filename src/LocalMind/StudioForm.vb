@@ -41,8 +41,12 @@ Public Class StudioForm
 
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
     Private ReadOnly cmbShow, cmbTask, cmbVariant, cmbSize As ComboBox
+    Private ReadOnly cmbTop As ComboBox = Popular.MakeCombo(150)
+    Private _keepId As String
     Private ReadOnly grid As DataGridView
     Private ReadOnly lblAbout, lblStatus, lblStrength, lblVideo, lblFrames, lblNeed As Label
+    Private ReadOnly btnDefault As Button
+    Private ReadOnly _tips As New ToolTip()
     Private ReadOnly btnDownload, btnDelete, btnGenerate, btnVideo, btnMask, btnLoras As Button
     Private ReadOnly chkFast As CheckBox
     Private ReadOnly prg As ProgressBar
@@ -131,7 +135,7 @@ Public Class StudioForm
         Theme.StyleInput(cmbShow) : Theme.StyleInput(cmbTask)
         Dim btnCivitai = Theme.MakeButton("🌐 More on Civitai…")
         filt.Height = 74
-        filt.Controls.AddRange({cmbTask, cmbShow, btnCivitai})
+        filt.Controls.AddRange({cmbTask, cmbShow, cmbTop, btnCivitai})
         AddHandler btnCivitai.Click, Sub()
                                          Using f As New CivitaiForm(checkpoints:=True, family:=SelectedRecipe()?.Family)
                                              f.ShowDialog(Me)
@@ -161,7 +165,19 @@ Public Class StudioForm
         Dim dlBar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 40}
         btnDownload = Theme.MakeButton("⬇ Download", primary:=True)
         btnDelete = Theme.MakeButton("🗑 Delete")
-        dlBar.Controls.AddRange({btnDownload, btnDelete})
+        btnDefault = Theme.MakeButton("☆ Default")
+        dlBar.Controls.AddRange({btnDownload, btnDelete, btnDefault})
+        AddHandler btnDefault.Click, Sub()
+                                         Dim rr = SelectedRecipe()
+                                         If rr Is Nothing Then Return
+                                         If rr.IsVideo Then
+                                             AppCore.Settings.ChatVideoModel = If(AppCore.Settings.ChatVideoModel = rr.Id, "", rr.Id)
+                                         Else
+                                             AppCore.Settings.ChatImageModel = If(AppCore.Settings.ChatImageModel = rr.Id, "", rr.Id)
+                                         End If
+                                         AppCore.SaveSettings()
+                                         UpdateButtons()
+                                     End Sub
         prg = New ProgressBar() With {.Dock = DockStyle.Top, .Height = 14}
         lblStatus = New Label() With {.Dock = DockStyle.Top, .Height = 40, .ForeColor = Theme.CDim}
         detail.Controls.Add(lblStatus)
@@ -344,6 +360,7 @@ Public Class StudioForm
 
         '──── events ────
         AddHandler cmbShow.SelectedIndexChanged, Sub() FillGrid()
+        AddHandler cmbTop.SelectedIndexChanged, Sub() FillGrid()
         AddHandler cmbTask.SelectedIndexChanged, Sub()
                                                     FillGrid()
                                                     UpdateTaskUi()
@@ -659,6 +676,8 @@ Public Class StudioForm
         End Select
         Dim t = CurrentTask()
         list = list.Where(Function(r) Suits(r, t)).ToList()
+        list = Popular.Top(list, Popular.Count(cmbTop), Function(r) r.Downloads,
+                           Function(r) r.Id = _keepId OrElse MediaStudio.InstalledVariant(r) IsNot Nothing)
         grid.Rows.Clear()
         For Each r In list
             Dim v = MediaStudio.PickVariant(r, _hw)
@@ -765,6 +784,12 @@ Public Class StudioForm
         btnDownload.Enabled = Not installed AndAlso _cts Is Nothing
         btnDownload.Text = If(installed, Localizer.T("✔ Downloaded"), Localizer.T("⬇ Download") & $" ({Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v, fast))})")
         btnDelete.Enabled = installed AndAlso _cts Is Nothing
+        Dim isDefault = r.Id = If(r.IsVideo, AppCore.Settings.ChatVideoModel, AppCore.Settings.ChatImageModel)
+        btnDefault.Visible = Not r.IsUpscaler AndAlso r.Kind <> "tool"
+        btnDefault.Enabled = MediaStudio.InstalledVariant(r) IsNot Nothing
+        btnDefault.Text = If(isDefault, Localizer.T("★ Default"), Localizer.T("☆ Make default"))
+        _tips.SetToolTip(btnDefault, Localizer.T(If(r.IsVideo, "Use this model when you ask the chat for a video (click again for automatic)",
+                                                            "Use this model when you ask the chat for a picture (click again for automatic)")))
         btnGenerate.Enabled = installed OrElse _cts IsNot Nothing OrElse CurrentTask().Id = "enhance"
     End Sub
 
@@ -1365,6 +1390,7 @@ Public Class StudioForm
         If r Is Nothing Then Return
         Dim ti = Array.FindIndex(TaskList, Function(x) x.Id = s.Task AndAlso x.Video = r.IsVideo)
         If ti < 0 Then ti = Array.FindIndex(TaskList, Function(x) x.Id = "create" AndAlso x.Video = r.IsVideo)
+        _keepId = r.Id                     ' listed even if it is not among the most popular
         cmbShow.SelectedIndex = 1          ' all models, so the one used is surely listed
         cmbTask.SelectedIndex = ti
         FillGridKeepSelection(r)

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.15.0
+
+### Added
+- **19 more uncensored video models (🔓 NSFW):**
+  - **10Eros Max on MiniMax H3** (video with sound): 10Eros Max, Max Turbo (8 steps), Turbo Hybrid, Hybrid,
+    Ref2VA (from pictures or your 🎭 cast) and Turbo Ref2VA.
+  - **PinkCherry** on MiniMax H3 (also Ref2VA) and on LTX-2.3; **AfterMidnight** (MiniMax H3 Ref2VA with its NSFW LoRA).
+  - **10Eros 1.5 and 10Eros v1 on LTX-2.3** (with a ⚡ DMD 8-step fast mode), LTX-2.3 NSFW motion.
+  - **Wan 2.2:** SmoothMix, DaSiWa Midnight Flirt, Enhanced NSFW FastMove and Rapid AIO NSFW v10 (4 steps).
+  - The MiniMax H3 ones use the uncensored Sakura text encoder.
+- **Most popular only:** every model list (chat, pictures, video, music & voice) has a "⭐ Top 30 most popular"
+  selector (15 / 30 / 50 / 100 / all), ranked by Hugging Face downloads. Typing a search still finds every model,
+  and the models you installed are always listed.
+- **Pictures, videos and music apart:** Models → 🎨 Pictures & video has three buttons: 🖼 Picture models,
+  🎬 Video models and 🎵 Music & voice models (songs, read aloud, voice cloning), each with its own kinds.
+- **Download many at once:** tick models in the picture, video and music lists (the ticks stay when you switch
+  lists) and press Download once: they download at the same time (three at a time; a shared part is fetched once).
+  One failing model does not stop the others. Chat models also download three at a time.
+- **Default models for the chat:** choose which model is used when you ask the chat for a picture or a video
+  (Tools → Pictures & video in chat, or "☆ Make default" in the Studio). "Automatic" picks the best one for your PC.
+
+### Fixed
+- The file list on a model's page could show no rows (only a scrollbar line). It now always shows its rows and fits
+  the width.
+
 ## 2.14.4
 
 ### Fixed (full bug and visual check)

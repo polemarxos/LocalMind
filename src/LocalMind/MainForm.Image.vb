@@ -28,7 +28,7 @@ Partial Class MainForm
                                                  SetStatus(If(_btnImage.Checked, "Image mode: your message will be turned into a picture", "Chat mode"))
                                              End Sub
 
-        Dim miImage As New ToolStripMenuItem("Image in chat")
+        Dim miImage As New ToolStripMenuItem(Localizer.T("Pictures & video in chat"))
         _miImageChat = miImage
         AddHandler miImage.DropDownOpening, Sub() FillImageMenu(miImage)
         miImage.DropDownItems.Add("-")   ' placeholder so the arrow shows
@@ -37,20 +37,55 @@ Partial Class MainForm
 
     Private Sub FillImageMenu(mi As ToolStripMenuItem)
         mi.DropDownItems.Clear()
-        Dim current = ChatImageRecipe()
-        Dim installed = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
+        Dim installed = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
+        mi.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("Default picture model")) With {.Enabled = False})
         If installed.Count = 0 Then
             mi.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("(no image model downloaded)")) With {.Enabled = False})
+        Else
+            Dim auto As New ToolStripMenuItem(Localizer.T("Automatic (best one for this PC)")) With {
+                .Checked = Not installed.Any(Function(x) x.Id = Settings.ChatImageModel)}
+            AddHandler auto.Click, Sub()
+                                       Settings.ChatImageModel = ""
+                                       AppCore.SaveSettings()
+                                   End Sub
+            mi.DropDownItems.Add(auto)
         End If
         For Each r In installed
             Dim rr = r
-            Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.InstalledVariant(r).Label}]") With {.Checked = current Is r}
+            Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.InstalledVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatImageModel}
             AddHandler it.Click, Sub()
                                      Settings.ChatImageModel = rr.Id
                                      AppCore.SaveSettings()
                                  End Sub
             mi.DropDownItems.Add(it)
         Next
+
+        ' the video model for "make a video …" in the chat
+        Dim videos = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing AndAlso
+                                                     (r.Can("create") OrElse r.Can("animate"))).ToList()
+        Dim miVideo As New ToolStripMenuItem(Localizer.T("Default video model"))
+        If videos.Count = 0 Then
+            miVideo.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("(no video model downloaded)")) With {.Enabled = False})
+        Else
+            Dim autoV As New ToolStripMenuItem(Localizer.T("Automatic (best one for this PC)")) With {
+                .Checked = Not videos.Any(Function(x) x.Id = Settings.ChatVideoModel)}
+            AddHandler autoV.Click, Sub()
+                                        Settings.ChatVideoModel = ""
+                                        AppCore.SaveSettings()
+                                    End Sub
+            miVideo.DropDownItems.Add(autoV)
+            For Each r In videos
+                Dim rr = r
+                Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.InstalledVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatVideoModel}
+                AddHandler it.Click, Sub()
+                                         Settings.ChatVideoModel = rr.Id
+                                         AppCore.SaveSettings()
+                                     End Sub
+                miVideo.DropDownItems.Add(it)
+            Next
+        End If
+        mi.DropDownItems.Add(New ToolStripSeparator())
+        mi.DropDownItems.Add(miVideo)
         Dim getMore As New ToolStripMenuItem(Localizer.T("Get image models…"))
         AddHandler getMore.Click, Sub() OpenStudio()
         mi.DropDownItems.Add(getMore)

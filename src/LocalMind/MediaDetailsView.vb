@@ -70,6 +70,34 @@ Public Class MediaDetailsView
         Return d.ToString("0.##", CultureInfo.InvariantCulture)
     End Function
 
+    ''' <summary>The page of a voice or music model (Models → Music &amp; voice).</summary>
+    Public Sub ShowAudio(m As AudioModel)
+        _cts?.Cancel()
+        _recipe = Nothing
+        flow.SuspendLayout()
+        flow.Controls.Clear()
+        flow.Controls.Add(Text_(m.Name, size:=13.0F))
+        flow.Controls.Add(Text_(If(m.IsMusic, Localizer.T("🎵 Songs and music"), Localizer.T("🗣 Voice: read aloud, voice cloning")) &
+                                "   ·   " & m.Model.Repo.Split("/"c)(0) & " · Hugging Face", dim_:=True))
+        flow.Controls.Add(Text_(m.About))
+        flow.Controls.Add(Heading(Localizer.T("What it can do")))
+        If m.IsMusic Then
+            flow.Controls.Add(Text_("•  " & Localizer.T("Makes songs with vocals from a description and your lyrics (🎵 Music in the main window).")))
+        Else
+            flow.Controls.Add(Text_("•  " & Localizer.T("Reads text aloud; used for chat answers, talking videos and voice-overs.")))
+            If m.Clone Then flow.Controls.Add(Text_("•  " & Localizer.T("Copies a voice from a short recording (voice cloning).")))
+            If m.Design Then flow.Controls.Add(Text_("•  " & Localizer.T("Makes a new voice from a description.")))
+        End If
+        If m.Langs IsNot Nothing AndAlso m.Langs.Count > 0 Then flow.Controls.Add(Text_("•  " & Localizer.T("Languages") & ": " & String.Join(", ", m.Langs)))
+        flow.Controls.Add(Text_(AudioStudio.RequirementText(m, _hw), dim_:=True))
+        flow.Controls.Add(Heading(Localizer.T("Files")))
+        For Each f In {m.Model, m.Mmproj}
+            flow.Controls.Add(Text_("•  " & IO.Path.GetFileName(f.Path) & "  ·  " & Downloader.FormatBytes(f.Size), dim_:=True))
+        Next
+        flow.ResumeLayout()
+        FitWidths()
+    End Sub
+
     Public Async Sub ShowRecipe(r As MediaRecipe, chosen As MediaVariant)
         _cts?.Cancel()
         _cts = New CancellationTokenSource()

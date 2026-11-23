@@ -40,6 +40,8 @@ Public Class AppSettings
     Public Property ImageGpuSharing As Integer = 0
     ''' <summary>Image model used by the 🎨 Image switch in chat (recipe id; empty = best installed).</summary>
     Public Property ChatImageModel As String = ""
+    ''' <summary>Video model used when the chat is asked for a video ("" = pick the best one automatically).</summary>
+    Public Property ChatVideoModel As String = ""
     Public Property ImproveImagePrompt As Boolean = True
     ''' <summary>Optional abilities. When off, their buttons are hidden and nothing for them is ever downloaded.</summary>
     Public Property EnableImages As Boolean = False
@@ -76,6 +78,8 @@ Public Class AppSettings
     Public Property ShowNsfw As Boolean = False
     ''' <summary>Model Manager: list only models that run fully on the graphics card.</summary>
     Public Property OnlyFitGpu As Boolean = False
+    ''' <summary>Model lists: show only the N most downloaded models (0 = all of them).</summary>
+    Public Property ShowTop As Integer = 30
     ''' <summary>Download and install LocalMind updates by themselves (used from the next start).</summary>
     Public Property AutoInstallUpdates As Boolean = True
     ''' <summary>The look (Settings → Appearance), one of ThemePresets.All.</summary>
