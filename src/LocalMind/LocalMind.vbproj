@@ -23,6 +23,10 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <WebView2LoaderPreference>Static</WebView2LoaderPreference>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <!-- Publish output = just LocalMind.exe (no .pdb / package XML docs next to it) -->
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
+    <PublishReferencesDocumentationFiles>false</PublishReferencesDocumentationFiles>
+    <DebugType Condition="'$(Configuration)' == 'Release'">none</DebugType>
     <ApplicationIcon>app.ico</ApplicationIcon>
     <!-- Lets the project compile on non-Windows build machines (CI). Harmless on Windows. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
