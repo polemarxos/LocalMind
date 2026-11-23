@@ -99,7 +99,7 @@ Public Module VideoMaker
                 req.Prompt = shots(i)
                 req.OutputPath = Path.Combine(MediaStudio.OutputFolder, $"{stamp}-shot{i + 1}.webm")
                 If reference IsNot Nothing Then
-                    req.Task = "animate" : req.InputImages = New List(Of String) From {reference}
+                    req.Task = If(r.Can("reference"), "reference", "animate") : req.InputImages = New List(Of String) From {reference}
                 ElseIf start IsNot Nothing AndAlso r.Can("animate") Then
                     req.Task = "animate" : req.InputImages = New List(Of String) From {start}
                 ElseIf r.Can("create") AndAlso r.Input <> "required" Then

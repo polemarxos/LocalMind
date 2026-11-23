@@ -84,10 +84,10 @@ def clean_name(repo, filename=None):
 SKIP_WORDS = re.compile(r"lora|controlnet|control-net|ip-?adapter|vae\b|text[-_]?encoder|clip[-_]?vision|umt5|t5xxl|t5-v1|qwen3[-_]?\d|qwen3vl|gemma|"
                         r"mmproj|refiner|redux|fill|depth|canny|layered|radiance|flf2v|phantom|magref|humo|chrono|animate|s2v|"
                         r"camera|control|inp\b|-inp-|dancer|avatar|flashhead|upscal|embedding|reward|hps|tts|audio|ace[-_]step|"
-                        r"flux\.?[-_]?3|flux3|flux\.?2[-_.]?dev|flux2[-_]dev|ideogram|kandinsky|minimax|moss|sulphur|hidream|bagel|lens|ernie|ming|"
-                        r"wan2\.?5|ltx[-_.]?2\.?5|ltx[-_.]?2[-_.]?(?!3)|ltxv|hunyuan|mochi|cosmos-predict|sdxl[-_]?turbo|sdxl[-_]?lightning|"
+                        r"flux\.?[-_]?3|flux3|flux\.?2[-_.]?dev|flux2[-_]dev|ideogram|kandinsky|minimax[-_ ]?m\d|moss|sulphur|hidream|bagel|lens|ernie|ming|"
+                        r"wan2\.?5|ltx[-_.]?2(?![-_.]?[35])|ltxv|hunyuan(?!.?video.?1.?5)|mochi|cosmos-predict|sdxl[-_]?turbo|sdxl[-_]?lightning|"
                         r"qwen[-_ ]?3[-_ .]?\d+(\.\d)?[-_ ]?b|qwen3\.5|qwen3_5|qwen35|prompt[-_ ]?enhanc|[-_]pe[-_]|pe[-_](i2i|t2i)|"
-                        r"\bh3\b|[-_]h3|scail|lingbot|lynx|one-to-all|wan-move|movii|self-forcing|selfforcing|[-_]df[-_]|npu|ios\b|"
+                        r"scail|lynx|one-to-all|wan-move|movii|self-forcing|selfforcing|[-_]df[-_]|npu|ios\b|"
                         r"collection|based-?models|custom-models|models$|sd2|sd-2|stable-diffusion-2|v2-1|flux[-_.]?(lite|mini)|8b-flux|sensenova|joyai|bernini|verboa|magic-wan", re.I)
 
 
@@ -123,6 +123,22 @@ def classify_image(name, arch):
 
 def classify_video(name, arch, dual):
     n = name.lower()
+    if re.search(r"qwen|gemma|text.?encoder|encoder|byt5|vae|rewriter|prompt|upsampler", n):
+        return None
+    if re.search(r"minimax[-_ .]?h3|hailuo|hyperflow", n):
+        if "image" in n:
+            return None
+        if "hyperflow" in n:
+            return "hyperflow-h3-flash-ref2va" if "ref2va" in n else "hyperflow-h3-flash"
+        return "minimax-h3-ref2va" if "ref2va" in n else "minimax-h3"
+    if re.search(r"ltx[-_ .]?2[-_ .]?5", n):
+        return "ltx-2.5-distilled" if "distill" in n else "ltx-2.5-dev"
+    if re.search(r"hunyuan.?video.?1[._]?5|hunyuanvideo1\.5", n):
+        kind = "i2v" if "i2v" in n else "t2v"
+        res = "720p" if "720" in n else "480p"
+        return f"hunyuanvideo1.5-{kind}-{res}" + ("-distilled" if "distill" in n else "")
+    if "lingbot" in n:
+        return "lingbot-video-dense-1.3b" if "1.3b" in n or "dense" in n else None
     if re.search(r"ltx[-_ .]?2[-_ .]?3", n):
         return "ltx-2.3-distilled" if "distill" in n else None
     if not re.search(r"wan|skyreels|fusionx", n):
@@ -194,6 +210,7 @@ def build(R, used_repos):
             cands.setdefault(m["id"], (m, pipe))
     # repos without a pipeline tag (e.g. Chroma, Krea 2) — by name
     for q in ("chroma", "krea", "z-image", "qwen-image", "flux", "wan2", "wan2.1", "wan2.2", "fusionx", "skyreels", "anima",
+              "minimax-h3", "minimax h3", "hyperflow", "ltx-2.5", "ltx 2.5", "ltx2.5", "hunyuanvideo", "hunyuanvideo-1.5", "lingbot",
               "nsfw", "uncensored", "porn", "hentai", "lewd", "nude", "erotic", "abliterated"):
         for m in listing(f"search={q}&filter=gguf&sort=downloads&limit=300&expand[]=gguf&expand[]=downloads&expand[]=tags"):
             cands.setdefault(m["id"], (m, ""))
@@ -209,7 +226,7 @@ def build(R, used_repos):
         trees = dict(zip([j[0] for j in jobs], ex.map(lambda j: tree(j[0]), jobs)))
     for repo, m, pipe, arch in jobs:
         files = [f for f in trees[repo] if f["path"].lower().endswith(".gguf") and not SKIP_WORDS.search(os.path.basename(f["path"]))
-                 and not re.search(r"text_?encoders?/|/vae/|^vae/|clip|mmproj|lora", f["path"], re.I)]
+                 and not re.search(r"text_?encoders?|/vae/|^vae/|clip|mmproj|lora|qwen3?vl|gemma|byt5|upscal", f["path"], re.I)]
         if not files:
             continue
         # one repo can hold several models (e.g. a collection of merges): group the files by model
@@ -220,9 +237,9 @@ def build(R, used_repos):
                 continue
             stem = re.sub(r"(high|low)[-_]?noise|[-_.]?(high|low)\b|[-_.]?[hl]$", "", QUANT.sub("", os.path.basename(f["path"])), flags=re.I).strip("-_. ")
             groups.setdefault(stem.lower(), (stem, []))[1].append((f, mm.group(1).upper()))
-        is_video = bool(re.search(r"wan|ltx|skyreels|fusionx", repo, re.I)) and not re.search(r"image", repo, re.I)
-        if is_video and len(groups) > 1:
-            continue     # several video models in one repo: too easy to mix up
+        is_video = bool(re.search(r"wan|ltx|skyreels|fusionx|minimax[-_ .]?h3|hailuo|hyperflow|hunyuan|lingbot", repo, re.I)) and not re.search(r"image", repo, re.I)
+        if is_video and len(groups) > 1 and not re.search(r"minimax|h3|hyperflow|ltx[-_ .]?2[-_ .]?5|hunyuan", repo, re.I):
+            continue     # several Wan models in one repo: too easy to mix up
         for gkey, (stem, gfiles) in groups.items():
             low, high, single = {}, {}, {}
             for f, label in gfiles:
@@ -238,7 +255,7 @@ def build(R, used_repos):
                     single[label] = entry
             dual = bool(high and low)
             if is_video:
-                tid = classify_video(repo, arch, dual)
+                tid = classify_video(repo + " " + stem, arch, dual)
             else:
                 tid = classify_image(repo + " " + stem, arch)
             if not tid:

@@ -32,6 +32,7 @@ Public Class StudioForm
         ("create", "🎬 Create a video", True),
         ("animate", "🎞 Animate a picture", True),
         ("video-edit", "✂ Edit / restyle a video", True),
+        ("reference", "🧩 Video from reference pictures (people, places, things)", True),
         ("storyboard", "📽 Storyboard — several shots, one video", True),
         ("first-last", "🎯 Video between two pictures (first → last)", True),
         ("talk", "🗣 Talking character (picture + voice)", True),
@@ -607,6 +608,7 @@ Public Class StudioForm
                                                 If(t = "combine", "Say how to combine them, e.g. 'the person from picture 1 sitting in the room from picture 2'…",
                                                 If(t = "video-edit", "Describe the new look of the video, e.g. 'oil painting style'…",
                                                 If(t = "storyboard", "One shot per line, e.g. '@Anna walks into @Old harbor at dawn', next line 'Close-up: @Anna smiles'… Or write an idea and press ✨ Improve prompt to get the shots.",
+                                                If(t = "reference", "Pictures = who and what to show. Describe the video, e.g. 'the woman from picture 1 walks the dog from picture 2 on a beach'…",
                                                 If(t = "first-last", "Picture 1 = first frame, picture 2 = last frame. Describe the motion in between…",
                                                 If(t = "talk", "Picture = the person. Describe the scene (optional), e.g. 'a woman talking to the camera, warm light'…",
                                                 If(t = "extend", "What happens next in the video?…",
@@ -614,7 +616,7 @@ Public Class StudioForm
                                                 If(t = "layout", "Picture = the layout to copy. Describe the new picture, e.g. 'a cozy wooden cabin interior'…",
                                                 If(t = "outline", "Picture = your sketch. Describe what it should become…",
                                                 If(t = "restore", "(optional) anything special, e.g. 'colorize it'…",
-                                                If(pictureOnly OrElse t = "enhance", "(no description needed)", "Describe the picture or video (English works best)…")))))))))))))
+                                                If(pictureOnly OrElse t = "enhance", "(no description needed)", "Describe the picture or video (English works best)…"))))))))))))))
         btnGenerate.Text = Localizer.T(If(t = "upscale", "🔍 Enlarge", If(t = "remove-bg", "✂ Remove background", If(t = "enhance", "✨ Enhance", "🎨 Generate"))))
         If t = "enhance" Then btnGenerate.Enabled = True
     End Sub
@@ -627,6 +629,7 @@ Public Class StudioForm
             Case "edit", "inpaint", "restyle", "upscale", "animate", "layout", "outline", "restore", "remove-bg" : Return 1
             Case "video-edit" : Return 1          ' optional reference picture (e.g. a character)
             Case "first-last" : Return 2
+            Case "reference" : Return 3
             Case "talk" : Return 1
             Case "storyboard" : Return 1          ' optional start picture
             Case "extend", "enhance" : Return 0
@@ -887,6 +890,10 @@ Public Class StudioForm
                     t = "combine"
                     pics = castPics.Take(Math.Max(1, r.Refs)).ToList()
                 End If
+            ElseIf r.Can("reference") AndAlso t <> "video-edit" Then
+                ' MiniMax H3 Ref2VA: the cast pictures themselves are the references
+                t = "reference"
+                pics = castPics.Take(Math.Max(1, r.Refs)).ToList()
             ElseIf r.Can("video-edit") AndAlso t <> "video-edit" Then
                 ' Wan VACE: "reference to video" with one sheet showing the whole cast
                 t = "animate"
@@ -1145,8 +1152,8 @@ Public Class StudioForm
                 Dim reference As String = Nothing
                 Dim opening As MediaStudio.GenerateRequest = Nothing
                 If start Is Nothing AndAlso cast.Count > 0 AndAlso CastLibrary.ReferencePictures(cast, 1).Count > 0 Then
-                    If r.Can("video-edit") Then
-                        reference = CastLibrary.ReferenceSheet(cast, size.W, size.H)        ' Wan VACE: the same cast in every shot
+                    If r.Can("video-edit") OrElse r.Can("reference") Then
+                        reference = CastLibrary.ReferenceSheet(cast, size.W, size.H)        ' Wan VACE / H3 Ref2VA: the same cast in every shot
                     ElseIf r.Can("animate") Then
                         opening = VideoMaker.CastSceneRequest(shots(0), cast, size.W, size.H)
                     End If

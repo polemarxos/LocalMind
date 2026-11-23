@@ -185,7 +185,20 @@ Public Module Theme
     End Function
 
     ''' <summary>Dark menus and toolbars everywhere (call once at startup).</summary>
+    <Runtime.InteropServices.DllImport("uxtheme.dll", EntryPoint:="#135")>
+    Private Function SetPreferredAppMode(mode As Integer) As Integer
+    End Function
+    <Runtime.InteropServices.DllImport("uxtheme.dll", EntryPoint:="#136")>
+    Private Sub FlushMenuThemes()
+    End Sub
+
     Public Sub Install()
+        ' dark scrollbars and system parts on dark looks (Windows 10 1809+; ignored elsewhere)
+        Try
+            SetPreferredAppMode(If(IsDark, 2, 3))
+            FlushMenuThemes()
+        Catch
+        End Try
         ToolStripManager.Renderer = New ModernRenderer()
     End Sub
 

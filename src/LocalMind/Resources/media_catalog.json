@@ -4864,6 +4864,1569 @@
   "repo": "city96/Wan2.1-FLF2V-14B-720P-gguf"
  },
  {
+  "id": "minimax-h3",
+  "name": "MiniMax H3 (video + sound)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "MiniMax's Hailuo H3 (open weights): video with matching stereo sound, from text, a start picture, or a first and last picture. Uses the compact 4B text encoder. GPU 12 GB+ and 32 GB RAM.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q2_K.gguf",
+    "size": 6724190304
+   },
+   {
+    "label": "UD-Q2_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-UD-Q2_K_XL.gguf",
+    "size": 8063029344
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q3_K.gguf",
+    "size": 8759328864
+   },
+   {
+    "label": "UD-Q3_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-UD-Q3_K_XL.gguf",
+    "size": 9558675552
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q4_K.gguf",
+    "size": 11420663904
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q5_0.gguf",
+    "size": 13923170400
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q6_K.gguf",
+    "size": 16586784864
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q8_0.gguf",
+    "size": 21437786208
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 3563159,
+  "repo": "unsloth/MiniMax-H3-GGUF"
+ },
+ {
+  "id": "minimax-h3-32b",
+  "name": "MiniMax H3 · 32B encoder (best)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "MiniMax H3 with its full Qwen3-VL 32B text encoder: follows long, detailed prompts best. Needs lots of RAM (48 GB+).",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q2_K.gguf",
+    "size": 6724190304
+   },
+   {
+    "label": "UD-Q2_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-UD-Q2_K_XL.gguf",
+    "size": 8063029344
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q3_K.gguf",
+    "size": 8759328864
+   },
+   {
+    "label": "UD-Q3_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-UD-Q3_K_XL.gguf",
+    "size": 9558675552
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q4_K.gguf",
+    "size": 11420663904
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q5_0.gguf",
+    "size": 13923170400
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q6_K.gguf",
+    "size": 16586784864
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q8_0.gguf",
+    "size": 21437786208
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "qwen3vl_32b_minimax_h3-Q4_K_M.gguf",
+    "size": 18218065024
+   }
+  ],
+  "dl": 3563159,
+  "repo": "unsloth/MiniMax-H3-GGUF"
+ },
+ {
+  "id": "minimax-h3-ref2va",
+  "name": "MiniMax H3 Ref2VA (people & places from pictures)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "MiniMax H3 that puts the people, objects and places of your reference pictures (or your 🎭 cast) into a video with sound.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q2_K.gguf",
+    "size": 6678171744
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q3_K.gguf",
+    "size": 8716105824
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q4_K.gguf",
+    "size": 11381096544
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q5_0.gguf",
+    "size": 13889323104
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q6_K.gguf",
+    "size": 16554313824
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q8_0.gguf",
+    "size": 21414002784
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 3563159,
+  "repo": "unsloth/MiniMax-H3-GGUF"
+ },
+ {
+  "id": "minimax-h3-uncensored",
+  "name": "MiniMax H3 Uncensored (Sakura encoder)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "MiniMax H3 with the uncensored Sakura text encoder: no content filter. Needs lots of RAM.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q2_K.gguf",
+    "size": 6724190304
+   },
+   {
+    "label": "UD-Q2_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-UD-Q2_K_XL.gguf",
+    "size": 8063029344
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q3_K.gguf",
+    "size": 8759328864
+   },
+   {
+    "label": "UD-Q3_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-UD-Q3_K_XL.gguf",
+    "size": 9558675552
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q4_K.gguf",
+    "size": 11420663904
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q5_0.gguf",
+    "size": 13923170400
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q6_K.gguf",
+    "size": 16586784864
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q8_0.gguf",
+    "size": 21437786208
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
+    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
+    "size": 15084123104
+   }
+  ],
+  "dl": 3563159,
+  "repo": "unsloth/MiniMax-H3-GGUF"
+ },
+ {
+  "id": "hyperflow-h3-flash",
+  "name": "HyperFlow H3 Flash 14B (fast, sound)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "A 14B distilled MiniMax H3: video with sound in 6 steps. Fits 12 GB GPUs better.",
+  "steps": 6,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "extra": "--sigmas hyperflow-h3-flash-6",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "fl2va_gguf/minimax_h3_fl2va_hyperflow_flash_14b-Q3_K_M.gguf",
+    "size": 7215807072
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "fl2va_gguf/minimax_h3_fl2va_hyperflow_flash_14b-Q4_K_S.gguf",
+    "size": 8011480160
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "fl2va_gguf/minimax_h3_fl2va_hyperflow_flash_14b-Q4_K_M.gguf",
+    "size": 9053456480
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "fl2va_gguf/minimax_h3_fl2va_hyperflow_flash_14b-Q5_K_M.gguf",
+    "size": 10277808224
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "fl2va_gguf/minimax_h3_fl2va_hyperflow_flash_14b-Q6_K.gguf",
+    "size": 11578681952
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "fl2va_gguf/minimax_h3_fl2va_hyperflow_flash_14b-Q8_0.gguf",
+    "size": 14929689696
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 874856,
+  "repo": "VideoRebirthAI/hyperflow-h3-flash"
+ },
+ {
+  "id": "hyperflow-h3-flash-ref2va",
+  "name": "HyperFlow H3 Flash Ref2VA (fast, from pictures)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Fast (6 steps) MiniMax H3 that uses your reference pictures or 🎭 cast.",
+  "steps": 6,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "extra": "--sigmas hyperflow-h3-flash-6",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "ref2va_gguf/minimax_h3_ref2va_hyperflow_flash_14b-Q3_K_M.gguf",
+    "size": 7354188800
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "ref2va_gguf/minimax_h3_ref2va_hyperflow_flash_14b-Q4_K_S.gguf",
+    "size": 8138873344
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "ref2va_gguf/minimax_h3_ref2va_hyperflow_flash_14b-Q4_K_M.gguf",
+    "size": 9220352512
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "ref2va_gguf/minimax_h3_ref2va_hyperflow_flash_14b-Q5_K_M.gguf",
+    "size": 10452388352
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "ref2va_gguf/minimax_h3_ref2va_hyperflow_flash_14b-Q6_K.gguf",
+    "size": 11761426432
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "VideoRebirthAI/hyperflow-h3-flash",
+    "path": "ref2va_gguf/minimax_h3_ref2va_hyperflow_flash_14b-Q8_0.gguf",
+    "size": 15164430848
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 874856,
+  "repo": "VideoRebirthAI/hyperflow-h3-flash"
+ },
+ {
+  "id": "ltx-2.5-distilled",
+  "name": "LTX-2.5 distilled (video + sound)",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "LTX-2.5 (August 2026): sharper video with matching sound, multi-shot prompts, 8 steps. Text or picture to video, 24 fps. GPU 12 GB+ and 32 GB RAM.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-Q2_K.gguf",
+    "size": 8459002240
+   },
+   {
+    "label": "UD-Q2_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-UD-Q2_K_XL.gguf",
+    "size": 9500270976
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-Q3_K_M.gguf",
+    "size": 11298283904
+   },
+   {
+    "label": "UD-Q3_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-UD-Q3_K_XL.gguf",
+    "size": 12000207232
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-Q4_K_M.gguf",
+    "size": 13584703872
+   },
+   {
+    "label": "UD-Q4_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-UD-Q4_K_XL.gguf",
+    "size": 14000234880
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-Q5_K_M.gguf",
+    "size": 15631524224
+   },
+   {
+    "label": "UD-Q5_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-UD-Q5_K_XL.gguf",
+    "size": 16000033152
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-Q6_K.gguf",
+    "size": 17806270848
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-Q8_0.gguf",
+    "size": 22779666816
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-BF16.gguf",
+    "size": 42031522176
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 451210,
+  "repo": "unsloth/LTX-2.5-GGUF"
+ },
+ {
+  "id": "ltx-2.5-dev",
+  "name": "LTX-2.5 dev (best quality, sound)",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "The full LTX-2.5 (20+ steps): the best quality of LTX, with sound. Slower than the distilled one.",
+  "steps": 20,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-Q2_K.gguf",
+    "size": 8459002240
+   },
+   {
+    "label": "UD-Q2_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-UD-Q2_K_XL.gguf",
+    "size": 9500270976
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-Q3_K_M.gguf",
+    "size": 11298283904
+   },
+   {
+    "label": "UD-Q3_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-UD-Q3_K_XL.gguf",
+    "size": 12000207232
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-Q4_K_M.gguf",
+    "size": 13584703872
+   },
+   {
+    "label": "UD-Q4_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-UD-Q4_K_XL.gguf",
+    "size": 14000234880
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-Q5_K_M.gguf",
+    "size": 15631524224
+   },
+   {
+    "label": "UD-Q5_K_XL",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-UD-Q5_K_XL.gguf",
+    "size": 16000033152
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-Q6_K.gguf",
+    "size": 17806270848
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-Q8_0.gguf",
+    "size": 22779666816
+   },
+   {
+    "label": "BF16",
+    "format": "gguf",
+    "repo": "unsloth/LTX-2.5-GGUF",
+    "path": "ltx-2.5-22b-dev-BF16.gguf",
+    "size": 42031522176
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 451210,
+  "repo": "unsloth/LTX-2.5-GGUF"
+ },
+ {
+  "id": "hunyuanvideo1.5-t2v-480p",
+  "name": "HunyuanVideo 1.5 T2V 480p",
+  "kind": "video",
+  "family": "HunyuanVideo",
+  "about": "Tencent's HunyuanVideo 1.5 (8B): text to video at 480p, strong motion and text in video. GPU 8 GB+.",
+  "steps": 20,
+  "cfg": 6.0,
+  "width": 848,
+  "height": 480,
+  "frames": 33,
+  "fps": 24,
+  "input": "none",
+  "tasks": [
+   "create"
+  ],
+  "speed": {
+   "label": "⚡ Lightx2v · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-hunyuan15-t2v-480p-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "Comfy-Org/Hunyuan-Video-1.5",
+     "path": "split_files/loras/hunyuanvideo1.5_t2v_480p_lightx2v_4step_lora_rank_32_bf16.safetensors",
+     "size": 341065682
+    }
+   ]
+  },
+  "negative": "worst quality, low quality, blurry, distorted",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_t2v-Q4_K_S.gguf",
+    "size": 4920538336
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_t2v-Q4_K_M.gguf",
+    "size": 5090407648
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_t2v-Q5_K_S.gguf",
+    "size": 5940802784
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_t2v-Q5_K_M.gguf",
+    "size": 6121288928
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_t2v-Q6_K.gguf",
+    "size": 7024833760
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_t2v-Q8_0.gguf",
+    "size": 8995313888
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "size": 2521292758
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "t5xxl",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    "size": 438643184
+   }
+  ],
+  "dl": 4917,
+  "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF"
+ },
+ {
+  "id": "hunyuanvideo1.5-t2v-480p-distilled",
+  "name": "HunyuanVideo 1.5 T2V 480p (fast, CFG-distilled)",
+  "kind": "video",
+  "family": "HunyuanVideo",
+  "about": "HunyuanVideo 1.5 T2V 480p, CFG-distilled: about twice as fast at the same steps.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 848,
+  "height": 480,
+  "frames": 33,
+  "fps": 24,
+  "input": "none",
+  "tasks": [
+   "create"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_S.gguf",
+    "size": 4920538336
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_t2v_cfg_distilled-Q4_K_M.gguf",
+    "size": 5090407648
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_S.gguf",
+    "size": 5940802784
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_t2v_cfg_distilled-Q5_K_M.gguf",
+    "size": 6121288928
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_t2v_cfg_distilled-Q6_K.gguf",
+    "size": 7024833760
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_t2v_cfg_distilled-Q8_0.gguf",
+    "size": 8995313888
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "size": 2521292758
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "t5xxl",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    "size": 438643184
+   }
+  ],
+  "dl": 4917,
+  "repo": "jayn7/HunyuanVideo-1.5_T2V_480p-GGUF"
+ },
+ {
+  "id": "hunyuanvideo1.5-i2v-480p",
+  "name": "HunyuanVideo 1.5 I2V 480p",
+  "kind": "video",
+  "family": "HunyuanVideo",
+  "about": "Tencent's HunyuanVideo 1.5 (8B): animates a picture at 480p, strong motion and text in video. GPU 8 GB+.",
+  "steps": 20,
+  "cfg": 6.0,
+  "width": 848,
+  "height": 480,
+  "frames": 33,
+  "fps": 24,
+  "input": "required",
+  "tasks": [
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_i2v-Q4_K_S.gguf",
+    "size": 4920538336
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_i2v-Q4_K_M.gguf",
+    "size": 5090407648
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_i2v-Q5_K_S.gguf",
+    "size": 5940802784
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_i2v-Q5_K_M.gguf",
+    "size": 6121288928
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_i2v-Q6_K.gguf",
+    "size": 7024833760
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p/hunyuanvideo1.5_480p_i2v-Q8_0.gguf",
+    "size": 8995313888
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "size": 2521292758
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "t5xxl",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    "size": 438643184
+   }
+  ],
+  "dl": 4000,
+  "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF"
+ },
+ {
+  "id": "hunyuanvideo1.5-i2v-480p-distilled",
+  "name": "HunyuanVideo 1.5 I2V 480p (fast, CFG-distilled)",
+  "kind": "video",
+  "family": "HunyuanVideo",
+  "about": "HunyuanVideo 1.5 I2V 480p, CFG-distilled: about twice as fast at the same steps.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 848,
+  "height": 480,
+  "frames": 33,
+  "fps": 24,
+  "input": "required",
+  "tasks": [
+   "animate"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_i2v_cfg_distilled-Q4_K_S.gguf",
+    "size": 4920538336
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_i2v_cfg_distilled-Q4_K_M.gguf",
+    "size": 5090407648
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_S.gguf",
+    "size": 5940802784
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_i2v_cfg_distilled-Q5_K_M.gguf",
+    "size": 6121288928
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_i2v_cfg_distilled-Q6_K.gguf",
+    "size": 7024833760
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF",
+    "path": "480p_distilled/hunyuanvideo1.5_480p_i2v_cfg_distilled-Q8_0.gguf",
+    "size": 8995313888
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "size": 2521292758
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "t5xxl",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    "size": 438643184
+   }
+  ],
+  "dl": 4000,
+  "repo": "jayn7/HunyuanVideo-1.5_I2V_480p-GGUF"
+ },
+ {
+  "id": "hunyuanvideo1.5-t2v-720p",
+  "name": "HunyuanVideo 1.5 T2V 720p",
+  "kind": "video",
+  "family": "HunyuanVideo",
+  "about": "Tencent's HunyuanVideo 1.5 (8B): text to video at 720p, strong motion and text in video. GPU 8 GB+.",
+  "steps": 20,
+  "cfg": 6.0,
+  "width": 1280,
+  "height": 720,
+  "frames": 33,
+  "fps": 24,
+  "input": "none",
+  "tasks": [
+   "create"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_t2v-Q4_K_S.gguf",
+    "size": 4920538336
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_t2v-Q4_K_M.gguf",
+    "size": 5090407648
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_t2v-Q5_K_S.gguf",
+    "size": 5940802784
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_t2v-Q5_K_M.gguf",
+    "size": 6121288928
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_t2v-Q6_K.gguf",
+    "size": 7024833760
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_t2v-Q8_0.gguf",
+    "size": 8995313888
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "size": 2521292758
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "t5xxl",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    "size": 438643184
+   }
+  ],
+  "dl": 2373,
+  "repo": "jayn7/HunyuanVideo-1.5_T2V_720p-GGUF"
+ },
+ {
+  "id": "hunyuanvideo1.5-i2v-720p",
+  "name": "HunyuanVideo 1.5 I2V 720p",
+  "kind": "video",
+  "family": "HunyuanVideo",
+  "about": "Tencent's HunyuanVideo 1.5 (8B): animates a picture at 720p, strong motion and text in video. GPU 8 GB+.",
+  "steps": 20,
+  "cfg": 6.0,
+  "width": 1280,
+  "height": 720,
+  "frames": 33,
+  "fps": 24,
+  "input": "required",
+  "tasks": [
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_i2v-Q4_K_S.gguf",
+    "size": 4920538336
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_i2v-Q4_K_M.gguf",
+    "size": 5090407648
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_i2v-Q5_K_S.gguf",
+    "size": 5940802784
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_i2v-Q5_K_M.gguf",
+    "size": 6121288928
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_i2v-Q6_K.gguf",
+    "size": 7024833760
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p/hunyuanvideo1.5_720p_i2v-Q8_0.gguf",
+    "size": 8995313888
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "size": 2521292758
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "t5xxl",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    "size": 438643184
+   }
+  ],
+  "dl": 8002,
+  "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF"
+ },
+ {
+  "id": "hunyuanvideo1.5-i2v-720p-distilled",
+  "name": "HunyuanVideo 1.5 I2V 720p (fast, CFG-distilled)",
+  "kind": "video",
+  "family": "HunyuanVideo",
+  "about": "HunyuanVideo 1.5 I2V 720p, CFG-distilled: about twice as fast at the same steps.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 720,
+  "frames": 33,
+  "fps": 24,
+  "input": "required",
+  "tasks": [
+   "animate"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p_distilled/hunyuanvideo1.5_720p_i2v_cfg_distilled-Q4_K_S.gguf",
+    "size": 4920538336
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p_distilled/hunyuanvideo1.5_720p_i2v_cfg_distilled-Q4_K_M.gguf",
+    "size": 5090407648
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p_distilled/hunyuanvideo1.5_720p_i2v_cfg_distilled-Q5_K_S.gguf",
+    "size": 5940802784
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p_distilled/hunyuanvideo1.5_720p_i2v_cfg_distilled-Q5_K_M.gguf",
+    "size": 6121288928
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p_distilled/hunyuanvideo1.5_720p_i2v_cfg_distilled-Q6_K.gguf",
+    "size": 7024833760
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF",
+    "path": "720p_distilled/hunyuanvideo1.5_720p_i2v_cfg_distilled-Q8_0.gguf",
+    "size": 8995313888
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/vae/hunyuanvideo15_vae_fp16.safetensors",
+    "size": 2521292758
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen2.5-VL-7B-Instruct-GGUF",
+    "path": "Qwen2.5-VL-7B-Instruct-Q4_K_M.gguf",
+    "size": 4683072384
+   },
+   {
+    "role": "t5xxl",
+    "repo": "Comfy-Org/Hunyuan-Video-1.5",
+    "path": "split_files/text_encoders/byt5_small_glyphxl_fp16.safetensors",
+    "size": 438643184
+   }
+  ],
+  "dl": 8002,
+  "repo": "jayn7/HunyuanVideo-1.5_I2V_720p-GGUF"
+ },
+ {
+  "id": "lingbot-video-dense-1.3b",
+  "name": "LingBot-Video 1.3B (tiny)",
+  "kind": "video",
+  "family": "LingBot",
+  "about": "A very small text-to-video model (1.3B, under 1.5 GB): short clips even on 6 GB GPUs or CPU.",
+  "steps": 20,
+  "cfg": 3.0,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "fps": 16,
+  "tasks": [
+   "create"
+  ],
+  "negative": "low quality, worst quality, blurry, flickering, watermark, text",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "input": "none",
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "off-grid-ai/LingBot-Video-Dense-1.3B-GGUF",
+    "path": "LingBot-Video-Dense-1.3B-Q4_K_S.gguf",
+    "size": 778380448
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "off-grid-ai/LingBot-Video-Dense-1.3B-GGUF",
+    "path": "LingBot-Video-Dense-1.3B-Q8_0.gguf",
+    "size": 1451852448
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "llm",
+    "repo": "Qwen/Qwen3-VL-4B-Instruct-GGUF",
+    "path": "Qwen3VL-4B-Instruct-Q4_K_M.gguf",
+    "size": 2497281664
+   }
+  ],
+  "dl": 2078,
+  "repo": "off-grid-ai/LingBot-Video-Dense-1.3B-GGUF"
+ },
+ {
   "id": "hf-atomicchat-qwen-image-2-1-turbo-uncensored-gguf-qwen-image-2-1-turbo-uncensored-ad",
   "name": "Qwen-Image-2.1-Turbo-Uncensored-AD · Qwen-Image-2.1-Turbo-Uncensored",
   "kind": "image",
@@ -39067,6 +40630,223 @@
   "auto": true
  },
  {
+  "id": "hf-chriscoletech-ltx-2-5-uncensored-v1-1-fp8",
+  "name": "LTX-2.5-uncensored-v1.1-FP8",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by ChrisColeTech on Hugging Face, based on LTX-2.5 dev (best quality, sound). Uncensored. ",
+  "steps": 20,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": true,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "ChrisColeTech/LTX-2.5-uncensored-v1.1-FP8",
+    "path": "split/diffusion_models/ltx25_uncensored_v1.1-Q4_K_M.gguf",
+    "size": 14179508672
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "ChrisColeTech/LTX-2.5-uncensored-v1.1-FP8",
+    "path": "split/diffusion_models/ltx25_uncensored_v1.1-Q6_K.gguf",
+    "size": 17759973824
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "ChrisColeTech/LTX-2.5-uncensored-v1.1-FP8",
+    "path": "split/diffusion_models/ltx25_uncensored_v1.1-Q8_0.gguf",
+    "size": 22334842304
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 128006,
+  "repo": "ChrisColeTech/LTX-2.5-uncensored-v1.1-FP8",
+  "auto": true
+ },
+ {
+  "id": "hf-chriscoletech-minimax-h3-turbo-gguf-minimax-h3-fl2va-turbo",
+  "name": "minimax h3 fl2va turbo · minimax-h3-turbo",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by ChrisColeTech on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+    "path": "split/diffusion_models/minimax_h3_fl2va_turbo_Q3_K_M.gguf",
+    "size": 8723146432
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+    "path": "split/diffusion_models/minimax_h3_fl2va_turbo_Q4_K_M.gguf",
+    "size": 11388228544
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+    "path": "split/diffusion_models/minimax_h3_fl2va_turbo_Q6_K.gguf",
+    "size": 16561623232
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+    "path": "split/diffusion_models/minimax_h3_fl2va_turbo_Q8_0.gguf",
+    "size": 21420833728
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 35112,
+  "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-chriscoletech-minimax-h3-turbo-gguf-minimax-h3-ref2va-turbo",
+  "name": "minimax h3 ref2va turbo · minimax-h3-turbo",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by ChrisColeTech on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+    "path": "split/diffusion_models/minimax_h3_ref2va_turbo_Q4_K_M.gguf",
+    "size": 11388228576
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+    "path": "split/diffusion_models/minimax_h3_ref2va_turbo_Q6_K.gguf",
+    "size": 16561623264
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 35112,
+  "repo": "ChrisColeTech/minimax-h3-turbo-GGUF",
+  "auto": true
+ },
+ {
   "id": "hf-bullerwins-wan2-2-t2v-a14b-gguf",
   "name": "Wan2.2-T2V-A14B",
   "kind": "video",
@@ -39263,6 +41043,106 @@
   ],
   "dl": 31389,
   "repo": "bullerwins/Wan2.2-T2V-A14B-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-abiray-ltx-2-5-distilled-gguf",
+  "name": "LTX-2.5-Distilled",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by Abiray on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.5-Distilled-GGUF",
+    "path": "LTX-2.5-Distilled-Q3_K_S.gguf",
+    "size": 12649891264
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.5-Distilled-GGUF",
+    "path": "LTX-2.5-Distilled-Q3_K_M.gguf",
+    "size": 12923897280
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.5-Distilled-GGUF",
+    "path": "LTX-2.5-Distilled-Q4_K_S.gguf",
+    "size": 15327650240
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.5-Distilled-GGUF",
+    "path": "LTX-2.5-Distilled-Q4_K_M.gguf",
+    "size": 15687639488
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.5-Distilled-GGUF",
+    "path": "LTX-2.5-Distilled-Q5_K_M.gguf",
+    "size": 18116120000
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.5-Distilled-GGUF",
+    "path": "LTX-2.5-Distilled-Q6_K.gguf",
+    "size": 18624033216
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.5-Distilled-GGUF",
+    "path": "LTX-2.5-Distilled-Q8_0.gguf",
+    "size": 23604666816
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 29306,
+  "repo": "Abiray/LTX-2.5-Distilled-GGUF",
   "auto": true
  },
  {
@@ -39479,6 +41359,106 @@
   "auto": true
  },
  {
+  "id": "hf-realrebelai-ltx-2-5-ggufs",
+  "name": "LTX-2.5",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by realrebelai on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "realrebelai/LTX-2.5_GGUFs",
+    "path": "LTX-2.5-Distilled-Q2_K.gguf",
+    "size": 8834977792
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "realrebelai/LTX-2.5_GGUFs",
+    "path": "LTX-2.5-Distilled-Q3_K_M.gguf",
+    "size": 11525623808
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "realrebelai/LTX-2.5_GGUFs",
+    "path": "LTX-2.5-Distilled-Q4_K_S.gguf",
+    "size": 13853724672
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "realrebelai/LTX-2.5_GGUFs",
+    "path": "LTX-2.5-Distilled-Q4_K_M.gguf",
+    "size": 15086587904
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "realrebelai/LTX-2.5_GGUFs",
+    "path": "LTX-2.5-Distilled-Q5_K_M.gguf",
+    "size": 16818835456
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "realrebelai/LTX-2.5_GGUFs",
+    "path": "LTX-2.5-Distilled-Q6_K.gguf",
+    "size": 18659348480
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "realrebelai/LTX-2.5_GGUFs",
+    "path": "LTX-2.5-Distilled-Q8_0.gguf",
+    "size": 23632744448
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 21611,
+  "repo": "realrebelai/LTX-2.5_GGUFs",
+  "auto": true
+ },
+ {
   "id": "hf-samuelchristlie-wan2-1-t2v-1-3b-gguf",
   "name": "Wan2.1-T2V-1.3B",
   "kind": "video",
@@ -39631,6 +41611,106 @@
   "auto": true
  },
  {
+  "id": "hf-joeygambino-ltx-2-5-quantized",
+  "name": "LTX-2.5-Quantized",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by joeygambino on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "joeygambino/LTX-2.5-Quantized",
+    "path": "LTX25-distilled-DiT-Q2_K.gguf",
+    "size": 7908869088
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "joeygambino/LTX-2.5-Quantized",
+    "path": "LTX25-distilled-DiT-Q3_K_M.gguf",
+    "size": 10602550240
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "joeygambino/LTX-2.5-Quantized",
+    "path": "LTX25-distilled-DiT-Q4_K_S.gguf",
+    "size": 12934620128
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "joeygambino/LTX-2.5-Quantized",
+    "path": "LTX25-distilled-DiT-Q4_K_M.gguf",
+    "size": 14167483360
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "joeygambino/LTX-2.5-Quantized",
+    "path": "LTX25-distilled-DiT-Q5_K_M.gguf",
+    "size": 15903466464
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "joeygambino/LTX-2.5-Quantized",
+    "path": "LTX25-distilled-DiT-Q6_K.gguf",
+    "size": 17747948512
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "joeygambino/LTX-2.5-Quantized",
+    "path": "LTX25-distilled-DiT-Q8_0.gguf",
+    "size": 22728582112
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 10902,
+  "repo": "joeygambino/LTX-2.5-Quantized",
+  "auto": true
+ },
+ {
   "id": "hf-gingerlabsplatform-gingerlabs-wan2-2-t2v-a14b",
   "name": "GingerLabs-Wan2.2-T2V-A14B",
   "kind": "video",
@@ -39749,6 +41829,98 @@
   ],
   "dl": 9205,
   "repo": "GingerLabsPlatform/GingerLabs-Wan2.2-T2V-A14B",
+  "auto": true
+ },
+ {
+  "id": "hf-abiray-ltx-2-3-22b-distilled-1-1-gguf",
+  "name": "LTX-2.3-22B-DISTILLED-1.1",
+  "kind": "video",
+  "family": "LTX",
+  "about": "Community model by Abiray on Hugging Face, based on LTX-2.3 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.3-22B-DISTILLED-1.1-GGUF",
+    "path": "LTX-2.3-22B-distilled-1.1-Q3_K_M.gguf",
+    "size": 14702550688
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.3-22B-DISTILLED-1.1-GGUF",
+    "path": "LTX-2.3-22B-distilled-1.1-Q4_K_M.gguf",
+    "size": 17763015328
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.3-22B-DISTILLED-1.1-GGUF",
+    "path": "LTX-2.3-22B-distilled-1.1-Q5_K_M.gguf",
+    "size": 19388448416
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.3-22B-DISTILLED-1.1-GGUF",
+    "path": "LTX-2.3-22B-distilled-1.1-Q6_K.gguf",
+    "size": 21006400160
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/LTX-2.3-22B-DISTILLED-1.1-GGUF",
+    "path": "LTX-2.3-22B-distilled-1.1-Q8_0.gguf",
+    "size": 25499064992
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 8935,
+  "repo": "Abiray/LTX-2.3-22B-DISTILLED-1.1-GGUF",
   "auto": true
  },
  {
@@ -39981,6 +42153,260 @@
   "auto": true
  },
  {
+  "id": "hf-joeygambino-minimax-h3-x-z-image-gguf-minimax-h3-fl2va-curve-zs05",
+  "name": "MiniMax-H3-fl2va-curve-zs05 · MiniMax-H3-x-Z-Image",
+  "kind": "image",
+  "family": "Z-Image",
+  "about": "Community model by joeygambino on Hugging Face, based on Z-Image (base). ",
+  "input": "optional",
+  "steps": 28,
+  "cfg": 5.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "blurry, low quality, watermark",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-fl2va-curve-zs05-Q4_0.gguf",
+    "size": 11464827552
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-fl2va-curve-zs05-Q5_1.gguf",
+    "size": 15227425440
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-fl2va-curve-zs05-Q8_0.gguf",
+    "size": 21498421920
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "size": 2497281120
+   }
+  ],
+  "dl": 5034,
+  "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-joeygambino-minimax-h3-x-z-image-gguf-minimax-h3-fl2va-zs05",
+  "name": "MiniMax-H3-fl2va-zs05 · MiniMax-H3-x-Z-Image",
+  "kind": "image",
+  "family": "Z-Image",
+  "about": "Community model by joeygambino on Hugging Face, based on Z-Image (base). ",
+  "input": "optional",
+  "steps": 28,
+  "cfg": 5.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "blurry, low quality, watermark",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-fl2va-zs05-Q4_0.gguf",
+    "size": 19864203712
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-fl2va-zs05-Q5_1.gguf",
+    "size": 25915429312
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "size": 2497281120
+   }
+  ],
+  "dl": 5034,
+  "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-joeygambino-minimax-h3-x-z-image-gguf-minimax-h3-ref2va-curve-zs05",
+  "name": "MiniMax-H3-ref2va-curve-zs05 · MiniMax-H3-x-Z-Image",
+  "kind": "image",
+  "family": "Z-Image",
+  "about": "Community model by joeygambino on Hugging Face, based on Z-Image (base). ",
+  "input": "optional",
+  "steps": 28,
+  "cfg": 5.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "blurry, low quality, watermark",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-ref2va-curve-zs05-Q4_0.gguf",
+    "size": 11464827552
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-ref2va-curve-zs05-Q5_1.gguf",
+    "size": 15227425440
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-ref2va-curve-zs05-Q8_0.gguf",
+    "size": 21498421920
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "size": 2497281120
+   }
+  ],
+  "dl": 5034,
+  "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-joeygambino-minimax-h3-x-z-image-gguf-minimax-h3-ref2va-zs05",
+  "name": "MiniMax-H3-ref2va-zs05 · MiniMax-H3-x-Z-Image",
+  "kind": "image",
+  "family": "Z-Image",
+  "about": "Community model by joeygambino on Hugging Face, based on Z-Image (base). ",
+  "input": "optional",
+  "steps": 28,
+  "cfg": 5.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "blurry, low quality, watermark",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-ref2va-zs05-Q4_0.gguf",
+    "size": 19864203712
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+    "path": "MiniMax-H3-ref2va-zs05-Q5_1.gguf",
+    "size": 25915429312
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "size": 2497281120
+   }
+  ],
+  "dl": 5034,
+  "repo": "joeygambino/MiniMax-H3-x-Z-Image-GGUF",
+  "auto": true
+ },
+ {
   "id": "hf-vantagewithai-turbowan2-1-t2v-14b-720p-comfyui-gguf",
   "name": "TurboWan2.1-T2V-14B-720P",
   "kind": "video",
@@ -40130,6 +42556,245 @@
   ],
   "dl": 4806,
   "repo": "vantagewithai/TurboWan2.1-T2V-14B-720P-ComfyUI-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-agosh-ltx-2-5-comfy-gguf",
+  "name": "LTX-2.5-Comfy",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by agosh on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "agosh/LTX-2.5-Comfy-GGUF",
+    "path": "ltx-2.5-22b-distilled-transformer-bf16-Q2_K.gguf",
+    "size": 7325780064
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "agosh/LTX-2.5-Comfy-GGUF",
+    "path": "ltx-2.5-22b-distilled-transformer-bf16-Q3_K_S.gguf",
+    "size": 9446940768
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "agosh/LTX-2.5-Comfy-GGUF",
+    "path": "ltx-2.5-22b-distilled-transformer-bf16-Q4_K_M.gguf",
+    "size": 12220864608
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "agosh/LTX-2.5-Comfy-GGUF",
+    "path": "ltx-2.5-22b-distilled-transformer-bf16-Q5_K_M.gguf",
+    "size": 14831573088
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "agosh/LTX-2.5-Comfy-GGUF",
+    "path": "ltx-2.5-22b-distilled-transformer-bf16-Q6_K.gguf",
+    "size": 17605644384
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "agosh/LTX-2.5-Comfy-GGUF",
+    "path": "ltx-2.5-22b-distilled-transformer-bf16-Q8_0.gguf",
+    "size": 22663796832
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 4361,
+  "repo": "agosh/LTX-2.5-Comfy-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-udero-minimax-h3-turbo-gguf",
+  "name": "minimax-h3-turbo",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by udero on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "UD-Q3_K_XL",
+    "format": "gguf",
+    "repo": "udero/minimax-h3-turbo-gguf",
+    "path": "minimax_h3_fl2va_turbo_baked-UD-Q3_K_XL.gguf",
+    "size": 9558675616
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "udero/minimax-h3-turbo-gguf",
+    "path": "minimax_h3_fl2va_turbo_baked-Q4_K_M.gguf",
+    "size": 11420663968
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "udero/minimax-h3-turbo-gguf",
+    "path": "minimax_h3_fl2va_turbo_baked-Q5_0.gguf",
+    "size": 13923170464
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "udero/minimax-h3-turbo-gguf",
+    "path": "minimax_h3_fl2va_turbo_baked-Q6_K.gguf",
+    "size": 16586784928
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "udero/minimax-h3-turbo-gguf",
+    "path": "minimax_h3_fl2va_turbo_baked-Q8_0.gguf",
+    "size": 21437786272
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 3957,
+  "repo": "udero/minimax-h3-turbo-gguf",
+  "auto": true
+ },
+ {
+  "id": "hf-woodfireind-minimax-h3-gguf-ministack",
+  "name": "MiniMax-H3-GGUF-MiniStack",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by woodfireind on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "woodfireind/MiniMax-H3-GGUF-MiniStack",
+    "path": "diffusion_models/MiniMax-H3-FL2VA-pruned-Q4_K_M.gguf",
+    "size": 11378532064
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 3313,
+  "repo": "woodfireind/MiniMax-H3-GGUF-MiniStack",
   "auto": true
  },
  {
@@ -40299,6 +42964,72 @@
   "auto": true
  },
  {
+  "id": "hf-fenomai-minimax-h3-ggufs",
+  "name": "MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by FenomAI on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "FenomAI/MiniMax-H3_GGUFs",
+    "path": "MiniMax-H3-FL2VA-Q3_K_M.gguf",
+    "size": 15577923360
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "FenomAI/MiniMax-H3_GGUFs",
+    "path": "MiniMax-H3-FL2VA-Q4_K_M.gguf",
+    "size": 19864208160
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 2327,
+  "repo": "FenomAI/MiniMax-H3_GGUFs",
+  "auto": true
+ },
+ {
   "id": "hf-patipix-fastwan2-2-ti2v-5b-gguf",
   "name": "FastWan2.2-TI2V-5B",
   "kind": "video",
@@ -40348,6 +43079,122 @@
   ],
   "dl": 2081,
   "repo": "PatiPix/FastWan2.2-TI2V-5B-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-elix3r-ltx-2-5-22b-distilled-gguf",
+  "name": "LTX-2.5-22b-distilled",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by elix3r on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "elix3r/LTX-2.5-22b-distilled-GGUF",
+    "path": "ltx-2.5-22b-distilled-transformer-Q5_K_M.gguf",
+    "size": 16878535040
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 1641,
+  "repo": "elix3r/LTX-2.5-22b-distilled-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-harsha001-ltx-2-5-22b-dev-uncensored-rocmfpx",
+  "name": "LTX-2.5-22B-dev-uncensored-ROCmFPX",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by Harsha001 on Hugging Face, based on LTX-2.5 dev (best quality, sound). Uncensored. ",
+  "steps": 20,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": true,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0_ROCMFP4",
+    "format": "gguf",
+    "repo": "Harsha001/LTX-2.5-22B-dev-uncensored-ROCmFPX",
+    "path": "LTX-2.5-22B-dev-Q4_0_ROCMFP4.gguf",
+    "size": 14737606752
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 1290,
+  "repo": "Harsha001/LTX-2.5-22B-dev-uncensored-ROCmFPX",
   "auto": true
  },
  {
@@ -40602,6 +43449,384 @@
   "auto": true
  },
  {
+  "id": "hf-glory-vocabulary-ltx-2-3-22b",
+  "name": "ltx-2.3-22b",
+  "kind": "video",
+  "family": "LTX",
+  "about": "Community model by glory-vocabulary on Hugging Face, based on LTX-2.3 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M_LIGHT",
+    "format": "gguf",
+    "repo": "glory-vocabulary/ltx-2.3-22b",
+    "path": "ltx-2.3-22b-distilled-Q4_K_M_light.gguf",
+    "size": 12971904032
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 45,
+  "repo": "glory-vocabulary/ltx-2.3-22b",
+  "auto": true
+ },
+ {
+  "id": "hf-leejet-minimax-h3-gguf-minimax-h3-fl2va",
+  "name": "minimax h3 fl2va · MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by leejet on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "leejet/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va-Q4_K_M.gguf",
+    "size": 18779848448
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 286697,
+  "repo": "leejet/MiniMax-H3-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-leejet-minimax-h3-gguf-minimax-h3-fl2va-pruned",
+  "name": "minimax h3 fl2va pruned · MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by leejet on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "leejet/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q4_K_M.gguf",
+    "size": 11420663904
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 286697,
+  "repo": "leejet/MiniMax-H3-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-leejet-minimax-h3-gguf-minimax-h3-ref2va",
+  "name": "minimax h3 ref2va · MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by leejet on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "leejet/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va-Q4_K_M.gguf",
+    "size": 18779848448
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 286697,
+  "repo": "leejet/MiniMax-H3-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-leejet-minimax-h3-gguf-minimax-h3-ref2va-pruned",
+  "name": "minimax h3 ref2va pruned · MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by leejet on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K_M",
+    "format": "gguf",
+    "repo": "leejet/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q2_K_M.gguf",
+    "size": 6724190304
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "leejet/MiniMax-H3-GGUF",
+    "path": "minimax_h3_ref2va_pruned-Q4_K_M.gguf",
+    "size": 11420663904
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 286697,
+  "repo": "leejet/MiniMax-H3-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-molbal-minimax-h3-gguf-minimax-h3-fl2va-pruned-fp8",
+  "name": "minimax h3 fl2va pruned fp8 · MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by molbal on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "molbal/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned_fp8_Q4_0.gguf",
+    "size": 11377542880
+   },
+   {
+    "label": "Q8_CR",
+    "format": "gguf",
+    "repo": "molbal/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned_fp8_Q8_CR.gguf",
+    "size": 20160044352
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "molbal/MiniMax-H3-GGUF",
+    "path": "minimax_h3_fl2va_pruned_fp8_Q8_0.gguf",
+    "size": 21411137248
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 109091,
+  "repo": "molbal/MiniMax-H3-GGUF",
+  "auto": true
+ },
+ {
   "id": "hf-bullerwins-wan2-2-i2v-a14b-gguf",
   "name": "Wan2.2-I2V-A14B",
   "kind": "video",
@@ -40802,6 +44027,504 @@
   "auto": true
  },
  {
+  "id": "hf-vantagewithai-ltx-2-5-gguf-ltx-2-5-22b-dev-transformer",
+  "name": "ltx-2.5-22b-dev-transformer · LTX-2.5",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by vantagewithai on Hugging Face, based on LTX-2.5 dev (best quality, sound). ",
+  "steps": 20,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q2_K.gguf",
+    "size": 12125172096
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q3_K_S.gguf",
+    "size": 12649891200
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q3_K_M.gguf",
+    "size": 12923897216
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q4_0.gguf",
+    "size": 15241666944
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q4_K_S.gguf",
+    "size": 15327650176
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q4_1.gguf",
+    "size": 15525249408
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q4_K_M.gguf",
+    "size": 15687639424
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q5_K_S.gguf",
+    "size": 15892717952
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q5_0.gguf",
+    "size": 15976604032
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q5_1.gguf",
+    "size": 16260186496
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q5_K_M.gguf",
+    "size": 18116119936
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q6_K.gguf",
+    "size": 18624033152
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "dev/ltx-2.5-22b-dev-transformer-Q8_0.gguf",
+    "size": 23604666752
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 31124,
+  "repo": "vantagewithai/LTX-2.5-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-vantagewithai-ltx-2-5-gguf-ltx-2-5-22b-distilled-transformer",
+  "name": "ltx-2.5-22b-distilled-transformer · LTX-2.5",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by vantagewithai on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q2_K.gguf",
+    "size": 12125172096
+   },
+   {
+    "label": "Q3_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q3_K_S.gguf",
+    "size": 12649891200
+   },
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q3_K_M.gguf",
+    "size": 12923897216
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q4_0.gguf",
+    "size": 15241666944
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q4_K_S.gguf",
+    "size": 15327650176
+   },
+   {
+    "label": "Q4_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q4_1.gguf",
+    "size": 15525249408
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q4_K_M.gguf",
+    "size": 15687639424
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q5_K_S.gguf",
+    "size": 15892717952
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q5_0.gguf",
+    "size": 15976604032
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q5_1.gguf",
+    "size": 16260186496
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q5_K_M.gguf",
+    "size": 18116119936
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q6_K.gguf",
+    "size": 18624033152
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "vantagewithai/LTX-2.5-GGUF",
+    "path": "distilled/ltx-2.5-22b-distilled-transformer-Q8_0.gguf",
+    "size": 23604666752
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 31124,
+  "repo": "vantagewithai/LTX-2.5-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-abiray-minimax-h3-singularity-v2-pruned-gguf",
+  "name": "Minimax-h3-Singularity-V2-Pruned",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by Abiray on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/Minimax-h3-Singularity-V2-Pruned-GGUF",
+    "path": "Minimax-h3-Singularity-ref2va-v2-Pruned-Q3_K_M.gguf",
+    "size": 8902845536
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/Minimax-h3-Singularity-V2-Pruned-GGUF",
+    "path": "Minimax-h3-Singularity-ref2va-v2-Pruned-Q4_K_M.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/Minimax-h3-Singularity-V2-Pruned-GGUF",
+    "path": "Minimax-h3-Singularity-ref2va-v2-Pruned-Q5_K_M.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/Minimax-h3-Singularity-V2-Pruned-GGUF",
+    "path": "Minimax-h3-Singularity-ref2va-v2-Pruned-Q6_K.gguf",
+    "size": 16730301536
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 25840,
+  "repo": "Abiray/Minimax-h3-Singularity-V2-Pruned-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-abiray-wan2-2-lightx2v-260412-4step-gguf",
+  "name": "Wan2.2-LightX2V-260412-4STEP",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Community model by Abiray on Hugging Face, based on Wan 2.2 I2V A14B (video). ",
+  "steps": 10,
+  "highSteps": 8,
+  "cfg": 3.5,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "required",
+  "tasks": [
+   "animate",
+   "first-last"
+  ],
+  "fps": 16,
+  "speed": {
+   "label": "⚡ Lightning · 4+4 steps",
+   "steps": 4,
+   "highSteps": 4,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-i2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+     "size": 739472104
+    },
+    {
+     "name": "speed-wan22-i2v-high-4step",
+     "high": true,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_i2v_A14b_high_noise_lora_rank64_lightx2v_4step_1022.safetensors",
+     "size": 634645944
+    }
+   ]
+  },
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+    "path": "low_noise_260412/wan2.2_i2v_A14b_low_noise_lightx2v_4step_720p_260412-Q3_K_M.gguf",
+    "size": 7185947299,
+    "high": {
+     "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+     "path": "high_noise_260412/wan2.2_i2v_A14b_high_noise_lightx2v_4step_720p_260412-Q3_K_M.gguf",
+     "size": 7185947299
+    },
+    "size_total": 14371894598
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+    "path": "low_noise_260412/wan2.2_i2v_A14b_low_noise_lightx2v_4step_720p_260412-Q4_K_M.gguf",
+    "size": 9661569699,
+    "high": {
+     "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+     "path": "high_noise_260412/wan2.2_i2v_A14b_high_noise_lightx2v_4step_720p_260412-Q4_K_M.gguf",
+     "size": 9661569699
+    },
+    "size_total": 19323139398
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+    "path": "low_noise_260412/wan2.2_i2v_A14b_low_noise_lightx2v_4step_720p_260412-Q5_K_M.gguf",
+    "size": 10801896099,
+    "high": {
+     "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+     "path": "high_noise_260412/wan2.2_i2v_A14b_high_noise_lightx2v_4step_720p_260412-Q5_K_M.gguf",
+     "size": 10801896099
+    },
+    "size_total": 21603792198
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+    "path": "low_noise_260412/wan2.2_i2v_A14b_low_noise_lightx2v_4step_720p_260412-Q6_K.gguf",
+    "size": 12013492899,
+    "high": {
+     "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+     "path": "high_noise_260412/wan2.2_i2v_A14b_high_noise_lightx2v_4step_720p_260412-Q6_K.gguf",
+     "size": 12013492899
+    },
+    "size_total": 24026985798
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+    "path": "low_noise_260412/wan2.2_i2v_A14b_low_noise_lightx2v_4step_720p_260412-Q8_0.gguf",
+    "size": 15416449699,
+    "high": {
+     "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+     "path": "high_noise_260412/wan2.2_i2v_A14b_high_noise_lightx2v_4step_720p_260412-Q8_0.gguf",
+     "size": 15416449699
+    },
+    "size_total": 30832899398
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ],
+  "dl": 19047,
+  "repo": "Abiray/Wan2.2-LightX2V-260412-4STEP-GGUF",
+  "auto": true
+ },
+ {
   "id": "hf-quantstack-wan2-1-t2v-14b-lightx2v-stepcfgdistill-vace-gguf",
   "name": "Wan2.1 T2V 14B LightX2V StepCfgDistill VACE",
   "kind": "video",
@@ -40967,6 +44690,151 @@
   ],
   "dl": 14701,
   "repo": "QuantStack/Wan2.1_T2V_14B_LightX2V_StepCfgDistill_VACE-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-joeygambino-minimax-h3-curve-gguf-minimax-h3-fl2va-curve",
+  "name": "MiniMax-H3-fl2va-curve · MiniMax-H3-curve",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by joeygambino on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-curve-GGUF",
+    "path": "fl2va/MiniMax-H3-fl2va-curve-Q4_0.gguf",
+    "size": 11464827552
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-curve-GGUF",
+    "path": "fl2va/MiniMax-H3-fl2va-curve-Q5_1.gguf",
+    "size": 15227425440
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-curve-GGUF",
+    "path": "fl2va/MiniMax-H3-fl2va-curve-Q8_0.gguf",
+    "size": 21498421920
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 10282,
+  "repo": "joeygambino/MiniMax-H3-curve-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-joeygambino-minimax-h3-curve-gguf-minimax-h3-ref2va-curve",
+  "name": "MiniMax-H3-ref2va-curve · MiniMax-H3-curve",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by joeygambino on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-curve-GGUF",
+    "path": "ref2va/MiniMax-H3-ref2va-curve-Q4_0.gguf",
+    "size": 11464827552
+   },
+   {
+    "label": "Q5_1",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-curve-GGUF",
+    "path": "ref2va/MiniMax-H3-ref2va-curve-Q5_1.gguf",
+    "size": 15227425440
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "joeygambino/MiniMax-H3-curve-GGUF",
+    "path": "ref2va/MiniMax-H3-ref2va-curve-Q8_0.gguf",
+    "size": 21498421920
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 10282,
+  "repo": "joeygambino/MiniMax-H3-curve-GGUF",
   "auto": true
  },
  {
@@ -41860,6 +45728,340 @@
   ],
   "dl": 4557,
   "repo": "vantagewithai/TurboWan2.2-I2V-A14B-720P-ComfyUI-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-hoidhxd-minimax-h3-hybrid-b25-49-gguf",
+  "name": "MiniMax-H3-Hybrid-b25-49",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by hoidhxd on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "hoidhxd/MiniMax-H3-Hybrid-b25-49-GGUF",
+    "path": "minimax_h3_hybrid_fl2va_ref2va_b25-49-Q4_0.gguf",
+    "size": 11387224800
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "hoidhxd/MiniMax-H3-Hybrid-b25-49-GGUF",
+    "path": "minimax_h3_hybrid_fl2va_ref2va_b25-49-Q5_0.gguf",
+    "size": 13895623392
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 4087,
+  "repo": "hoidhxd/MiniMax-H3-Hybrid-b25-49-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-abiray-minimax-h3-singularity-gguf",
+  "name": "MiniMax-H3-Singularity",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by Abiray on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+    "path": "Minimax-H3-Singularity-Q3_K_M.gguf",
+    "size": 8902845536
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+    "path": "Minimax-H3-Singularity-Q4_K_M.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+    "path": "Minimax-H3-Singularity-Q4_K_S.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+    "path": "Minimax-H3-Singularity-Q5_K_M.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+    "path": "Minimax-H3-Singularity-Q5_K_S.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+    "path": "Minimax-H3-Singularity-Q6_K.gguf",
+    "size": 16730301536
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+    "path": "Minimax-H3-Singularity-Q8_0.gguf",
+    "size": 21583324256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 3135,
+  "repo": "Abiray/MiniMax-H3-Singularity-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-abiray-minimax-h3-pruned-ref-delta-fused-gguf",
+  "name": "MiniMax-H3-Pruned-Ref-Delta-Fused",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by Abiray on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+    "path": "MiniMax-H3-Pruned-Ref-Delta-Fused-Q3_K_M.gguf",
+    "size": 8902899456
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+    "path": "MiniMax-H3-Pruned-Ref-Delta-Fused-Q4_K_M.gguf",
+    "size": 11564234496
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+    "path": "MiniMax-H3-Pruned-Ref-Delta-Fused-Q4_K_S.gguf",
+    "size": 11564234496
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+    "path": "MiniMax-H3-Pruned-Ref-Delta-Fused-Q5_K_M.gguf",
+    "size": 14069020416
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+    "path": "MiniMax-H3-Pruned-Ref-Delta-Fused-Q5_K_S.gguf",
+    "size": 14069020416
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+    "path": "MiniMax-H3-Pruned-Ref-Delta-Fused-Q6_K.gguf",
+    "size": 16730355456
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+    "path": "MiniMax-H3-Pruned-Ref-Delta-Fused-Q8_0.gguf",
+    "size": 21583378176
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 2964,
+  "repo": "Abiray/MiniMax-H3-Pruned-Ref-Delta-Fused-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-hoidhxd-minimax-h3-x-z-image-hybrid-gguf",
+  "name": "MiniMax-H3-x-Z-Image-hybrid",
+  "kind": "image",
+  "family": "Z-Image",
+  "about": "Community model by hoidhxd on Hugging Face, based on Z-Image (base). ",
+  "input": "optional",
+  "steps": 28,
+  "cfg": 5.0,
+  "width": 1024,
+  "height": 1024,
+  "negative": "blurry, low quality, watermark",
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "hoidhxd/MiniMax-H3-x-Z-Image-hybrid-GGUF",
+    "path": "minimax_h3_hybrid_fl2va_ref2va_zs05_b25-49_Q4_0.gguf",
+    "size": 11387241184
+   },
+   {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "hoidhxd/MiniMax-H3-x-Z-Image-hybrid-GGUF",
+    "path": "minimax_h3_hybrid_fl2va_ref2va_zs05_b25-49_Q5_0.gguf",
+    "size": 13895639776
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "hoidhxd/MiniMax-H3-x-Z-Image-hybrid-GGUF",
+    "path": "minimax_h3_hybrid_fl2va_ref2va_zs05_b25-49_Q8_0.gguf",
+    "size": 21420835552
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/Qwen3-4B-Instruct-2507-GGUF",
+    "path": "Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+    "size": 2497281120
+   }
+  ],
+  "dl": 2625,
+  "repo": "hoidhxd/MiniMax-H3-x-Z-Image-hybrid-GGUF",
   "auto": true
  },
  {
@@ -59852,6 +64054,108 @@
   "auto": true
  },
  {
+  "id": "hf-zuntan-wan22-fastmix",
+  "name": "Wan22-FastMix",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Community model by Zuntan on Hugging Face, based on Wan 2.1 I2V 14B 480P (video). ",
+  "steps": 20,
+  "cfg": 5.0,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "fps": 16,
+  "input": "required",
+  "tasks": [
+   "animate"
+  ],
+  "speed": {
+   "label": "⚡ Lightx2v · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan21-i2v-14b-lightx2v-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.1-Distill-Loras",
+     "path": "wan2.1_i2v_lora_rank64_lightx2v_4step.safetensors",
+     "size": 739472104
+    }
+   ]
+  },
+  "sampler": "euler",
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Zuntan/Wan22-FastMix",
+    "path": "Wan22-I2V-FastMix_v10-L-Q3_K_M.gguf",
+    "size": 7176116736
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Zuntan/Wan22-FastMix",
+    "path": "Wan22-I2V-FastMix_v10-L-Q4_K_M.gguf",
+    "size": 9651739136
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Zuntan/Wan22-FastMix",
+    "path": "Wan22-I2V-FastMix_v10-L-Q6_K.gguf",
+    "size": 12003662336
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Zuntan/Wan22-FastMix",
+    "path": "Wan22-I2V-FastMix_v10-L-Q8_0.gguf",
+    "size": 15406619136
+   },
+   {
+    "label": "F16",
+    "format": "gguf",
+    "repo": "Zuntan/Wan22-FastMix",
+    "path": "Wan22-I2V-FastMix_v10-L-F16.gguf",
+    "size": 28576405952
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   },
+   {
+    "role": "clip_vision",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/clip_vision/clip_vision_h.safetensors",
+    "size": 1264219396
+   }
+  ],
+  "dl": 7165,
+  "repo": "Zuntan/Wan22-FastMix",
+  "auto": true
+ },
+ {
   "id": "hf-lym00-wan2-2-t2v-a14b-vace-test",
   "name": "Wan2.2 T2V A14B VACE-test",
   "kind": "video",
@@ -60237,6 +64541,114 @@
   "auto": true
  },
  {
+  "id": "hf-bigdannypt-wan-2-2-smoothmix-fp16",
+  "name": "WAN-2.2-SmoothMix-FP16",
+  "kind": "video",
+  "family": "Wan",
+  "about": "Community model by BigDannyPt on Hugging Face, based on Wan 2.2 T2V A14B (video). ",
+  "steps": 10,
+  "highSteps": 8,
+  "cfg": 3.5,
+  "flowShift": 3,
+  "width": 832,
+  "height": 480,
+  "frames": 33,
+  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+  "input": "none",
+  "tasks": [
+   "create"
+  ],
+  "fps": 16,
+  "speed": {
+   "label": "⚡ Lightning · 4+4 steps",
+   "steps": 4,
+   "highSteps": 4,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-wan22-t2v-low-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_low_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    },
+    {
+     "name": "speed-wan22-t2v-high-4step",
+     "high": true,
+     "weight": 1.0,
+     "repo": "lightx2v/Wan2.2-Distill-Loras",
+     "path": "wan2.2_t2v_A14b_high_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+     "size": 613518320
+    }
+   ]
+  },
+  "sampler": "euler",
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "BigDannyPt/WAN-2.2-SmoothMix-FP16",
+    "path": "GGUF/Low/smoothmixTxt2vidLow-FP16_Q5_K_M.gguf",
+    "size": 10789775904,
+    "high": {
+     "repo": "BigDannyPt/WAN-2.2-SmoothMix-FP16",
+     "path": "GGUF/High/smoothmixTxt2vidHigh-FP16_Q5_K_M.gguf",
+     "size": 10789775904
+    },
+    "size_total": 21579551808
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "BigDannyPt/WAN-2.2-SmoothMix-FP16",
+    "path": "GGUF/Low/smoothmixTxt2vidLow-FP16_Q6_K.gguf",
+    "size": 12001372704,
+    "high": {
+     "repo": "BigDannyPt/WAN-2.2-SmoothMix-FP16",
+     "path": "GGUF/High/smoothmixTxt2vidHigh-FP16_Q6_K.gguf",
+     "size": 12001372704
+    },
+    "size_total": 24002745408
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "BigDannyPt/WAN-2.2-SmoothMix-FP16",
+    "path": "GGUF/Low/smoothmixTxt2vidLow-FP16_Q8_0.gguf",
+    "size": 15404329504,
+    "high": {
+     "repo": "BigDannyPt/WAN-2.2-SmoothMix-FP16",
+     "path": "GGUF/High/smoothmixTxt2vidHigh-FP16_Q8_0.gguf",
+     "size": 15404329504
+    },
+    "size_total": 30808659008
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/vae/wan_2.1_vae.safetensors",
+    "size": 253815318
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/umt5-xxl-encoder-gguf",
+    "path": "umt5-xxl-encoder-Q8_0.gguf",
+    "size": 6043068256
+   }
+  ],
+  "dl": 136,
+  "repo": "BigDannyPt/WAN-2.2-SmoothMix-FP16",
+  "auto": true
+ },
+ {
   "id": "hf-mickmumpitz-vace-skyreels-v3-r2v-merge-gguf",
   "name": "VACE Skyreels V3 R2V Merge",
   "kind": "video",
@@ -60332,7 +64744,7 @@
   "name": "Wan-SkyReels-CausVid",
   "kind": "video",
   "family": "Wan",
-  "about": "Community model by Zuntan on Hugging Face, based on Wan 2.1 T2V 14B (video). ",
+  "about": "Community model by Zuntan on Hugging Face, based on Wan 2.1 I2V 14B 480P (video). ",
   "steps": 20,
   "cfg": 5.0,
   "flowShift": 3,
@@ -60341,8 +64753,9 @@
   "frames": 33,
   "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
   "fps": 16,
+  "input": "required",
   "tasks": [
-   "create"
+   "animate"
   ],
   "speed": {
    "label": "⚡ Lightx2v · 4 steps",
@@ -60352,18 +64765,17 @@
    "extra": "",
    "loras": [
     {
-     "name": "speed-wan21-14b-lightx2v-4step",
+     "name": "speed-wan21-i2v-14b-lightx2v-4step",
      "high": false,
      "weight": 1.0,
      "repo": "lightx2v/Wan2.1-Distill-Loras",
-     "path": "wan2.1_t2v_14b_lora_rank64_lightx2v_4step.safetensors",
-     "size": 631344264
+     "path": "wan2.1_i2v_lora_rank64_lightx2v_4step.safetensors",
+     "size": 739472104
     }
    ]
   },
   "sampler": "euler",
   "highSteps": 0,
-  "input": "none",
   "refs": 0,
   "extra": "",
   "uncensored": false,
@@ -60424,6 +64836,12 @@
     "repo": "city96/umt5-xxl-encoder-gguf",
     "path": "umt5-xxl-encoder-Q8_0.gguf",
     "size": 6043068256
+   },
+   {
+    "role": "clip_vision",
+    "repo": "Comfy-Org/Wan-2.1",
+    "path": "split_files/clip_vision/clip_vision_h.safetensors",
+    "size": 1264219396
    }
   ],
   "dl": 45,
@@ -61482,6 +65900,1119 @@
   "auto": true
  },
  {
+  "id": "hf-abiray-minimax-h3-pruned-gguf-minimax-h3-fl2va-pruned",
+  "name": "MiniMax-H3-FL2VA-Pruned · MiniMax-H3-Pruned",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by Abiray on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-FL2VA-Pruned-Q3_K_M.gguf",
+    "size": 8902845536
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-FL2VA-Pruned-Q4_K_M.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-FL2VA-Pruned-Q4_K_S.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-FL2VA-Pruned-Q5_K_M.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-FL2VA-Pruned-Q5_K_S.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-FL2VA-Pruned-Q6_K.gguf",
+    "size": 16730301536
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-FL2VA-Pruned-Q8_0.gguf",
+    "size": 21583324256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 925900,
+  "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-abiray-minimax-h3-pruned-gguf-minimax-h3-ref2va-pruned",
+  "name": "MiniMax-H3-Ref2VA-Pruned · MiniMax-H3-Pruned",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by Abiray on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q3_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-Ref2VA-Pruned-Q3_K_M.gguf",
+    "size": 8902845536
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-Ref2VA-Pruned-Q4_K_M.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-Ref2VA-Pruned-Q4_K_S.gguf",
+    "size": 11564180576
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-Ref2VA-Pruned-Q5_K_M.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q5_K_S",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-Ref2VA-Pruned-Q5_K_S.gguf",
+    "size": 14068966496
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-Ref2VA-Pruned-Q6_K.gguf",
+    "size": 16730301536
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+    "path": "MiniMax-H3-Ref2VA-Pruned-Q8_0.gguf",
+    "size": 21583324256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 925900,
+  "repo": "Abiray/MiniMax-H3-Pruned-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-yasutoshi-lab-minimax-h3-gguf-dit-fl2va",
+  "name": "DiT-fl2va · MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by yasutoshi-lab on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "IQ2_XS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-IQ2_XS.gguf",
+    "size": 13300641024
+   },
+   {
+    "label": "IQ2_S",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-IQ2_S.gguf",
+    "size": 13926837504
+   },
+   {
+    "label": "IQ3_XXS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-IQ3_XXS.gguf",
+    "size": 15179230464
+   },
+   {
+    "label": "IQ3_XS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-IQ3_XS.gguf",
+    "size": 15851187456
+   },
+   {
+    "label": "IQ3_S",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-IQ3_S.gguf",
+    "size": 16118525184
+   },
+   {
+    "label": "IQ4_XS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-IQ4_XS.gguf",
+    "size": 18153663744
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-Q4_K_S.gguf",
+    "size": 20463365376
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-Q4_K_M.gguf",
+    "size": 21653740800
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-Q5_K_M.gguf",
+    "size": 24777497856
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-Q6_K.gguf",
+    "size": 30448790784
+   },
+   {
+    "label": "Q6_K_M",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-Q6_K_M.gguf",
+    "size": 32371334400
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer/DiT-fl2va-Q8_0.gguf",
+    "size": 35301813504
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 9405,
+  "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-yasutoshi-lab-minimax-h3-gguf-dit-ref2va",
+  "name": "DiT-ref2va · MiniMax-H3",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by yasutoshi-lab on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "IQ2_XS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-IQ2_XS.gguf",
+    "size": 13300641024
+   },
+   {
+    "label": "IQ2_S",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-IQ2_S.gguf",
+    "size": 13926837504
+   },
+   {
+    "label": "IQ3_XXS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-IQ3_XXS.gguf",
+    "size": 15179230464
+   },
+   {
+    "label": "IQ3_XS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-IQ3_XS.gguf",
+    "size": 15851187456
+   },
+   {
+    "label": "IQ3_S",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-IQ3_S.gguf",
+    "size": 16118525184
+   },
+   {
+    "label": "IQ4_XS",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-IQ4_XS.gguf",
+    "size": 18153663744
+   },
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-Q4_K_S.gguf",
+    "size": 20463365376
+   },
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-Q4_K_M.gguf",
+    "size": 21653740800
+   },
+   {
+    "label": "Q5_K_M",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-Q5_K_M.gguf",
+    "size": 24777497856
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-Q6_K.gguf",
+    "size": 30448790784
+   },
+   {
+    "label": "Q6_K_M",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-Q6_K_M.gguf",
+    "size": 32371334400
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+    "path": "transformer_ref/DiT-ref2va-Q8_0.gguf",
+    "size": 35301813504
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 9405,
+  "repo": "yasutoshi-lab/MiniMax-H3-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-marxistleninist-minimax-h3-fl2va-pruned-iq1-gguf",
+  "name": "MiniMax-H3-FL2VA-Pruned-IQ1",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by MarxistLeninist on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "IQ1_S",
+    "format": "gguf",
+    "repo": "MarxistLeninist/MiniMax-H3-FL2VA-Pruned-IQ1-GGUF",
+    "path": "minimax_h3_fl2va_pruned-IQ1_S.gguf",
+    "size": 4062866976
+   },
+   {
+    "label": "IQ1_M",
+    "format": "gguf",
+    "repo": "MarxistLeninist/MiniMax-H3-FL2VA-Pruned-IQ1-GGUF",
+    "path": "minimax_h3_fl2va_pruned-IQ1_M.gguf",
+    "size": 4532514336
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 7364,
+  "repo": "MarxistLeninist/MiniMax-H3-FL2VA-Pruned-IQ1-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-abrahampj-minimax-h3-ref2va-pruned-q4-0-gguf",
+  "name": "minimax-h3-ref2va-pruned-q4 0",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by AbrahamPJ on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "AbrahamPJ/minimax-h3-ref2va-pruned-q4_0-gguf",
+    "path": "h3_ref2va_pruned_q4_0.gguf",
+    "size": 11564180576
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 4430,
+  "repo": "AbrahamPJ/minimax-h3-ref2va-pruned-q4_0-gguf",
+  "auto": true
+ },
+ {
+  "id": "hf-purpleblazey-minimax-h3-pruned-gguf",
+  "name": "Minimax-H3-pruned",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by PurpleBlazey on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q2_K.gguf",
+    "size": 6677230944
+   },
+   {
+    "label": "Q3_K",
+    "format": "gguf",
+    "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q3_K.gguf",
+    "size": 8715222144
+   },
+   {
+    "label": "Q4_0",
+    "format": "gguf",
+    "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q4_0.gguf",
+    "size": 11377904704
+   },
+   {
+    "label": "Q4_K",
+    "format": "gguf",
+    "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q4_K.gguf",
+    "size": 11380286784
+   },
+   {
+    "label": "Q5_K",
+    "format": "gguf",
+    "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q5_K.gguf",
+    "size": 13888583904
+   },
+   {
+    "label": "Q6_K",
+    "format": "gguf",
+    "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q6_K.gguf",
+    "size": 16553648544
+   },
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+    "path": "minimax_h3_fl2va_pruned-Q8_0.gguf",
+    "size": 21411443904
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 3409,
+  "repo": "PurpleBlazey/Minimax-H3-pruned-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-marxistleninist-minimax-h3-lowbit-gguf",
+  "name": "MiniMax-H3-LowBit",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by MarxistLeninist on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "IQ2_S",
+    "format": "gguf",
+    "repo": "MarxistLeninist/MiniMax-H3-LowBit-GGUF",
+    "path": "minimax_h3_fl2va_pruned-IQ2_S.gguf",
+    "size": 6519397920
+   },
+   {
+    "label": "IQ3_XXS",
+    "format": "gguf",
+    "repo": "MarxistLeninist/MiniMax-H3-LowBit-GGUF",
+    "path": "minimax_h3_fl2va_pruned-IQ3_XXS.gguf",
+    "size": 7773511200
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 655,
+  "repo": "MarxistLeninist/MiniMax-H3-LowBit-GGUF",
+  "auto": true
+ },
+ {
+  "id": "hf-ellapriest45-minimaxh3-base",
+  "name": "MinimaxH3 base",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by EllaPriest45 on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "EllaPriest45/MinimaxH3_base",
+    "path": "unet_FastH3-OmniRef-Unpruned-Q4_K_M.gguf",
+    "size": 13840183904
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 436,
+  "repo": "EllaPriest45/MinimaxH3_base",
+  "auto": true
+ },
+ {
+  "id": "hf-abrahampj-minimax-h3-ref2va-pruned-q8-0-gguf-h3-ref2va-pruned",
+  "name": "h3 ref2va pruned · minimax-h3-ref2va-pruned-q8 0",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by AbrahamPJ on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "AbrahamPJ/minimax-h3-ref2va-pruned-q8_0-gguf",
+    "path": "h3_ref2va_pruned_q8_0.gguf",
+    "size": 21583324256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 154,
+  "repo": "AbrahamPJ/minimax-h3-ref2va-pruned-q8_0-gguf",
+  "auto": true
+ },
+ {
+  "id": "hf-abrahampj-minimax-h3-ref2va-pruned-q8-0-gguf-h3-ref2va-pruned-turbo",
+  "name": "h3 ref2va pruned turbo · minimax-h3-ref2va-pruned-q8 0",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by AbrahamPJ on Hugging Face, based on MiniMax H3 Ref2VA (people & places from pictures). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "reference"
+  ],
+  "refs": 3,
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "AbrahamPJ/minimax-h3-ref2va-pruned-q8_0-gguf",
+    "path": "h3_ref2va_pruned_turbo_q8_0.gguf",
+    "size": 21583324256
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 154,
+  "repo": "AbrahamPJ/minimax-h3-ref2va-pruned-q8_0-gguf",
+  "auto": true
+ },
+ {
+  "id": "hf-radha7-minimax-h3-remix-quantized",
+  "name": "MiniMax-H3-Remix-Quantized",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by Radha7 on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q2_K",
+    "format": "gguf",
+    "repo": "Radha7/MiniMax-H3-Remix-Quantized",
+    "path": "FX_FeiHou_MiniMax_H3_Remix/FeiHou_MiniMax-H3_Remix_v0.6_Q2_K.gguf",
+    "size": 32672040800
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 36,
+  "repo": "Radha7/MiniMax-H3-Remix-Quantized",
+  "auto": true
+ },
+ {
+  "id": "hf-stuubs-stubelius-remix-ltx2-5",
+  "name": "Stubelius Remix Ltx2.5",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by Stuubs on Hugging Face, based on LTX-2.5 dev (best quality, sound). ",
+  "steps": 20,
+  "cfg": 3.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_S",
+    "format": "gguf",
+    "repo": "Stuubs/Stubelius_Remix_Ltx2.5",
+    "path": "ltx2.5-Stubelius_remix_v1_Q4_K_S.gguf",
+    "size": 12512012416
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 2815,
+  "repo": "Stuubs/Stubelius_Remix_Ltx2.5",
+  "auto": true
+ },
+ {
+  "id": "hf-ellapriest45-ltx2-5-base",
+  "name": "LTX2.5 base",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by EllaPriest45 on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q4_K_M",
+    "format": "gguf",
+    "repo": "EllaPriest45/LTX2.5_base",
+    "path": "diffusionmodels_LTX-2.5-Distilled-Q4_K_M.gguf",
+    "size": 15086587904
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 1010,
+  "repo": "EllaPriest45/LTX2.5_base",
+  "auto": true
+ },
+ {
   "id": "hf-virtuavixentube-comfyui-nsfw-model-pack-flux-2-klein-9b",
   "name": "flux-2-klein-9b · comfyui-nsfw-model-pack",
   "kind": "image",
@@ -61533,6 +67064,65 @@
     "repo": "unsloth/Qwen3-8B-GGUF",
     "path": "Qwen3-8B-Q4_K_M.gguf",
     "size": 5027784512
+   }
+  ],
+  "dl": 330,
+  "repo": "VirtuaVixenTube/comfyui-nsfw-model-pack",
+  "auto": true
+ },
+ {
+  "id": "hf-virtuavixentube-comfyui-nsfw-model-pack-ltx-2-3-22b-dev",
+  "name": "ltx-2.3-22b-dev · comfyui-nsfw-model-pack",
+  "kind": "image",
+  "family": "FLUX.1",
+  "about": "Community model by VirtuaVixenTube on Hugging Face, based on FLUX.1 dev. Uncensored. ",
+  "input": "optional",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 1024,
+  "height": 1024,
+  "tasks": [
+   "create",
+   "restyle",
+   "inpaint"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": true,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "Q8_0",
+    "format": "gguf",
+    "repo": "VirtuaVixenTube/comfyui-nsfw-model-pack",
+    "path": "diffusion_models/ltx-2.3-22b-dev-Q8_0.gguf",
+    "size": 22755540384
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Z-Image-Turbo",
+    "path": "split_files/vae/ae.safetensors",
+    "size": 335304388
+   },
+   {
+    "role": "clip_l",
+    "repo": "comfyanonymous/flux_text_encoders",
+    "path": "clip_l.safetensors",
+    "size": 246144152
+   },
+   {
+    "role": "t5xxl",
+    "repo": "city96/t5-v1_1-xxl-encoder-gguf",
+    "path": "t5-v1_1-xxl-encoder-Q8_0.gguf",
+    "size": 5061584064
    }
   ],
   "dl": 330,
@@ -61617,65 +67207,6 @@
   ],
   "dl": 330,
   "repo": "VirtuaVixenTube/comfyui-nsfw-model-pack",
-  "auto": true
- },
- {
-  "id": "hf-wangzhang-qwen3-6-35b-a3b-abliterated-gguf",
-  "name": "Qwen3.6-35B-A3B-abliterated",
-  "kind": "video",
-  "family": "Wan",
-  "about": "Community model by wangzhang on Hugging Face, based on Wan 2.2 TI2V 5B (video). Uncensored. ",
-  "steps": 20,
-  "cfg": 6.0,
-  "flowShift": 3,
-  "width": 832,
-  "height": 480,
-  "frames": 33,
-  "negative": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
-  "input": "optional",
-  "tasks": [
-   "create",
-   "animate"
-  ],
-  "fps": 16,
-  "sampler": "euler",
-  "highSteps": 0,
-  "refs": 0,
-  "extra": "",
-  "uncensored": true,
-  "prefix": "",
-  "variants": [
-   {
-    "label": "Q4_K_M",
-    "format": "gguf",
-    "repo": "wangzhang/Qwen3.6-35B-A3B-abliterated-GGUF",
-    "path": "Qwen3.6-35B-A3B-abliterated-Q4_K_M.gguf",
-    "size": 21166757728
-   },
-   {
-    "label": "Q8_0",
-    "format": "gguf",
-    "repo": "wangzhang/Qwen3.6-35B-A3B-abliterated-GGUF",
-    "path": "Qwen3.6-35B-A3B-abliterated-Q8_0.gguf",
-    "size": 36903139168
-   }
-  ],
-  "parts": [
-   {
-    "role": "vae",
-    "repo": "Comfy-Org/Wan-2.2",
-    "path": "split_files/vae/wan2.2_vae.safetensors",
-    "size": 1409400960
-   },
-   {
-    "role": "t5xxl",
-    "repo": "city96/umt5-xxl-encoder-gguf",
-    "path": "umt5-xxl-encoder-Q8_0.gguf",
-    "size": 6043068256
-   }
-  ],
-  "dl": 25271,
-  "repo": "wangzhang/Qwen3.6-35B-A3B-abliterated-GGUF",
   "auto": true
  },
  {
@@ -62552,6 +68083,65 @@
   "auto": true
  },
  {
+  "id": "hf-yichengup-minimax-h3-tyc-zs05-ltxqnorm-int8-convrot-minimax-h3-tyc-zs05-ltxqnorm-int8-convrot-safetensors",
+  "name": "minimax h3-tyc-zs05-ltxqnorm (INT8 ConvRot · yichengup)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Community model by yichengup on Hugging Face, based on MiniMax H3 (video + sound). ",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "yichengup/minimax_h3-tyc-zs05-ltxqnorm-int8-convrot",
+    "path": "minimax_h3-tyc-zs05-ltxqnorm-int8-convrot.safetensors",
+    "size": 20970382496
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 344,
+  "repo": "yichengup/minimax_h3-tyc-zs05-ltxqnorm-int8-convrot",
+  "auto": true
+ },
+ {
   "id": "hf-chenloong999-krea2-muse-2-5-int8-convrot-muse-by-stable-yogi-krea2-v2-5-extended-int8-convrot-c79-safetensors",
   "name": "krea2-muse-2.5 (INT8 ConvRot · Chenloong999)",
   "kind": "image",
@@ -62885,6 +68475,70 @@
     "repo": "unsloth/Qwen3-8B-GGUF",
     "path": "Qwen3-8B-Q4_K_M.gguf",
     "size": 5027784512
+   }
+  ],
+  "dl": 0,
+  "repo": "milo01/ComfyUI-INT8_ConvRot",
+  "auto": true
+ },
+ {
+  "id": "hf-milo01-comfyui-int8-convrot-ltx-2-3-22b-distilled-1-1-int8-convrot-safetensors",
+  "name": "ltx-2.3-22b-distilled-1.1 (INT8 ConvRot · milo01)",
+  "kind": "video",
+  "family": "LTX",
+  "about": "Community model by milo01 on Hugging Face, based on LTX-2.3 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "milo01/ComfyUI-INT8_ConvRot",
+    "path": "ltx-2.3-22b-distilled-1.1-int8-ConvRot.safetensors",
+    "size": 23507921832
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
+    "size": 2312144712
    }
   ],
   "dl": 0,
@@ -63398,6 +69052,134 @@
   ],
   "dl": 0,
   "repo": "Winnougan/Klein9b-Distilled-Base-INT8-Convrot",
+  "auto": true
+ },
+ {
+  "id": "hf-obsxrver-comfyui-native-int8-convrot-ltx-2-3-22b-distilled-1-1-int8-convrot-safetensors",
+  "name": "ltx-2.3-22b-distilled-1.1 (INT8 ConvRot · obsxrver)",
+  "kind": "video",
+  "family": "LTX",
+  "about": "Community model by obsxrver on Hugging Face, based on LTX-2.3 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "obsxrver/ComfyUI-Native-INT8_ConvRot",
+    "path": "checkpoints/ltx-2.3-22b-distilled-1.1-int8-ConvRot.safetensors",
+    "size": 23507956776
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 0,
+  "repo": "obsxrver/ComfyUI-Native-INT8_ConvRot",
+  "auto": true
+ },
+ {
+  "id": "hf-patientxtr-ltx2-3-10eros-distilled-int8-convrot-10eros-distilled-int8-convrot-safetensors",
+  "name": "LTX2.3-10Eros-distilled (INT8 ConvRot · patientxtr)",
+  "kind": "video",
+  "family": "LTX",
+  "about": "Community model by patientxtr on Hugging Face, based on LTX-2.3 distilled (video + sound). Uncensored. ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 97,
+  "input": "optional",
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": true,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "patientxtr/LTX2.3-10Eros-distilled-int8-convrot",
+    "path": "10Eros-distilled-int8-convrot.safetensors",
+    "size": 23507990776
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_video_vae.safetensors",
+    "size": 1452256522
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "vae/ltx-2.3-22b-distilled_audio_vae.safetensors",
+    "size": 364853140
+   },
+   {
+    "role": "llm",
+    "repo": "unsloth/gemma-3-12b-it-qat-GGUF",
+    "path": "gemma-3-12b-it-qat-UD-Q4_K_XL.gguf",
+    "size": 7432229248
+   },
+   {
+    "role": "embeddings-connectors",
+    "repo": "unsloth/LTX-2.3-GGUF",
+    "path": "text_encoders/ltx-2.3-22b-distilled_embeddings_connectors.safetensors",
+    "size": 2312144712
+   }
+  ],
+  "dl": 0,
+  "repo": "patientxtr/LTX2.3-10Eros-distilled-int8-convrot",
   "auto": true
  },
  {
@@ -64230,6 +70012,64 @@
   ],
   "dl": 0,
   "repo": "ahmed22xa/Kroma-v0.2-INT8-ConvRot",
+  "auto": true
+ },
+ {
+  "id": "hf-pulpcut-ltx-2-5-int8-convrot-safetensors-ltx-2-5-22b-distilled-transformer-comfy-int8-convrot-safetensors",
+  "name": "ltx-2.5-22b-distilled-transformer (INT8 ConvRot · PulpCut)",
+  "kind": "video",
+  "family": "LTX-2.5",
+  "about": "Community model by PulpCut on Hugging Face, based on LTX-2.5 distilled (video + sound). ",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 1280,
+  "height": 704,
+  "frames": 121,
+  "fps": 24,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "animate"
+  ],
+  "negative": "worst quality, low quality, blurry, distorted, artifacts",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "PulpCut/LTX-2.5-INT8-ConvRot-safetensors",
+    "path": "diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+    "size": 21504034388
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-video-vae-conv-bf16.safetensors",
+    "size": 1452269922
+   },
+   {
+    "role": "audio-vae",
+    "repo": "Lightricks/LTX-2.5",
+    "path": "vae/ltx-2.5-audio-vae-bf16.safetensors",
+    "size": 364866540
+   },
+   {
+    "role": "llm",
+    "repo": "elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF",
+    "path": "gemma4-12b-with-proj-ltx-2.5-Q4_K_M.gguf",
+    "size": 8414653376
+   }
+  ],
+  "dl": 0,
+  "repo": "PulpCut/LTX-2.5-INT8-ConvRot-safetensors",
   "auto": true
  },
  {

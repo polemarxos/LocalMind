@@ -437,6 +437,86 @@ if WAV2VEC and CLIP_VISION_H:
            variants=variants_list(gguf_variants("city96/Wan2.1-FLF2V-14B-720P-gguf")),
            parts=[dict(role="vae", **WAN21_VAE), dict(role="t5xxl", **UMT5), dict(role="clip_vision", **CLIP_VISION_H)])
 
+# ── 2026 video models: MiniMax H3, LTX-2.5, HunyuanVideo 1.5, LingBot-Video ──
+H3 = "unsloth/MiniMax-H3-GGUF"
+H3_VAE = one(H3, r"^vae/minimax_h3_video_vae_fp16\.safetensors$")
+H3_AVAE = one(H3, r"^vae/minimax_h3_audio_vae_fp32\.safetensors$")
+H3_TE32 = one(H3, r"qwen3vl_32b_minimax_h3-Q4_K_M\.gguf$")
+H3_TE4 = one("PrunaAI/P-H3-Image-Comfy", r"text_encoders/p-h3-image_text_encoder_bf16\.safetensors$")
+H3_TE_UNC = one("webmp3/Sakura-MiniMax-H3-Uncensored-GGUF", r"Q4_K_M.*\.gguf$")
+H3_NEG = "worst quality, low quality, blurry, distorted, artifacts, static"
+def h3(rid, name, about, variants, te, **k):
+    if not (H3_VAE and H3_AVAE and te):
+        return
+    k.setdefault("tasks", ["create", "animate", "first-last"])
+    k.setdefault("input", "optional")
+    recipe(id=rid, name=name, kind="video", family="MiniMax-H3", about=about,
+           steps=k.pop("steps", 20), cfg=k.pop("cfg", 1.0), width=864, height=480, frames=56, fps=24, negative=H3_NEG,
+           variants=variants, parts=[dict(role="vae", **H3_VAE), dict(role="audio-vae", **H3_AVAE), dict(role="llm", **te)], **k)
+fl2va = variants_list(gguf_variants(H3, include=r"fl2va_pruned"))
+ref2va = variants_list(gguf_variants(H3, include=r"ref2va_pruned"))
+h3("minimax-h3", "MiniMax H3 (video + sound)",
+   "MiniMax's Hailuo H3 (open weights): video with matching stereo sound, from text, a start picture, or a first and last picture. "
+   "Uses the compact 4B text encoder. GPU 12 GB+ and 32 GB RAM.", fl2va, H3_TE4)
+h3("minimax-h3-32b", "MiniMax H3 · 32B encoder (best)",
+   "MiniMax H3 with its full Qwen3-VL 32B text encoder: follows long, detailed prompts best. Needs lots of RAM (48 GB+).", fl2va, H3_TE32)
+h3("minimax-h3-ref2va", "MiniMax H3 Ref2VA (people & places from pictures)",
+   "MiniMax H3 that puts the people, objects and places of your reference pictures (or your 🎭 cast) into a video with sound.",
+   ref2va, H3_TE4, tasks=["create", "reference"], refs=3)
+h3("minimax-h3-uncensored", "MiniMax H3 Uncensored (Sakura encoder)",
+   "MiniMax H3 with the uncensored Sakura text encoder: no content filter. Needs lots of RAM.", fl2va, H3_TE_UNC, uncensored=True)
+HF = "VideoRebirthAI/hyperflow-h3-flash"
+h3("hyperflow-h3-flash", "HyperFlow H3 Flash 14B (fast, sound)",
+   "A 14B distilled MiniMax H3: video with sound in 6 steps. Fits 12 GB GPUs better.",
+   variants_list(gguf_variants(HF, folder="fl2va_gguf")), H3_TE4, steps=6, cfg=1.0, extra="--sigmas hyperflow-h3-flash-6")
+h3("hyperflow-h3-flash-ref2va", "HyperFlow H3 Flash Ref2VA (fast, from pictures)",
+   "Fast (6 steps) MiniMax H3 that uses your reference pictures or 🎭 cast.",
+   variants_list(gguf_variants(HF, folder="ref2va_gguf")), H3_TE4, steps=6, cfg=1.0, extra="--sigmas hyperflow-h3-flash-6",
+   tasks=["create", "reference"], refs=3)
+
+L25 = "unsloth/LTX-2.5-GGUF"
+L25_PARTS = [dict(role="vae", **one("Lightricks/LTX-2.5", r"^vae/ltx-2\.5-video-vae-conv-bf16\.safetensors$")),
+             dict(role="audio-vae", **one("Lightricks/LTX-2.5", r"^vae/ltx-2\.5-audio-vae-bf16\.safetensors$")),
+             dict(role="llm", **one("elix3r/gemma4-12b-with-proj-ltx-2.5-GGUF", r"Q4_K_M\.gguf$"))]
+recipe(id="ltx-2.5-distilled", name="LTX-2.5 distilled (video + sound)", kind="video", family="LTX-2.5",
+       about="LTX-2.5 (August 2026): sharper video with matching sound, multi-shot prompts, 8 steps. Text or picture to video, 24 fps. GPU 12 GB+ and 32 GB RAM.",
+       steps=8, cfg=1.0, width=1280, height=704, frames=121, fps=24, input="optional", tasks=["create", "animate"],
+       negative="worst quality, low quality, blurry, distorted, artifacts",
+       variants=variants_list(gguf_variants(L25, folder="distilled/")), parts=L25_PARTS)
+recipe(id="ltx-2.5-dev", name="LTX-2.5 dev (best quality, sound)", kind="video", family="LTX-2.5",
+       about="The full LTX-2.5 (20+ steps): the best quality of LTX, with sound. Slower than the distilled one.",
+       steps=20, cfg=3.0, width=1280, height=704, frames=121, fps=24, input="optional", tasks=["create", "animate"],
+       negative="worst quality, low quality, blurry, distorted, artifacts",
+       variants=[v for v in variants_list(gguf_variants(L25)) if not v["path"].startswith("distilled/")], parts=L25_PARTS)
+
+HV = "Comfy-Org/HunyuanVideo_1.5_repackaged"
+HV_PARTS = [dict(role="vae", **one(HV, r"vae/hunyuanvideo15_vae_fp16\.safetensors$")),
+            dict(role="llm", **QWEN25VL_7B),
+            dict(role="t5xxl", **one(HV, r"text_encoders/byt5_small_glyphxl_fp16\.safetensors$"))]
+for res, w, h_ in (("480p", 848, 480), ("720p", 1280, 720)):
+    for kind, tasks, inp in (("t2v", ["create"], "none"), ("i2v", ["animate"], "required")):
+        repo = f"jayn7/HunyuanVideo-1.5_{kind.upper()}_{res}-GGUF"
+        sp = None
+        if kind == "t2v" and res == "480p":
+            sp = speed("⚡ Lightx2v · 4 steps", 4, 1.0, [lora(HV, r"loras/hunyuanvideo1\.5_t2v_480p_lightx2v_4step", "speed-hunyuan15-t2v-480p-4step")])
+        recipe(id=f"hunyuanvideo1.5-{kind}-{res}", name=f"HunyuanVideo 1.5 {kind.upper()} {res}", kind="video", family="HunyuanVideo",
+               about=f"Tencent's HunyuanVideo 1.5 (8B): {'text to video' if kind == 't2v' else 'animates a picture'} at {res}, strong motion and text in video. GPU 8 GB+.",
+               steps=20, cfg=6.0, width=w, height=h_, frames=33, fps=24, input=inp, tasks=tasks, speed=sp,
+               negative="worst quality, low quality, blurry, distorted",
+               variants=variants_list(gguf_variants(repo, folder=f"{res}/")), parts=HV_PARTS)
+        recipe(id=f"hunyuanvideo1.5-{kind}-{res}-distilled", name=f"HunyuanVideo 1.5 {kind.upper()} {res} (fast, CFG-distilled)", kind="video", family="HunyuanVideo",
+               about=f"HunyuanVideo 1.5 {kind.upper()} {res}, CFG-distilled: about twice as fast at the same steps.",
+               steps=20, cfg=1.0, width=w, height=h_, frames=33, fps=24, input=inp, tasks=tasks,
+               negative="",
+               variants=variants_list(gguf_variants(repo, folder=f"{res}_distilled/")), parts=HV_PARTS)
+
+LB = "off-grid-ai/LingBot-Video-Dense-1.3B-GGUF"
+recipe(id="lingbot-video-dense-1.3b", name="LingBot-Video 1.3B (tiny)", kind="video", family="LingBot",
+       about="A very small text-to-video model (1.3B, under 1.5 GB): short clips even on 6 GB GPUs or CPU.",
+       steps=20, cfg=3.0, width=832, height=480, frames=33, fps=16, tasks=["create"],
+       negative="low quality, worst quality, blurry, flickering, watermark, text",
+       variants=variants_list(gguf_variants(LB)), parts=[dict(role="vae", **WAN21_VAE), dict(role="llm", **QWEN3VL_4B)])
+
 # ── community models from Hugging Face (copy a family's settings) ───────────
 import media_auto
 used = set()

@@ -647,6 +647,11 @@ Public Module MediaStudio
                     If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} " & FormattableString.Invariant($"--strength {Math.Clamp(req.Strength, 0.05, 1.0)} "))
                 Case "animate"
                     If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} ")
+                Case "reference"
+                    If imgs.Count = 0 Then Throw New Exception(Localizer.T("Choose the reference pictures (who and what to show)."))
+                    For Each f In imgs.Take(Math.Max(1, r.Refs))
+                        a.Append($"-r {Q(f)} ")
+                    Next
                 Case "first-last"
                     Dim lastPic = If(Not String.IsNullOrEmpty(req.EndImage) AndAlso File.Exists(req.EndImage), req.EndImage, imgs.Skip(1).FirstOrDefault())
                     If imgs.Count = 0 OrElse lastPic Is Nothing Then Throw New Exception(Localizer.T("Choose the first and the last picture."))
@@ -861,7 +866,7 @@ Public Module MediaStudio
         If hasVideo AndAlso r.Can("video-edit") Then Return "video-edit"
         If hasImage AndAlso hasMask AndAlso r.Can("inpaint") Then Return "inpaint"
         If hasImage Then
-            If r.IsVideo Then Return "animate"
+            If r.IsVideo Then Return If(Not r.Can("animate") AndAlso r.Can("reference"), "reference", "animate")
             If r.Can("edit") Then Return "edit"
             If r.Can("restyle") Then Return "restyle"
         End If

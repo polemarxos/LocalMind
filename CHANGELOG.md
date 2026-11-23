@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.13.0
+
+### New
+- **30 looks** (Settings → Appearance): dark and light themes. Each one changes the colors, the font and the contrast
+  of every window and of the chat, with a live preview. Messages and questions now use the app's look instead of the
+  white Windows box. Scrollbars are dark on dark looks.
+- **Loading screen at start:** 1. checks for a LocalMind update and installs it (then starts the new version),
+  2. updates the model list, 3. loads the interface, 4. loads your chat model. Each step shows its result. It can be
+  turned off in Settings → Appearance.
+- **New video models** that the engine can now run: 112 video models in total (48 before).
+  - **MiniMax H3** (Hailuo, open weights): video with stereo sound, from text, a start picture, or a first and last
+    picture. Light (4B encoder) and best (32B encoder) versions, an uncensored encoder, and **HyperFlow H3 Flash**
+    (6 steps).
+  - **H3 Ref2VA:** a new task, "🧩 Video from reference pictures", that puts the people, places and things of your
+    pictures (or your 🎭 cast) into the video.
+  - **LTX-2.5** distilled (8 steps) and dev, with sound.
+  - **HunyuanVideo 1.5** text→video and picture→video at 480p and 720p (normal and fast CFG-distilled).
+  - **LingBot-Video 1.3B** (tiny), and the community quantizations of all of these.
+
+### Fixed
+- The files list on a model page (Pictures & video) showed only one row and a white scrollbar on high-DPI screens.
+
 ## 2.12.0
 
 ### New
