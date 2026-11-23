@@ -84,10 +84,10 @@ Public Class SoundtrackForm
                 .Model = m, .Text = parts(0).Trim(), .Lyrics = If(parts.Length > 1, parts(1), Nothing),
                 .Seconds = If(m.IsMusic, CInt(Math.Ceiling(Math.Max(5, seconds))), 0),
                 .Language = If(Voice.IsGreek(txt.Text), "el", If(sv?.Language, "en")), .SpeakerFile = sv?.FullPath, .SpeakerText = sv?.Words}
-            Dim wav = Await AudioStudio.GenerateAsync(req, Sub(p, t) BeginInvoke(Sub() lbl.Text = Localizer.T(t)), _cts.Token)
+            Dim wav = Await AudioStudio.GenerateAsync(req, Sub(p, t) Me.Post(Sub() lbl.Text = Localizer.T(t)), _cts.Token)
             lbl.Text = Localizer.T("Putting it under the video…")
             Dim outp = Path.Combine(Path.GetDirectoryName(_video), Path.GetFileNameWithoutExtension(_video) & If(m.IsMusic, "-music", "-voice") & ".mp4")
-            Await VideoTools.AddAudioAsync(_video, wav, chkKeep.Checked, If(m.IsMusic, 0.9, 1.2), outp, Sub(t) BeginInvoke(Sub() lbl.Text = t), _cts.Token)
+            Await VideoTools.AddAudioAsync(_video, wav, chkKeep.Checked, If(m.IsMusic, 0.9, 1.2), outp, Sub(t) Me.Post(Sub() lbl.Text = t), _cts.Token)
             Result = outp
             DialogResult = DialogResult.OK
             Close()

@@ -81,7 +81,7 @@ Public Class KnowledgeForm
         _cts = New CancellationTokenSource()
         btnIndex.Text = "Cancel"
         Try
-            Dim summary = Await Knowledge.IndexAsync(Sub(t) BeginInvoke(Sub() lbl.Text = t), _cts.Token)
+            Dim summary = Await Knowledge.IndexAsync(Sub(t) Me.Post(Sub() lbl.Text = t), _cts.Token)
             lbl.Text = summary
         Catch ex As OperationCanceledException
             lbl.Text = "Indexing cancelled."

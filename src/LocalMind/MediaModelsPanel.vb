@@ -356,7 +356,7 @@ Public Class MediaModelsPanel
                 Dim v = ChosenVariant(r)
                 Dim name = r.Name
                 Await MediaStudio.DownloadAsync(r, v,
-                    Sub(p, t) BeginInvoke(Sub()
+                    Sub(p, t) Me.Post(Sub()
                                               bar.Value = Math.Max(0, Math.Min(100, p))
                                               lblStatus.Text = $"{done + 1}/{picks.Count} · {name} · {Localizer.T(t)}"
                                           End Sub),

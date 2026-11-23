@@ -201,7 +201,7 @@ Public Class LanForm
 
     Private Sub OnActivity(text As String)
         If IsDisposed OrElse Not IsHandleCreated Then Return
-        BeginInvoke(Sub()
+        Me.Post(Sub()
                         txtLog.AppendText(text & Environment.NewLine)
                     End Sub)
     End Sub

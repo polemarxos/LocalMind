@@ -511,7 +511,7 @@ Public Class EngineLogForm
 
     Private Sub OnLine(line As String)
         If IsDisposed OrElse Not IsHandleCreated Then Return
-        BeginInvoke(Sub()
+        Me.Post(Sub()
                         If txt.TextLength > 400000 Then txt.Text = txt.Text.Substring(200000)
                         txt.AppendText(line & Environment.NewLine)
                     End Sub)

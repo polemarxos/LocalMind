@@ -228,7 +228,7 @@ Public Class VoiceChatForm
 
     Private Sub SetState(t As String)
         If InvokeRequired Then
-            BeginInvoke(Sub() SetState(t))
+            Me.Post(Sub() SetState(t))
         Else
             lblState.Text = t
         End If
@@ -236,7 +236,7 @@ Public Class VoiceChatForm
 
     Private Sub Append(t As String, c As Color)
         If InvokeRequired Then
-            BeginInvoke(Sub() Append(t, c))
+            Me.Post(Sub() Append(t, c))
             Return
         End If
         log.SelectionStart = log.TextLength

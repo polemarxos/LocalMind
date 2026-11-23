@@ -112,7 +112,7 @@ Public Class CastForm
                                       Dim m = _current
                                       btnMore.Enabled = False
                                       Try
-                                          Dim made = Await CastLibrary.MakeMorePicturesAsync(m, 4, Sub(p, t) BeginInvoke(Sub() lblWork.Text = t), CancellationToken.None)
+                                          Dim made = Await CastLibrary.MakeMorePicturesAsync(m, 4, Sub(p, t) Me.Post(Sub() lblWork.Text = t), CancellationToken.None)
                                           CastLibrary.Save(_list)
                                           For Each f In made
                                               Try : IO.File.Delete(f) : Catch : End Try

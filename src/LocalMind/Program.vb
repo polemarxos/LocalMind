@@ -4,6 +4,7 @@ Imports System.Windows.Forms
 Public Module Program
     <STAThread>
     Public Sub Main()
+        Safety.Install()
         Updater.CleanupOldVersion()
         Application.SetHighDpiMode(HighDpiMode.SystemAware)
         Application.EnableVisualStyles()

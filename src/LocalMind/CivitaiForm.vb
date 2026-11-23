@@ -242,7 +242,7 @@ Public Class CivitaiForm
                                      Catch
                                      End Try
                                      If locked AndAlso Not IsDisposed Then
-                                         BeginInvoke(Sub()
+                                         Me.Post(Sub()
                                                          If SelectedVersion() Is vv Then lblInfo.Text &= vbLf & Localizer.T("🔒 Needs a Civitai account: paste your API key at the top first.")
                                                      End Sub)
                                      End If
@@ -282,7 +282,7 @@ Public Class CivitaiForm
         _dlCts = New CancellationTokenSource()
         btnInstall.Enabled = False
         Try
-            Dim prog = Sub(p As Integer, t As String) BeginInvoke(Sub()
+            Dim prog = Sub(p As Integer, t As String) Me.Post(Sub()
                                                                      prg.Value = Math.Max(0, Math.Min(100, p))
                                                                      lblStatus.Text = t
                                                                  End Sub)

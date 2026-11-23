@@ -464,7 +464,7 @@ Public Class StudioForm
                                     If Not f.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) Then Return
                                     Try
                                         lblStatus.Text = Localizer.T("Converting to MP4…")
-                                        Dim mp4 = Await VideoTools.ToMp4Async(f, Sub(t) BeginInvoke(Sub() lblStatus.Text = Localizer.T(t)), CancellationToken.None)
+                                        Dim mp4 = Await VideoTools.ToMp4Async(f, Sub(t) Me.Post(Sub() lblStatus.Text = Localizer.T(t)), CancellationToken.None)
                                         lblStatus.Text = Localizer.T("Saved") & ": " & Path.GetFileName(mp4)
                                         ModelManagerForm.OpenFolder(Path.GetDirectoryName(mp4))
                                     Catch ex As Exception
@@ -780,7 +780,7 @@ Public Class StudioForm
         _cts = New CancellationTokenSource()
         btnDownload.Enabled = False
         Try
-            Await MediaStudio.DownloadAsync(r, v, Sub(p, t) BeginInvoke(Sub()
+            Await MediaStudio.DownloadAsync(r, v, Sub(p, t) Me.Post(Sub()
                                                                             prg.Value = Math.Max(0, Math.Min(100, p))
                                                                             lblStatus.Text = t
                                                                         End Sub), _cts.Token, withSpeed:=chkFast.Checked)
@@ -1279,7 +1279,7 @@ Public Class StudioForm
                 btnDelete.Enabled = False
                 Dim sw = Diagnostics.Stopwatch.StartNew()
                 Try
-                    Dim outs = Await job.Work(Sub(p, tx) BeginInvoke(Sub()
+                    Dim outs = Await job.Work(Sub(p, tx) Me.Post(Sub()
                                                                          prg.Value = Math.Max(0, Math.Min(100, p))
                                                                          lblStatus.Text = job.Label & " — " & Localizer.T(tx)
                                                                      End Sub), _cts.Token)

@@ -260,7 +260,7 @@ Public Class AudioForm
         _cts = New CancellationTokenSource()
         btnDownload.Enabled = False
         Try
-            Await AudioStudio.DownloadAsync(m, Sub(p, t) BeginInvoke(Sub()
+            Await AudioStudio.DownloadAsync(m, Sub(p, t) Me.Post(Sub()
                                                                        prg.Value = Math.Max(0, Math.Min(100, p))
                                                                        lblStatus.Text = t
                                                                    End Sub), _cts.Token)
@@ -312,13 +312,13 @@ Public Class AudioForm
         Try
             Dim wav = _voiceFile
             If Not wav.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) Then
-                Dim ff = Await VideoTools.EnsureFfmpegAsync(Sub(t) BeginInvoke(Sub() lblStatus.Text = t), CancellationToken.None)
+                Dim ff = Await VideoTools.EnsureFfmpegAsync(Sub(t) Me.Post(Sub() lblStatus.Text = t), CancellationToken.None)
                 wav = Path.Combine(Path.GetTempPath(), $"localmind-ref-{Guid.NewGuid():N}.wav")
                 Using p = Diagnostics.Process.Start(New Diagnostics.ProcessStartInfo(ff, $"-y -loglevel error -i ""{_voiceFile}"" -ar 16000 -ac 1 ""{wav}""") With {.CreateNoWindow = True, .UseShellExecute = False})
                     Await p.WaitForExitAsync()
                 End Using
             End If
-            txtVoiceWords.Text = Await Voice.TranscribeAsync(wav, Sub(t) BeginInvoke(Sub() lblStatus.Text = Localizer.T(t)), CancellationToken.None)
+            txtVoiceWords.Text = Await Voice.TranscribeAsync(wav, Sub(t) Me.Post(Sub() lblStatus.Text = Localizer.T(t)), CancellationToken.None)
             lblStatus.Text = Localizer.T("Done")
         Catch ex As Exception
             lblStatus.Text = "⚠ " & ex.Message
@@ -351,7 +351,7 @@ Public Class AudioForm
         btnGenerate.Text = Localizer.T("■ Stop")
         Dim sw = Diagnostics.Stopwatch.StartNew()
         Try
-            Dim out = Await AudioStudio.GenerateAsync(req, Sub(p, t) BeginInvoke(Sub()
+            Dim out = Await AudioStudio.GenerateAsync(req, Sub(p, t) Me.Post(Sub()
                                                                                     prg.Value = Math.Max(0, Math.Min(100, p))
                                                                                     lblStatus.Text = Localizer.T(t)
                                                                                 End Sub), _cts.Token)

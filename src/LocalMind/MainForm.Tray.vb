@@ -44,7 +44,7 @@ Partial Class MainForm
 
         _tray = New NotifyIcon() With {.Icon = Theme.AppIcon(SystemInformation.SmallIconSize.Width), .Text = "LocalMind", .ContextMenuStrip = menu, .Visible = True}
         AddHandler _tray.MouseClick, Sub(s, e) If e.Button = MouseButtons.Left Then RestoreFromTray()
-        Notifier.Balloon = Sub(t, x) BeginInvoke(Sub() _tray?.ShowBalloonTip(6000, t, x, ToolTipIcon.Info))
+        Notifier.Balloon = Sub(t, x) Me.Post(Sub() _tray?.ShowBalloonTip(6000, t, x, ToolTipIcon.Info))
         RegisterQuickAskHotkey()
     End Sub
 

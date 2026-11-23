@@ -42,7 +42,7 @@ Public Class StartupContext
                     s.LastUpdateCheck = DateTime.Now
                     If info IsNot Nothing AndAlso AppPaths.IsPortable AndAlso s.AutoInstallUpdates Then
                         _splash.Detail(String.Format(Localizer.T("Installing LocalMind {0}…"), info.Tag))
-                        Dim exe = Await Updater.InstallAsync(info, Sub(p) _splash.BeginInvoke(Sub() _splash.Sub_(p, String.Format(Localizer.T("Downloading LocalMind {0}…"), info.Tag) & $" {p}%")), CancellationToken.None)
+                        Dim exe = Await Updater.InstallAsync(info, Sub(p) _splash.Post(Sub() _splash.Sub_(p, String.Format(Localizer.T("Downloading LocalMind {0}…"), info.Tag) & $" {p}%")), CancellationToken.None)
                         AppCore.SaveSettings()
                         _splash.Detail(Localizer.T("Starting the new version…"))
                         Await Task.Delay(600)

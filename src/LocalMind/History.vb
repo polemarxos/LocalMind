@@ -18,6 +18,8 @@ Public Module History
         End Get
     End Property
 
+    Private ReadOnly _favLock As New Object()
+
     Private Function Favs() As HashSet(Of String)
         If _favorites Is Nothing Then
             _favorites = New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
@@ -34,35 +36,43 @@ Public Module History
     End Function
 
     Public Function IsFavorite(file As String) As Boolean
-        Return Favs().Contains(Path.GetFileName(file))
+        SyncLock _favLock
+            Return Favs().Contains(Path.GetFileName(file))
+        End SyncLock
     End Function
 
     ''' <summary>Turns ★ on or off; returns the new state.</summary>
     Public Function ToggleFavorite(file As String) As Boolean
-        Dim f = Favs()
-        Dim n = Path.GetFileName(file)
-        Dim now = Not f.Remove(n)
-        If now Then f.Add(n)
-        Try
-            IO.File.WriteAllText(FavoritesFile, JsonConvert.SerializeObject(f.ToList()))
-        Catch
-        End Try
-        Return now
+        SyncLock _favLock
+            Dim f = Favs()
+            Dim n = Path.GetFileName(file)
+            Dim now = Not f.Remove(n)
+            If now Then f.Add(n)
+            Try
+                IO.File.WriteAllText(FavoritesFile, JsonConvert.SerializeObject(f.ToList()))
+            Catch
+            End Try
+            Return now
+        End SyncLock
     End Function
 
     ''' <summary>What a result can be found by: file name, prompt, model, task (cached until the settings file changes).</summary>
     Public Function SearchText(file As String) As String
         Dim settings = MediaStudio.SettingsFile(file)
         Dim stamp = If(IO.File.Exists(settings), IO.File.GetLastWriteTimeUtc(settings), DateTime.MinValue)
-        Dim hit As (Stamp As DateTime, Text As String)
-        If _text.TryGetValue(file, hit) AndAlso hit.Stamp = stamp Then Return hit.Text
+        Dim hit As (Stamp As DateTime, Text As String) = (DateTime.MinValue, Nothing)
+        SyncLock _text
+            If _text.TryGetValue(file, hit) AndAlso hit.Stamp = stamp Then Return hit.Text
+        End SyncLock
         Dim t = Path.GetFileNameWithoutExtension(file)
         Dim s = MediaStudio.LoadSettingsFor(file)
         If s IsNot Nothing Then
             Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = s.Recipe)
             t &= " " & s.Prompt & " " & s.Recipe & " " & If(r?.Name, "") & " " & s.Task & " " & s.Variant
         End If
-        _text(file) = (stamp, t)
+        SyncLock _text
+            _text(file) = (stamp, t)
+        End SyncLock
         Return t
     End Function
 

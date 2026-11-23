@@ -8,6 +8,6 @@ Partial Class MainForm
     Private Sub ToolStatus(t As String)
         SetStatus(t)
         Dim id = _streamMsgId
-        BeginInvoke(Sub() webChat.ExecuteScriptAsync($"setStatusText('{id}', {JsonConvert.SerializeObject(Localizer.T(t))});"))
+        Me.Post(Sub() webChat.ExecuteScriptAsync($"setStatusText('{id}', {JsonConvert.SerializeObject(Localizer.T(t))});"))
     End Sub
 End Class

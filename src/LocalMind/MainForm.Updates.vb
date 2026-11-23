@@ -45,7 +45,7 @@ Partial Class MainForm
                 Dim r = Await InstallAppUpdateQuietlyAsync()
                 If r IsNot Nothing Then report.Add(r)
             Else
-                BeginInvoke(Async Sub() Await CheckUpdatesAsync(manual:=False))
+                Me.Post(Async Sub() Await CheckUpdatesAsync(manual:=False))
             End If
         End If
 
@@ -87,7 +87,7 @@ Partial Class MainForm
         ' Don't overwrite the "LocalMind … is installed" message.
         If _updatedExe Is Nothing Then SetStatus(Localizer.T("Everything is up to date"))
         If manual Then
-            BeginInvoke(Sub() Localizer.Box(Me, Localizer.T("Everything is up to date.") &
+            Me.Post(Sub() Localizer.Box(Me, Localizer.T("Everything is up to date.") &
                                             If(report.Count > 0, vbCrLf & vbCrLf & String.Join(vbCrLf, report), ""),
                                             "Updates", MessageBoxButtons.OK, MessageBoxIcon.Information))
         End If
@@ -101,13 +101,13 @@ Partial Class MainForm
         If info Is Nothing Then Return Nothing
         If Not AppPaths.IsPortable Then
             ' Installed copies (not portable) can't replace themselves: just tell the user.
-            BeginInvoke(Sub() SetStatus($"LocalMind {info.Tag} is available — Help → Check for updates"))
+            Me.Post(Sub() SetStatus($"LocalMind {info.Tag} is available — Help → Check for updates"))
             Return "LocalMind " & info.Tag
         End If
         Await WaitUntilIdleAsync()
         Dim exe = Await Updater.InstallAsync(info, Sub(p) SetStatus(Localizer.T("Downloading the LocalMind update…") & $" {p}%"), CancellationToken.None)
         _updatedExe = exe
-        BeginInvoke(Sub() ShowRestartForUpdate(info.Tag))
+        Me.Post(Sub() ShowRestartForUpdate(info.Tag))
         Return "LocalMind " & info.Tag
     End Function
 

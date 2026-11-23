@@ -113,7 +113,7 @@ Partial Class MainForm
         Await webChat.ExecuteScriptAsync($"appendAssistantStart('{msgId}')")
         Dim status = Sub(t As String)
                          If InvokeRequired Then
-                             BeginInvoke(Sub() ShowImageStatus(msgId, t))
+                             Me.Post(Sub() ShowImageStatus(msgId, t))
                          Else
                              ShowImageStatus(msgId, t)
                          End If

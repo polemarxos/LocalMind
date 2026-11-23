@@ -189,7 +189,7 @@ Public Class FilmForm
                                         _cts = New CancellationTokenSource()
                                         btnExport.Enabled = False
                                         Try
-                                            Exported = Await _film.ExportAsync(Sub(p, t) BeginInvoke(Sub()
+                                            Exported = Await _film.ExportAsync(Sub(p, t) Me.Post(Sub()
                                                                                                         prg.Value = Math.Max(0, Math.Min(100, p))
                                                                                                         lblStatus.Text = t
                                                                                                     End Sub), _cts.Token)

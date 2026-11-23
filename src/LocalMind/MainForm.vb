@@ -160,6 +160,39 @@ Public Class MainForm
                 FilmProject.AddToCurrent(IO.Path.Combine(MediaStudio.OutputFolder, "sample.png"))
                 Dim fm As New FilmForm()
                 fm.Show(Me)
+            Case "box"
+                Me.Post(Sub() Localizer.Box(Me, "Delete Qwen3-8B (Q4_K_M) from disk? The file is 4.7 GB.", "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning))
+            Case "settings-look"
+                Me.Post(Sub()
+                            Using sf As New SettingsForm()
+                                AddHandler sf.Shown, Sub()
+                                                         Dim tabs = sf.Controls.OfType(Of TabControl)().FirstOrDefault()
+                                                         If tabs IsNot Nothing Then tabs.SelectedIndex = tabs.TabCount - 1
+                                                     End Sub
+                                sf.ShowDialog(Me)
+                            End Using
+                        End Sub)
+            Case Else
+                ' any window by name (screenshot checks): LOCALMIND_PREVIEW=form:KnowledgeForm
+                Dim pv = Environment.GetEnvironmentVariable("LOCALMIND_PREVIEW")
+                If pv IsNot Nothing AndAlso pv.StartsWith("form:") Then
+                    Try
+                        Dim t = GetType(MainForm).Assembly.GetType("LocalMind." & pv.Substring(5))
+                        Dim ctor = t.GetConstructors().OrderBy(Function(c) c.GetParameters().Length).First()
+                        Dim args = ctor.GetParameters().Select(Function(pp) As Object
+                                                                   If pp.HasDefaultValue Then Return pp.DefaultValue
+                                                                   If pp.ParameterType Is GetType(String) Then Return ""
+                                                                   If pp.ParameterType Is GetType(List(Of Persona)) Then Return AppCore.Personas.Load()
+                                                                   If pp.ParameterType.IsGenericType AndAlso pp.ParameterType.GetGenericTypeDefinition() Is GetType(IEnumerable(Of )) Then Return New List(Of String) From {"Qwen3-8B-Q4_K_M"}
+                                                                   If pp.ParameterType Is GetType(Func(Of String, Task(Of String))) Then Return CType(Function(q As String) Task.FromResult(""), Func(Of String, Task(Of String)))
+                                                                   Return Nothing
+                                                               End Function).ToArray()
+                        Dim f = CType(ctor.Invoke(args), Form)
+                        f.Show(Me)
+                    Catch ex As Exception
+                        SetStatus("preview: " & ex.Message)
+                    End Try
+                End If
         End Select
 
         ' Help → Check for updates / Update everything now, plus a quiet daily round that updates
@@ -371,7 +404,7 @@ Public Class MainForm
 
     Private Sub OnEngineState(state As EngineState, message As String)
         If IsDisposed OrElse Not IsHandleCreated Then Return
-        BeginInvoke(Sub()
+        Me.Post(Sub()
                         If Settings.Backend <> BackendKind.BuiltIn Then Return
                         ShowEngineState(state, message)
                         If Not String.IsNullOrEmpty(message) Then SetStatus(message)
@@ -491,7 +524,7 @@ Public Class MainForm
         _chatListDirty = True
         ' A phone continued the chat that is open here → reload it so the PC shows the new messages.
         If IsDisposed OrElse Not IsHandleCreated Then Return
-        BeginInvoke(Async Sub()
+        Me.Post(Async Sub()
                         If _isGenerating OrElse _session Is Nothing OrElse _session.Id <> id Then Return
                         Dim fresh = AppCore.History.Load(id)
                         If fresh IsNot Nothing AndAlso fresh IsNot _session Then
@@ -1372,7 +1405,7 @@ Public Class MainForm
         If IsDisposed Then Return
         If InvokeRequired Then
             Try
-                BeginInvoke(Sub() SetStatus(text))
+                Me.Post(Sub() SetStatus(text))
             Catch
             End Try
             Return
