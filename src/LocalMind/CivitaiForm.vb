@@ -233,6 +233,21 @@ Public Class CivitaiForm
                        $"{m.Type} · {v.BaseModel}" & If(f IsNot Nothing, $" · {Downloader.FormatBytes(f.SizeBytes)}", "") & If(fitText <> "", " · " & fitText, "") &
                        If(g.Family Is Nothing, vbLf & Localizer.T("⚠ LocalMind can't use this base model."), If(Not m.IsLora AndAlso g.Template Is Nothing, vbLf & Localizer.T("⚠ Video checkpoints aren't supported yet — LoRAs are."), ""))
         txtTriggers.Text = String.Join(", ", v.TrainedWords)
+        If f IsNot Nothing Then
+            Dim vv = v
+            Dim check = Task.Run(Async Function()
+                                     Dim locked = False
+                                     Try
+                                         locked = Await Civitai.NeedsLoginAsync(f, CancellationToken.None)
+                                     Catch
+                                     End Try
+                                     If locked AndAlso Not IsDisposed Then
+                                         BeginInvoke(Sub()
+                                                         If SelectedVersion() Is vv Then lblInfo.Text &= vbLf & Localizer.T("🔒 Needs a Civitai account: paste your API key at the top first.")
+                                                     End Sub)
+                                     End If
+                                 End Function)
+        End If
         btnInstall.Enabled = f IsNot Nothing AndAlso g.Family IsNot Nothing AndAlso (m.IsLora OrElse g.Template IsNot Nothing) AndAlso _dlCts Is Nothing
         btnInstall.Text = If(AlreadyInstalled(m, v), Localizer.T("✔ Installed"), Localizer.T("⬇ Install"))
         pic.Image?.Dispose()

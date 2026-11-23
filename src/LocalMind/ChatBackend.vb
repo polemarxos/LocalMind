@@ -9,6 +9,13 @@ Public Class ChatRequestOptions
     Public Property TopP As Double = 0.9
     Public Property MaxTokens As Integer = 0
     Public Property EnableThinking As Boolean
+    ''' <summary>OpenAI-style tool definitions the model may call (built-in engine / OpenAI-compatible servers).</summary>
+    Public Property Tools As Newtonsoft.Json.Linq.JArray
+End Class
+
+Public Class ToolCall
+    Public Property Name As String = ""
+    Public Property Arguments As String = ""
 End Class
 
 Public Class ChatResult
@@ -19,6 +26,8 @@ Public Class ChatResult
     Public Property EngineTokensPerSecond As Double
     ''' <summary>Prompt-processing speed reported by llama.cpp (0 if unknown).</summary>
     Public Property PromptTokensPerSecond As Double
+    ''' <summary>Tools the model asked to call (empty for a normal answer).</summary>
+    Public Property ToolCalls As New List(Of ToolCall)()
 End Class
 
 ''' <summary>

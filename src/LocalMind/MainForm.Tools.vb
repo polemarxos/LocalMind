@@ -1,6 +1,7 @@
 Imports System
 Imports System.Drawing
 Imports System.IO
+Imports System.Linq
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
@@ -36,6 +37,12 @@ Partial Class MainForm
         _btnMic.FlatAppearance.BorderSize = 0
         inputToolbar.Controls.Add(_btnMic)
         AddHandler _btnMic.Click, AddressOf MicClicked
+        Dim btnTalk As New Button() With {.Text = "🎙 Talk", .Width = 80, .Height = 26, .FlatStyle = FlatStyle.Flat,
+                                          .BackColor = Color.FromArgb(60, 60, 60), .ForeColor = Color.White}
+        btnTalk.FlatAppearance.BorderSize = 0
+        inputToolbar.Controls.Add(btnTalk)
+        AddHandler btnTalk.Click, Sub() OpenVoiceChat()
+        BuildMemoryMonitor()
 
         Dim miDocs As New ToolStripMenuItem("My documents…")
         AddHandler miDocs.Click, Sub() OpenKnowledge()
@@ -94,6 +101,77 @@ Partial Class MainForm
             _audio.Activate()
         End If
     End Sub
+
+    Private _lblMem As ToolStripStatusLabel
+    Private ReadOnly _memTimer As New System.Windows.Forms.Timer() With {.Interval = 3000}
+
+    ''' <summary>Status-bar memory monitor: GPU / RAM use and what is loaded; click to free memory.</summary>
+    Private Sub BuildMemoryMonitor()
+        _lblMem = New ToolStripStatusLabel() With {.IsLink = False, .ToolTipText = Localizer.T("Click to free memory")}
+        statusStrip.Items.Add(_lblMem)
+        Dim hw = HardwareInfo.Current()
+        AddHandler _memTimer.Tick, Sub()
+                                       Try
+                                           _lblMem.Text = MemoryMonitor.Summary(hw)
+                                       Catch
+                                       End Try
+                                   End Sub
+        _memTimer.Start()
+        Dim menu As New ContextMenuStrip()
+        Dim miChat = menu.Items.Add(Localizer.T("Unload the chat model"))
+        AddHandler miChat.Click, Async Sub()
+                                     If AppCore.Engine.ActiveRequests = 0 Then Await AppCore.Engine.StopAsync()
+                                 End Sub
+        Dim miMedia = menu.Items.Add(Localizer.T("Stop picture, video and voice work"))
+        AddHandler miMedia.Click, Sub()
+                                      MediaStudio.Cancel()
+                                      AudioStudio.Cancel()
+                                      Voice.StopSpeaking()
+                                  End Sub
+        Dim miAll = menu.Items.Add(Localizer.T("Free everything"))
+        AddHandler miAll.Click, Async Sub()
+                                    MediaStudio.Cancel()
+                                    AudioStudio.Cancel()
+                                    Voice.StopSpeaking()
+                                    If _isGenerating Then _cts?.Cancel()
+                                    Await Task.Delay(300)
+                                    Await AppCore.Engine.StopAsync()
+                                    GC.Collect()
+                                End Sub
+        AddHandler _lblMem.Click, Sub() menu.Show(Cursor.Position)
+    End Sub
+
+    Private _voiceChat As VoiceChatForm
+    Private _inVoiceChat As Boolean
+
+    Private Sub OpenVoiceChat()
+        If cmbModels.SelectedIndex < 0 Then
+            Localizer.Box(Me, "Choose a chat model first.", "Voice conversation")
+            Return
+        End If
+        If _voiceChat Is Nothing OrElse _voiceChat.IsDisposed Then
+            _voiceChat = New VoiceChatForm(AddressOf AskByVoiceAsync)
+            _voiceChat.Show(Me)
+        Else
+            _voiceChat.Activate()
+        End If
+    End Sub
+
+    ''' <summary>Sends spoken text as a normal chat message (it appears in the chat) and returns the answer.</summary>
+    Private Async Function AskByVoiceAsync(text As String) As Task(Of String)
+        While _isGenerating
+            Await Task.Delay(200)
+        End While
+        _inVoiceChat = True
+        Try
+            txtInput.Text = text
+            Await SendCurrentInputAsync()
+            Dim last = _session.Messages.LastOrDefault(Function(m) m.Role = "assistant")
+            Return StripSources(If(last?.Content, ""))
+        Finally
+            _inVoiceChat = False
+        End Try
+    End Function
 
     Private _studio As StudioForm
 
@@ -154,6 +232,9 @@ Partial Class MainForm
         Try
             If Voice.IsSpeaking Then
                 Voice.StopSpeaking()
+            ElseIf Not String.IsNullOrEmpty(Settings.ReadAloudModel) Then
+                SetStatus("Preparing the AI voice…")
+                Dim unused = Voice.SpeakAiAsync(StripSources(text), Sub(t) SetStatus(t))
             Else
                 Voice.Speak(StripSources(text))
             End If

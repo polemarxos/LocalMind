@@ -32,12 +32,17 @@ Public Class MaskEditorForm
         Using g = Graphics.FromImage(_mask)
             g.Clear(Color.Transparent)
             If existingMask IsNot Nothing AndAlso File.Exists(existingMask) Then
-                Using m As New Bitmap(existingMask)
-                    For y = 0 To Math.Min(m.Height, _mask.Height) - 1 Step 1
-                        For x = 0 To Math.Min(m.Width, _mask.Width) - 1
-                            If m.GetPixel(x, y).R > 127 Then _mask.SetPixel(x, y, Color.FromArgb(150, 255, 40, 80))
+                Using m = ImageTools.Load(existingMask)
+                    If m.Width = _mask.Width AndAlso m.Height = _mask.Height Then
+                        Dim px = ImageTools.Pixels(m)
+                        Dim paint = Color.FromArgb(150, 255, 40, 80).ToArgb()
+                        For i = 0 To px.Length - 1
+                            px(i) = If(((px(i) >> 16) And &HFF) > 127, paint, 0)
                         Next
-                    Next
+                        Using nb = ImageTools.FromPixels(px, _mask.Width, _mask.Height)
+                            g.DrawImage(nb, 0, 0)
+                        End Using
+                    End If
                 End Using
             End If
         End Using
@@ -69,11 +74,17 @@ Public Class MaskEditorForm
                                        canvas.Invalidate()
                                    End Sub
         AddHandler btnAll.Click, Sub()
-                                     For y = 0 To _mask.Height - 1
-                                         For x = 0 To _mask.Width - 1
-                                             _mask.SetPixel(x, y, If(_mask.GetPixel(x, y).A > 0, Color.Transparent, Color.FromArgb(150, 255, 40, 80)))
-                                         Next
+                                     Dim px = ImageTools.Pixels(_mask)
+                                     Dim paint = Color.FromArgb(150, 255, 40, 80).ToArgb()
+                                     For i = 0 To px.Length - 1
+                                         px(i) = If(((px(i) >> 24) And &HFF) > 0, 0, paint)
                                      Next
+                                     Using nb = ImageTools.FromPixels(px, _mask.Width, _mask.Height)
+                                         Using g = Graphics.FromImage(_mask)
+                                             g.CompositingMode = CompositingMode.SourceCopy
+                                             g.DrawImage(nb, 0, 0)
+                                         End Using
+                                     End Using
                                      canvas.Invalidate()
                                  End Sub
         AddHandler btnOk.Click, Sub() SaveMask()
@@ -119,14 +130,13 @@ Public Class MaskEditorForm
 
     Private Sub SaveMask()
         Dim any = False
-        Using bw As New Bitmap(_mask.Width, _mask.Height, PixelFormat.Format24bppRgb)
-            For y = 0 To _mask.Height - 1
-                For x = 0 To _mask.Width - 1
-                    Dim isOn = _mask.GetPixel(x, y).A > 0
-                    any = any OrElse isOn
-                    bw.SetPixel(x, y, If(isOn, Color.White, Color.Black))
-                Next
-            Next
+        Dim px = ImageTools.Pixels(_mask)
+        For i = 0 To px.Length - 1
+            Dim isOn = ((px(i) >> 24) And &HFF) > 0
+            any = any OrElse isOn
+            px(i) = If(isOn, Color.White.ToArgb(), Color.Black.ToArgb())
+        Next
+        Using bw = ImageTools.FromPixels(px, _mask.Width, _mask.Height)
             If Not any Then
                 Localizer.Box(Me, "Paint over the part of the picture you want to change first.", "Paint")
                 Return

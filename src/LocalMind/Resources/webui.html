@@ -98,6 +98,9 @@
     <div class="row">
       <button class="icon" id="attachBtn" title="Add photo">📷</button>
       <input type="file" id="file" accept="image/*" multiple hidden>
+      <button class="icon" id="imgBtn" title="Picture mode: your message becomes a picture" hidden>🖼</button>
+      <button class="icon" id="micBtn" title="Speak (recorded, then written down by the PC)" hidden>🎤</button>
+      <input type="file" id="mic" accept="audio/*" capture hidden>
       <textarea id="input" rows="1" placeholder="Message…" enterkeyhint="send"></textarea>
       <button class="icon" id="send" title="Send">➤</button>
     </div>
@@ -164,6 +167,10 @@
   // ---------- init ----------
   function init() {
     api('/api/info').then(function (r) { return r.json(); }).then(function (info) {
+      var f = info.features || {};
+      state.features = f;
+      $('imgBtn').hidden = !f.images;
+      $('micBtn').hidden = !f.voiceIn;
       state.models = info.models || [];
       var sel = $('model'); sel.innerHTML = '';
       state.models.forEach(function (mm) {
@@ -255,9 +262,27 @@
     $('msgs').appendChild(d); scrollDown(true);
     return { el: d, text: '', think: '' };
   }
+  // Pictures, songs and videos made on the PC are served by it (with the PIN).
+  function fixMedia(root) {
+    root.querySelectorAll('[src^="https://outputs.localmind/"]').forEach(function (el) {
+      el.setAttribute('src', '/api/outputs/' + el.getAttribute('src').substring(26) + '?pin=' + encodeURIComponent(state.pin));
+    });
+    root.querySelectorAll('img[src^="/api/outputs/"]').forEach(function (img) {
+      img.style.maxWidth = '100%'; img.style.borderRadius = '10px';
+      img.onclick = function () { window.open(img.src, '_blank'); };
+    });
+  }
+  function speak(text, btn) {
+    btn.textContent = '…';
+    api('/api/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text }) })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.blob(); })
+      .then(function (blob) { var au = new Audio(URL.createObjectURL(blob)); au.play(); btn.textContent = '🔊'; })
+      .catch(function () { btn.textContent = '⚠'; });
+  }
   function finish(a, html, thinkingHtml, meta) {
     var b = a.el.querySelector('.bubble');
     b.innerHTML = html || '';
+    fixMedia(b);
     var t = a.el.querySelector('.think');
     if (thinkingHtml) { t.hidden = false; t.open = false; t.querySelector('summary').textContent = '💭 Thinking'; t.querySelector('.tbody').innerHTML = thinkingHtml; t.querySelector('.tbody').style.whiteSpace = 'normal'; }
     else t.hidden = true;
@@ -270,6 +295,9 @@
     });
     var m = a.el.querySelector('.meta'); m.innerHTML = '';
     var cb = document.createElement('button'); cb.textContent = 'Copy'; cb.onclick = function () { copy(b.innerText, cb); }; m.appendChild(cb);
+    if (state.features && state.features.speak) {
+      var sb = document.createElement('button'); sb.textContent = '🔊'; sb.title = 'Read aloud'; sb.onclick = function () { speak(b.innerText, sb); }; m.appendChild(sb);
+    }
     if (meta) { var s = document.createElement('span'); s.textContent = meta; m.appendChild(s); }
     scrollDown();
   }
@@ -289,6 +317,23 @@
 
   // ---------- images (resized on the phone before upload) ----------
   $('attachBtn').onclick = function () { $('file').click(); };
+  state.imageMode = false;
+  $('imgBtn').onclick = function () {
+    state.imageMode = !state.imageMode;
+    this.classList.toggle('on', state.imageMode);
+    this.style.background = state.imageMode ? '#2f6feb' : '';
+    input.placeholder = state.imageMode ? 'Describe the picture (or the change to your photo)…' : 'Message…';
+  };
+  $('micBtn').onclick = function () { $('mic').click(); };
+  $('mic').onchange = function () {
+    var f = this.files[0]; this.value = '';
+    if (!f) return;
+    var btn = $('micBtn'); btn.textContent = '…';
+    api('/api/transcribe', { method: 'POST', headers: { 'Content-Type': f.type || 'audio/mp4' }, body: f })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) { input.value = (input.value ? input.value + ' ' : '') + (j.text || ''); input.dispatchEvent(new Event('input')); btn.textContent = '🎤'; input.focus(); })
+      .catch(function () { btn.textContent = '⚠'; setTimeout(function () { btn.textContent = '🎤'; }, 2000); });
+  };
   $('file').onchange = function () {
     Array.prototype.forEach.call(this.files, function (f) { resize(f, 1600, function (url) { state.images.push(url); drawThumbs(); }); });
     this.value = '';
@@ -342,14 +387,14 @@
       headers: { 'Content-Type': 'application/json', 'X-Pin': state.pin },
       body: JSON.stringify({ chatId: state.chatId, model: $('model').value, persona: $('persona').value,
                              message: text, images: imgs, think: $('think').checked,
-                             docs: $('docs').checked, web: $('web').checked })
+                             docs: $('docs').checked, web: $('web').checked, image: !!state.imageMode })
     }).then(function (r) {
       if (r.status === 401) { showLogin('PIN changed — enter it again'); throw new Error('auth'); }
       if (!r.ok) return r.json().then(function (j) { throw new Error((j.error && j.error.message) || ('HTTP ' + r.status)); });
       var reader = r.body.getReader(), dec = new TextDecoder(), buf = '';
       var stream = a.el.querySelector('.streaming'), tb = a.el.querySelector('.tbody'), th = a.el.querySelector('.think');
       var pending = false;
-      function paint() { pending = false; stream.textContent = a.text || '…'; tb.textContent = a.think; scrollDown(); }
+      function paint() { pending = false; stream.textContent = a.text || a.status || '…'; tb.textContent = a.think; scrollDown(); }
       function pump() {
         return reader.read().then(function (res) {
           if (res.done) return;
@@ -361,6 +406,8 @@
             if (ev.type === 'start') { state.chatId = ev.chatId; sessionStorage.setItem('oc_chat', ev.chatId); $('title').textContent = ev.title; }
             else if (ev.type === 'thinking') { a.think += ev.t; if (th.hidden) { th.hidden = false; th.open = true; } }
             else if (ev.type === 'token') { if (!a.text && !th.hidden) th.open = false; a.text += ev.t; }
+            else if (ev.type === 'status') { a.status = ev.t; }
+            else if (ev.type === 'reset') { a.text = ''; }
             else if (ev.type === 'done' || ev.type === 'error') {
               var meta = $('model').value + (ev.tps ? ' · ' + ev.tps + ' tok/s' : '');
               finish(a, ev.html, ev.thinkingHtml, meta);

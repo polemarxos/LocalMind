@@ -138,19 +138,19 @@ recipe(id="z-image", name="Z-Image (base)", kind="image", family="Z-Image",
 recipe(id="flux2-klein-4b", name="FLUX.2 klein 4B", kind="image", family="FLUX.2",
        about="Small, very fast FLUX.2 (4 steps). Text-to-image and image editing. Good on 6–8 GB.",
        steps=4, cfg=1.0, width=1024, height=1024, input="optional",
-       tasks=["create","edit","combine","inpaint"], refs=3,
+       tasks=["create","edit","combine","inpaint","pose","layout","outline","restore"], refs=3,
        variants=variants_list(gguf_variants("leejet/FLUX.2-klein-4B-GGUF")),
        parts=[dict(role="vae", **FLUX2_VAE) if FLUX2_VAE else None, dict(role="llm", **QWEN3_4B)])
 recipe(id="flux2-klein-9b", name="FLUX.2 klein 9B", kind="image", family="FLUX.2",
        about="Sharper FLUX.2 (4 steps) with editing. INT8 ConvRot gives near-full quality at half the size.",
        steps=4, cfg=1.0, width=1024, height=1024, input="optional",
-       tasks=["create","edit","combine","inpaint"], refs=3,
+       tasks=["create","edit","combine","inpaint","pose","layout","outline","restore"], refs=3,
        variants=variants_list(gguf_variants("leejet/FLUX.2-klein-9B-GGUF")) + convrot(CONV, r"flux-2-klein-9b_int8_convrot"),
        parts=[dict(role="vae", **FLUX2_VAE) if FLUX2_VAE else None, dict(role="llm", **QWEN3_8B)])
 recipe(id="qwen-image-2.1", name="Qwen-Image 2.1", kind="image", family="Qwen-Image",
        about="Top prompt following and perfect text in images (English, Chinese…). Supports editing.",
        steps=20, cfg=6.0, width=1024, height=1024, input="optional",
-       tasks=["create","edit","combine","inpaint"], refs=3,
+       tasks=["create","edit","combine","inpaint","pose","layout","outline","restore"], refs=3,
        speed=speed("⚡ Lightning · 4 steps", 4, 1.0, [lora("lightx2v/Qwen-Image-2.1-Lightning", r"^pytorch_lora_weights\.safetensors$", "speed-qwen-image-2.1-lightning-4step")]),
        variants=variants_list(gguf_variants("leejet/Qwen-Image-2.1-GGUF", include=r"^(?!.*turbo)")) +
                 convrot("Comfy-Org/Qwen-Image-2.1", r"diffusion_models/qwen_image_2\.1_int8_convrot"),
@@ -191,10 +191,11 @@ sdxl = one("stabilityai/stable-diffusion-xl-base-1.0", r"^sd_xl_base_1\.0\.safet
 recipe(id="sdxl", name="Stable Diffusion XL", kind="image", family="SDXL",
        about="The classic SDXL base model. Runs on 6 GB GPUs; huge community of styles.",
        steps=30, cfg=7.0, width=1024, height=1024, negative="blurry, low quality, deformed", input="optional",
-       tasks=["create","restyle","inpaint"],
+       tasks=["create","restyle","inpaint","layout","outline"],
        speed=speed("⚡ Lightning · 8 steps", 8, 1.0, [lora("ByteDance/SDXL-Lightning", r"^sdxl_lightning_8step_lora\.safetensors$", "speed-sdxl-lightning-8step")], extra="--scheduler sgm_uniform"),
        variants=[dict(label="FP16", format="checkpoint", **sdxl)] if sdxl else [],
-       parts=[dict(role="vae", **SDXL_VAE)])
+       parts=[dict(role="vae", **SDXL_VAE),
+              dict(role="control-net", control=True, **one("xinsir/controlnet-union-sdxl-1.0", r"^diffusion_pytorch_model_promax\.safetensors$"))])
 
 sd15 = one("stable-diffusion-v1-5/stable-diffusion-v1-5", r"^v1-5-pruned-emaonly\.safetensors$")
 recipe(id="sd15", name="Stable Diffusion 1.5", kind="image", family="SD1.5",
@@ -209,7 +210,7 @@ recipe(id="sd15", name="Stable Diffusion 1.5", kind="image", family="SD1.5",
 recipe(id="qwen-image-edit-2511", name="Qwen-Image Edit 2511", kind="image", family="Qwen-Image-Edit",
        about="The strongest 'describe the change' editor: change objects, clothes, text, style or background while keeping the rest. Combines up to 3 pictures.",
        steps=20, cfg=2.5, flowShift=3, width=1024, height=1024, input="required",
-       tasks=["edit","combine","inpaint"], refs=3,
+       tasks=["edit","combine","inpaint","pose","layout","outline","restore"], refs=3,
        speed=speed("⚡ Lightning · 8 steps", 8, 1.0, [lora("lightx2v/Qwen-Image-Edit-2511-Lightning", r"Qwen-Image-Edit-2511-Lightning-8steps-V1\.0-bf16\.safetensors$", "speed-qwen-image-edit-2511-lightning-8step")]),
        variants=variants_list(gguf_variants("unsloth/Qwen-Image-Edit-2511-GGUF")) +
                 convrot("cardamonnl/Qwen-Image-Edit-2511-int8-convrot", r"^qwen_image_edit_2511_int8_convrot\.safetensors$"),
@@ -217,10 +218,18 @@ recipe(id="qwen-image-edit-2511", name="Qwen-Image Edit 2511", kind="image", fam
 recipe(id="flux1-kontext", name="FLUX.1 Kontext (edit)", kind="image", family="FLUX.1-Kontext",
        about="Edits a picture from a short instruction ('make it winter', 'remove the logo'). Runs on 6 GB GPUs.",
        steps=20, cfg=1.0, width=1024, height=1024, input="required", extra="--guidance 2.5",
-       tasks=["edit"], refs=1,
+       tasks=["edit","layout","outline","restore"], refs=1,
        speed=speed("⚡ Turbo · 8 steps", 8, 1.0, [lora("alimama-creative/FLUX.1-Turbo-Alpha", r"^diffusion_pytorch_model\.safetensors$", "speed-flux1-turbo-alpha-8step")], extra="--guidance 3.5"),
        variants=variants_list(gguf_variants("QuantStack/FLUX.1-Kontext-dev-GGUF")),
        parts=[dict(role="vae", **AE_FLUX1), dict(role="clip_l", **CLIP_L), dict(role="t5xxl", **T5XXL)])
+
+# ── tools ───────────────────────────────────────────────────────────────────
+bg = one("studioludens/birefnet-lite-512", r"^onnx/model\.onnx$")
+if bg:
+    recipe(id="remove-bg", name="Remove background (BiRefNet)", kind="tool", family="BiRefNet",
+           about="Cuts out the main subject and makes the background transparent (PNG). Small and fast, runs on the CPU.",
+           steps=1, cfg=0, width=0, height=0, input="required", tasks=["remove-bg"],
+           variants=[dict(label="lite 512", format="onnx", **bg)], parts=[])
 
 # ── upscalers (ESRGAN) ──────────────────────────────────────────────────────
 def upscaler(rid, name, about, repo, pattern):

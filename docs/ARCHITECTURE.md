@@ -34,6 +34,10 @@ LlamaEngine ── llama-server.exe (127.0.0.1:random port)
 | `Civitai.vb`, `CivitaiForm.vb` | Civitai REST API (civitai.com / civitai.red): search LoRAs and checkpoints by base model, install LoRAs with trigger words, register checkpoints as user models (`Data\user_models.json`) built on a catalog recipe. |
 | `AudioStudio.vb`, `AudioForm.vb` | Speech, voice cloning and songs with llama.cpp `llama-tts` (Chatterbox, Qwen3-TTS, VoxCPM2, Fish S2 Pro, YuE2, MiniMax Music 3). Catalog: `Resources/audio_catalog.json`. |
 | `FeaturesForm.vb` | First-start choice of abilities (chat only / pictures & video / music & voice). |
+| `ChatAgent.vb`, `MainForm.Agent.vb` | Tool calling: offers `generate_image`, `make_song`, `web_search` to the model (llama-server `--jinja`), runs them, and falls back to plain answers for models without tool support. Shared by the PC window and the phone page. |
+| `ImageTools.vb`, `OnnxTools.vb` | Pixel work (inpaint compositing with a feathered mask, alpha, edges) and ONNX Runtime helpers: BiRefNet-lite background removal and Depth Anything V2 depth maps for ControlNet. |
+| `VoiceChatForm.vb`, `VoiceLibrary.vb`, `SoundtrackForm.vb` | Hands-free voice chat (waveIn + simple voice-activity detection), saved voices, AI music / voice-over for videos. |
+| `MemoryMonitor.vb` | GPU memory (PDH "GPU Adapter Memory" counters, all vendors) and RAM for the status bar. |
 | `Knowledge.vb`, `WebSearch.vb`, `Voice.vb` | Document index (embeddings + cosine search), web search providers, Whisper voice input and SAPI read-aloud. |
 
 ## Choosing a quantization

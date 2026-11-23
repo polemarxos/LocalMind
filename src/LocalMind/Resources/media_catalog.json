@@ -264,7 +264,11 @@
    "create",
    "edit",
    "combine",
-   "inpaint"
+   "inpaint",
+   "pose",
+   "layout",
+   "outline",
+   "restore"
   ],
   "refs": 3,
   "negative": "",
@@ -320,7 +324,11 @@
    "create",
    "edit",
    "combine",
-   "inpaint"
+   "inpaint",
+   "pose",
+   "layout",
+   "outline",
+   "restore"
   ],
   "refs": 3,
   "negative": "",
@@ -383,7 +391,11 @@
    "create",
    "edit",
    "combine",
-   "inpaint"
+   "inpaint",
+   "pose",
+   "layout",
+   "outline",
+   "restore"
   ],
   "refs": 3,
   "speed": {
@@ -1062,7 +1074,9 @@
   "tasks": [
    "create",
    "restyle",
-   "inpaint"
+   "inpaint",
+   "layout",
+   "outline"
   ],
   "speed": {
    "label": "⚡ Lightning · 8 steps",
@@ -1103,6 +1117,13 @@
     "repo": "madebyollin/sdxl-vae-fp16-fix",
     "path": "sdxl.vae.safetensors",
     "size": 334641162
+   },
+   {
+    "role": "control-net",
+    "control": true,
+    "repo": "xinsir/controlnet-union-sdxl-1.0",
+    "path": "diffusion_pytorch_model_promax.safetensors",
+    "size": 2513342408
    }
   ]
  },
@@ -1173,7 +1194,11 @@
   "tasks": [
    "edit",
    "combine",
-   "inpaint"
+   "inpaint",
+   "pose",
+   "layout",
+   "outline",
+   "restore"
   ],
   "refs": 3,
   "speed": {
@@ -1354,7 +1379,10 @@
   "input": "required",
   "extra": "--guidance 2.5",
   "tasks": [
-   "edit"
+   "edit",
+   "layout",
+   "outline",
+   "restore"
   ],
   "refs": 1,
   "speed": {
@@ -1493,6 +1521,39 @@
     "size": 5061584064
    }
   ]
+ },
+ {
+  "id": "remove-bg",
+  "name": "Remove background (BiRefNet)",
+  "kind": "tool",
+  "family": "BiRefNet",
+  "about": "Cuts out the main subject and makes the background transparent (PNG). Small and fast, runs on the CPU.",
+  "steps": 1,
+  "cfg": 0,
+  "width": 0,
+  "height": 0,
+  "input": "required",
+  "tasks": [
+   "remove-bg"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "variants": [
+   {
+    "label": "lite 512",
+    "format": "onnx",
+    "repo": "studioludens/birefnet-lite-512",
+    "path": "onnx/model.onnx",
+    "size": 191877254
+   }
+  ],
+  "parts": []
  },
  {
   "id": "upscale-realesrgan",

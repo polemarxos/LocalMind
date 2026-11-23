@@ -164,6 +164,21 @@ Public Module Civitai
         Return f.DownloadUrl
     End Function
 
+    ''' <summary>True when the file can only be downloaded with a signed-in account (checked without downloading it).</summary>
+    Public Async Function NeedsLoginAsync(f As CivFile, ct As CancellationToken) As Task(Of Boolean)
+        Dim h As New HttpClientHandler() With {.AllowAutoRedirect = False}
+        Using c As New HttpClient(h) With {.Timeout = TimeSpan.FromSeconds(15)}
+            Using req As New HttpRequestMessage(HttpMethod.Get, f.DownloadUrl)
+                req.Headers.UserAgent.ParseAdd("LocalMind/" & Updater.CurrentVersion.ToString())
+                Dim key = AppCore.Settings.CivitaiApiKey
+                If Not String.IsNullOrWhiteSpace(key) Then req.Headers.Authorization = New Headers.AuthenticationHeaderValue("Bearer", key.Trim())
+                Using resp = Await c.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
+                    Return resp.StatusCode = Net.HttpStatusCode.Unauthorized OrElse resp.StatusCode = Net.HttpStatusCode.Forbidden
+                End Using
+            End Using
+        End Using
+    End Function
+
     ''' <summary>Downloads a LoRA into Models\Loras and fills in its family and trigger words.</summary>
     Public Async Function InstallLoraAsync(m As CivModel, v As CivVersion, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of UserLora)
         Dim f = v.BestFile()

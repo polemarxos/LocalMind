@@ -25,6 +25,8 @@ Public Class MediaPart
     <JsonProperty("role")> Public Property Role As String     ' vae | llm | llm_vision | t5xxl | clip_l | audio-vae | embeddings-connectors
     ''' <summary>Only needed for editing (e.g. the vision part of the text encoder); downloaded on first edit.</summary>
     <JsonProperty("edit")> Public Property Edit As Boolean
+    ''' <summary>Only needed for pose / layout / outline control (a ControlNet); downloaded on first use.</summary>
+    <JsonProperty("control")> Public Property Control As Boolean
 End Class
 
 ''' <summary>A LoRA file stored in Models\Loras under a fixed name (e.g. a Lightning speed LoRA).</summary>
@@ -208,7 +210,7 @@ Public Module MediaStudio
             r.Variants = New List(Of MediaVariant) From {
                 New MediaVariant With {.Label = If(u.Format = "checkpoint", "Checkpoint", "Model"), .Format = u.Format, .Repo = "local", .Path = u.File, .Size = u.Size}}
             ' An all-in-one checkpoint brings its own text encoder; keep only a separate VAE if the template has one.
-            If u.Format = "checkpoint" Then r.Parts = r.Parts.Where(Function(p) p.Role = "vae").ToList()
+            If u.Format = "checkpoint" Then r.Parts = r.Parts.Where(Function(p) p.Role = "vae" OrElse p.Control).ToList()
             result.Add(r)
         Next
         Return result
@@ -239,19 +241,41 @@ Public Module MediaStudio
         Return Path.Combine(Folder, f.Repo.Replace("/", "__"), IO.Path.GetFileName(f.Path))
     End Function
 
+    ''' <summary>
+    ''' A file may already be on disk under an older folder name (Hugging Face renames repos, e.g.
+    ''' Wan_2.1_ComfyUI_repackaged → Wan-2.1). Find it by name and size and move it, instead of downloading it again.
+    ''' </summary>
+    Private Sub Relocate(f As MediaFile, target As String)
+        Try
+            Dim name = Path.GetFileName(target)
+            Dim root = If(TypeOf f Is MediaLora, LoraLibrary.Folder, Folder)
+            If Not Directory.Exists(root) Then Return
+            For Each c In Directory.EnumerateFiles(root, name, SearchOption.AllDirectories)
+                If c.Equals(target, StringComparison.OrdinalIgnoreCase) Then Continue For
+                If f.Size > 0 AndAlso ConvRotFix.OriginalLength(c) <> f.Size Then Continue For
+                Directory.CreateDirectory(Path.GetDirectoryName(target))
+                File.Move(c, target)
+                If File.Exists(ConvRotFix.MarkerPath(c)) Then File.Move(ConvRotFix.MarkerPath(c), ConvRotFix.MarkerPath(target), True)
+                Return
+            Next
+        Catch
+        End Try
+    End Sub
+
     Public Function SpeedReady(r As MediaRecipe) As Boolean
         Return r.Speed IsNot Nothing AndAlso r.Speed.Loras.All(AddressOf IsPresent)
     End Function
 
     Public Function IsPresent(f As MediaFile) As Boolean
         Dim p = LocalPath(f)
+        If Not File.Exists(p) Then Relocate(f, p)
         Return File.Exists(p) AndAlso (f.Size <= 0 OrElse ConvRotFix.OriginalLength(p) = f.Size)
     End Function
 
     Public Function FilesFor(r As MediaRecipe, v As MediaVariant, Optional forEdit As Boolean = False, Optional withSpeed As Boolean = False) As List(Of MediaFile)
         Dim l As New List(Of MediaFile) From {v}
         If v.High IsNot Nothing Then l.Add(v.High)
-        l.AddRange(r.Parts.Where(Function(p) forEdit OrElse Not p.Edit))
+        l.AddRange(r.Parts.Where(Function(p) (forEdit OrElse Not p.Edit) AndAlso Not p.Control))
         If withSpeed AndAlso r.Speed IsNot Nothing Then l.AddRange(r.Speed.Loras)
         Return l
     End Function
@@ -314,6 +338,29 @@ Public Module MediaStudio
         Return CLng(If(r.IsVideo, 5.0, 2.5) * 1024 * 1024 * 1024)
     End Function
 
+    ''' <summary>
+    ''' Rough memory needs: graphics memory for full speed, and system RAM (parts that do not fit on the GPU
+    ''' wait in RAM, and every file passes through RAM while it loads).
+    ''' </summary>
+    Public Function Requirement(r As MediaRecipe, v As MediaVariant, hw As HardwareInfo) As (VramGB As Double, RamGB As Double)
+        Dim gb = 1024.0 * 1024 * 1024
+        Dim files = FilesFor(r, v)
+        Dim all = files.Sum(Function(f) f.Size)
+        Dim vram = (v.Peak + Overhead(r)) / gb
+        Dim onGpu = hw.VramBytes > 0 AndAlso all <= hw.VramBytes * 0.85
+        Dim ram = If(onGpu, files.Max(Function(f) f.Size) / gb + 2, all / gb + 2 - If(hw.VramBytes > 0, Math.Min(all, hw.VramBytes * 0.5) / gb, 0))
+        Return (Math.Round(vram, 1), Math.Round(Math.Max(2, ram), 1))
+    End Function
+
+    ''' <summary>One line for the UI: "Needs ≈ 9 GB graphics memory + 12 GB RAM · this PC: 8 + 32".</summary>
+    Public Function RequirementText(r As MediaRecipe, v As MediaVariant, hw As HardwareInfo) As String
+        Dim q = Requirement(r, v, hw)
+        Dim fit = MediaStudio.Fit(r, v, hw)
+        Dim mark = If(fit = FitLevel.Fits, "✔", If(fit = FitLevel.PartialOffload, "⚠", "✖"))
+        Return $"{mark} {Localizer.T("Needs about")} {q.VramGB:0.#} GB {Localizer.T("graphics memory")} + {q.RamGB:0.#} GB RAM  ·  " &
+               $"{Localizer.T("this PC")}: {hw.VramGB:0.#} + {hw.RamBytes / (1024.0 * 1024 * 1024):0} GB"
+    End Function
+
     Public Function Fit(r As MediaRecipe, v As MediaVariant, hw As HardwareInfo) As FitLevel
         Dim vram = hw.VramBytes
         Dim ram = hw.RamBytes
@@ -353,6 +400,13 @@ Public Module MediaStudio
     End Function
 
     '──────────────── engine (stable-diffusion.cpp) ────────────────
+    ''' <summary>Updates the image engine if a newer build exists (only when it is installed and idle).</summary>
+    Public Async Function UpdateEngineAsync(progress As Action(Of String), ct As CancellationToken) As Task
+        Dim pkg = EnginePackage()
+        If ExternalTools.FindExe(pkg) Is Nothing OrElse (_proc IsNot Nothing AndAlso Not _proc.HasExited) Then Return
+        Await ExternalTools.InstallAsync(pkg, progress, ct, onlyIfNewer:=True)
+    End Function
+
     Private Function EnginePackage() As ExternalTools.ToolPackage
         Dim v = AppCore.Engine.EffectiveVariant
         Dim flavor = If(v.StartsWith("cuda"), "cuda12", If(v = "cpu", "cpu", "vulkan"))
@@ -383,20 +437,32 @@ Public Module MediaStudio
         Public Property Strength As Double = 0.75
         ''' <summary>Use the model's Turbo / Lightning LoRA (its steps and CFG must already be in Steps / Cfg).</summary>
         Public Property Fast As Boolean
+        ''' <summary>How many pictures to make at once (variations with consecutive seeds).</summary>
+        Public Property Count As Integer = 1
+        ''' <summary>All files made (filled in by GenerateAsync).</summary>
+        Public Property Outputs As New List(Of String)()
         ''' <summary>The user's own LoRAs to apply (their trigger words are added to the prompt).</summary>
         Public Property Loras As New List(Of UserLora)()
     End Class
 
     Private _proc As Process
 
+    Public ReadOnly Property IsBusy As Boolean
+        Get
+            Dim p = _proc
+            Return p IsNot Nothing AndAlso Not p.HasExited
+        End Get
+    End Property
+
     ''' <summary>Runs sd-cli and returns the output file (PNG or WebM).</summary>
     Public Async Function GenerateAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
-        Dim pkg = EnginePackage()
-        If ExternalTools.FindExe(pkg) Is Nothing Then Await ExternalTools.InstallAsync(pkg, Sub(t) progress?.Invoke(0, t), ct)
-        Dim exe = ExternalTools.FindExe(pkg)
         Dim r = req.Recipe
         Dim v = req.Variant
         Dim hw = HardwareInfo.Current()
+        If r.Kind = "tool" Then Return Await RunToolAsync(req, progress, ct)
+        Dim pkg = EnginePackage()
+        If ExternalTools.FindExe(pkg) Is Nothing Then Await ExternalTools.InstallAsync(pkg, Sub(t) progress?.Invoke(0, t), ct)
+        Dim exe = ExternalTools.FindExe(pkg)
         If v.Format = "convrot" Then
             Await Task.Run(Sub()
                                ConvRotFix.EnsurePatched(LocalPath(v))
@@ -408,7 +474,27 @@ Public Module MediaStudio
         Dim imgs = req.InputImages.Where(Function(f) Not String.IsNullOrEmpty(f) AndAlso File.Exists(f)).ToList()
         If imgs.Count = 0 AndAlso Not String.IsNullOrEmpty(req.InputImage) AndAlso File.Exists(req.InputImage) Then imgs.Add(req.InputImage)
         Dim job = If(String.IsNullOrEmpty(req.Task), GuessTask(r, imgs.Count > 0, Not String.IsNullOrEmpty(req.MaskImage), Not String.IsNullOrEmpty(req.InputVideo)), req.Task)
+        ' Guided tasks: a ControlNet where the model has one, otherwise an instruction for an editing model.
+        Dim promptPrefix = ""
+        Dim controlType As String = Nothing
+        Dim controlNet = r.Parts.FirstOrDefault(Function(p) p.Control AndAlso p.Role = "control-net")
+        Select Case job
+            Case "pose"
+                promptPrefix = PosePrompt : job = "combine"
+            Case "layout", "outline"
+                If controlNet IsNot Nothing Then
+                    controlType = If(job = "layout", "depth", "canny") : job = "control"
+                Else
+                    promptPrefix = If(job = "layout", LayoutPrompt, OutlinePrompt) : job = "edit"
+                End If
+            Case "restore"
+                promptPrefix = RestorePrompt : job = "edit"
+        End Select
         Dim usesRefs = (job = "edit" OrElse job = "combine") AndAlso r.Refs > 0
+        If job = "control" AndAlso Not IsPresent(controlNet) Then
+            progress?.Invoke(0, "Downloading the ControlNet…")
+            Await DownloadFilesAsync({CType(controlNet, MediaFile)}.ToList(), progress, ct)
+        End If
         If usesRefs AndAlso FilesFor(r, v, True).Any(Function(f) Not IsPresent(f)) Then
             Await DownloadAsync(r, v, progress, ct, forEdit:=True)       ' e.g. the vision part needed for editing
         End If
@@ -430,11 +516,11 @@ Public Module MediaStudio
                 a.Append($"--diffusion-model {Q(LocalPath(v))} ")
                 If v.High IsNot Nothing Then a.Append($"--high-noise-diffusion-model {Q(LocalPath(v.High))} ")
             End If
-            For Each p In r.Parts.Where(Function(x) Not x.Edit OrElse usesRefs)
+            For Each p In r.Parts.Where(Function(x) (Not x.Edit OrElse usesRefs) AndAlso Not x.Control AndAlso Not x.Role.StartsWith("x-"))
                 a.Append($"--{p.Role} {Q(LocalPath(p))} ")
             Next
             ' LoRAs: the user's own (with trigger words) and the Turbo / Lightning one.
-            Dim prompt = req.Prompt
+            Dim prompt = promptPrefix & req.Prompt
             Dim tags As New StringBuilder()
             Dim speedOn = req.Fast AndAlso r.Speed IsNot Nothing
             If speedOn Then
@@ -460,7 +546,9 @@ Public Module MediaStudio
             Dim highSteps = If(speedOn AndAlso r.Speed.HighSteps > 0, r.Speed.HighSteps, r.HighSteps)
             If highSteps > 0 Then a.Append($"--high-noise-steps {highSteps} ")
             If r.FlowShift > 0 Then a.Append(FormattableString.Invariant($"--flow-shift {r.FlowShift} "))
+            If req.Seed < 0 Then req.Seed = Random.Shared.Next(1, Integer.MaxValue)      ' known seed, so the result can be repeated
             a.Append($"-W {req.Width} -H {req.Height} --seed {req.Seed} ")
+            If Not r.IsVideo AndAlso req.Count > 1 Then a.Append($"-b {Math.Min(8, req.Count)} ")
             If r.IsVideo Then
                 a.Append($"--video-frames {Math.Max(1, req.Frames)} ")
                 If r.Fps > 0 Then a.Append($"--fps {r.Fps} ")
@@ -477,6 +565,19 @@ Public Module MediaStudio
                     If imgs.Count = 0 OrElse String.IsNullOrEmpty(req.MaskImage) Then Throw New Exception(Localizer.T("Paint the area to change first."))
                     a.Append($"-i {Q(imgs(0))} --mask {Q(req.MaskImage)} ")
                     a.Append(FormattableString.Invariant($"--strength {Math.Clamp(req.Strength, 0.05, 1.0)} "))
+                Case "control"
+                    If imgs.Count = 0 Then Throw New Exception(Localizer.T("Choose the picture to copy from first."))
+                    progress?.Invoke(0, If(controlType = "depth", "Reading the layout and depth…", "Finding the outlines…"))
+                    Dim map = Path.Combine(Path.GetTempPath(), $"localmind-control-{Guid.NewGuid():N}.png")
+                    If controlType = "depth" Then
+                        If DepthEstimator Is Nothing Then Throw New Exception("Depth reading is not available here.")
+                        Await DepthEstimator(imgs(0), map, progress, ct)
+                    Else
+                        If EdgeDetector Is Nothing Then Throw New Exception("Outline reading is not available here.")
+                        EdgeDetector.Invoke(imgs(0), map)
+                    End If
+                    a.Append($"--control-net {Q(LocalPath(controlNet))} --control-image {Q(map)} --control-type {controlType} ")
+                    a.Append(FormattableString.Invariant($"--control-strength {Math.Clamp(req.Strength, 0.1, 1.5)} "))
                 Case "restyle"
                     If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} " & FormattableString.Invariant($"--strength {Math.Clamp(req.Strength, 0.05, 1.0)} "))
                 Case "animate"
@@ -547,6 +648,14 @@ Public Module MediaStudio
             End Try
             Dim code = _proc.ExitCode
             _proc = Nothing
+            ' Several pictures at once are saved as name_0.png, name_1.png…
+            Dim stem = Path.Combine(Path.GetDirectoryName(out), Path.GetFileNameWithoutExtension(out))
+            If Not File.Exists(out) AndAlso File.Exists(stem & "_0.png") Then
+                req.Outputs = Enumerable.Range(0, 8).Select(Function(i) $"{stem}_{i}.png").Where(AddressOf File.Exists).ToList()
+                out = req.Outputs(0)
+            Else
+                req.Outputs = New List(Of String) From {out}
+            End If
             If code <> 0 OrElse Not File.Exists(out) Then
                 Dim tail = String.Join(Environment.NewLine, log.ToString().Split({vbLf}, StringSplitOptions.RemoveEmptyEntries).Reverse().Take(15).Reverse())
                 Dim hint = If(tail.ToLowerInvariant().Contains("out of memory") OrElse tail.Contains("alloc"),
@@ -557,9 +666,113 @@ Public Module MediaStudio
             lease?.Dispose()
             If framesDir IsNot Nothing Then Try : Directory.Delete(framesDir, True) : Catch : End Try
         End Try
+        If job = "inpaint" AndAlso InpaintComposer IsNot Nothing Then
+            For Each o In req.Outputs
+                Try
+                    InpaintComposer.Invoke(imgs(0), o, req.MaskImage)    ' smooth edges, untouched pixels stay exact
+                Catch
+                End Try
+            Next
+        End If
+        ' Remember how each result was made, so it can be made again or tweaked ("Reuse settings").
+        For i = 0 To req.Outputs.Count - 1
+            SaveSettingsFor(req.Outputs(i), req, job, req.Seed + i)
+        Next
         progress?.Invoke(100, "Done")
         Return out
     End Function
+
+    '──────────────── settings of each result ────────────────
+    Public Class SavedSettings
+        Public Property Recipe As String
+        Public Property [Variant] As String
+        Public Property Task As String
+        Public Property Prompt As String
+        Public Property Negative As String
+        Public Property Width As Integer
+        Public Property Height As Integer
+        Public Property Steps As Integer
+        Public Property Cfg As Double
+        Public Property Seed As Long
+        Public Property Frames As Integer
+        Public Property Strength As Double
+        Public Property Fast As Boolean
+        Public Property Loras As New List(Of String)()
+        Public Property Inputs As New List(Of String)()
+        Public Property Created As DateTime
+    End Class
+
+    Public Function SettingsFile(output As String) As String
+        Return output & ".json"
+    End Function
+
+    Private Sub SaveSettingsFor(output As String, req As GenerateRequest, job As String, seed As Long)
+        Try
+            Dim s As New SavedSettings With {
+                .Recipe = req.Recipe.Id, .Variant = req.Variant.Label, .Task = job, .Prompt = req.Prompt, .Negative = req.Negative,
+                .Width = req.Width, .Height = req.Height, .Steps = req.Steps, .Cfg = req.Cfg, .Seed = seed, .Frames = req.Frames,
+                .Strength = req.Strength, .Fast = req.Fast, .Loras = req.Loras.Select(Function(l) $"{l.Name}:{l.Weight}").ToList(),
+                .Inputs = req.InputImages.ToList(), .Created = DateTime.Now}
+            File.WriteAllText(SettingsFile(output), JsonConvert.SerializeObject(s, Formatting.Indented))
+        Catch
+        End Try
+    End Sub
+
+    Public Function LoadSettingsFor(output As String) As SavedSettings
+        Try
+            Dim f = SettingsFile(output)
+            If File.Exists(f) Then Return JsonConvert.DeserializeObject(Of SavedSettings)(File.ReadAllText(f))
+        Catch
+        End Try
+        Return Nothing
+    End Function
+
+    Private Const PosePrompt As String = "Show the subject of picture 1 in exactly the same pose, body position and camera angle as in picture 2. " &
+        "Keep the identity, face, clothes and style of picture 1; use picture 2 only for the pose. "
+    Private Const LayoutPrompt As String = "Keep the exact layout, composition, perspective and depth of this picture, but change its content and style to: "
+    Private Const OutlinePrompt As String = "Turn this sketch or line drawing into a finished picture that follows its outlines exactly: "
+    Private Const RestorePrompt As String = "Restore this photo: remove noise, scratches and blur, sharpen and fix the faces naturally while keeping " &
+        "each person's identity and expression, and improve the colors. "
+
+    ''' <summary>Set by the app (Windows): (model file, picture, output) → transparent PNG.</summary>
+    Public Property BackgroundRemover As Func(Of String, String, String, Task)
+    ''' <summary>Set by the app (Windows): (picture, output depth map, progress, ct).</summary>
+    Public Property DepthEstimator As Func(Of String, String, Action(Of Integer, String), CancellationToken, Task)
+    ''' <summary>Set by the app (Windows): (picture, output edge map).</summary>
+    Public Property EdgeDetector As Action(Of String, String)
+
+    ''' <summary>Non-diffusion tools (background removal).</summary>
+    Private Async Function RunToolAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
+        Dim r = req.Recipe, v = req.Variant
+        Dim pic = req.InputImages.FirstOrDefault(Function(f) Not String.IsNullOrEmpty(f) AndAlso File.Exists(f))
+        If pic Is Nothing Then Throw New Exception(Localizer.T("Choose the picture first (click the picture box)."))
+        If Not IsInstalled(r, v) Then Await DownloadAsync(r, v, progress, ct)
+        If BackgroundRemover Is Nothing Then Throw New Exception("Background removal is not available here.")
+        progress?.Invoke(30, "Removing the background…")
+        Dim out = Path.Combine(OutputFolder, $"{DateTime.Now:yyyyMMdd-HHmmss}-cutout.png")
+        Await BackgroundRemover(LocalPath(v), pic, out)
+        req.Outputs = New List(Of String) From {out}
+        SaveSettingsFor(out, req, "remove-bg", 0)
+        progress?.Invoke(100, "Done")
+        Return out
+    End Function
+
+    Private Async Function DownloadFilesAsync(files As List(Of MediaFile), progress As Action(Of Integer, String), ct As CancellationToken) As Task
+        Dim total = Math.Max(1L, files.Sum(Function(f) f.Size))
+        Dim before As Long = 0
+        For Each f In files.Where(Function(x) Not IsPresent(x))
+            Dim url = $"https://huggingface.co/{f.Repo}/resolve/main/" & String.Join("/", f.Path.Split("/"c).Select(AddressOf Uri.EscapeDataString))
+            Dim b = before
+            Await Downloader.DownloadFileAsync(url, LocalPath(f), AppCore.Settings.HuggingFaceToken,
+                Sub(done, size, speed) progress?.Invoke(CInt((b + done) * 100 \ total),
+                    $"{IO.Path.GetFileName(f.Path)}  {Downloader.FormatBytes(b + done)} / {Downloader.FormatBytes(total)}  ·  {Downloader.FormatBytes(CLng(speed))}/s"),
+                ct, f.Size)
+            before += f.Size
+        Next
+    End Function
+
+    ''' <summary>Set by the app (Windows): blends an inpainted result back into the original through a softened mask.</summary>
+    Public Property InpaintComposer As Action(Of String, String, String)
 
     ''' <summary>What to do when the caller did not say: decided by the inputs and what the model can do.</summary>
     Public Function GuessTask(r As MediaRecipe, hasImage As Boolean, hasMask As Boolean, hasVideo As Boolean) As String

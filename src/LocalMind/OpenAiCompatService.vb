@@ -137,6 +137,10 @@ Public Class OpenAiCompatService
         If opts.MaxTokens > 0 Then payload("max_tokens") = opts.MaxTokens
         payload("messages") = BuildMessages(messages)
         payload("stream_options") = New JObject From {{"include_usage", True}}
+        If opts.Tools IsNot Nothing AndAlso opts.Tools.Count > 0 Then
+            payload("tools") = opts.Tools
+            payload("tool_choice") = "auto"
+        End If
         If SendLlamaExtras Then
             ' Hybrid-thinking models (Qwen3.x, GLM, DeepSeek…) read this flag from their chat template.
             payload("chat_template_kwargs") = New JObject From {{"enable_thinking", opts.EnableThinking}}
@@ -195,6 +199,20 @@ Public Class OpenAiCompatService
                                     If Not String.IsNullOrEmpty(r) Then
                                         thinking.Append(r)
                                         onThinking(r)
+                                    End If
+                                    Dim tcs = TryCast(delta("tool_calls"), JArray)
+                                    If tcs IsNot Nothing Then
+                                        For Each tc In tcs
+                                            Dim idx = If(tc.Value(Of Integer?)("index"), result.ToolCalls.Count)
+                                            While result.ToolCalls.Count <= idx
+                                                result.ToolCalls.Add(New ToolCall())
+                                            End While
+                                            Dim fn = tc("function")
+                                            If fn IsNot Nothing Then
+                                                result.ToolCalls(idx).Name &= If(fn.Value(Of String)("name"), "")
+                                                result.ToolCalls(idx).Arguments &= If(fn.Value(Of String)("arguments"), "")
+                                            End If
+                                        Next
                                     End If
                                     Dim c = delta("content")
                                     If c IsNot Nothing AndAlso c.Type = JTokenType.String Then

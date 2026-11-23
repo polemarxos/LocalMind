@@ -80,16 +80,9 @@ Partial Class MainForm
 
     ''' <summary>The chosen image model if downloaded, otherwise the best downloaded image model.</summary>
     Private Function ChatImageRecipe(Optional withPhoto As Boolean = False) As MediaRecipe
-        ' With a photo: a model that edits (best) or restyles; without: one that creates.
-        Dim all = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).
-                  Where(Function(r) If(withPhoto, r.Can("edit") OrElse r.Can("restyle"), r.Can("create"))).ToList()
-        Dim chosen = all.FirstOrDefault(Function(r) r.Id = Settings.ChatImageModel)
-        If chosen IsNot Nothing Then Return chosen
-        Dim hw = HardwareInfo.Current()
-        Return all.OrderBy(Function(r) If(withPhoto AndAlso r.Can("edit"), 0, 1)).
-                   ThenBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.InstalledVariant(r), hw) = FitLevel.Fits, 0, 1)).
-                   ThenBy(Function(r) r.Steps).FirstOrDefault()
+        Return ChatAgent.PickImageRecipe(withPhoto)
     End Function
+
 
     Private Const PromptWriter As String =
         "You write prompts for an image generator. Rewrite the user's request as one detailed English image prompt: " &

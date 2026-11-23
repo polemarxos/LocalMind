@@ -20,7 +20,20 @@ Public Module MarkdownRenderer
 
     Public Function ToHtml(md As String) As String
         If md Is Nothing Then Return ""
-        Return Markdown.ToHtml(NormalizeMath(md), Pipeline)
+        Return MediaLinks(Markdown.ToHtml(NormalizeMath(md), Pipeline))
+    End Function
+
+    ' Links to LocalMind's own outputs (songs, speech, videos) become players.
+    Private ReadOnly MediaLink As New Regex("<a href=""(https://outputs\.localmind/[^""]+?\.(wav|mp3|mp4|webm))""[^>]*>([^<]*)</a>", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
+
+    Private Function MediaLinks(html As String) As String
+        Return MediaLink.Replace(html, Function(m)
+                                           Dim ext = m.Groups(2).Value.ToLowerInvariant()
+                                           Dim isVideo = ext = "mp4" OrElse ext = "webm"
+                                           Return $"<span class=""media""><span class=""media-title"">{m.Groups(3).Value}</span><br>" &
+                                                  If(isVideo, $"<video src=""{m.Groups(1).Value}"" controls style=""max-width:100%""></video>",
+                                                              $"<audio src=""{m.Groups(1).Value}"" controls style=""width:100%""></audio>") & "</span>"
+                                       End Function)
     End Function
 
     Private ReadOnly CodeSplit As New Regex("(```[\s\S]*?(?:```|$)|`[^`\n]+`)", RegexOptions.Compiled)

@@ -23,6 +23,11 @@ Public Class StudioForm
         ("inpaint", "🖌 Change part of a picture (paint the area)", False),
         ("combine", "🧩 Combine pictures", False),
         ("restyle", "🎨 Restyle a picture", False),
+        ("pose", "🧍 Copy a pose (from picture 2)", False),
+        ("layout", "🏠 Copy layout / depth of a picture", False),
+        ("outline", "✏ Sketch → picture (keep the outlines)", False),
+        ("restore", "🩹 Restore an old photo / fix faces", False),
+        ("remove-bg", "✂ Remove the background", False),
         ("upscale", "🔍 Enlarge a picture (4×)", False),
         ("create", "🎬 Create a video", True),
         ("animate", "🎞 Animate a picture", True),
@@ -31,12 +36,27 @@ Public Class StudioForm
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
     Private ReadOnly cmbShow, cmbTask, cmbVariant, cmbSize As ComboBox
     Private ReadOnly grid As DataGridView
-    Private ReadOnly lblAbout, lblStatus, lblStrength, lblVideo, lblFrames As Label
+    Private ReadOnly lblAbout, lblStatus, lblStrength, lblVideo, lblFrames, lblNeed As Label
     Private ReadOnly btnDownload, btnDelete, btnGenerate, btnVideo, btnMask, btnLoras As Button
     Private ReadOnly chkFast As CheckBox
     Private ReadOnly prg As ProgressBar
     Private ReadOnly txtPrompt, txtNeg As TextBox
-    Private ReadOnly numSteps, numCfg, numSeed, numFrames, numStrength As NumericUpDown
+    Private ReadOnly numSteps, numCfg, numSeed, numFrames, numStrength, numCount As NumericUpDown
+    Private ReadOnly cmbStyle As ComboBox
+    Private ReadOnly btnStop As Button
+    Private ReadOnly lblQueue As Label
+    Private ReadOnly _queue As New Queue(Of (Req As MediaStudio.GenerateRequest, Label As String))
+    Private _running As Boolean
+
+    ''' <summary>Style presets: words added to the end of the prompt.</summary>
+    Private Shared ReadOnly Styles As (Label As String, Words As String)() = {
+        ("(no style)", ""), ("📷 Photo", ", professional photograph, natural light, sharp focus, high detail"),
+        ("🎬 Cinematic", ", cinematic film still, dramatic lighting, shallow depth of field, color graded"),
+        ("🌸 Anime", ", anime style, clean line art, vibrant colors"), ("🖌 Watercolor", ", watercolor painting, soft washes, paper texture"),
+        ("🖼 Oil painting", ", oil painting, visible brush strokes, rich colors"), ("🧊 3D render", ", 3D render, octane, soft global illumination, highly detailed"),
+        ("👾 Pixel art", ", pixel art, 16-bit, crisp pixels"), ("💥 Comic", ", comic book style, bold ink lines, halftone shading"),
+        ("✏ Pencil sketch", ", pencil sketch, graphite, cross-hatching"), ("🐉 Fantasy art", ", epic fantasy illustration, detailed, dramatic"),
+        ("📦 Product shot", ", studio product photo, clean background, softbox lighting"), ("🏛 Architecture", ", architectural photography, wide angle, golden hour")}
     Private ReadOnly slots(2) As PictureBox
     Private ReadOnly slotPanel As FlowLayoutPanel
     Private ReadOnly preview As WebView2
@@ -92,6 +112,7 @@ Public Class StudioForm
         lblAbout = New Label() With {.Dock = DockStyle.Top, .Height = 64, .ForeColor = Theme.CDim}
         cmbVariant = New ComboBox() With {.Dock = DockStyle.Top, .DropDownStyle = ComboBoxStyle.DropDownList}
         Theme.StyleInput(cmbVariant)
+        lblNeed = New Label() With {.Dock = DockStyle.Top, .Height = 22, .ForeColor = Theme.CDim}
         Dim dlBar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 40}
         btnDownload = Theme.MakeButton("⬇ Download", primary:=True)
         btnDelete = Theme.MakeButton("🗑 Delete")
@@ -101,6 +122,7 @@ Public Class StudioForm
         detail.Controls.Add(lblStatus)
         detail.Controls.Add(prg)
         detail.Controls.Add(dlBar)
+        detail.Controls.Add(lblNeed)
         detail.Controls.Add(cmbVariant)
         detail.Controls.Add(lblAbout)
         left.Controls.Add(grid)
@@ -148,9 +170,14 @@ Public Class StudioForm
         numSeed = New NumericUpDown() With {.Minimum = -1, .Maximum = Integer.MaxValue, .Value = -1, .Width = 100}
         numFrames = New NumericUpDown() With {.Minimum = 1, .Maximum = 241, .Increment = 4, .Width = 55}
         numStrength = New NumericUpDown() With {.Minimum = 0.05D, .Maximum = 2D, .DecimalPlaces = 2, .Increment = 0.05D, .Value = 0.75D, .Width = 60}
-        For Each n In {numSteps, numCfg, numSeed, numFrames, numStrength}
+        numCount = New NumericUpDown() With {.Minimum = 1, .Maximum = 4, .Value = 1, .Width = 45}
+        For Each n In {numSteps, numCfg, numSeed, numFrames, numStrength, numCount}
             Theme.StyleInput(n)
         Next
+        cmbStyle = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 140}
+        cmbStyle.Items.AddRange(Styles.Select(Function(s) CObj(Localizer.T(s.Label))).ToArray())
+        cmbStyle.SelectedIndex = 0
+        Theme.StyleInput(cmbStyle)
         lblStrength = Theme.MakeLabel("Strength")
         lblFrames = Theme.MakeLabel("Frames")
         chkFast = New CheckBox() With {.Text = "⚡ Fast", .AutoSize = True, .ForeColor = Theme.CText, .Checked = AppCore.Settings.MediaFast,
@@ -160,13 +187,19 @@ Public Class StudioForm
         btnVideo = Theme.MakeButton("🎞 Choose video…")
         lblVideo = Theme.MakeLabel("")
         opts.Controls.AddRange({Theme.MakeLabel("Size"), cmbSize, Theme.MakeLabel("Steps"), numSteps, Theme.MakeLabel("CFG"), numCfg,
-                                Theme.MakeLabel("Seed"), numSeed, lblFrames, numFrames, lblStrength, numStrength,
-                                chkFast, btnLoras, btnMask, btnVideo, lblVideo})
+                                Theme.MakeLabel("Seed"), numSeed, Theme.MakeLabel("Pictures"), numCount, Theme.MakeLabel("Style"), cmbStyle,
+                                lblFrames, numFrames, lblStrength, numStrength, chkFast, btnLoras, btnMask, btnVideo, lblVideo})
         Dim genBar As New FlowLayoutPanel() With {.Dock = DockStyle.Fill}
         btnGenerate = Theme.MakeButton("🎨 Generate", primary:=True, width:=160)
         btnGenerate.Font = Theme.BoldFont
         Dim btnFolder = Theme.MakeButton("📁 Open output folder")
-        genBar.Controls.AddRange({btnGenerate, btnFolder})
+        Dim btnDescribe = Theme.MakeButton("📝 Describe picture")
+        AddHandler btnDescribe.Click, Async Sub() Await DescribeAsync()
+        genBar.Controls.Add(btnDescribe)
+        btnStop = Theme.MakeButton("■ Stop")
+        btnStop.Visible = False
+        lblQueue = Theme.MakeLabel("")
+        genBar.Controls.AddRange({btnGenerate, btnStop, lblQueue, btnFolder})
         form.Controls.Add(txtPrompt, 0, 0) : form.Controls.Add(slotPanel, 1, 0)
         form.Controls.Add(txtNeg, 0, 1) : form.SetColumnSpan(txtNeg, 2)
         form.Controls.Add(opts, 0, 2) : form.SetColumnSpan(opts, 2)
@@ -197,6 +230,12 @@ Public Class StudioForm
         AddHandler btnDownload.Click, Async Sub() Await DownloadAsync()
         AddHandler btnDelete.Click, Sub() DeleteSelected()
         AddHandler btnGenerate.Click, Async Sub() Await GenerateAsync()
+        AddHandler btnStop.Click, Sub()
+                                      _queue.Clear()
+                                      _cts?.Cancel()
+                                      MediaStudio.Cancel()
+                                      UpdateQueueLabel()
+                                  End Sub
         AddHandler btnFolder.Click, Sub() ModelManagerForm.OpenFolder(MediaStudio.OutputFolder)
         AddHandler chkFast.CheckedChanged, Sub()
                                                AppCore.Settings.MediaFast = chkFast.Checked
@@ -241,6 +280,26 @@ Public Class StudioForm
                                          End Using
                                      End If
                                  End Sub
+        Dim miSound = galleryMenu.Items.Add(Localizer.T("🎵 Add music or a voice-over…"))
+        AddHandler miSound.Click, Sub()
+                                      If gallery.SelectedItems.Count = 0 Then Return
+                                      Dim f = CStr(gallery.SelectedItems(0).Tag)
+                                      If Not IsVideoFile(f) Then
+                                          Localizer.Box(Me, "Choose a video in the gallery first.", "Soundtrack")
+                                          Return
+                                      End If
+                                      Using dlg As New SoundtrackForm(f)
+                                          If dlg.ShowDialog(Me) = DialogResult.OK AndAlso dlg.Result IsNot Nothing Then
+                                              AddToGallery(dlg.Result, 0)
+                                              ShowOutput(dlg.Result)
+                                          End If
+                                      End Using
+                                  End Sub
+        AddHandler galleryMenu.Opening, Sub() miSound.Visible = AppCore.Settings.EnableAudio
+        Dim miReuse = galleryMenu.Items.Add(Localizer.T("♻ Reuse these settings"))
+        AddHandler miReuse.Click, Sub()
+                                      If gallery.SelectedItems.Count > 0 Then ReuseSettings(CStr(gallery.SelectedItems(0).Tag))
+                                  End Sub
         Dim miMp4 = galleryMenu.Items.Add(Localizer.T("Save video as MP4"))
         AddHandler miMp4.Click, Async Sub()
                                     If gallery.SelectedItems.Count = 0 Then Return
@@ -288,16 +347,20 @@ Public Class StudioForm
             slots(i).Visible = i < maxPics
         Next
         slotPanel.Visible = maxPics > 0
+        Dim pictureOnly = t = "upscale" OrElse t = "remove-bg"
+        numCount.Enabled = Not CurrentTask().Video AndAlso Not pictureOnly
+        cmbStyle.Enabled = Not pictureOnly AndAlso t <> "restore"
         btnMask.Visible = t = "inpaint"
         btnMask.Text = If(_maskPath IsNot Nothing, Localizer.T("🖌 Area painted ✔"), Localizer.T("🖌 Paint area…"))
         btnVideo.Visible = t = "video-edit"
         lblVideo.Visible = t = "video-edit"
-        lblStrength.Visible = t = "inpaint" OrElse t = "restyle" OrElse t = "video-edit"
+        Dim usesControl = (t = "layout" OrElse t = "outline") AndAlso r IsNot Nothing AndAlso r.Parts.Any(Function(p) p.Control)
+        lblStrength.Visible = t = "inpaint" OrElse t = "restyle" OrElse t = "video-edit" OrElse usesControl
         numStrength.Visible = lblStrength.Visible
-        If t = "inpaint" Then numStrength.Value = 1D Else If t = "restyle" Then numStrength.Value = 0.6D Else If t = "video-edit" Then numStrength.Value = 1D
+        If t = "inpaint" Then numStrength.Value = 1D Else If t = "restyle" Then numStrength.Value = 0.6D Else If t = "video-edit" Then numStrength.Value = 1D Else If usesControl Then numStrength.Value = 0.8D
         Dim isVideo = CurrentTask().Video
         lblFrames.Visible = isVideo : numFrames.Visible = isVideo
-        Dim upscale = t = "upscale"
+        Dim upscale = pictureOnly
         For Each c As Control In {numSteps, numCfg, numSeed, cmbSize, txtNeg, chkFast, btnLoras}
             c.Enabled = Not upscale
         Next
@@ -305,15 +368,20 @@ Public Class StudioForm
         txtPrompt.PlaceholderText = Localizer.T(If(t = "edit" OrElse t = "inpaint", "Describe the change, e.g. 'make it night' or 'replace the car with a horse'…",
                                                 If(t = "combine", "Say how to combine them, e.g. 'the person from picture 1 sitting in the room from picture 2'…",
                                                 If(t = "video-edit", "Describe the new look of the video, e.g. 'oil painting style'…",
-                                                If(t = "upscale", "(no description needed)", "Describe the picture or video (English works best)…")))))
-        btnGenerate.Text = Localizer.T(If(upscale, "🔍 Enlarge", "🎨 Generate"))
+                                                If(t = "pose", "Picture 1 = who, picture 2 = the pose. Add details if you like, e.g. 'in a park'…",
+                                                If(t = "layout", "Picture = the layout to copy. Describe the new picture, e.g. 'a cozy wooden cabin interior'…",
+                                                If(t = "outline", "Picture = your sketch. Describe what it should become…",
+                                                If(t = "restore", "(optional) anything special, e.g. 'colorize it'…",
+                                                If(pictureOnly, "(no description needed)", "Describe the picture or video (English works best)…")))))))))
+        btnGenerate.Text = Localizer.T(If(t = "upscale", "🔍 Enlarge", If(t = "remove-bg", "✂ Remove background", "🎨 Generate")))
     End Sub
 
     ''' <summary>How many input pictures a task takes.</summary>
     Private Shared Function PicturesFor(t As String, r As MediaRecipe) As Integer
         Select Case t
             Case "combine" : Return Math.Max(2, Math.Min(3, If(r?.Refs, 3)))
-            Case "edit", "inpaint", "restyle", "upscale", "animate" : Return 1
+            Case "pose" : Return 2
+            Case "edit", "inpaint", "restyle", "upscale", "animate", "layout", "outline", "restore", "remove-bg" : Return 1
             Case "video-edit" : Return 1          ' optional reference picture (e.g. a character)
             Case Else : Return 0
         End Select
@@ -424,6 +492,8 @@ Public Class StudioForm
         If r Is Nothing OrElse v Is Nothing Then Return
         Dim installed = MediaStudio.IsInstalled(r, v)
         Dim fast = chkFast.Checked AndAlso r.Speed IsNot Nothing
+        lblNeed.Text = MediaStudio.RequirementText(r, v, _hw)
+        lblNeed.ForeColor = ModelManagerForm.FitColor(MediaStudio.Fit(r, v, _hw))
         btnDownload.Enabled = Not installed AndAlso _cts Is Nothing
         btnDownload.Text = If(installed, Localizer.T("✔ Downloaded"), Localizer.T("⬇ Download") & $" ({Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v, fast))})")
         btnDelete.Enabled = installed AndAlso _cts Is Nothing
@@ -434,6 +504,11 @@ Public Class StudioForm
         Dim r = SelectedRecipe()
         Dim v = SelectedVariant()
         If r Is Nothing OrElse v Is Nothing Then Return
+        Dim fit = MediaStudio.Fit(r, v, _hw)
+        If fit = FitLevel.TooBig AndAlso Localizer.Box(Me,
+                Localizer.T("This model probably won't run on this PC (not enough graphics memory + RAM):") & vbCrLf & vbCrLf &
+                MediaStudio.RequirementText(r, v, _hw) & vbCrLf & vbCrLf & Localizer.T("Download anyway?"),
+                "Memory", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
         _cts = New CancellationTokenSource()
         btnDownload.Enabled = False
         Try
@@ -529,27 +604,23 @@ Public Class StudioForm
 
     '──────────────── generate ────────────────
     Private Async Function GenerateAsync() As Task
-        If _cts IsNot Nothing Then
-            _cts.Cancel()
-            MediaStudio.Cancel()
-            Return
-        End If
         Dim r = SelectedRecipe()
         Dim v = SelectedVariant()
         If r Is Nothing OrElse v Is Nothing Then Return
         Dim t = CurrentTask().Id
         Dim pics = _inputs.Where(Function(x) x IsNot Nothing).ToList()
-        If t <> "upscale" AndAlso String.IsNullOrWhiteSpace(txtPrompt.Text) Then
+        Dim noText = t = "upscale" OrElse t = "remove-bg" OrElse t = "restore"
+        If Not noText AndAlso String.IsNullOrWhiteSpace(txtPrompt.Text) AndAlso t <> "pose" Then
             txtPrompt.Focus()
             Return
         End If
         Select Case t
-            Case "edit", "restyle", "upscale", "inpaint"
+            Case "edit", "restyle", "upscale", "inpaint", "layout", "outline", "restore", "remove-bg"
                 If pics.Count = 0 Then
                     Localizer.Box(Me, "Choose the picture first (click the picture box).", "Picture")
                     Return
                 End If
-            Case "combine"
+            Case "combine", "pose"
                 If pics.Count < 2 Then
                     Localizer.Box(Me, "Choose at least two pictures to combine.", "Pictures")
                     Return
@@ -570,12 +641,15 @@ Public Class StudioForm
             If _maskPath Is Nothing Then Return
         End If
 
-        Dim wh = cmbSize.SelectedItem.ToString().Split("×"c)
-        Dim w = CInt(wh(0)), h = CInt(wh(1))
-        If (t = "edit" OrElse t = "inpaint" OrElse t = "restyle") AndAlso pics.Count > 0 Then
+        Dim w = 1024, h = 1024
+        If cmbSize.SelectedItem IsNot Nothing Then
+            Dim wh = cmbSize.SelectedItem.ToString().Split("×"c)
+            w = CInt(wh(0)) : h = CInt(wh(1))
+        End If
+        If {"edit", "inpaint", "restyle", "layout", "outline", "restore"}.Contains(t) AndAlso pics.Count > 0 Then
             ' Keep the picture's shape: same aspect ratio as the input, about the chosen size, multiples of 16.
             Try
-                Using img = Image.FromFile(pics(0))
+                Using img = ImageTools.Load(pics(0))
                     Dim area = CDbl(w) * h
                     Dim k = Math.Sqrt(area / (CDbl(img.Width) * img.Height))
                     w = Math.Max(256, CInt(Math.Round(img.Width * k / 16)) * 16)
@@ -584,38 +658,132 @@ Public Class StudioForm
             Catch
             End Try
         End If
+        Dim style = If(cmbStyle.Enabled, Styles(Math.Max(0, cmbStyle.SelectedIndex)).Words, "")
         Dim req As New MediaStudio.GenerateRequest With {
-            .Recipe = r, .Variant = v, .Task = t, .Prompt = txtPrompt.Text.Trim(),
+            .Recipe = r, .Variant = v, .Task = t, .Prompt = txtPrompt.Text.Trim() & style,
             .Negative = If(String.IsNullOrWhiteSpace(txtNeg.Text), If(r.IsVideo, r.Negative, ""), txtNeg.Text.Trim()),
             .Width = w, .Height = h, .Steps = CInt(numSteps.Value), .Cfg = CDbl(numCfg.Value),
             .Seed = CLng(numSeed.Value), .Frames = CInt(numFrames.Value), .InputImages = pics, .MaskImage = _maskPath,
-            .InputVideo = _videoPath, .Strength = CDbl(numStrength.Value),
-            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = If(r.IsUpscaler, New List(Of UserLora)(), ActiveLoras(r))}
+            .InputVideo = _videoPath, .Strength = CDbl(numStrength.Value), .Count = If(numCount.Enabled, CInt(numCount.Value), 1),
+            .Fast = chkFast.Checked AndAlso r.Speed IsNot Nothing, .Loras = If(r.IsUpscaler OrElse r.Kind = "tool", New List(Of UserLora)(), ActiveLoras(r))}
 
-        _cts = New CancellationTokenSource()
-        btnGenerate.Text = Localizer.T("■ Stop")
-        btnDownload.Enabled = False
-        btnDelete.Enabled = False
-        Dim sw = Diagnostics.Stopwatch.StartNew()
+        ' Queue it: jobs run one after another, so you can keep adding while one is running.
+        _queue.Enqueue((req, $"{r.Name}: {Truncate(If(req.Prompt, t), 40)}"))
+        UpdateQueueLabel()
+        If Not _running Then Await RunQueueAsync()
+    End Function
+
+    ''' <summary>A vision chat model looks at picture 1 and writes a prompt for it (handy for restyling or "make more like this").</summary>
+    Private Async Function DescribeAsync() As Task
+        Dim pic = _inputs.FirstOrDefault(Function(x) x IsNot Nothing)
+        If pic Is Nothing Then
+            PickInput(0)
+            pic = _inputs(0)
+            If pic Is Nothing Then Return
+        End If
+        Dim vision = AppCore.Library.All().FirstOrDefault(Function(m) Not String.IsNullOrEmpty(m.MmprojFile))
+        If AppCore.Settings.Backend = BackendKind.BuiltIn AndAlso vision Is Nothing Then
+            Localizer.Box(Me, "This needs a chat model that can see pictures (marked 👁 in the Model Manager). Download one first, e.g. Gemma 3 or Qwen3-VL.", "Describe picture")
+            Return
+        End If
+        lblStatus.Text = Localizer.T("Looking at the picture…")
         Try
-            Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, tx) BeginInvoke(Sub()
-                                                                                     prg.Value = Math.Max(0, Math.Min(100, p))
-                                                                                     lblStatus.Text = Localizer.T(tx)
-                                                                                 End Sub), _cts.Token)
-            lblStatus.Text = Localizer.T("Done") & $" · {sw.Elapsed.TotalSeconds:0}s · {Path.GetFileName(out)}"
-            AddToGallery(out, 0)
-            ShowOutput(out)
-        Catch ex As OperationCanceledException
-            lblStatus.Text = Localizer.T("Stopped")
+            Dim b64 = Convert.ToBase64String(File.ReadAllBytes(pic))
+            Dim msgs As New List(Of ChatMessage) From {
+                New ChatMessage With {.Role = "system", .Content = "You write prompts for an image generator. Describe the picture as one detailed English prompt: subject, setting, composition, style, colors, lighting, camera. Reply with the prompt only."},
+                New ChatMessage With {.Role = "user", .Content = "Describe this picture as a prompt.", .Images = New List(Of String) From {b64}}}
+            Dim opts As New ChatRequestOptions With {.Model = If(vision?.DisplayName, AppCore.Settings.LastModel), .Temperature = 0.3, .MaxTokens = 300, .EnableThinking = False}
+            Dim backend = AppCore.Backend
+            Dim res = Await Task.Run(Function() backend.StreamChatAsync(msgs, opts, Sub(t) Return, Sub(t) Return, CancellationToken.None))
+            Dim text = If(res?.Content, "").Trim().Trim(""""c)
+            If text.Length > 0 Then
+                txtPrompt.Text = text
+                lblStatus.Text = Localizer.T("Prompt written from the picture — edit it and press Generate.")
+            End If
         Catch ex As Exception
-            lblStatus.Text = "⚠ " & ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
-            Localizer.Box(Me, ex.Message, "Generation failed", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            lblStatus.Text = "⚠ " & ex.Message
+        End Try
+    End Function
+
+    Private Shared Function Truncate(s As String, n As Integer) As String
+        Return If(s.Length <= n, s, s.Substring(0, n) & "…")
+    End Function
+
+    Private Sub UpdateQueueLabel()
+        lblQueue.Text = If(_queue.Count > 0, $"⏳ {_queue.Count} " & Localizer.T("waiting"), "")
+        btnStop.Visible = _running
+    End Sub
+
+    Private Async Function RunQueueAsync() As Task
+        _running = True
+        Try
+            While _queue.Count > 0
+                Dim job = _queue.Dequeue()
+                UpdateQueueLabel()
+                _cts = New CancellationTokenSource()
+                btnDownload.Enabled = False
+                btnDelete.Enabled = False
+                Dim sw = Diagnostics.Stopwatch.StartNew()
+                Try
+                    Await MediaStudio.GenerateAsync(job.Req, Sub(p, tx) BeginInvoke(Sub()
+                                                                                       prg.Value = Math.Max(0, Math.Min(100, p))
+                                                                                       lblStatus.Text = job.Label & " — " & Localizer.T(tx)
+                                                                                   End Sub), _cts.Token)
+                    lblStatus.Text = Localizer.T("Done") & $" · {sw.Elapsed.TotalSeconds:0}s"
+                    For i = job.Req.Outputs.Count - 1 To 0 Step -1
+                        AddToGallery(job.Req.Outputs(i), 0)
+                    Next
+                    If job.Req.Outputs.Count > 0 Then ShowOutput(job.Req.Outputs(0))
+                Catch ex As OperationCanceledException
+                    lblStatus.Text = Localizer.T("Stopped")
+                Catch ex As Exception
+                    lblStatus.Text = "⚠ " & ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()
+                    If _queue.Count = 0 Then Localizer.Box(Me, ex.Message, "Generation failed", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                Finally
+                    _cts = Nothing
+                End Try
+            End While
         Finally
-            _cts = Nothing
+            _running = False
+            UpdateQueueLabel()
             UpdateTaskUi()
             UpdateButtons()
         End Try
     End Function
+
+    ''' <summary>Loads the model, task, prompt and settings a past result was made with.</summary>
+    Private Sub ReuseSettings(output As String)
+        Dim s = MediaStudio.LoadSettingsFor(output)
+        If s Is Nothing Then
+            Localizer.Box(Me, "No saved settings for this file (made with an older version).", "Reuse settings")
+            Return
+        End If
+        Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = s.Recipe)
+        If r Is Nothing Then Return
+        Dim ti = Array.FindIndex(TaskList, Function(x) x.Id = s.Task AndAlso x.Video = r.IsVideo)
+        If ti < 0 Then ti = Array.FindIndex(TaskList, Function(x) x.Id = "create" AndAlso x.Video = r.IsVideo)
+        cmbShow.SelectedIndex = 1          ' all models, so the one used is surely listed
+        cmbTask.SelectedIndex = ti
+        FillGridKeepSelection(r)
+        Dim vi = r.Variants.FindIndex(Function(x) x.Label = s.Variant)
+        If vi >= 0 Then cmbVariant.SelectedIndex = vi
+        txtPrompt.Text = s.Prompt
+        txtNeg.Text = s.Negative
+        Dim size = $"{s.Width}×{s.Height}"
+        If Not cmbSize.Items.Contains(size) Then cmbSize.Items.Insert(0, size)
+        cmbSize.SelectedItem = size
+        chkFast.Checked = s.Fast
+        numSteps.Value = Math.Max(numSteps.Minimum, Math.Min(numSteps.Maximum, s.Steps))
+        numCfg.Value = CDec(Math.Min(20, s.Cfg))
+        numSeed.Value = Math.Min(numSeed.Maximum, s.Seed)
+        If s.Frames > 0 Then numFrames.Value = Math.Max(1, Math.Min(numFrames.Maximum, s.Frames))
+        numStrength.Value = CDec(Math.Max(0.05, Math.Min(2, s.Strength)))
+        cmbStyle.SelectedIndex = 0
+        For i = 0 To 2
+            SetInput(i, If(i < s.Inputs.Count AndAlso File.Exists(s.Inputs(i)), s.Inputs(i), Nothing))
+        Next
+        lblStatus.Text = Localizer.T("Settings loaded — change what you like and press Generate. Seed") & $" {s.Seed}"
+    End Sub
 
     '──────────────── preview & gallery ────────────────
     Private Sub ShowHtml(body As String)

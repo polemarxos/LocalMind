@@ -40,7 +40,8 @@ Public Module ExternalTools
     End Function
 
     ''' <summary>Downloads the newest release that has every asset the package needs.</summary>
-    Public Async Function InstallAsync(p As ToolPackage, progress As Action(Of String), ct As CancellationToken) As Task(Of String)
+    Public Async Function InstallAsync(p As ToolPackage, progress As Action(Of String), ct As CancellationToken,
+                                       Optional onlyIfNewer As Boolean = False) As Task(Of String)
         progress?.Invoke($"Looking for {p.Name} ({p.Flavor}) on GitHub…")
         Dim rx = p.AssetPatterns.Select(Function(x) New Regex(x, RegexOptions.IgnoreCase)).ToArray()
         Dim urls As List(Of (Url As String, Size As Long)) = Nothing
@@ -69,6 +70,7 @@ Public Module ExternalTools
             End Using
         End Using
         If urls Is Nothing Then Throw New Exception($"No Windows build of {p.Name} ({p.Flavor}) found in the latest releases of {p.Repo}.")
+        If onlyIfNewer AndAlso FindExe(p) IsNot Nothing AndAlso tag = InstalledTag(p) Then Return tag
 
         Dim target = ToolDir(p)
         Dim staging = target & ".new"

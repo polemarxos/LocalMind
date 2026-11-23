@@ -267,6 +267,7 @@ Module HarnessMain
             Await Task.Delay(1500)
             Check(AppCore.Lan.ActiveClients = 0, "closing the phone page stops generation", "active=" & AppCore.Lan.ActiveClients)
 
+
             Dim bad As New HttpClient() With {.BaseAddress = New Uri("http://127.0.0.1:18484")}
             bad.DefaultRequestHeaders.Add("X-Pin", "000000")
             Dim codes As New List(Of Integer)
@@ -281,7 +282,7 @@ Module HarnessMain
         If only = "media" Then
             Console.WriteLine("== Image & video catalog")
             Dim recs = MediaStudio.Recipes()
-            Check(recs.Count >= 20 AndAlso recs.All(Function(r) r.Variants.Count > 0 AndAlso (r.Parts.Count > 0 OrElse r.IsUpscaler OrElse r.Variants.All(Function(v) v.Format = "checkpoint"))) AndAlso
+            Check(recs.Count >= 20 AndAlso recs.All(Function(r) r.Variants.Count > 0 AndAlso (r.Parts.Count > 0 OrElse r.IsUpscaler OrElse r.Kind = "tool" OrElse r.Variants.All(Function(v) v.Format = "checkpoint"))) AndAlso
                   recs.All(Function(r) r.Tasks.Count > 0), "recipes load", recs.Count & " models, " & recs.Where(Function(r) r.Speed IsNot Nothing).Count() & " with ⚡ speed LoRAs")
             For Each prof In {(0.0, 16.0), (8.0, 32.0), (12.0, 32.0), (16.0, 64.0), (24.0, 64.0)}
                 Dim h = Hw(prof.Item1, prof.Item2)
@@ -402,6 +403,13 @@ Module HarnessMain
                 Check(File.Exists(cl) AndAlso New FileInfo(cl).Length > 20000, "voice cloning from a recording", $"{cl} ({sw.Elapsed.TotalSeconds:0}s)")
                 File.Copy(cl, "/tmp/tts-clone.wav", True)
             End If
+            If want.Contains("phone") Then
+                AppCore.Settings.ReadAloudModel = "chatterbox-ml"
+                Dim wavP = Await Voice.SpeakToFileAsync("Hello there. This answer is read for the phone. It has three sentences.", CancellationToken.None)
+                Dim lenP = New FileInfo(wavP).Length
+                Check(lenP > 40000, "answer spoken into one WAV for the phone (AI voice)", $"{lenP \ 1024} KB")
+                AppCore.Settings.ReadAloudModel = ""
+            End If
             If want.Contains("music") Then
                 sw.Restart()
                 Dim yue = AudioStudio.Models().First(Function(m) m.Id = "yue2-3b")
@@ -452,6 +460,44 @@ Module HarnessMain
                 Check(File.Exists(out), "generated with the Civitai LoRA", out)
                 File.Copy(out, "/tmp/lora-test.png", True)
             End If
+        End If
+
+        If only = "v26" Then
+            Console.WriteLine("== 2.6 helpers")
+            ' Files from renamed Hugging Face repos are found instead of downloaded again.
+            Dim anima = MediaStudio.Recipes().First(Function(x) x.Id = "anima")
+            Dim vae = anima.Parts.First(Function(p) p.Role = "vae")
+            Dim target = MediaStudio.LocalPath(vae)
+            If File.Exists(target) Then
+                Dim oldDir = Path.Combine(MediaStudio.Folder, "Comfy-Org__Old_Name_Repack")
+                Directory.CreateDirectory(oldDir)
+                File.Move(target, Path.Combine(oldDir, Path.GetFileName(target)), True)
+                Check(MediaStudio.IsPresent(vae) AndAlso File.Exists(target), "file in an old repo folder is reused, not downloaded again", target)
+            End If
+            ' Several pictures at once + saved settings for "Reuse".
+            Dim v = anima.Variants.First(Function(x) x.Label = "Q3_K_L")
+            If MediaStudio.IsInstalled(anima, v) AndAlso ExternalTools.FindExe(New ExternalTools.ToolPackage With {.Name = "sd", .Flavor = "cpu", .ExeName = "sd-cli.exe"}) IsNot Nothing Then
+                Dim req As New MediaStudio.GenerateRequest With {.Recipe = anima, .Variant = v, .Prompt = "a blue bird", .Width = 256, .Height = 256, .Steps = 4, .Cfg = 6, .Count = 2}
+                Await MediaStudio.GenerateAsync(req, Sub(p, t) Return, CancellationToken.None)
+                Dim s0 = MediaStudio.LoadSettingsFor(req.Outputs(0))
+                Check(req.Outputs.Count = 2 AndAlso req.Outputs.All(AddressOf File.Exists), "2 variations in one run", String.Join(", ", req.Outputs.Select(AddressOf Path.GetFileName)))
+                Check(s0 IsNot Nothing AndAlso s0.Prompt = "a blue bird" AndAlso s0.Seed > 0 AndAlso MediaStudio.LoadSettingsFor(req.Outputs(1)).Seed = s0.Seed + 1,
+                      "settings saved per picture (seed, prompt, model)", $"seed {s0?.Seed}, {s0?.Recipe} {s0?.Variant}")
+            End If
+            ' Memory estimate shown before download.
+            Dim w22 = MediaStudio.Recipes().First(Function(x) x.Id = "wan2.2-t2v-a14b")
+            Dim need = MediaStudio.Requirement(w22, MediaStudio.PickVariant(w22, Hw(8, 16)), Hw(8, 16))
+            Check(need.RamGB > 10 AndAlso MediaStudio.Fit(w22, w22.Variants.Last(), Hw(8, 16)) = FitLevel.TooBig, "memory needs shown before downloading big models",
+                  $"Wan 2.2 A14B on 8 GB GPU + 16 GB RAM: needs ~{need.VramGB} GB GPU + {need.RamGB} GB RAM")
+            ' Joining speech pieces for the phone.
+            Dim tts = Directory.GetFiles(MediaStudio.OutputFolder, "*chatterbox*.wav").Take(2).ToList()
+            If tts.Count = 2 Then
+                Dim joined = Path.Combine(Path.GetTempPath(), "joined.wav")
+                Voice.JoinWavs(tts, joined)
+                Dim expect = tts.Sum(Function(f) New FileInfo(f).Length - 44)
+                Check(Math.Abs(New FileInfo(joined).Length - 44 - expect) < 200, "speech pieces joined into one WAV", $"{New FileInfo(joined).Length \ 1024} KB")
+            End If
+            Check(Voice.Chunks("First sentence. Second one! " & New String("x"c, 300) & ". Last.").Count >= 2, "long answers are read sentence by sentence")
         End If
 
         If only = "docs" Then
@@ -611,6 +657,34 @@ Module HarnessMain
             Dim r4 = Await oai.StreamChatAsync(New List(Of ChatMessage) From {New ChatMessage With {.Role = "user", .Content = "Say OK."}},
                                               New ChatRequestOptions With {.Model = smol.DisplayName, .MaxTokens = 10}, Sub(t) Return, Sub(t) Return, CancellationToken.None)
             Check(r4.Content.Length > 0, "/v1/chat/completions streamed through proxy (= another PC using this one)", r4.Content.Trim())
+
+            Console.WriteLine("== Phone extras")
+            Dim fi = JObject.Parse(Await http.GetStringAsync("/api/info"))
+            Check(fi("features") IsNot Nothing, "info lists phone features", fi("features").ToString(Newtonsoft.Json.Formatting.None))
+            Dim someOut = Directory.GetFiles(MediaStudio.OutputFolder, "*.png").FirstOrDefault()
+            If someOut IsNot Nothing Then
+                Dim ob = Await http.GetByteArrayAsync("/api/outputs/" & Uri.EscapeDataString(Path.GetFileName(someOut)))
+                Check(ob.Length = New FileInfo(someOut).Length, "phone can load pictures made on the PC", Path.GetFileName(someOut))
+                Dim badOut = Await http.GetAsync("/api/outputs/..%2F..%2Fsecret.txt")
+                Check(CInt(badOut.StatusCode) = 404, "outputs: no path tricks")
+            End If
+            If AudioStudio.Models().Any(Function(m) m.Id = "chatterbox-ml" AndAlso AudioStudio.IsInstalled(m)) Then
+                AppCore.Settings.ReadAloudModel = "chatterbox-ml"
+                Dim spk = Await http.PostAsync("/api/speak", New StringContent("{""text"":""Hello there. This is the phone speaking. Two sentences.""}", Encoding.UTF8, "application/json"))
+                Dim wavBytes = Await spk.Content.ReadAsByteArrayAsync()
+                Check(spk.IsSuccessStatusCode AndAlso wavBytes.Length > 20000 AndAlso Encoding.ASCII.GetString(wavBytes, 0, 4) = "RIFF", "phone read-aloud with the AI voice", $"{wavBytes.Length \ 1024} KB WAV")
+                AppCore.Settings.ReadAloudModel = ""
+            End If
+
+            Console.WriteLine("== AI uses tools by itself")
+            AppCore.Settings.AgentTools = True
+            Dim toolOpts As New ChatRequestOptions With {.Model = qwen.DisplayName, .MaxTokens = 400, .EnableThinking = False,
+                .Tools = ChatAgent.Tools(qwen.DisplayName, True)}
+            Dim tr = Await backend.StreamChatAsync(New List(Of ChatMessage) From {
+                New ChatMessage With {.Role = "user", .Content = "Search the web: who won the most recent Eurovision Song Contest?"}},
+                toolOpts, Sub(t) Return, Sub(t) Return, CancellationToken.None)
+            Check(tr.ToolCalls.Count > 0 AndAlso tr.ToolCalls(0).Name = "web_search", "model calls the web_search tool",
+                  String.Join("; ", tr.ToolCalls.Select(Function(c) c.Name & " " & c.Arguments)))
 
             ' brute-force lockout
             Dim bad As New HttpClient() With {.BaseAddress = New Uri("http://127.0.0.1:18484")}

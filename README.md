@@ -36,6 +36,8 @@ Pick a model that fits your graphics card, chat with it, and use it from your ph
   LoRAs and checkpoints with one click.
 - **Music & voice:** songs with vocals, speech in 23 languages (Greek too), and voice cloning from a short recording.
 - **Only what you want:** on first start choose chat only, or add pictures & video and/or music & voice.
+- **Hands-free:** talk to the AI and hear the answer (in your own cloned voice if you like). The AI can also draw,
+  compose and search the web by itself when you ask.
 - **Auto-update** from GitHub Releases.
 - **Other backends:** you can also connect to Ollama or any OpenAI-compatible server (LM Studio, vLLM,
   or another PC running LocalMind).

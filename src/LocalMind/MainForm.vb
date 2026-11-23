@@ -61,6 +61,8 @@ Public Class MainForm
 
     Public Sub New()
         InitializeComponent()
+        MediaStudio.InpaintComposer = AddressOf ImageTools.CompositeInpaint
+        OnnxTools.Register()
         Try
             Me.Icon = System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath)
         Catch
@@ -232,6 +234,7 @@ Public Class MainForm
 
     ''' <summary>Installs the llama.cpp engine in the background so it's ready when the first model finishes downloading.</summary>
     Private Sub PrepareEngineInBackground()
+        If Settings.Backend = BackendKind.BuiltIn AndAlso AppCore.Engine.IsInstalled() Then AutoUpdateEnginesLater()
         If Settings.Backend <> BackendKind.BuiltIn OrElse AppCore.Engine.IsInstalled() Then Return
         If _engineInstallTask IsNot Nothing AndAlso Not _engineInstallTask.IsCompleted Then Return
         Dim prog As New Progress(Of (Text As String, Percent As Integer))(Sub(p) SetStatus(p.Text))
@@ -243,6 +246,35 @@ Public Class MainForm
                                               SetStatus("Engine install failed (will retry on first message): " & ex.Message)
                                           End Try
                                       End Function)
+    End Sub
+
+    Private _autoUpdateStarted As Boolean
+
+    ''' <summary>
+    ''' Every few days, a few minutes after start: update llama.cpp, the image engine and FFmpeg when a newer build
+    ''' exists, so new voice, music and image models keep working. Waits until nothing is running.
+    ''' </summary>
+    Private Sub AutoUpdateEnginesLater()
+        If _autoUpdateStarted OrElse Not Settings.AutoUpdateEngines Then Return
+        If (DateTime.Now - Settings.LastEngineCheck).TotalDays < 3 Then Return
+        _autoUpdateStarted = True
+        Dim unused = Task.Run(Async Function()
+                                  Try
+                                      Await Task.Delay(TimeSpan.FromMinutes(3))
+                                      For i = 1 To 60
+                                          If AppCore.Engine.ActiveRequests = 0 AndAlso Not _isGenerating Then Exit For
+                                          Await Task.Delay(TimeSpan.FromMinutes(1))
+                                      Next
+                                      Dim prog As New Progress(Of (Text As String, Percent As Integer))(Sub(p) SetStatus(p.Text))
+                                      Await AppCore.Engine.InstallAsync(prog, CancellationToken.None)
+                                      If Settings.EnableImages Then Await MediaStudio.UpdateEngineAsync(Sub(t) SetStatus(t), CancellationToken.None)
+                                      Await VideoTools.UpdateAsync(Sub(t) SetStatus(t), CancellationToken.None)
+                                      Settings.LastEngineCheck = DateTime.Now
+                                      AppCore.SaveSettings()
+                                  Catch ex As Exception
+                                      SetStatus("Engine update check failed: " & ex.Message)
+                                  End Try
+                              End Function)
     End Sub
 
     '════════════════════════════════════════════════════════════
@@ -658,7 +690,7 @@ Public Class MainForm
                     End Sub, ct)
             End If
             ' Run off the UI thread: token callbacks only append to buffers; the timer renders.
-            result = Await Task.Run(Function() backend.StreamChatAsync(payload, opts,
+            Dim streamOnce = Function(o As ChatRequestOptions) Task.Run(Function() backend.StreamChatAsync(payload, o,
                 Sub(token)
                     SyncLock _liveThinkingLock
                         _liveThinkingText.Append(token)
@@ -670,7 +702,16 @@ Public Class MainForm
                     End SyncLock
                     Interlocked.Increment(_streamTokens)
                 End Sub, ct))
-            assistantText = result.Content & AppCore.SourcesMarkdown(sources)
+            ' The model may use tools by itself (draw, make a song, search the web) when the user asks for it.
+            Dim answer = Await ChatAgent.AnswerAsync(streamOnce, payload, opts, Not _btnWeb.Checked, AddressOf ToolStatus,
+                                                     Sub()
+                                                         SyncLock _liveTextLock
+                                                             _liveAssistantText.Clear()
+                                                         End SyncLock
+                                                     End Sub, ct)
+            result = answer.Result
+            If answer.Sources IsNot Nothing Then sources = answer.Sources
+            assistantText = result.Content & answer.Markdown & AppCore.SourcesMarkdown(sources)
         Catch oce As OperationCanceledException
             SyncLock _liveTextLock
                 assistantText = _liveAssistantText.ToString()
@@ -716,7 +757,7 @@ Public Class MainForm
 
         lblTokens.Text = $"{tps:0.0} tok/s  ({tokens} tokens, {sw.Elapsed.TotalSeconds:0.0}s)"
         SetStatus("Done")
-        If Settings.AutoReadAnswers AndAlso result IsNot Nothing AndAlso Not Voice.IsSpeaking Then SpeakAnswer(assistantText)
+        If Settings.AutoReadAnswers AndAlso result IsNot Nothing AndAlso Not Voice.IsSpeaking AndAlso Not _inVoiceChat Then SpeakAnswer(assistantText)
     End Function
 
     Private Sub FlushLiveRender(sender As Object, e As EventArgs)

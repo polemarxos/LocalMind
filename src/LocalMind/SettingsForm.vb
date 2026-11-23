@@ -22,7 +22,7 @@ Public Class SettingsForm
     Private prgInstall As ProgressBar
     Private txtModels As TextBox
     Private numCtx, numSlots, numIdle, numMinCtx As NumericUpDown
-    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio As CheckBox
+    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent As CheckBox
     Private cmbLang As ComboBox
     Private txtHotkey As TextBox
     Private cmbNgl, cmbKv, cmbSpeed As ComboBox
@@ -265,6 +265,10 @@ Public Class SettingsForm
         Row(t, "", chkAudio)
         chkUpdates = New CheckBox() With {.Text = "Check for LocalMind updates at startup", .Checked = _s.CheckForUpdates, .AutoSize = True}
         Row(t, "Updates", chkUpdates)
+        chkEngUpd = New CheckBox() With {.Text = "Keep the AI engines up to date automatically", .Checked = _s.AutoUpdateEngines, .AutoSize = True}
+        Row(t, "", chkEngUpd)
+        chkAgent = New CheckBox() With {.Text = "The AI may draw, compose and search the web by itself when you ask", .Checked = _s.AgentTools, .AutoSize = True}
+        Row(t, "AI tools", chkAgent)
         chkMinTray = New CheckBox() With {.Text = "Minimize to the system tray", .Checked = _s.MinimizeToTray, .AutoSize = True}
         chkCloseTray = New CheckBox() With {.Text = "Close button keeps LocalMind running in the tray", .Checked = _s.CloseToTray, .AutoSize = True}
         Row(t, "Tray", chkMinTray)
@@ -289,7 +293,7 @@ Public Class SettingsForm
     End Sub
 
     '──────────────── Web & voice tab ────────────────
-    Private cmbSearch, cmbVoiceModel, cmbVoiceLang, cmbTts As ComboBox
+    Private cmbSearch, cmbVoiceModel, cmbVoiceLang, cmbTts, cmbAiVoice, cmbSavedVoice As ComboBox
     Private txtBrave, txtSearx As TextBox
     Private numPages As NumericUpDown
 
@@ -320,6 +324,20 @@ Public Class SettingsForm
         cmbTts.Items.AddRange(Voice.VoiceNames())
         cmbTts.SelectedItem = If(cmbTts.Items.Contains(_s.TtsVoice), _s.TtsVoice, "(Windows default)")
         Row(t, "Reading voice", cmbTts, "Greek text automatically uses a Greek voice if one is installed")
+        cmbAiVoice = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 300}
+        cmbAiVoice.Items.Add(Localizer.T("(use the Windows voice above)"))
+        For Each m In AudioStudio.Models().Where(Function(x) Not x.IsMusic)
+            cmbAiVoice.Items.Add(m)
+        Next
+        Dim curModel = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = _s.ReadAloudModel)
+        cmbAiVoice.SelectedItem = If(curModel IsNot Nothing, CObj(curModel), cmbAiVoice.Items(0))
+        Row(t, "AI reading voice", cmbAiVoice, "Natural AI voice for 🔊 Read (downloads the model on first use)")
+        cmbSavedVoice = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 300}
+        cmbSavedVoice.Items.Add(Localizer.T("(model's own voice)"))
+        cmbSavedVoice.Items.AddRange(VoiceLibrary.All().Cast(Of Object).ToArray())
+        Dim curVoice = VoiceLibrary.Find(_s.ReadAloudVoice)
+        cmbSavedVoice.SelectedIndex = If(curVoice Is Nothing, 0, Math.Max(0, cmbSavedVoice.Items.Cast(Of Object).ToList().FindIndex(Function(o) o.ToString() = curVoice.Name)))
+        Row(t, "Speak in this voice", cmbSavedVoice, "Voices you saved in the Music & voice studio (e.g. your own)")
     End Sub
 
     '──────────────── Save ────────────────
@@ -339,6 +357,8 @@ Public Class SettingsForm
         _s.AutoContext = chkAutoCtx.Checked
         _s.MinAutoContext = CInt(numMinCtx.Value)
         _s.CheckForUpdates = chkUpdates.Checked
+        _s.AutoUpdateEngines = chkEngUpd.Checked
+        _s.AgentTools = chkAgent.Checked
         _s.EnableImages = chkImages.Checked
         _s.EnableAudio = chkAudio.Checked
         _s.FeaturesAsked = True
@@ -354,6 +374,12 @@ Public Class SettingsForm
         _s.VoiceModel = cmbVoiceModel.SelectedItem.ToString()
         _s.VoiceLanguage = If(String.IsNullOrWhiteSpace(cmbVoiceLang.Text), "auto", cmbVoiceLang.Text.Trim())
         _s.TtsVoice = If(cmbTts.SelectedIndex <= 0, "", cmbTts.SelectedItem.ToString())
+        Dim aiModel = TryCast(cmbAiVoice.SelectedItem, AudioModel)
+        _s.ReadAloudModel = If(aiModel?.Id, "")
+        _s.ReadAloudVoice = If(cmbSavedVoice.SelectedIndex <= 0, "", cmbSavedVoice.SelectedItem.ToString())
+        If aiModel IsNot Nothing AndAlso Not AudioStudio.IsInstalled(aiModel) Then
+            Localizer.Box(Me, "The AI voice is downloaded the first time it reads an answer.", "AI voice")
+        End If
         _s.MinimizeToTray = chkMinTray.Checked
         _s.CloseToTray = chkCloseTray.Checked
         _s.QuickAskHotkey = txtHotkey.Text.Trim()

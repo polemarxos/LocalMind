@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.6.0
+
+### New
+- **The AI uses tools by itself:** ask "draw me…", "make a song about…" or something that needs current information,
+  and the chat model draws, composes or searches the web on its own (Settings → Chat → AI tools).
+- **Voice conversation** (🎙 Talk): talk hands-free; the AI answers out loud and listens again.
+- **Read answers in an AI voice** — your own cloned voice too (Settings → Web & voice → AI reading voice).
+- **Saved voices:** keep cloned voices by name in the Music & voice studio and reuse them anywhere.
+- **Video soundtrack:** right-click a video → add AI music or a voice-over → MP4.
+- **Studio:**
+  - New tasks: *Copy a pose*, *Copy layout / depth* (SDXL ControlNet Union with automatic depth, or editing models),
+    *Sketch → picture*, *Restore an old photo / fix faces*, *Remove the background* (transparent PNG).
+  - Make up to 4 variations at once; jobs queue up so you can keep adding.
+  - Style presets (photo, cinematic, anime, watercolor…).
+  - Every result remembers its settings: right-click → *Reuse these settings*.
+  - 📝 *Describe picture* writes a prompt from a picture (needs a chat model that can see).
+- **Phone page gets everything:** pictures in chat (🖼 picture mode, also edits a photo you send), songs and videos play,
+  🎤 voice input, 🔊 read aloud. The AI's own tools work from the phone too.
+- **Memory monitor** in the status bar: graphics memory, RAM and what is loaded; click to free memory.
+
+### Fixes
+- Files already on disk under a renamed Hugging Face folder are reused instead of downloaded again.
+- Painted-area edits blend in smoothly; everything outside the painted area stays exactly as it was. The brush is faster.
+- Before downloading a picture, video, voice or music model, LocalMind shows the graphics memory and RAM it needs
+  and warns if this PC is too small. Civitai files that need an account are marked before you install them.
+- The AI engines (llama.cpp, stable-diffusion.cpp, FFmpeg) update themselves every few days when idle
+  (Settings → Chat → Updates).
+
 ## 2.5.0
 
 ### New

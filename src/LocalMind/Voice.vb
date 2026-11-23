@@ -164,8 +164,163 @@ Public Module Voice
         Return _voice
     End Function
 
-    ''' <summary>Reads text aloud (async). Picks a Greek voice for Greek text when available.</summary>
+    <DllImport("winmm.dll", CharSet:=CharSet.Unicode)>
+    Private Function PlaySound(pszSound As String, hmod As IntPtr, fdwSound As UInteger) As Boolean
+    End Function
+    Private Const SND_SYNC As UInteger = 0, SND_FILENAME As UInteger = &H20000, SND_NODEFAULT As UInteger = 2
+
+    Private _aiCts As CancellationTokenSource
+
+    ''' <summary>Text made speakable: no code blocks, Markdown symbols or citation marks.</summary>
+    Public Function CleanForSpeech(text As String) As String
+        Dim clean = Regex.Replace(If(text, ""), "```[\s\S]*?```", " (code) ")
+        clean = Regex.Replace(clean, "!\[[^\]]*\]\([^)]*\)", " ")
+        clean = Regex.Replace(clean, "\[([^\]]+)\]\([^)]*\)", "$1")
+        clean = Regex.Replace(clean, "[#*_`>|]+", " ")
+        clean = Regex.Replace(clean, "\[(\w?\d+)\]", "")
+        Return Regex.Replace(clean, "\s+", " ").Trim()
+    End Function
+
+    Public Function IsGreek(text As String) As Boolean
+        Return Regex.Matches(If(text, ""), "[Ͱ-Ͽ]").Count > If(text, "").Length * 0.2
+    End Function
+
+    ''' <summary>Splits text into sentence groups of up to ~240 characters (short pieces start playing sooner).</summary>
+    Public Function Chunks(text As String) As List(Of String)
+        Dim parts = Regex.Split(text, "(?<=[.!?;·…])\s+")
+        Dim list As New Collections.Generic.List(Of String)
+        Dim cur As New StringBuilder()
+        For Each p In parts
+            If cur.Length > 0 AndAlso cur.Length + p.Length > 240 Then
+                list.Add(cur.ToString().Trim())
+                cur.Clear()
+            End If
+            cur.Append(p).Append(" "c)
+        Next
+        If cur.ToString().Trim().Length > 0 Then list.Add(cur.ToString().Trim())
+        Return list
+    End Function
+
+    ''' <summary>
+    ''' Reads text with an AI voice (Settings: ReadAloudModel + ReadAloudVoice): the next sentence is made while the
+    ''' current one plays, so long answers start quickly.
+    ''' </summary>
+    Public Function SpeakAiAsync(text As String, Optional onStatus As Action(Of String) = Nothing) As Task
+        StopSpeaking()
+        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = AppCore.Settings.ReadAloudModel AndAlso Not x.IsMusic)
+        If m Is Nothing Then Return Task.CompletedTask
+        Dim cts As New CancellationTokenSource()
+        _aiCts = cts
+        Dim ct = cts.Token
+        Dim clean = CleanForSpeech(text)
+        Dim saved = VoiceLibrary.Find(AppCore.Settings.ReadAloudVoice)
+        Dim lang = If(IsGreek(clean), "el", If(saved?.Language, "en"))
+        _speaking = True
+        Return Task.Run(Async Function()
+                            Try
+                                Dim pieces = Chunks(clean)
+                                Dim makeOne = Function(s As String) AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {
+                                                  .Model = m, .Text = s, .Language = lang, .SpeakerFile = saved?.FullPath, .SpeakerText = saved?.Words},
+                                                  Sub(p, t) onStatus?.Invoke(t), ct)
+                                Dim nextWav = If(pieces.Count > 0, makeOne(pieces(0)), Nothing)
+                                For i = 0 To pieces.Count - 1
+                                    Dim wav = Await nextWav
+                                    nextWav = If(i + 1 < pieces.Count, makeOne(pieces(i + 1)), Nothing)
+                                    If ct.IsCancellationRequested Then Exit For
+                                    PlaySound(wav, IntPtr.Zero, SND_FILENAME Or SND_SYNC Or SND_NODEFAULT)
+                                    Try : IO.File.Delete(wav) : Catch : End Try
+                                Next
+                            Catch ex As OperationCanceledException
+                            Catch ex As Exception
+                                onStatus?.Invoke("⚠ " & ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
+                            Finally
+                                _speaking = False
+                            End Try
+                        End Function)
+    End Function
+
+    ''' <summary>
+    ''' Speaks text into a WAV file (for the phone): the AI voice from Settings if chosen (sentence by sentence,
+    ''' joined), otherwise a Windows voice.
+    ''' </summary>
+    Public Async Function SpeakToFileAsync(text As String, ct As CancellationToken) As Task(Of String)
+        Dim clean = CleanForSpeech(text)
+        Dim out = Path.Combine(Path.GetTempPath(), $"localmind-speak-{Guid.NewGuid():N}.wav")
+        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = AppCore.Settings.ReadAloudModel AndAlso Not x.IsMusic)
+        If m IsNot Nothing Then
+            Dim saved = VoiceLibrary.Find(AppCore.Settings.ReadAloudVoice)
+            Dim lang = If(IsGreek(clean), "el", If(saved?.Language, "en"))
+            Dim parts As New Collections.Generic.List(Of String)
+            For Each piece In Chunks(clean)
+                parts.Add(Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {
+                    .Model = m, .Text = piece, .Language = lang, .SpeakerFile = saved?.FullPath, .SpeakerText = saved?.Words}, Nothing, ct))
+            Next
+            JoinWavs(parts, out)
+            For Each p In parts
+                Try : IO.File.Delete(p) : Catch : End Try
+            Next
+            Return out
+        End If
+        Await Task.Run(Sub()
+                           Dim v = CreateObject("SAPI.SpVoice")
+                           Dim fs = CreateObject("SAPI.SpFileStream")
+                           fs.Format.Type = 22                 ' 22 kHz 16-bit mono
+                           fs.Open(out, 3, False)              ' create for write
+                           v.AudioOutputStream = fs
+                           If IsGreek(clean) Then
+                               Dim tokens = v.GetVoices()
+                               For i = 0 To CInt(tokens.Count) - 1
+                                   If CStr(tokens.Item(i).GetDescription()).Contains("Greek") Then v.Voice = tokens.Item(i) : Exit For
+                               Next
+                           End If
+                           v.Speak(clean, 0)
+                           fs.Close()
+                       End Sub, ct)
+        Return out
+    End Function
+
+    ''' <summary>Joins PCM WAV files of the same format into one.</summary>
+    Public Sub JoinWavs(files As Collections.Generic.List(Of String), output As String)
+        Dim header As Byte() = Nothing
+        Using ms As New MemoryStream()
+            For Each f In files
+                Dim b = IO.File.ReadAllBytes(f)
+                ' Find the "data" chunk.
+                Dim i = 12
+                While i + 8 <= b.Length
+                    Dim id = Encoding.ASCII.GetString(b, i, 4)
+                    Dim size = BitConverter.ToInt32(b, i + 4)
+                    If id = "data" Then
+                        If header Is Nothing Then header = b.Take(i + 8).ToArray()
+                        ms.Write(b, i + 8, Math.Min(size, b.Length - i - 8))
+                        Exit While
+                    End If
+                    i += 8 + size + (size And 1)
+                End While
+            Next
+            If header Is Nothing Then Throw New Exception("No audio was made.")
+            Dim data = ms.ToArray()
+            Array.Copy(BitConverter.GetBytes(header.Length - 8 + data.Length), 0, header, 4, 4)
+            Array.Copy(BitConverter.GetBytes(data.Length), 0, header, header.Length - 4, 4)
+            Using o = IO.File.Create(output)
+                o.Write(header, 0, header.Length)
+                o.Write(data, 0, data.Length)
+            End Using
+        End Using
+    End Sub
+
+    ''' <summary>Plays a WAV file to the end (blocking; call from a background thread).</summary>
+    Public Sub PlayWav(file As String)
+        PlaySound(file, IntPtr.Zero, SND_FILENAME Or SND_SYNC Or SND_NODEFAULT)
+    End Sub
+
+    ''' <summary>Reads text aloud (async): the chosen AI voice, or Windows voices (Greek voice for Greek text when installed).</summary>
     Public Sub Speak(text As String)
+        If Not String.IsNullOrEmpty(AppCore.Settings.ReadAloudModel) AndAlso
+           AudioStudio.Models().Any(Function(x) x.Id = AppCore.Settings.ReadAloudModel) Then
+            Dim unused = SpeakAiAsync(text)
+            Return
+        End If
         Try
             Dim v = GetVoice()
             StopSpeaking()
@@ -205,6 +360,11 @@ Public Module Voice
     End Sub
 
     Public Sub StopSpeaking()
+        Try
+            _aiCts?.Cancel()            ' also stops its llama-tts run
+            PlaySound(Nothing, IntPtr.Zero, 0)
+        Catch
+        End Try
         Try
             If _voice IsNot Nothing Then _voice.Speak("", 2)   ' SVSFPurgeBeforeSpeak
         Catch

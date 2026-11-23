@@ -13,7 +13,7 @@ Public Class AudioForm
     Inherits Form
 
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
-    Private ReadOnly cmbMode, cmbLang As ComboBox
+    Private ReadOnly cmbMode, cmbLang, cmbSaved As ComboBox
     Private ReadOnly grid As DataGridView
     Private ReadOnly lblAbout, lblStatus, lblVoice As Label
     Private ReadOnly btnDownload, btnDelete, btnGenerate, btnRecord, btnPickVoice, btnClearVoice, btnTranscribe As Button
@@ -81,6 +81,38 @@ Public Class AudioForm
         btnClearVoice = Theme.MakeButton("✕")
         lblVoice = Theme.MakeLabel("Voice: default")
         vRow1.Controls.AddRange({Theme.MakeLabel("Language"), cmbLang, btnRecord, btnPickVoice, btnClearVoice, lblVoice})
+        Dim vRow0 As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 40}
+        cmbSaved = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 260}
+        Theme.StyleInput(cmbSaved)
+        Dim btnSaveVoice = Theme.MakeButton("💾 Save this voice…")
+        Dim btnDelVoice = Theme.MakeButton("🗑")
+        vRow0.Controls.AddRange({Theme.MakeLabel("My voices"), cmbSaved, btnSaveVoice, btnDelVoice})
+        AddHandler cmbSaved.SelectedIndexChanged, Sub()
+                                                      Dim sv = TryCast(cmbSaved.SelectedItem, SavedVoice)
+                                                      If sv Is Nothing Then Return
+                                                      SetVoice(sv.FullPath)
+                                                      lblVoice.Text = Localizer.T("Voice") & ": " & sv.Name
+                                                      txtVoiceWords.Text = sv.Words
+                                                      If sv.Language IsNot Nothing AndAlso cmbLang.Items.Contains(sv.Language) Then cmbLang.SelectedItem = sv.Language
+                                                  End Sub
+        AddHandler btnSaveVoice.Click, Sub()
+                                           If _voiceFile Is Nothing Then
+                                               Localizer.Box(Me, "Record your voice or choose a voice file first.", "Save voice")
+                                               Return
+                                           End If
+                                           Dim name = Microsoft.VisualBasic.Interaction.InputBox(Localizer.T("Name for this voice:"), Localizer.T("Save voice"), Path.GetFileNameWithoutExtension(_voiceFile))
+                                           If String.IsNullOrWhiteSpace(name) Then Return
+                                           VoiceLibrary.Add(name.Trim(), _voiceFile, txtVoiceWords.Text.Trim(), CStr(cmbLang.SelectedItem))
+                                           FillSavedVoices(name.Trim())
+                                       End Sub
+        AddHandler btnDelVoice.Click, Sub()
+                                          Dim sv = TryCast(cmbSaved.SelectedItem, SavedVoice)
+                                          If sv Is Nothing Then Return
+                                          If Localizer.Box(Me, $"Delete the voice '{sv.Name}'?", "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+                                          VoiceLibrary.Delete(sv)
+                                          SetVoice(Nothing)
+                                          FillSavedVoices(Nothing)
+                                      End Sub
         Dim vRow2 As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 40}
         txtVoiceWords = New TextBox() With {.Width = 520, .PlaceholderText = "Words spoken in the recording (optional — makes the copy closer)"}
         Theme.StyleInput(txtVoiceWords)
@@ -91,6 +123,7 @@ Public Class AudioForm
         voicePanel.Controls.Add(vTip)
         voicePanel.Controls.Add(vRow2)
         voicePanel.Controls.Add(vRow1)
+        voicePanel.Controls.Add(vRow0)
         voicePanel.Controls.Add(txtText)
 
         ' Music
@@ -156,8 +189,19 @@ Public Class AudioForm
         AddHandler lstOut.SelectedIndexChanged, Sub() PlaySelected()
     End Sub
 
+    Private Sub FillSavedVoices(selectName As String)
+        cmbSaved.Items.Clear()
+        cmbSaved.Items.Add(Localizer.T("(choose a saved voice)"))
+        For Each sv In VoiceLibrary.All()
+            cmbSaved.Items.Add(sv)
+        Next
+        Dim idx = cmbSaved.Items.Cast(Of Object).ToList().FindIndex(Function(o) TypeOf o Is SavedVoice AndAlso CType(o, SavedVoice).Name = selectName)
+        cmbSaved.SelectedIndex = Math.Max(0, idx)
+    End Sub
+
     Protected Overrides Async Sub OnLoad(e As EventArgs)
         MyBase.OnLoad(e)
+        FillSavedVoices(Nothing)
         FillGrid()
         LoadOutputs()
         Try
@@ -189,7 +233,7 @@ Public Class AudioForm
     Private Sub ShowModel()
         Dim m = SelectedModel()
         If m Is Nothing Then Return
-        lblAbout.Text = m.About
+        lblAbout.Text = m.About & vbLf & AudioStudio.RequirementText(m, _hw)
         Dim installed = AudioStudio.IsInstalled(m)
         btnDownload.Enabled = Not installed AndAlso _cts Is Nothing
         btnDownload.Text = If(installed, Localizer.T("✔ Downloaded"), Localizer.T("⬇ Download") & $" ({Downloader.FormatBytes(AudioStudio.BytesToDownload(m))})")
@@ -209,6 +253,10 @@ Public Class AudioForm
     Private Async Function DownloadAsync() As Task
         Dim m = SelectedModel()
         If m Is Nothing Then Return
+        If AudioStudio.Fit(m, _hw) = FitLevel.TooBig AndAlso Localizer.Box(Me,
+                Localizer.T("This model probably won't run on this PC (not enough graphics memory + RAM):") & vbCrLf & vbCrLf &
+                AudioStudio.RequirementText(m, _hw) & vbCrLf & vbCrLf & Localizer.T("Download anyway?"),
+                "Memory", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
         _cts = New CancellationTokenSource()
         btnDownload.Enabled = False
         Try

@@ -107,10 +107,23 @@ Public Module AudioStudio
     End Sub
 
     Public Function Fit(m As AudioModel, hw As HardwareInfo) As FitLevel
+        Dim gb = 1024L * 1024 * 1024
         Dim need = m.Size + 1536L * 1024 * 1024
-        If hw.VramBytes > 0 AndAlso need <= hw.VramBytes * 0.95 Then Return FitLevel.Fits
-        If need <= hw.RamBytes * 0.8 + hw.VramBytes Then Return FitLevel.PartialOffload
+        Dim extra = If(m.IsMusic, 4L, 2L) * gb                 ' context + audio decoding in system RAM
+        If hw.VramBytes > 0 AndAlso need <= hw.VramBytes * 0.95 AndAlso hw.RamBytes >= extra + 2 * gb Then Return FitLevel.Fits
+        If hw.VramBytes = 0 AndAlso hw.RamBytes * 0.85 < m.Size + extra Then Return FitLevel.TooBig
+        If need + extra <= hw.RamBytes * 0.85 + hw.VramBytes Then Return FitLevel.PartialOffload
         Return FitLevel.TooBig
+    End Function
+
+    Public Function RequirementText(m As AudioModel, hw As HardwareInfo) As String
+        Dim gb = 1024.0 * 1024 * 1024
+        Dim vram = (m.Size + 1536L * 1024 * 1024) / gb
+        Dim ram = m.Size / gb + If(m.IsMusic, 4, 2)          ' songs keep a long context in memory
+        Dim f = Fit(m, hw)
+        Dim mark = If(f = FitLevel.Fits, "✔", If(f = FitLevel.PartialOffload, "⚠", "✖"))
+        Return $"{mark} {Localizer.T("Needs about")} {vram:0.#} GB {Localizer.T("graphics memory")} + {ram:0.#} GB RAM  ·  " &
+               $"{Localizer.T("this PC")}: {hw.VramGB:0.#} + {hw.RamBytes / gb:0} GB"
     End Function
 
     Public Function TtsExe() As String
@@ -138,6 +151,13 @@ Public Module AudioStudio
     End Class
 
     Private _proc As Process
+
+    Public ReadOnly Property IsBusy As Boolean
+        Get
+            Dim p = _proc
+            Return p IsNot Nothing AndAlso Not p.HasExited
+        End Get
+    End Property
 
     ''' <summary>Runs llama-tts and returns the WAV file.</summary>
     Public Async Function GenerateAsync(req As AudioRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)

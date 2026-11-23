@@ -50,6 +50,11 @@ Public Class AppSettings
     Public Property FeaturesAsked As Boolean = False
     ''' <summary>Use Turbo / Lightning LoRAs when a model has one.</summary>
     Public Property MediaFast As Boolean = True
+    ''' <summary>Keep llama.cpp, stable-diffusion.cpp and FFmpeg up to date automatically (checked every few days).</summary>
+    Public Property AutoUpdateEngines As Boolean = True
+    ''' <summary>Let the chat model use tools by itself (draw, compose, search the web) when you ask for it.</summary>
+    Public Property AgentTools As Boolean = True
+    Public Property LastEngineCheck As DateTime = DateTime.MinValue
     ''' <summary>Civitai API key (optional; some downloads need a signed-in account).</summary>
     Public Property CivitaiApiKey As String = ""
     ''' <summary>Search civitai.red (full catalogue, 18+) instead of civitai.com.</summary>
@@ -83,6 +88,10 @@ Public Class AppSettings
     Public Property VoiceModel As String = "auto"     ' auto | small-q5_1 | large-v3-turbo-q5_0 | …
     Public Property VoiceLanguage As String = "auto"  ' auto | el | en | …
     Public Property TtsVoice As String = ""
+    ''' <summary>Read-aloud with an AI voice: model id from the voice catalog (empty = Windows voices).</summary>
+    Public Property ReadAloudModel As String = ""
+    ''' <summary>Saved voice to use for AI read-aloud (empty = the model's default voice).</summary>
+    Public Property ReadAloudVoice As String = ""
     Public Property AutoReadAnswers As Boolean = False
 
     ' ── Speed / language ──

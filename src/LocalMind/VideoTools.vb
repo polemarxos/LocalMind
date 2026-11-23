@@ -32,6 +32,11 @@ Public Module VideoTools
         Return ExternalTools.FindExe(p)
     End Function
 
+    Public Async Function UpdateAsync(progress As Action(Of String), ct As CancellationToken) As Task
+        If Not FfmpegInstalled() OrElse Not OperatingSystem.IsWindows() Then Return
+        Await ExternalTools.InstallAsync(Package(), progress, ct, onlyIfNewer:=True)
+    End Function
+
     Public Function FfmpegInstalled() As Boolean
         Return ExternalTools.FindExe(Package()) IsNot Nothing
     End Function
@@ -60,6 +65,47 @@ Public Module VideoTools
         Dim mp4 = Path.ChangeExtension(webm, ".mp4")
         Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{webm}"" -c:v libx264 -pix_fmt yuv420p -crf 18 -c:a aac -movflags +faststart ""{mp4}""", ct)
         Return mp4
+    End Function
+
+    ''' <summary>Any recording (m4a, mp3, webm, wav…) → 16 kHz mono WAV for Whisper.</summary>
+    Public Async Function ToSpeechWavAsync(input As String, output As String, ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{input}"" -ar 16000 -ac 1 -c:a pcm_s16le ""{output}""", ct)
+    End Function
+
+    ''' <summary>Length of a video or audio file in seconds (0 if unknown).</summary>
+    Public Async Function DurationAsync(file As String, ct As CancellationToken) As Task(Of Double)
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Dim psi As New ProcessStartInfo(ff, $"-hide_banner -i ""{file}""") With {.UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardError = True}
+        Using p = Process.Start(psi)
+            Dim err = Await p.StandardError.ReadToEndAsync(ct)
+            Await p.WaitForExitAsync(ct)
+            Dim m = Text.RegularExpressions.Regex.Match(err, "Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)")
+            If Not m.Success Then Return 0
+            Return CInt(m.Groups(1).Value) * 3600 + CInt(m.Groups(2).Value) * 60 + Double.Parse(m.Groups(3).Value, Globalization.CultureInfo.InvariantCulture)
+        End Using
+    End Function
+
+    ''' <summary>
+    ''' Puts a soundtrack (music or a voice-over) under a video and saves an MP4. With <paramref name="keepOriginal"/>
+    ''' the video's own sound is mixed in (quieter). The result is as long as the video.
+    ''' </summary>
+    Public Async Function AddAudioAsync(video As String, audio As String, keepOriginal As Boolean, volume As Double,
+                                        output As String, progress As Action(Of String), ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(progress, ct)
+        Dim vol = volume.ToString("0.##", Globalization.CultureInfo.InvariantCulture)
+        Dim filter = If(keepOriginal,
+            $"[1:a]volume={vol},apad[s];[0:a]volume=0.5[o];[o][s]amix=inputs=2:duration=first:dropout_transition=0[a]",
+            $"[1:a]volume={vol},apad[a]")
+        Dim args = $"-hide_banner -loglevel error -y -i ""{video}"" -i ""{audio}"" -filter_complex ""{filter}"" -map 0:v -map ""[a]"" " &
+                   $"-c:v libx264 -pix_fmt yuv420p -crf 18 -c:a aac -shortest -movflags +faststart ""{output}"""
+        Dim retry = False
+        Try
+            Await RunAsync(ff, args, ct)
+        Catch When keepOriginal
+            retry = True        ' the video has no sound of its own: use only the new soundtrack
+        End Try
+        If retry Then Await AddAudioAsync(video, audio, False, volume, output, progress, ct)
     End Function
 
     Private Async Function RunAsync(exe As String, args As String, ct As CancellationToken) As Task

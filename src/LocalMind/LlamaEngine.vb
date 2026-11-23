@@ -392,9 +392,9 @@ Public Class LlamaEngine
         args.Append($"-m ""{model.MainFile}"" --host 127.0.0.1 --port {_port}")
         If s.AutoContext Then
             ' llama.cpp picks the biggest context that still fits in VRAM (never below the minimum).
-            args.Append($" --fit-ctx {Math.Max(2048, s.MinAutoContext) * slots} -np {slots} --no-webui")
+            args.Append($" --fit-ctx {Math.Max(2048, s.MinAutoContext) * slots} -np {slots} --no-webui --jinja")
         Else
-            args.Append($" -c {s.ContextSize * slots} -np {slots} --no-webui")
+            args.Append($" -c {s.ContextSize * slots} -np {slots} --no-webui --jinja")
         End If
         If Not String.IsNullOrEmpty(model.MmprojFile) AndAlso File.Exists(model.MmprojFile) Then
             args.Append($" --mmproj ""{model.MmprojFile}""")

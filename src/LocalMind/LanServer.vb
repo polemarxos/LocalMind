@@ -279,8 +279,60 @@ Public Class LanServer
                 {"current", If(AppCore.Settings.LastModel, "")},
                 {"persona", If(AppCore.Settings.LastPersona, "")},
                 {"personas", personas},
-                {"thinking", AppCore.Settings.ShowThinking}
+                {"thinking", AppCore.Settings.ShowThinking},
+                {"features", New JObject From {
+                    {"images", AppCore.Settings.EnableImages AndAlso ChatAgent.PickImageRecipe(False) IsNot Nothing},
+                    {"voiceIn", OperatingSystem.IsWindows()},
+                    {"speak", True}}}
             })
+            Return
+        End If
+
+        ' Pictures, songs and videos made on the PC (shown in the phone's chat).
+        If path.StartsWith("/api/outputs/") AndAlso method = "GET" Then
+            Dim name = Uri.UnescapeDataString(path.Substring("/api/outputs/".Length))
+            Dim file = IO.Path.Combine(MediaStudio.OutputFolder, IO.Path.GetFileName(name))
+            If name.Contains("/"c) OrElse name.Contains("\"c) OrElse Not IO.File.Exists(file) Then
+                Await WriteErrorAsync(ctx, 404, "Not found")
+                Return
+            End If
+            Dim ext = IO.Path.GetExtension(file).ToLowerInvariant()
+            ctx.Response.ContentType = If(ext = ".png", "image/png", If(ext = ".wav", "audio/wav", If(ext = ".mp4", "video/mp4", If(ext = ".webm", "video/webm", "application/octet-stream"))))
+            ctx.Response.Headers("Cache-Control") = "private, max-age=86400"
+            ctx.Response.Headers("Accept-Ranges") = "bytes"
+            Await ctx.Response.SendFileAsync(file, ctx.RequestAborted)
+            Return
+        End If
+
+        ' Voice input from the phone: any recording → text (Whisper on the PC).
+        If path = "/api/transcribe" AndAlso method = "POST" Then
+            Dim ext = If(If(ctx.Request.ContentType, "").Contains("wav"), ".wav", If(If(ctx.Request.ContentType, "").Contains("mpeg"), ".mp3", ".m4a"))
+            Dim raw = IO.Path.Combine(IO.Path.GetTempPath(), $"localmind-phone-{Guid.NewGuid():N}{ext}")
+            Dim wav = IO.Path.ChangeExtension(raw, ".16k.wav")
+            Try
+                Using fs = IO.File.Create(raw)
+                    Await ctx.Request.Body.CopyToAsync(fs, ctx.RequestAborted)
+                End Using
+                Await VideoTools.ToSpeechWavAsync(raw, wav, ctx.RequestAborted)
+                Dim text = Await Voice.TranscribeAsync(wav, Nothing, ctx.RequestAborted)
+                Await WriteJsonAsync(ctx, New JObject From {{"text", If(text, "").Trim()}})
+            Finally
+                Try : IO.File.Delete(raw) : Catch : End Try
+                Try : IO.File.Delete(wav) : Catch : End Try
+            End Try
+            Return
+        End If
+
+        ' Read an answer aloud for the phone (AI voice if chosen in Settings, else a Windows voice).
+        If path = "/api/speak" AndAlso method = "POST" Then
+            Dim b = JObject.Parse(Await ReadBodyAsync(ctx))
+            Dim wav = Await Voice.SpeakToFileAsync(If(b("text")?.ToString(), ""), ctx.RequestAborted)
+            Try
+                ctx.Response.ContentType = "audio/wav"
+                Await ctx.Response.SendFileAsync(wav, ctx.RequestAborted)
+            Finally
+                Try : IO.File.Delete(wav) : Catch : End Try
+            End Try
             Return
         End If
 
@@ -375,6 +427,7 @@ Public Class LanServer
         Dim payload = AppCore.BuildPayload(session, persona)
         Dim useDocs = If(body("docs")?.ToObject(Of Boolean?)(), False)
         Dim useWeb = If(body("web")?.ToObject(Of Boolean?)(), False)
+        Dim imageMode = If(body("image")?.ToObject(Of Boolean?)(), False) AndAlso AppCore.Settings.EnableImages
 
         ctx.Response.ContentType = "text/event-stream; charset=utf-8"
         ctx.Response.Headers("Cache-Control") = "no-cache"
@@ -392,17 +445,35 @@ Public Class LanServer
         Dim ct = ctx.RequestAborted
         Dim sw = Stopwatch.StartNew()
         Dim sources As List(Of SourceRef) = Nothing
+        Dim extraMd = ""
+        Dim status = Sub(t As String) send(New JObject From {{"type", "status"}, {"t", Localizer.T(t)}})
         Dim genTask = Task.Run(
             Async Function() As Task(Of ChatResult)
+                Dim photo As String = Nothing
                 Try
+                    If imageMode Then
+                        ' 🖼 mode: the message becomes a picture (an attached photo is edited).
+                        If images.Count > 0 Then
+                            photo = IO.Path.Combine(IO.Path.GetTempPath(), $"localmind-phone-{Guid.NewGuid():N}.png")
+                            IO.File.WriteAllBytes(photo, Convert.FromBase64String(images(0)))
+                        End If
+                        extraMd = Await ChatAgent.MakePictureAsync(text, photo, status, ct)
+                        Return New ChatResult()
+                    End If
                     If useDocs OrElse useWeb Then
                         sources = Await AppCore.AugmentAsync(payload, useDocs, useWeb, Nothing, ct)
                     End If
-                    Return Await AppCore.Backend.StreamChatAsync(payload, opts,
+                    Dim streamOnce = Function(o As ChatRequestOptions) AppCore.Backend.StreamChatAsync(payload, o,
                         Sub(t) send(New JObject From {{"type", "thinking"}, {"t", t}}),
                         Sub(t) send(New JObject From {{"type", "token"}, {"t", t}}),
                         ct)
+                    Dim answer = Await ChatAgent.AnswerAsync(streamOnce, payload, opts, Not useWeb, status,
+                                                             Sub() send(New JObject From {{"type", "reset"}}), ct)
+                    If answer.Sources IsNot Nothing Then sources = answer.Sources
+                    extraMd = answer.Markdown
+                    Return answer.Result
                 Finally
+                    If photo IsNot Nothing Then Try : IO.File.Delete(photo) : Catch : End Try
                     ch.Writer.TryComplete()
                 End Try
             End Function)
@@ -426,7 +497,7 @@ Public Class LanServer
             Interlocked.Decrement(_activeClients)
         End Try
 
-        Dim content = If(result?.Content, "") & If(result IsNot Nothing, AppCore.SourcesMarkdown(sources), "")
+        Dim content = If(result?.Content, "") & extraMd & If(result IsNot Nothing, AppCore.SourcesMarkdown(sources), "")
         If errorText = "stopped" Then
             content &= vbCrLf & vbCrLf & "_[stopped]_"
         ElseIf errorText IsNot Nothing Then
