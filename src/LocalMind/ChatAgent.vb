@@ -83,7 +83,8 @@ Public Module ChatAgent
         Dim userText = payload?.LastOrDefault(Function(m) m.Role = "user")?.Content
         Dim forced = RequestedTool(userText, opts.Tools)
         If forced IsNot Nothing Then
-            opts.Tools = New JArray(opts.Tools.First(Function(t) t("function")?.Value(Of String)("name") = forced))
+            ' (Enumerable.First: JArray's own "First" property would index the JSON with the lambda)
+            opts.Tools = New JArray(Enumerable.First(opts.Tools, Function(t As JToken) t("function")?.Value(Of String)("name") = forced))
             opts.ToolChoice = "required"
         End If
         Dim result As ChatResult = Nothing

@@ -139,8 +139,7 @@ Public Class OpenAiCompatService
         payload("stream_options") = New JObject From {{"include_usage", True}}
         If opts.Tools IsNot Nothing AndAlso opts.Tools.Count > 0 Then
             payload("tools") = opts.Tools
-            If Not String.IsNullOrEmpty(opts.ToolChoice) Then payload("tool_choice") = opts.ToolChoice
-            payload("tool_choice") = "auto"
+            payload("tool_choice") = If(String.IsNullOrEmpty(opts.ToolChoice), "auto", opts.ToolChoice)
         End If
         If SendLlamaExtras Then
             ' Hybrid-thinking models (Qwen3.x, GLM, DeepSeek…) read this flag from their chat template.

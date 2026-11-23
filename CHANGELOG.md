@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.14.1
+
+### Fixed
+- Chat: a plain request for a picture or a video ("make me a picture of…", "φτιάξε μου μια εικόνα…") stopped with
+  "Accessed JObject values with invalid key value". The requested tool is now picked correctly.
+- The model is really required to use the asked-for tool: the setting was always overwritten with "auto", so small
+  models could still answer "I can't".
+
 ## 2.14.0
 
 ### Changed (same colors, a more professional look)

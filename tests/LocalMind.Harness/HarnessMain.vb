@@ -827,6 +827,32 @@ Module HarnessMain
             File.Delete(filmOut)
         End If
 
+        If only = "agent" Then
+            Console.WriteLine("== Chat: plain requests for a picture / video use the tool")
+            AppCore.Settings.AgentTools = True
+            AppCore.Settings.EnableImages = True
+            Dim seen As New List(Of String)
+            For Each ask In {"make me a picture of a red apple", "generate a video of the sea", "φτιάξε μου μια εικόνα με γάτα", "how do I make a video?"}
+                Dim payload As New List(Of ChatMessage) From {New ChatMessage With {.Role = "user", .Content = ask}}
+                Dim opts As New ChatRequestOptions With {.Model = "test"}
+                Dim sent As String = Nothing
+                Dim streamOnce = Function(o As ChatRequestOptions) As Task(Of ChatResult)
+                                     sent = If(o.Tools Is Nothing, "-", String.Join(",", o.Tools.Select(Function(t) t("function")?.Value(Of String)("name"))) & "|" & o.ToolChoice)
+                                     Return Task.FromResult(New ChatResult With {.Content = "ok"})
+                                 End Function
+                Dim err As String = Nothing
+                Try
+                    Dim r = Await ChatAgent.AnswerAsync(streamOnce, payload, opts, False, Sub(t) Return, Sub() Return, CancellationToken.None)
+                Catch ex As Exception
+                    err = ex.Message
+                End Try
+                Check(err Is Nothing, "no error: " & ask, If(err, sent))
+                seen.Add(sent)
+            Next
+            Check(seen(0) = "generate_image|required" AndAlso seen(1) = "generate_video|required" AndAlso seen(2) = "generate_image|required" AndAlso Not seen(3).Contains("required"),
+                  "the asked-for tool is required (and only offered tool)", String.Join(" ; ", seen))
+        End If
+
         If only = "community" Then
             Console.WriteLine("== A community model (downloaded and used like the hand-made ones)")
             Dim r = MediaStudio.Recipes().First(Function(x) x.Id = "hf-gsdf-counterfeit-v2-5")
