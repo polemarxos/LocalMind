@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.22.1
+
+### Changed
+- **Deleting a model removes everything it used that nothing else needs.**
+  - **Picture and video models:** the model file, its VAE / audio VAE, its text encoder, and its built-in and speed
+    LoRAs (also for models installed from Civitai). It also removes unfinished `.part` downloads, repair markers and
+    folders left empty. Files another installed model still needs are kept, and they go when you delete that one
+    too.
+  - **Chat models:** an imported model's vision projector and speed-up file are removed with it (downloaded ones
+    already went with their folder).
+  - **Voice / music:** both files, their unfinished downloads and the empty folder.
+
+
 ## 2.22.0
 
 ### Changed

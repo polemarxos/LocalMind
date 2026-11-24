@@ -790,6 +790,32 @@ Module HarnessMain
             Check(cancelled AndAlso AppCore.Downloads.Jobs().Any(Function(j) j.Key = "test:c" AndAlso j.Status = DownloadStatus.Cancelled), "cancelling works")
         End If
 
+        If only = "delete" Then
+            Console.WriteLine("== Deleting a model removes every file it used that nothing else needs")
+            Dim a = MediaStudio.Recipes().First(Function(x) x.Id = "minimax-h3")
+            Dim b = MediaStudio.Recipes().First(Function(x) x.Id = "hyperflow-h3-flash")
+            Dim va = a.Variants.First(), vb = b.Variants.First()
+            Dim make = Sub(f As MediaFile)
+                           Dim p = MediaStudio.LocalPath(f)
+                           Directory.CreateDirectory(Path.GetDirectoryName(p))
+                           Using fs As New FileStream(p, FileMode.Create)
+                               fs.SetLength(f.Size)          ' (sparse: no real disk space)
+                           End Using
+                       End Sub
+            For Each f In MediaStudio.FilesFor(a, va).Concat(MediaStudio.FilesFor(b, vb))
+                make(f)
+            Next
+            Check(MediaStudio.IsInstalled(a, va) AndAlso MediaStudio.IsInstalled(b, vb), "two MiniMax H3 models installed (sharedVae VAE / encoder)")
+            Dim sharedVae = MediaStudio.LocalPath(a.Parts.First(Function(p) p.Role = "vae"))
+            MediaStudio.DeleteVariant(a, va)
+            Check(Not File.Exists(MediaStudio.LocalPath(va)), "its own model file is gone")
+            Check(File.Exists(sharedVae) AndAlso MediaStudio.IsInstalled(b, vb), "the parts the other model needs stay")
+            MediaStudio.DeleteVariant(b, vb)
+            Check(Not File.Exists(sharedVae) AndAlso Not MediaStudio.FilesFor(b, vb).Any(Function(f) File.Exists(MediaStudio.LocalPath(f))),
+                  "deleting the last one removes the sharedVae parts too")
+            Check(Not Directory.Exists(Path.GetDirectoryName(MediaStudio.LocalPath(vb))), "and its empty folder")
+        End If
+
         If only = "gguf" Then
             Console.WriteLine("== GGUF repair (ComfyUI-made files with flattened tensors)")
             ' a small ComfyUI-style file: one 2-D tensor stored flat, its real shape in a comfy.gguf.orig_shape note

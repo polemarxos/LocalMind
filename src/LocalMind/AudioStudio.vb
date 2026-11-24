@@ -108,9 +108,20 @@ Public Module AudioStudio
     End Function
 
     Public Sub Delete(m As AudioModel)
+        ' files another installed voice / music model shares are kept
+        Dim keep = Models().Where(Function(x) x IsNot m AndAlso IsInstalled(x)).SelectMany(Function(x) {LocalPath(x.Model), LocalPath(x.Mmproj)}).
+                            ToHashSet(StringComparer.OrdinalIgnoreCase)
         For Each f In {m.Model, m.Mmproj}
             Dim p = LocalPath(f)
-            If File.Exists(p) Then File.Delete(p)
+            If keep.Contains(p) Then Continue For
+            For Each extra In {p, p & ".part"}
+                If File.Exists(extra) Then File.Delete(extra)
+            Next
+            Try
+                Dim d = Path.GetDirectoryName(p)
+                If Directory.Exists(d) AndAlso Not Directory.EnumerateFileSystemEntries(d).Any() Then Directory.Delete(d)
+            Catch
+            End Try
         Next
     End Sub
 

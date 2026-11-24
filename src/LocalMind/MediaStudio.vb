@@ -408,20 +408,55 @@ Public Module MediaStudio
 
     ''' <summary>Deletes the downloaded variant (shared parts used by another installed model are kept).</summary>
     Public Sub DeleteVariant(r As MediaRecipe, v As MediaVariant)
+        ' Files every other downloaded model still needs (complete ones, and ones whose main file is there).
+        Dim keep As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Dim myMain = LocalPath(v)
+        For Each x In Recipes()
+            For Each y In x.Variants
+                If x Is r AndAlso y Is v Then Continue For
+                ' a complete model keeps all its files; one that only has its main file keeps them unless that main
+                ' file is the one being deleted (then it is the same download, listed once in Installed)
+                Dim complete = IsInstalled(x, y)
+                If complete OrElse (IsPresent(y) AndAlso (y.High Is Nothing OrElse IsPresent(y.High)) AndAlso
+                                    Not String.Equals(LocalPath(y), myMain, StringComparison.OrdinalIgnoreCase)) Then
+                    For Each f In FilesFor(x, y, True, True)
+                        keep.Add(LocalPath(f))
+                    Next
+                End If
+            Next
+        Next
+        ' the model file, its VAE / text encoder / speed and built-in LoRAs / ControlNets — when nothing else uses them
+        Dim mine = FilesFor(r, v, True, True)
+        If r.Parts IsNot Nothing Then mine.AddRange(r.Parts.Where(Function(p) p IsNot Nothing))
+        Dim folders As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        For Each f In mine.Distinct()
+            Dim p = LocalPath(f)
+            If keep.Contains(p) Then Continue For
+            For Each extra In {p, p & ".part", ConvRotFix.MarkerPath(p)}
+                Try
+                    If File.Exists(extra) Then File.Delete(extra)
+                Catch
+                End Try
+            Next
+            folders.Add(Path.GetDirectoryName(p))
+        Next
+        ' folders left empty go too (never the shared ones themselves)
+        For Each d In folders
+            Try
+                If Directory.Exists(d) AndAlso Not Directory.EnumerateFileSystemEntries(d).Any() AndAlso
+                   Not String.Equals(d.TrimEnd("\"c, "/"c), Folder.TrimEnd("\"c, "/"c), StringComparison.OrdinalIgnoreCase) AndAlso
+                   Not String.Equals(d.TrimEnd("\"c, "/"c), UserModelFolder.TrimEnd("\"c, "/"c), StringComparison.OrdinalIgnoreCase) AndAlso
+                   Not String.Equals(d.TrimEnd("\"c, "/"c), LoraLibrary.Folder.TrimEnd("\"c, "/"c), StringComparison.OrdinalIgnoreCase) Then
+                    Directory.Delete(d)
+                End If
+            Catch
+            End Try
+        Next
         If r.Id.StartsWith("user-") Then
             Dim list = LoadUserModels()
             list.RemoveAll(Function(x) x.Id = r.Id)
-            Try : File.Delete(LocalPath(v)) : Catch : End Try
             SaveUserModels(list)
-            Return
         End If
-        Dim keep = Recipes().Where(Function(x) x IsNot r).SelectMany(Function(x) x.Variants.Where(Function(y) IsInstalled(x, y)).SelectMany(Function(y) FilesFor(x, y))).
-                   Select(Function(f) LocalPath(f)).ToHashSet(StringComparer.OrdinalIgnoreCase)
-        For Each f In FilesFor(r, v, True)
-            Dim p = LocalPath(f)
-            If Not keep.Contains(p) AndAlso File.Exists(p) Then File.Delete(p)
-            If Not keep.Contains(p) AndAlso File.Exists(ConvRotFix.MarkerPath(p)) Then File.Delete(ConvRotFix.MarkerPath(p))
-        Next
     End Sub
 
     '──────────────── fit to this PC ────────────────

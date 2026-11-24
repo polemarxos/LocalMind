@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -188,6 +188,22 @@ Public Class ModelLibrary
             Else
                 File.Delete(m.MainFile)
             End If
+            ' its vision projector and speed-up file, unless another model uses them
+            Dim others = All().Where(Function(x) x IsNot m).SelectMany(Function(x) {x.MmprojFile, x.MtpFile}).
+                               Where(Function(x) Not String.IsNullOrEmpty(x)).ToHashSet(StringComparer.OrdinalIgnoreCase)
+            For Each extra In {m.MmprojFile, m.MtpFile}
+                If String.IsNullOrEmpty(extra) OrElse others.Contains(extra) Then Continue For
+                Dim p = If(Path.IsPathRooted(extra), extra, Path.Combine(m.Folder, extra))
+                Try
+                    If File.Exists(p) Then File.Delete(p)
+                Catch
+                End Try
+            Next
+            Try
+                If Directory.Exists(m.Folder) AndAlso Not Directory.EnumerateFileSystemEntries(m.Folder).Any() AndAlso
+                   Not String.Equals(m.Folder.TrimEnd("\"c), Folder.TrimEnd("\"c), StringComparison.OrdinalIgnoreCase) Then Directory.Delete(m.Folder)
+            Catch
+            End Try
         End If
         Refresh()
     End Sub
