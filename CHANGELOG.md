@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.21.1
+
+### Changed
+- **civitai.red shows every picture, NSFW included.** A model's card uses its first picture, whatever its rating.
+  Its page now shows **all its pictures** in a row under the big one: click one to see it large, and click the big
+  picture to open it full size. On civitai.com only the safe pictures are shown, and a card whose first picture is
+  NSFW uses the first safe one instead of staying empty. In the LocalMind list, "Show NSFW" decides the same.
+- Civitai key help, step 3: scroll down to "Security & apps" and click "Add API Key" (Civitai's current page).
+
+
 ## 2.21.0
 
 ### Changed

@@ -58,7 +58,7 @@ Public Class CivitaiKeyForm
         Dim lines = {
             Localizer.T("Sign in (or sign up) at civitai.com."),
             Localizer.T("Open Account settings (button below, or profile picture → Settings)."),
-            Localizer.T("Scroll down to ""API Keys"" and click ""+ Add API key""."),
+            Localizer.T("Scroll down to ""Security & apps"" and click ""Add API Key""."),
             Localizer.T("Give it a name (e.g. LocalMind), save, and copy the key. It is shown only once."),
             Localizer.T("Paste it below and click Save.")}
         For i = 0 To lines.Length - 1

@@ -29,6 +29,7 @@ Public Class ModelGallery
     Private ReadOnly list As ListView
     Private ReadOnly thumbs As New ImageList() With {.ImageSize = New Size(ThumbSize, ThumbSize), .ColorDepth = ColorDepth.Depth32Bit}
     Private ReadOnly pic As PictureBox
+    Private ReadOnly strip As FlowLayoutPanel
     Private ReadOnly lblTitle, lblInfo, lblStatus, lblListInfo As Label
     Private ReadOnly txtAbout As TextBox
     Private ReadOnly btnInstall, btnDelete, btnMore, btnOpen As Button
@@ -83,7 +84,11 @@ Public Class ModelGallery
 
         '──── right: the model's page ────
         Dim right As New Panel() With {.Dock = DockStyle.Right, .Width = 430, .Padding = New Padding(12, 10, 12, 10), .BackColor = Theme.CRaised}
-        pic = New PictureBox() With {.Dock = DockStyle.Top, .Height = 330, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Theme.CBack}
+        pic = New PictureBox() With {.Dock = DockStyle.Top, .Height = 330, .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Theme.CBack, .Cursor = Cursors.Hand}
+        ' every picture of the model, small, under the big one (click one to see it large)
+        strip = New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 74, .WrapContents = False, .AutoScroll = True,
+                                            .Padding = New Padding(0, 4, 0, 0), .BackColor = Theme.CRaised}
+        AddHandler pic.Click, Sub() If pic.Image IsNot Nothing Then ShowLarge(pic.Image)
         lblTitle = New Label() With {.Dock = DockStyle.Top, .Height = 34, .Font = New Font(Theme.UiFont.FontFamily, 12.5F, FontStyle.Bold), .ForeColor = Theme.CText,
                                      .UseMnemonic = False, .AutoEllipsis = True, .Padding = New Padding(0, 8, 0, 0)}
         lblInfo = New Label() With {.Dock = DockStyle.Top, .Height = 70, .ForeColor = Theme.CDim, .UseMnemonic = False}
@@ -99,7 +104,7 @@ Public Class ModelGallery
         txtAbout = New TextBox() With {.Dock = DockStyle.Fill, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
                                        .BorderStyle = BorderStyle.None, .BackColor = Theme.CRaised, .ForeColor = Theme.CText}
         ' the picture takes a fair share of the height, so the name, files and Install always show
-        AddHandler right.Resize, Sub() pic.Height = Math.Max(120, Math.Min(380, CInt((right.ClientSize.Height - 300) * 0.75)))
+        AddHandler right.Resize, Sub() pic.Height = Math.Max(110, Math.Min(360, CInt((right.ClientSize.Height - 370) * 0.8)))
         right.Controls.Add(txtAbout)
         right.Controls.Add(lblStatus)
         right.Controls.Add(prg)
@@ -107,6 +112,7 @@ Public Class ModelGallery
         right.Controls.Add(cmbVersion)
         right.Controls.Add(lblInfo)
         right.Controls.Add(lblTitle)
+        right.Controls.Add(strip)
         right.Controls.Add(pic)
 
         '──── the gallery ────
@@ -339,8 +345,10 @@ Public Class ModelGallery
             list.EndUpdate()
             For Each m In res.Items
                 Dim v = m.Versions(0)
-                If v.ImageUrl IsNot Nothing AndAlso (IsRed OrElse Not v.ImageNsfw) Then
-                    Dim unused = LoadThumbAsync($"c:{m.Id}", Civitai.ThumbUrl(v.ImageUrl, 320), ct)
+                ' the card's picture: the first one (civitai.red shows NSFW ones too; civitai.com the first safe one)
+                Dim cover = v.Images.FirstOrDefault(Function(x) IsRed OrElse Not x.Nsfw)
+                If cover.Url IsNot Nothing Then
+                    Dim unused = LoadThumbAsync($"c:{m.Id}", Civitai.ThumbUrl(cover.Url, 320), ct)
                 End If
             Next
             lblListInfo.Text = $"{list.Items.Count} " & Localizer.T("results")
@@ -532,6 +540,8 @@ Public Class ModelGallery
         Dim busy = _installs.TryGetValue(Key(tag, ver), running)
         Dim r = TryCast(tag, MediaRecipe)
         Dim imgUrl As String = Nothing
+        Dim stripUrls As New List(Of String)
+        ClearStrip()
 
         If r IsNot Nothing Then
             Dim v = CType(ver, VariantChoice).V
@@ -548,9 +558,11 @@ Public Class ModelGallery
             Try
                 Dim info = Await ModelDetails.GetAsync(r, chkNsfw.Checked, ct)
                 If ct.IsCancellationRequested Then Return
-                Dim s = info.Samples.FirstOrDefault(Function(x) chkNsfw.Checked OrElse Not x.Nsfw)
+                Dim allowed = info.Samples.Where(Function(x) chkNsfw.Checked OrElse Not x.Nsfw).ToList()
+                Dim s = allowed.FirstOrDefault()
                 If info.Description <> "" Then txtAbout.Text &= vbCrLf & vbCrLf & info.Description
                 imgUrl = s?.Url
+                stripUrls = allowed.Select(Function(x) x.Url).ToList()
                 If imgUrl Is Nothing Then imgUrl = Await FamilyPictureAsync(r, ct)
             Catch
             End Try
@@ -574,7 +586,10 @@ Public Class ModelGallery
             btnInstall.Text = If(busy, Localizer.T("Cancel"), If(installed, Localizer.T("✔ Installed"), Localizer.T("⬇ Install")))
             btnInstall.Enabled = busy OrElse (Not installed AndAlso f IsNot Nothing AndAlso g.Family IsNot Nothing AndAlso (m.IsLora OrElse g.Template IsNot Nothing))
             btnDelete.Visible = False
-            If v.ImageUrl IsNot Nothing AndAlso (IsRed OrElse Not v.ImageNsfw) Then imgUrl = Civitai.ThumbUrl(v.ImageUrl, 640)
+            ' civitai.red: every picture, NSFW too; civitai.com: only the safe ones
+            Dim shown = v.Images.Where(Function(x) IsRed OrElse Not x.Nsfw).Select(Function(x) x.Url).ToList()
+            If shown.Count > 0 Then imgUrl = Civitai.ThumbUrl(shown(0), 640)
+            stripUrls = shown.Select(Function(x) Civitai.ThumbUrl(x, 640)).ToList()
             If f IsNot Nothing Then
                 Dim vv = v
                 Dim unused = Task.Run(Async Function()
@@ -594,6 +609,7 @@ Public Class ModelGallery
         prg.Visible = busy
         If busy Then prg.Value = running.Pct
         pic.Image = Nothing
+        FillStrip(stripUrls, ver, ct)
         If imgUrl Is Nothing Then Return
         Try
             Dim img = Await ModelDetails.GetImageAsync(imgUrl, ct)
@@ -601,6 +617,54 @@ Public Class ModelGallery
         Catch
         End Try
     End Function
+
+    Private Sub ClearStrip()
+        For Each c As Control In strip.Controls.Cast(Of Control)().ToList()
+            CType(c, PictureBox).Image?.Dispose()
+            c.Dispose()
+        Next
+        strip.Controls.Clear()
+    End Sub
+
+    ''' <summary>Small pictures under the big one; a click shows that picture large.</summary>
+    Private Sub FillStrip(urls As List(Of String), ver As Object, ct As CancellationToken)
+        strip.Visible = urls.Count > 1
+        If urls.Count <= 1 Then Return
+        For Each u In urls.Take(20)
+            Dim url = u
+            Dim pb As New PictureBox() With {.Size = New Size(64, 64), .SizeMode = PictureBoxSizeMode.Zoom, .BackColor = Theme.CBack,
+                                             .Margin = New Padding(0, 0, 6, 0), .Cursor = Cursors.Hand}
+            strip.Controls.Add(pb)
+            Dim unused = Task.Run(Async Function()
+                                      Try
+                                          Dim img = Await ModelDetails.GetImageAsync(url, ct)
+                                          If img Is Nothing OrElse ct.IsCancellationRequested Then Return
+                                          Me.Post(Sub()
+                                                      If pb.IsDisposed Then Return
+                                                      pb.Image = img
+                                                  End Sub)
+                                      Catch
+                                      End Try
+                                  End Function)
+            AddHandler pb.Click, Sub()
+                                     If pb.Image IsNot Nothing AndAlso cmbVersion.SelectedItem Is ver Then pic.Image = New Bitmap(pb.Image)
+                                 End Sub
+        Next
+    End Sub
+
+    ''' <summary>A picture at full size in its own window.</summary>
+    Private Sub ShowLarge(img As Image)
+        Using f As New Form() With {.Text = lblTitle.Text, .StartPosition = FormStartPosition.CenterParent, .BackColor = Color.Black,
+                                    .Size = New Size(Math.Min(1200, img.Width + 40), Math.Min(900, img.Height + 60)), .ShowInTaskbar = False, .KeyPreview = True}
+            Theme.DarkTitleBar(f)
+            Dim big As New PictureBox() With {.Dock = DockStyle.Fill, .SizeMode = PictureBoxSizeMode.Zoom, .Image = img, .BackColor = Color.Black}
+            f.Controls.Add(big)
+            AddHandler big.Click, Sub() f.Close()
+            AddHandler f.KeyDown, Sub(s2, e2) If e2.KeyCode = Keys.Escape Then f.Close()
+            f.ShowDialog(FindForm())
+            big.Image = Nothing
+        End Using
+    End Sub
 
     Private Function PageUrl() As String
         Dim tag = SelectedTag()

@@ -1061,5 +1061,6 @@
 "✔ Key saved. Press Install again.": "✔ Το κλειδί αποθηκεύτηκε. Πατήστε ξανά Εγκατάσταση.",
 "Civitai": "Civitai",
 "Open Account settings (button below, or profile picture → Settings).": "Ανοίξτε τις ρυθμίσεις λογαριασμού (κουμπί παρακάτω ή εικόνα προφίλ → Settings).",
-"🔒 Needs a Civitai account: click 🔑 Civitai API key at the top first.": "🔒 Χρειάζεται λογαριασμό Civitai: πατήστε πρώτα 🔑 Κλειδί API Civitai επάνω."
+"🔒 Needs a Civitai account: click 🔑 Civitai API key at the top first.": "🔒 Χρειάζεται λογαριασμό Civitai: πατήστε πρώτα 🔑 Κλειδί API Civitai επάνω.",
+"Scroll down to \"Security & apps\" and click \"Add API Key\".": "Κατεβείτε στο \"Security & apps\" και πατήστε \"Add API Key\"."
 }

@@ -33,6 +33,8 @@ Public Module Civitai
         Public Property Files As New List(Of CivFile)()
         Public Property ImageUrl As String
         Public Property ImageNsfw As Boolean
+        ''' <summary>All pictures of this version (videos left out), with whether each is NSFW.</summary>
+        Public Property Images As New List(Of (Url As String, Nsfw As Boolean))()
 
         ''' <summary>The file to download: the primary model file, safetensors preferred (never pickle files).</summary>
         Public Function BestFile() As CivFile
@@ -144,6 +146,10 @@ Public Module Civitai
                                 .Primary = If(f.Value(Of Boolean?)("primary"), False), .Format = f("metadata")?.Value(Of String)("format"),
                                 .Fp = f("metadata")?.Value(Of String)("fp"), .DownloadUrl = f.Value(Of String)("downloadUrl"),
                                 .Sha256 = f("hashes")?.Value(Of String)("SHA256")})
+                        Next
+                        For Each i In If(TryCast(v("images"), JArray), New JArray())
+                            If i.Value(Of String)("type") = "video" OrElse String.IsNullOrEmpty(i.Value(Of String)("url")) Then Continue For
+                            cv.Images.Add((i.Value(Of String)("url"), i.Value(Of Integer?)("nsfwLevel").GetValueOrDefault() > 1))
                         Next
                         Dim img = TryCast(v("images"), JArray)?.FirstOrDefault(Function(i) i.Value(Of String)("type") <> "video")
                         If img IsNot Nothing Then
