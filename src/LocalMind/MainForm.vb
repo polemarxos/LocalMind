@@ -54,6 +54,7 @@ Public Class MainForm
     Private Class AttachmentItem
         Public Path As String
         Public IsImage As Boolean
+        Public IsAudio As Boolean
         Public Text As String
         Public Base64 As String
         Public Chip As Control
@@ -667,6 +668,9 @@ Public Class MainForm
         For Each a In _pendingAttachments
             If a.IsImage Then
                 userMsg.Images.Add(a.Base64)
+            ElseIf a.IsAudio Then
+                userMsg.AudioFiles.Add(a.Path)
+                userMsg.Content &= vbCrLf & vbCrLf & "[Attached voice recording: " & Path.GetFileName(a.Path).Substring(23) & "]"
             Else
                 userMsg.Content &= vbCrLf & vbCrLf &
                     "[Attached document: " & Path.GetFileName(a.Path) & "]" & vbCrLf &
@@ -1208,7 +1212,7 @@ Public Class MainForm
     '════════════════════════════════════════════════════════════
     Private Sub btnAttachDoc_Click(sender As Object, e As EventArgs) Handles btnAttachDoc.Click
         Using dlg As New OpenFileDialog()
-            dlg.Filter = "Documents|*.txt;*.md;*.pdf;*.csv;*.json;*.xml;*.log;*.vb;*.cs;*.py;*.js|All files|*.*"
+            dlg.Filter = "Documents|*.txt;*.md;*.pdf;*.csv;*.json;*.xml;*.log;*.vb;*.cs;*.py;*.js|Sound (voice to copy)|*.mp3;*.wav;*.m4a;*.ogg;*.opus;*.flac;*.aac;*.wma|All files|*.*"
             dlg.Multiselect = True
             If dlg.ShowDialog() <> DialogResult.OK Then Return
             AttachFiles(dlg.FileNames)
@@ -1240,6 +1244,12 @@ Public Class MainForm
         For Each f In paths
             Try
                 If Directory.Exists(f) Then Continue For
+                If ChatAgent.IsAudioFile(f) Then
+                    ' a voice recording (to copy the voice), kept with the conversation
+                    AddAttachment(New AttachmentItem With {.Path = ChatAgent.KeepChatAudio(f), .IsAudio = True})
+                    added += 1
+                    Continue For
+                End If
                 Dim content = DocumentService.ExtractAnyFile(f)
                 Select Case content.Kind
                     Case ContentKind.Image
@@ -1267,7 +1277,7 @@ Public Class MainForm
 
     Private Sub AddAttachment(item As AttachmentItem)
         Dim chip As New Label() With {
-            .Text = "  " & If(item.IsImage, "🖼 ", "📄 ") & Path.GetFileName(item.Path) & "  ✕  ",
+            .Text = "  " & If(item.IsImage, "🖼 ", If(item.IsAudio, "🎙 ", "📄 ")) & If(item.IsAudio, Path.GetFileName(item.Path).Substring(23), Path.GetFileName(item.Path)) & "  ✕  ",
             .AutoSize = True, .Padding = New Padding(6, 4, 6, 4), .Margin = New Padding(2),
             .BackColor = Theme.CControl, .ForeColor = Theme.CText,
             .Font = New Font("Segoe UI", 8.5!), .Cursor = Cursors.Hand

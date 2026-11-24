@@ -72,7 +72,7 @@ Public Module AppCore
         Dim keepImagesFrom = history.Count - Math.Max(1, Settings.KeepImagesInLastMessages)
         For i = 0 To history.Count - 1
             Dim m = history(i)
-            Dim copy As New ChatMessage With {.Role = m.Role, .Content = m.Content}
+            Dim copy As New ChatMessage With {.Role = m.Role, .Content = m.Content, .AudioFiles = m.AudioFiles}
             If m.Images IsNot Nothing AndAlso m.Images.Count > 0 Then
                 If i >= keepImagesFrom Then
                     copy.Images = m.Images.ToList()

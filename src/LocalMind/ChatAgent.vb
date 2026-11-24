@@ -31,12 +31,16 @@ Public Module ChatAgent
                                              "^\s*(please\s+)?(draw|paint)\b|" &
                                              "(φτιά[χξ]|δημιούργ|ζωγράφισ|κάνε|σχεδίασ)[^.?!;\n]{0,60}(εικόνα|φωτογραφ|ζωγραφι|σκίτσο|λογότυπο|πορτρέτο)",
                                              RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    Private ReadOnly AskClone As New Regex("\b(clone|copy|mimic|imitate|use)\b[^.?!\n]{0,40}\bvoice\b|\b(this|that|his|her|the same|my)\s+voice\b|\bvoice\s+(clone|cloning)\b|" &
+                                           "(κλών|κλωνοπ|αντέγραψ|μιμήσ|μιμου)[^.?!;\n]{0,40}φων|(αυτή|ίδια|τη|την|του|της|μου)\s+(τη\s+)?φωνή",
+                                           RegexOptions.IgnoreCase Or RegexOptions.Compiled)
     Private ReadOnly HowTo As New Regex("\bhow (do|to|can|should|would)\b|\bπώς\b|\bπως\b|\btutorial\b", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
 
     ''' <summary>The tool the user plainly asked for in their latest message ("generate me a video"), if offered.</summary>
     Public Function RequestedTool(text As String, tools As JArray) As String
         If tools Is Nothing OrElse String.IsNullOrWhiteSpace(text) OrElse HowTo.IsMatch(text) Then Return Nothing
         Dim offered = tools.Select(Function(t) t("function")?.Value(Of String)("name")).ToList()
+        If AskClone.IsMatch(text) AndAlso offered.Contains("clone_voice") Then Return "clone_voice"
         If AskVideo.IsMatch(text) AndAlso offered.Contains("generate_video") Then Return "generate_video"
         If AskPicture.IsMatch(text) AndAlso offered.Contains("generate_image") Then Return "generate_image"
         Return Nothing
@@ -62,6 +66,16 @@ Public Module ChatAgent
                     {"style", New JObject From {{"type", "string"}, {"description", "Genre, mood, instruments, voice, tempo, in English"}}},
                     {"lyrics", New JObject From {{"type", "string"}, {"description", "Lyrics with [verse] and [chorus] tags, in the user's language; empty for instrumental"}}}},
                 {"style"}))
+        End If
+        If s.EnableAudio AndAlso CanCloneVoice() Then
+            Dim saved = String.Join(", ", VoiceLibrary.All().Select(Function(v) v.Name))
+            list.Add(Tool("clone_voice", "Speak text in a copied voice: the voice of the recording the user attached (MP3, WAV…) or a saved voice. " &
+                          "Use it when the user asks to clone / copy / use a voice, or to say something in someone's voice.",
+                New JObject From {
+                    {"text", New JObject From {{"type", "string"}, {"description", "The exact words to speak, in the user's language, as the user wrote them"}}},
+                    {"voice_name", New JObject From {{"type", "string"}, {"description", "A saved voice to use when no recording is attached" & If(saved <> "", " (saved voices: " & saved & ")", "")}}},
+                    {"save_as", New JObject From {{"type", "string"}, {"description", "Name to save the attached voice under, only if the user gave one"}}}},
+                {"text"}))
         End If
         If offerWebSearch Then
             list.Add(Tool("web_search", "Search the web for current or unknown information (news, prices, recent events, facts you are unsure about).",
@@ -124,6 +138,12 @@ Public Module ChatAgent
                         md.AppendLine().AppendLine().Append(Await MakePictureAsync(If(args.Value(Of String)("prompt"), ""), Nothing, status, ct, cast))
                     Case "generate_video"
                         md.AppendLine().AppendLine().Append(Await MakeVideoAsync(If(args.Value(Of String)("prompt"), ""), LastPhoto(payload), status, ct, cast))
+                    Case "clone_voice"
+                        Dim words = If(args.Value(Of String)("text"), args.Value(Of String)("prompt"))
+                        ' (a forced call carries the whole message: keep only the words to say)
+                        If String.IsNullOrWhiteSpace(words) OrElse words = userText Then words = WordsToSay(userText)
+                        md.AppendLine().AppendLine().Append(Await CloneVoiceAsync(words, LastRecording(payload), args.Value(Of String)("voice_name"),
+                                                                                  args.Value(Of String)("save_as"), status, ct))
                     Case "make_song"
                         md.AppendLine().AppendLine().Append(Await MakeSongAsync(If(args.Value(Of String)("style"), ""), args.Value(Of String)("lyrics"), status, ct))
                     Case "web_search"
@@ -274,5 +294,117 @@ Public Module ChatAgent
         Dim wav = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = m, .Text = style, .Lyrics = lyrics},
                                                   Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
         Return $"[🎵 {EscapeAlt(style)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})"
+    End Function
+
+    '──────────────── voice cloning in the chat ────────────────
+    Public ReadOnly AudioExtensions As String() = {".mp3", ".wav", ".m4a", ".ogg", ".oga", ".opus", ".flac", ".aac", ".wma", ".webm", ".mp4", ".mov", ".mkv"}
+
+    Public Function IsAudioFile(path As String) As Boolean
+        Return AudioExtensions.Contains(IO.Path.GetExtension(If(path, "")).ToLowerInvariant())
+    End Function
+
+    ''' <summary>Where sound files attached in the chat are kept (they stay with the conversation).</summary>
+    Public ReadOnly Property ChatAudioFolder As String
+        Get
+            Dim d = Path.Combine(AppPaths.Roaming, "ChatAudio")
+            Directory.CreateDirectory(d)
+            Return d
+        End Get
+    End Property
+
+    ''' <summary>Copies a sound file the user attached into the chat audio folder and returns the copy.</summary>
+    Public Function KeepChatAudio(source As String) As String
+        Dim dest = Path.Combine(ChatAudioFolder, $"{DateTime.Now:yyyyMMdd-HHmmss}-{Guid.NewGuid().ToString("N").Substring(0, 6)}-{Path.GetFileName(source)}")
+        File.Copy(source, dest, True)
+        Return dest
+    End Function
+
+    ''' <summary>A voice model that can copy a voice is installed.</summary>
+    Public Function CanCloneVoice() As Boolean
+        Return AudioStudio.Models().Any(Function(m) Not m.IsMusic AndAlso m.Clone AndAlso AudioStudio.IsInstalled(m))
+    End Function
+
+    ''' <summary>The newest sound file attached in the conversation (latest message first).</summary>
+    Public Function LastRecording(payload As List(Of ChatMessage)) As String
+        If payload Is Nothing Then Return Nothing
+        For i = payload.Count - 1 To 0 Step -1
+            Dim a = payload(i).AudioFiles
+            If a IsNot Nothing Then
+                For j = a.Count - 1 To 0 Step -1
+                    If File.Exists(a(j)) Then Return a(j)
+                Next
+            End If
+        Next
+        Return Nothing
+    End Function
+
+    ''' <summary>What to say when the chat model did not fill in the text: the words after "say" / ":" or in quotes.</summary>
+    Public Function WordsToSay(userText As String) As String
+        Dim t = If(userText, "")
+        t = Regex.Replace(t, "\[Attached [^\]]*\]", "").Trim()
+        Dim q = Regex.Match(t, "[""" & ChrW(&H201C) & "«](.+?)[""" & ChrW(&H201D) & "»]", RegexOptions.Singleline)
+        If q.Success Then Return q.Groups(1).Value.Trim()
+        Dim c = t.IndexOf(":"c)
+        If c >= 0 AndAlso c < t.Length - 1 Then Return t.Substring(c + 1).Trim()
+        Dim s = Regex.Match(t, "\b(say|says|saying|speak|read)\b\s+(.+)$|(πες|λέει|να πει|διάβασε)\s+(.+)$", RegexOptions.IgnoreCase Or RegexOptions.Singleline)
+        If s.Success Then Return If(s.Groups(2).Success AndAlso s.Groups(2).Value <> "", s.Groups(2).Value, s.Groups(4).Value).Trim()
+        Return t
+    End Function
+
+    ''' <summary>
+    ''' Speaks the words in the voice of the attached recording (or of a saved voice). The recording is cut to a clean
+    ''' 15-second sample, its words are written down when the model works better with them, and it is kept in
+    ''' the voice library ("saveAs", or "Last chat voice"), so later messages can use it by name.
+    ''' </summary>
+    Public Async Function CloneVoiceAsync(words As String, recording As String, voiceName As String, saveAs As String,
+                                          status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Dim m = AudioStudio.Models().Where(Function(x) Not x.IsMusic AndAlso x.Clone AndAlso AudioStudio.IsInstalled(x)).
+                    OrderBy(Function(x) If(x.Id = AppCore.Settings.ReadAloudModel, 0, 1)).FirstOrDefault()
+        If m Is Nothing Then Return Localizer.T("(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in Models → 🎵 Music & voice models.)")
+        If String.IsNullOrWhiteSpace(words) Then Return Localizer.T("(Tell me what the voice should say, e.g. clone this voice and say: Good morning!)")
+
+        Dim name As String
+        If String.IsNullOrEmpty(recording) Then
+            Dim saved = If(String.IsNullOrWhiteSpace(voiceName), Nothing, VoiceLibrary.Find(voiceName))
+            If saved Is Nothing Then saved = If(String.IsNullOrWhiteSpace(saveAs), Nothing, VoiceLibrary.Find(saveAs))
+            If saved Is Nothing Then
+                Dim names = VoiceLibrary.All().Select(Function(v) v.Name).ToList()
+                Return Localizer.T("(Attach a recording of the voice (MP3, WAV, M4A…) to your message and ask again.)") &
+                       If(names.Count > 0, "  " & Localizer.T("Saved voices") & ": " & String.Join(", ", names), "")
+            End If
+            name = saved.Name
+        Else
+            ' a clean sample: 15 seconds, mono, from just after the start
+            status?.Invoke(Localizer.T("Preparing the voice sample…"))
+            Dim info = Await VideoTools.InfoAsync(recording, ct)
+            Dim start = If(info.Seconds > 20, 1.0, 0.0)
+            Dim len = Math.Min(15.0, Math.Max(1.0, info.Seconds - start))
+            Dim inv = Globalization.CultureInfo.InvariantCulture
+            Dim sample = Path.Combine(Path.GetTempPath(), $"localmind-voice-{Guid.NewGuid():N}.wav")
+            Await VideoTools.FfmpegAsync($"-hide_banner -loglevel error -y -ss {start.ToString("0.###", inv)} -t {len.ToString("0.###", inv)} -i ""{recording}"" -vn -ac 1 -ar 24000 -c:a pcm_s16le ""{sample}""", ct)
+            If Not File.Exists(sample) Then Throw New Exception(Localizer.T("Could not read the sound in the attached file."))
+            Dim spoken = ""
+            If m.Transcript Then
+                Try
+                    Dim w16 = Path.Combine(Path.GetTempPath(), $"localmind-voice16-{Guid.NewGuid():N}.wav")
+                    Await VideoTools.CutAudioAsync(sample, 0, len, w16, ct)
+                    status?.Invoke(Localizer.T("Writing down the words of the recording…"))
+                    spoken = Await Voice.TranscribeAsync(w16, Sub(t) status?.Invoke(Localizer.T(t)), ct)
+                    Try : File.Delete(w16) : Catch : End Try
+                Catch ex As OperationCanceledException
+                    Throw
+                Catch
+                    spoken = ""          ' (cloning still works without the words, a little less close)
+                End Try
+            End If
+            name = If(String.IsNullOrWhiteSpace(saveAs), Localizer.T("Last chat voice"), saveAs.Trim())
+            VoiceLibrary.Add(name, sample, If(spoken, "").Trim(), If(Voice.IsGreek(words), "el", "en"))
+            Try : File.Delete(sample) : Catch : End Try
+        End If
+
+        Dim wav = Await VideoMaker.SpeakAsync(words, name, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
+        Dim note = $"_{Localizer.T("Voice")}: {name} · {m.Name}_"
+        If Not String.IsNullOrWhiteSpace(saveAs) Then note &= "  " & String.Format(Localizer.T("(saved — say ""with {0}'s voice"" next time)"), name)
+        Return $"[🗣 {EscapeAlt(words)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})" & vbCrLf & vbCrLf & note
     End Function
 End Module

@@ -972,5 +972,14 @@
 "Makes a new voice from a description.": "Φτιάχνει νέα φωνή από περιγραφή.",
 "Languages": "Γλώσσες",
 "Files": "Αρχεία",
-"None of these fits this PC's graphics card — choose 'All models' above to see them all (they can use system RAM).": "Κανένα από αυτά δεν χωράει στην κάρτα γραφικών — επιλέξτε «Όλα τα μοντέλα» επάνω για να τα δείτε όλα (μπορούν να χρησιμοποιήσουν τη μνήμη RAM)."
+"None of these fits this PC's graphics card — choose 'All models' above to see them all (they can use system RAM).": "Κανένα από αυτά δεν χωράει στην κάρτα γραφικών — επιλέξτε «Όλα τα μοντέλα» επάνω για να τα δείτε όλα (μπορούν να χρησιμοποιήσουν τη μνήμη RAM).",
+"(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in Models → 🎵 Music & voice models.)": "(Δεν έχει κατέβει μοντέλο που αντιγράφει φωνή — κατεβάστε Qwen3-TTS, Chatterbox ή VoxCPM2 από Μοντέλα → 🎵 Μοντέλα μουσικής & φωνής.)",
+"(Tell me what the voice should say, e.g. clone this voice and say: Good morning!)": "(Πείτε μου τι να πει η φωνή, π.χ. κλωνοποίησε τη φωνή και πες: Καλημέρα!)",
+"(Attach a recording of the voice (MP3, WAV, M4A…) to your message and ask again.)": "(Επισυνάψτε μια ηχογράφηση της φωνής (MP3, WAV, M4A…) στο μήνυμα και ζητήστε το ξανά.)",
+"Saved voices": "Αποθηκευμένες φωνές",
+"Preparing the voice sample…": "Προετοιμασία δείγματος φωνής…",
+"Could not read the sound in the attached file.": "Δεν ήταν δυνατή η ανάγνωση του ήχου στο συνημμένο αρχείο.",
+"Writing down the words of the recording…": "Καταγραφή των λέξεων της ηχογράφησης…",
+"Last chat voice": "Τελευταία φωνή συνομιλίας",
+"(saved — say \"with {0}'s voice\" next time)": "(αποθηκεύτηκε — την επόμενη φορά πείτε «με τη φωνή {0}»)"
 }

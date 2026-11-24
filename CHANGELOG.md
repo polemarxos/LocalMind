@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.16.0
+
+### Added
+- **Clone a voice from the chat.** Attach a recording (MP3, WAV, M4A, OGG, FLAC… or a video), or drop or paste it
+  into the message box. Then write e.g. "clone this voice and say: Good morning everyone!" (Greek works too:
+  "κλωνοποίησε τη φωνή και πες: …"). The answer is a player with the words spoken in that voice.
+  - LocalMind takes a clean 15-second sample of the recording. For models that copy closer with the words of the
+    recording (Qwen3-TTS), it writes them down by itself.
+  - The voice is kept in your voice library as "Last chat voice". Give it a name ("…and save it as Maria") to
+    keep it, then later ask "say … with Maria's voice" without attaching anything.
+  - A recording attached earlier in the same conversation can be used again ("now say this in that voice").
+  - Needs a voice model that can copy voices (Qwen3-TTS, Chatterbox or VoxCPM2) and 🎵 Music & voice switched on.
+
+
 ## 2.15.0
 
 ### Added

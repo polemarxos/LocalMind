@@ -700,6 +700,45 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "v215" Then
+            Console.WriteLine("== 2.15: voice cloning from the chat")
+            Dim tools As New Newtonsoft.Json.Linq.JArray(
+                New Newtonsoft.Json.Linq.JObject From {{"type", "function"}, {"function", New Newtonsoft.Json.Linq.JObject From {{"name", "clone_voice"}}}},
+                New Newtonsoft.Json.Linq.JObject From {{"type", "function"}, {"function", New Newtonsoft.Json.Linq.JObject From {{"name", "generate_video"}}}})
+            For Each q In {"clone this voice and say: hello there", "Use this voice to say good morning", "say it in her voice",
+                           "κλωνοποίησε τη φωνή και πες: καλημέρα", "πες το με αυτή τη φωνή", "voice clone: welcome to the show"}
+                Check(ChatAgent.RequestedTool(q, tools) = "clone_voice", "asks to clone a voice", q)
+            Next
+            For Each q In {"make a video of a cat", "what is a voice actor?", "how do I clone a voice?"}
+                Check(ChatAgent.RequestedTool(q, tools) <> "clone_voice", "not a cloning request", q)
+            Next
+            Check(ChatAgent.WordsToSay("clone this voice and say: Good morning, everyone!" & vbCrLf & vbCrLf & "[Attached voice recording: a.mp3]") = "Good morning, everyone!",
+                  "words after the colon", ChatAgent.WordsToSay("clone this voice and say: Good morning, everyone!"))
+            Check(ChatAgent.WordsToSay("use this voice to say ""I'll be back""") = "I'll be back", "words in quotes")
+            Check(ChatAgent.WordsToSay("use this voice and say hello world") = "hello world", "words after say")
+            Check(ChatAgent.WordsToSay("με αυτή τη φωνή πες καλημέρα σε όλους") = "καλημέρα σε όλους", "Greek: words after πες")
+            Check(ChatAgent.IsAudioFile("C:\x\Voice.MP3") AndAlso ChatAgent.IsAudioFile("a.wav") AndAlso ChatAgent.IsAudioFile("b.m4a") AndAlso Not ChatAgent.IsAudioFile("c.png"),
+                  "sound files are recognized")
+            Dim rec = Path.Combine(Path.GetTempPath(), "lm-v215.wav")
+            File.WriteAllBytes(rec, {0, 1, 2})
+            Dim kept = ChatAgent.KeepChatAudio(rec)
+            Check(File.Exists(kept) AndAlso Path.GetFileName(kept).Substring(23) = "lm-v215.wav", "the attached recording is kept with the chat", kept)
+            Dim payload As New List(Of ChatMessage) From {
+                New ChatMessage With {.Role = "user", .Content = "hi", .AudioFiles = New List(Of String) From {kept}},
+                New ChatMessage With {.Role = "assistant", .Content = "hello"},
+                New ChatMessage With {.Role = "user", .Content = "now say it in this voice"}}
+            Check(ChatAgent.LastRecording(payload) = kept, "an earlier recording in the conversation is used")
+            Dim s As New ChatSession()
+            s.Messages.AddRange(payload)
+            Dim built = AppCore.BuildPayload(s, Nothing)
+            Check(ChatAgent.LastRecording(built) = kept, "the recording reaches the chat agent")
+            Dim json = Newtonsoft.Json.JsonConvert.SerializeObject(New ChatMessage With {.Role = "user", .Content = "x"})
+            Check(Not json.Contains("AudioFiles"), "messages without sound save as before", json)
+            Dim msg = Await ChatAgent.CloneVoiceAsync("hello", kept, Nothing, Nothing, Nothing, CancellationToken.None)
+            Check(msg.StartsWith("(") OrElse msg.Contains("🗣"), "without a voice model: a clear note, no crash", msg)
+            File.Delete(kept)
+        End If
+
         If only = "v212" Then
             Console.WriteLine("== 2.12: film editor, conversations, cast voices/LoRAs, history, subtitles, notes")
             Dim tmp = Path.Combine(Path.GetTempPath(), "lm-v212")

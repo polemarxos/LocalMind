@@ -7,12 +7,18 @@ Public Class ChatMessage
     Public Property Content As String
     Public Property Thinking As String
     Public Property Images As List(Of String) = New List(Of String)()
+    ''' <summary>Sound files attached to the message (kept in the chat audio folder), e.g. a voice to copy.</summary>
+    Public Property AudioFiles As List(Of String) = New List(Of String)()
     ''' <summary>Model that produced an assistant message (for mixed-model chats).</summary>
     Public Property Model As String
     Public Property TokensPerSecond As Double
 
     Public Function ShouldSerializeImages() As Boolean
         Return Images IsNot Nothing AndAlso Images.Count > 0
+    End Function
+
+    Public Function ShouldSerializeAudioFiles() As Boolean
+        Return AudioFiles IsNot Nothing AndAlso AudioFiles.Count > 0
     End Function
 End Class
 
