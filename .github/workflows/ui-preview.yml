@@ -73,6 +73,20 @@ jobs:
                 Shot "models-media-$kind"
                 Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
               }
+              foreach ($src in @('local', 'civitai')) {
+                $env:LOCALMIND_MODELS_TAB = 'media'
+                $env:LOCALMIND_MODELS_KIND = 'video'
+                $env:LOCALMIND_GALLERY_FAMILY = 'LTX-2.5'
+                $env:LOCALMIND_GALLERY_SOURCE = $src
+                $p = Start-Process publish/LocalMind.exe -PassThru
+                Start-Sleep -Seconds 20
+                $null = $ws.AppActivate($p.Id); Start-Sleep 1
+                $ws.SendKeys('^m'); Start-Sleep -Seconds 25
+                Shot "models-ltx-$src"
+                Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
+              }
+              $env:LOCALMIND_GALLERY_FAMILY = ''
+              $env:LOCALMIND_GALLERY_SOURCE = ''
               $env:LOCALMIND_MODELS_KIND = ''
               $env:LOCALMIND_MODELS_TAB = ''
               $env:LOCALMIND_MODELS_TAB = ''

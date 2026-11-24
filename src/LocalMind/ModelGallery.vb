@@ -134,7 +134,14 @@ Public Class ModelGallery
         '──── start values ────
         cmbSource.SelectedIndex = If(_local, 0, If(AppCore.Settings.CivitaiRed AndAlso AppCore.Settings.CivitaiRedConfirmed, 1, 0))
         cmbType.SelectedIndex = If(loras, 1, 0)
-        FillChoices(family)
+        ' (screenshot checks: open on a source / family)
+        Dim pvSrc = Environment.GetEnvironmentVariable("LOCALMIND_GALLERY_SOURCE")
+        If pvSrc = "civitai" AndAlso _local Then cmbSource.SelectedIndex = 1
+        FillChoices(If(family, Environment.GetEnvironmentVariable("LOCALMIND_GALLERY_FAMILY")))
+        If pvSrc = "civitai" AndAlso Environment.GetEnvironmentVariable("LOCALMIND_GALLERY_FAMILY") = "LTX-2.5" Then
+            Dim gi = Groups().FindIndex(Function(g) g.Family = "LTX-2.5")
+            If gi >= 0 Then cmbBase.SelectedIndex = gi + 1
+        End If
 
         AddHandler cmbSource.SelectedIndexChanged, Async Sub() Await SourceChangedAsync()
         AddHandler cmbType.SelectedIndexChanged, Async Sub()
