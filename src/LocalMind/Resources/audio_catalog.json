@@ -42,7 +42,7 @@
   ],
   "transcript": false,
   "design": false,
-  "dl": 1621
+  "dl": 1791
  },
  {
   "id": "chatterbox-turbo",
@@ -65,7 +65,7 @@
   ],
   "transcript": false,
   "design": false,
-  "dl": 1624
+  "dl": 1670
  },
  {
   "id": "qwen3-tts",
@@ -97,7 +97,7 @@
   ],
   "transcript": true,
   "design": false,
-  "dl": 60843
+  "dl": 64901
  },
  {
   "id": "voxcpm2",
@@ -118,7 +118,7 @@
   "langs": [],
   "transcript": false,
   "design": true,
-  "dl": 1396
+  "dl": 1624
  },
  {
   "id": "s2-pro",
@@ -139,7 +139,7 @@
   "langs": [],
   "transcript": true,
   "design": false,
-  "dl": 4531
+  "dl": 4772
  },
  {
   "id": "yue2-3b",
@@ -160,7 +160,7 @@
   "langs": [],
   "transcript": false,
   "design": false,
-  "dl": 1076
+  "dl": 1234
  },
  {
   "id": "minimax-music3",
@@ -181,6 +181,6 @@
   "langs": [],
   "transcript": false,
   "design": false,
-  "dl": 1304
+  "dl": 1393
  }
 ]

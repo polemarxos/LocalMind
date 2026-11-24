@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.20.1
+
+### Added
+- **The original 10Eros Max files from TenStrip/10Eros-Max** are now file choices in the 10Eros models:
+  - Turbo beta 7: INT8 HQ, INT8 HQ fix1, BF16, BF16 fix1.
+  - Turbo-Hybrid beta 5 and beta 4: INT8 and BF16.
+  - Hybrid beta 5: INT8 and BF16.
+  - FL2VA beta 2 and Ref2VA / Turbo Ref2VA beta 2: BF16.
+- New 10Eros models:
+  - **10Eros Max Turbo v1.0 Hybrid**, the newest (INT8 HQ or BF16, 8 steps).
+  - **10Eros Max Raw beta 7**: no built-in turbo, best sound.
+  - **Singularity × 10Eros Max PRISM**, the most downloaded 10Eros merge (INT8, INT8 DMAD-PDMD, FP16).
+  - **Singularity V2 × 10Eros Max PikaFlex** and **Singularity V2 × 10Eros Max Turbo**.
+- More file choices: CornLogic's 10Eros INT8 test4, electroglyph's Turbo-Hybrid beta 3 GGUF, PinkCherry hybrid v1.8
+  and v1.5 INT8.
+
+
 ## 2.20.0
 
 ### Changed

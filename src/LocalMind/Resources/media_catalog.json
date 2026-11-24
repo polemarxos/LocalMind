@@ -5524,11 +5524,25 @@
     "size": 20197375168
    },
    {
+    "label": "INT8 test4 (CornLogic)",
+    "format": "convrot",
+    "repo": "CornLogic/10EROS-INT8",
+    "path": "10Eros_Max_h3_fl2va_INT8_test4_pruned.safetensors",
+    "size": 20970388904
+   },
+   {
     "label": "Q8_0",
     "format": "gguf",
     "repo": "Abiray/10Eros-Max-GGUF",
     "path": "10Eros-Max-Test4-Pruned-Q8_0.gguf",
     "size": 21583324256
+   },
+   {
+    "label": "BF16 beta2 (TenStrip)",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_fl2va_beta2_pruned.safetensors",
+    "size": 40222933592
    }
   ],
   "parts": [
@@ -5615,6 +5629,34 @@
     "repo": "Abiray/10Eros-Max-Turbo-Beta7-GGUF",
     "path": "10Eros-Max-Turbo-Beta7-Q5_K_S.gguf",
     "size": 14068966496
+   },
+   {
+    "label": "INT8 HQ (TenStrip)",
+    "format": "convrot",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_8stepTURBO_beta7_int8HQ.safetensors",
+    "size": 22893150024
+   },
+   {
+    "label": "INT8 HQ fix1 (TenStrip)",
+    "format": "convrot",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_8stepTURBO_beta7_fix1-native_int8_protected_edges_HQ.safetensors",
+    "size": 22935823672
+   },
+   {
+    "label": "BF16 (TenStrip)",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_8stepTURBO_beta7.safetensors",
+    "size": 40222934448
+   },
+   {
+    "label": "BF16 fix1 (TenStrip)",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_8stepTURBO_beta7_fix1.safetensors",
+    "size": 40265608072
    }
   ],
   "parts": [
@@ -5689,6 +5731,13 @@
     "size": 11564277504
    },
    {
+    "label": "Q5_0",
+    "format": "gguf",
+    "repo": "electroglyph/10Eros_Max_h3_TURBO-hybrid_beta3-GGUF",
+    "path": "10Eros_Max_h3_TURBO-hybrid_beta3-Q5_0.gguf",
+    "size": 13897559680
+   },
+   {
     "label": "Q5_K_M",
     "format": "gguf",
     "repo": "Abiray/10Eros-Max-Turbo-Hybrid-Beta5-GGUF",
@@ -5710,11 +5759,32 @@
     "size": 16730398464
    },
    {
+    "label": "INT8 beta4 (TenStrip)",
+    "format": "convrot",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_TURBO-hybrid_beta4_int8_convrot.safetensors",
+    "size": 20967637320
+   },
+   {
+    "label": "INT8 (TenStrip)",
+    "format": "convrot",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_TURBO-hybrid_beta5_int8.safetensors",
+    "size": 20970414464
+   },
+   {
     "label": "INT8 ConvRot (beta 3)",
     "format": "convrot",
     "repo": "cicalooo/10Eros-Max-h3-int8-convrot",
     "path": "10Eros_Max_h3_TURBO-hybrid_beta3_int8_convrot.safetensors",
     "size": 20973147816
+   },
+   {
+    "label": "BF16 (TenStrip)",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_TURBO-hybrid_beta5.safetensors",
+    "size": 40222982192
    }
   ],
   "parts": [
@@ -5810,11 +5880,25 @@
     "size": 16730398464
    },
    {
+    "label": "INT8 (TenStrip)",
+    "format": "convrot",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_hybrid_beta5_int8.safetensors",
+    "size": 20970414464
+   },
+   {
     "label": "Q8_0",
     "format": "gguf",
     "repo": "Abiray/10Eros-Max-Hybrid-Beta5-GGUF",
     "path": "10Eros-Max-Beta5-Q8_0.gguf",
     "size": 21583421184
+   },
+   {
+    "label": "BF16 (TenStrip)",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_hybrid_beta5.safetensors",
+    "size": 40222982192
    }
   ],
   "parts": [
@@ -5921,6 +6005,13 @@
     "repo": "Abiray/10Eros-Max-ref2va-Beta2-GGUF",
     "path": "10Eros-Max-Ref2VA-Beta2-Pruned-Q8_0.gguf",
     "size": 21583324256
+   },
+   {
+    "label": "BF16 (TenStrip)",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_ref2va_beta2_pruned.safetensors",
+    "size": 40222933592
    }
   ],
   "parts": [
@@ -5978,6 +6069,13 @@
     "repo": "cicalooo/10Eros-Max-h3-int8-convrot",
     "path": "10Eros_Max_h3_TURBO_ref2va_beta2_int8_convrot.safetensors",
     "size": 20973099200
+   },
+   {
+    "label": "BF16 (TenStrip)",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_TURBO_ref2va_beta2.safetensors",
+    "size": 40228444088
    }
   ],
   "parts": [
@@ -6036,6 +6134,20 @@
     "repo": "SexGod1979/PinkCherry-NSFW_MiniMax-H3",
     "path": "beta-0.6-fl2va/PinkCherry_fl2va_MiniMax_H3_pruned_int8_convrot-beta-0.6.safetensors",
     "size": 20970380016
+   },
+   {
+    "label": "INT8 hybrid v1.8",
+    "format": "convrot",
+    "repo": "SexGod1979/PinkCherry-NSFW_MiniMax-H3",
+    "path": "1.8-hybrid/PinkCherry_hybrid_v1.8_int8_minimax_h3_pruned.safetensors",
+    "size": 21056259240
+   },
+   {
+    "label": "INT8 v1.5",
+    "format": "convrot",
+    "repo": "SexGod1979/PinkCherry-NSFW_MiniMax-H3",
+    "path": "v1.5-fl2va/pinkcherry_v1.5_MiniMaxH3_fl2va_int8_pruned.safetensors",
+    "size": 21221359816
    }
   ],
   "parts": [
@@ -6219,6 +6331,338 @@
   ],
   "dl": 3563159,
   "repo": "unsloth/MiniMax-H3-GGUF"
+ },
+ {
+  "id": "10eros-max-h3-turbo-v1-hybrid",
+  "name": "10Eros Max Turbo v1.0 Hybrid · MiniMax H3 (NSFW, 8 steps)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "The newest 10Eros Max (TenStrip): beta 5 + beta 7 + Sulphur3 on a first/last-frame hybrid, made for several reference pictures or first + last frame, 8 steps. GPU 16 GB+ or lots of RAM.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 HQ",
+    "format": "convrot",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_8stepTurbo_v1.0_hybrid-int8_HQ.safetensors",
+    "size": 22893198448
+   },
+   {
+    "label": "BF16",
+    "format": "safetensors",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_8stepTurbo_v1.0_hybrid.safetensors",
+    "size": 40222982712
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 0,
+  "repo": "TenStrip/10Eros-Max"
+ },
+ {
+  "id": "10eros-max-h3-raw",
+  "name": "10Eros Max Raw beta 7 · MiniMax H3 (NSFW)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "10Eros Max beta 7 without the built-in turbo: full quality and the best sound (about 20 steps).",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8",
+    "format": "convrot",
+    "repo": "TenStrip/10Eros-Max",
+    "path": "10Eros_Max_h3_raw_beta7_int8.safetensors",
+    "size": 20970401624
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 0,
+  "repo": "TenStrip/10Eros-Max"
+ },
+ {
+  "id": "singularity-10eros-prism",
+  "name": "Singularity × 10Eros Max PRISM · MiniMax H3 (NSFW)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "The most downloaded 10Eros merge: Singularity V2 × 10Eros Max (PRISM). Uncensored video with sound.",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 DMAD-PDMD",
+    "format": "convrot",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "PRISM_DMAD_PDMD_int8.safetensors",
+    "size": 20284678584
+   },
+   {
+    "label": "INT8",
+    "format": "convrot",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "Minimax-h3_Singularity_x_10Eros-Max_PRISM_int8.safetensors",
+    "size": 20285875632
+   },
+   {
+    "label": "FP16",
+    "format": "safetensors",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "Minimax-h3_Singularity_x_10Eros-Max_PRISM_fp16.safetensors",
+    "size": 66246053856
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 603296,
+  "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM"
+ },
+ {
+  "id": "singularity-10eros-pikaflex",
+  "name": "Singularity V2 × 10Eros Max PikaFlex · MiniMax H3 (NSFW)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "Singularity V2 × 10Eros Max with PikaFlex motion (0.85 or 1.00 strength).",
+  "steps": 20,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 HQ · PRISM2 0.85",
+    "format": "convrot",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "10Eros_Max_SingularityV2_PRISM2_PikaFlex_0.85_int8HQ.safetensors",
+    "size": 20197393008
+   },
+   {
+    "label": "INT8 HQ · 0.85",
+    "format": "convrot",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "10Eros_Max_SingularityV2_PikaFlex_0.85_int8HQ.safetensors",
+    "size": 22893150024
+   },
+   {
+    "label": "INT8 HQ · 1.00",
+    "format": "convrot",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "10Eros_Max_SingularityV2_PikaFlex_1.00_int8HQ.safetensors",
+    "size": 22893150024
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 603296,
+  "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM"
+ },
+ {
+  "id": "singularity-10eros-turbo",
+  "name": "Singularity V2 × 10Eros Max Turbo · MiniMax H3 (NSFW, 8 steps)",
+  "kind": "video",
+  "family": "MiniMax-H3",
+  "about": "10Eros Max Turbo beta 7 / Turbo-Hybrid beta 5 with Singularity: fast uncensored video with sound in 8 steps.",
+  "steps": 8,
+  "cfg": 1.0,
+  "width": 864,
+  "height": 480,
+  "frames": 56,
+  "fps": 24,
+  "negative": "worst quality, low quality, blurry, distorted, artifacts, static",
+  "uncensored": true,
+  "tasks": [
+   "create",
+   "animate",
+   "first-last"
+  ],
+  "input": "optional",
+  "sampler": "euler",
+  "flowShift": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 · hybrid beta 5",
+    "format": "convrot",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "10Eros_Max_h3_TURBO-hybrid_beta5_Singularity_v1.3_int8.safetensors",
+    "size": 20970414464
+   },
+   {
+    "label": "INT8 HQ · beta 7",
+    "format": "convrot",
+    "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM",
+    "path": "10Eros_Max_h3_8stepTURBO_beta7_SingularityV2_int8HQ.safetensors",
+    "size": 22893150024
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_video_vae_fp16.safetensors",
+    "size": 5207808496
+   },
+   {
+    "role": "audio-vae",
+    "repo": "unsloth/MiniMax-H3-GGUF",
+    "path": "vae/minimax_h3_audio_vae_fp32.safetensors",
+    "size": 605254808
+   },
+   {
+    "role": "llm",
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
+   }
+  ],
+  "dl": 603296,
+  "repo": "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM"
  },
  {
   "id": "ltx-2.3-10eros-1.5",

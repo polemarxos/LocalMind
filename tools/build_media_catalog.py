@@ -524,6 +524,57 @@ h3("aftermidnight-h3-ref2va", "AfterMidnight · MiniMax H3 Ref2VA (NSFW LoRA)",
    ref2va, H3_TE4, uncensored=True, tasks=["create", "reference"], refs=3,
    loras=[lora(AM, r"sexytime_rank64-v1\.2\.safetensors$", "builtin-h3-aftermidnight-v1.2")])
 
+# ── the original 10Eros Max files (TenStrip) and their best-known merges, as more file choices ──
+def stv(repo, pattern, label):
+    """One safetensors file as a variant: INT8 files get the ConvRot repair, full files load as they are."""
+    f = one(repo, pattern)
+    if not f: return []
+    return [dict(label=label, format="convrot" if re.search(r"int8|convrot", f["path"], re.I) else "safetensors", **f)]
+def add_variants(rid, extra):
+    for r in R:
+        if r["id"] == rid:
+            r["variants"] = sorted(r["variants"] + extra, key=lambda x: x["size"])
+TS = "TenStrip/10Eros-Max"
+add_variants("10eros-max-h3", stv(TS, r"^10Eros_Max_h3_fl2va_beta2_pruned\.safetensors$", "BF16 beta2 (TenStrip)") +
+             stv("CornLogic/10EROS-INT8", r"fl2va_INT8_test4_pruned", "INT8 test4 (CornLogic)"))
+add_variants("10eros-max-h3-turbo", stv(TS, r"_8stepTURBO_beta7_int8HQ\.safetensors$", "INT8 HQ (TenStrip)") +
+             stv(TS, r"_8stepTURBO_beta7_fix1-native_int8_protected_edges_HQ", "INT8 HQ fix1 (TenStrip)") +
+             stv(TS, r"_8stepTURBO_beta7\.safetensors$", "BF16 (TenStrip)") +
+             stv(TS, r"_8stepTURBO_beta7_fix1\.safetensors$", "BF16 fix1 (TenStrip)"))
+add_variants("10eros-max-h3-turbo-hybrid", stv(TS, r"TURBO-hybrid_beta5_int8\.safetensors$", "INT8 (TenStrip)") +
+             stv(TS, r"TURBO-hybrid_beta5\.safetensors$", "BF16 (TenStrip)") +
+             stv(TS, r"TURBO-hybrid_beta4_int8_convrot", "INT8 beta4 (TenStrip)") +
+             variants_list(gguf_variants("electroglyph/10Eros_Max_h3_TURBO-hybrid_beta3-GGUF")))
+add_variants("10eros-max-h3-hybrid", stv(TS, r"h3_hybrid_beta5_int8\.safetensors$", "INT8 (TenStrip)") +
+             stv(TS, r"h3_hybrid_beta5\.safetensors$", "BF16 (TenStrip)"))
+add_variants("10eros-max-h3-ref2va", stv(TS, r"h3_ref2va_beta2_pruned\.safetensors$", "BF16 (TenStrip)"))
+add_variants("10eros-max-h3-turbo-ref2va", stv(TS, r"TURBO_ref2va_beta2\.safetensors$", "BF16 (TenStrip)"))
+add_variants("pinkcherry-h3", stv(PC, r"1\.8-hybrid/.*int8.*\.safetensors$", "INT8 hybrid v1.8") +
+             stv(PC, r"v1\.5-fl2va/pinkcherry_v1\.5_MiniMaxH3_fl2va_int8_pruned", "INT8 v1.5"))
+h3("10eros-max-h3-turbo-v1-hybrid", "10Eros Max Turbo v1.0 Hybrid · MiniMax H3 (NSFW, 8 steps)",
+   "The newest 10Eros Max (TenStrip): beta 5 + beta 7 + Sulphur3 on a first/last-frame hybrid, made for several reference "
+   "pictures or first + last frame, 8 steps. GPU 16 GB+ or lots of RAM.",
+   stv(TS, r"8stepTurbo_v1\.0_hybrid-int8_HQ", "INT8 HQ") + stv(TS, r"8stepTurbo_v1\.0_hybrid\.safetensors$", "BF16"),
+   H3_TE4, uncensored=True, steps=8, cfg=1.0)
+h3("10eros-max-h3-raw", "10Eros Max Raw beta 7 · MiniMax H3 (NSFW)",
+   "10Eros Max beta 7 without the built-in turbo: full quality and the best sound (about 20 steps).",
+   stv(TS, r"h3_raw_beta7_int8", "INT8"), H3_TE4, uncensored=True)
+OR = "OliviaRossi/Minimax-h3_Singularity-x-10Eros-Max_PRISM"
+h3("singularity-10eros-prism", "Singularity × 10Eros Max PRISM · MiniMax H3 (NSFW)",
+   "The most downloaded 10Eros merge: Singularity V2 × 10Eros Max (PRISM). Uncensored video with sound.",
+   stv(OR, r"Minimax-h3_Singularity_x_10Eros-Max_PRISM_int8\.safetensors$", "INT8") +
+   stv(OR, r"^PRISM_DMAD_PDMD_int8\.safetensors$", "INT8 DMAD-PDMD") +
+   stv(OR, r"PRISM_fp16\.safetensors$", "FP16"), H3_TE4, uncensored=True)
+h3("singularity-10eros-pikaflex", "Singularity V2 × 10Eros Max PikaFlex · MiniMax H3 (NSFW)",
+   "Singularity V2 × 10Eros Max with PikaFlex motion (0.85 or 1.00 strength).",
+   stv(OR, r"SingularityV2_PikaFlex_0\.85_int8HQ", "INT8 HQ · 0.85") + stv(OR, r"SingularityV2_PikaFlex_1\.00_int8HQ", "INT8 HQ · 1.00") +
+   stv(OR, r"PRISM2_PikaFlex_0\.85_int8HQ", "INT8 HQ · PRISM2 0.85"), H3_TE4, uncensored=True)
+h3("singularity-10eros-turbo", "Singularity V2 × 10Eros Max Turbo · MiniMax H3 (NSFW, 8 steps)",
+   "10Eros Max Turbo beta 7 / Turbo-Hybrid beta 5 with Singularity: fast uncensored video with sound in 8 steps.",
+   stv(OR, r"8stepTURBO_beta7_SingularityV2_int8HQ", "INT8 HQ · beta 7") + stv(OR, r"TURBO-hybrid_beta5_Singularity_v1\.3_int8", "INT8 · hybrid beta 5"),
+   H3_TE4, uncensored=True, steps=8, cfg=1.0)
+
+
 # LTX-2.3 dev fine-tunes (10Eros, PinkCherry): dev parts; a distilled LoRA makes them fast
 L23_DEV = [dict(role="vae", **one(LTX, r"vae/ltx-2\.3-22b-dev_video_vae")),
            dict(role="audio-vae", **one(LTX, r"vae/ltx-2\.3-22b-dev_audio_vae")),
