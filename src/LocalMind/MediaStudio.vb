@@ -361,8 +361,21 @@ Public Module MediaStudio
         Return _gates.GetOrAdd(path, Function(k) New SemaphoreSlim(1, 1))
     End Function
 
+    ''' <summary>Downloads a model (and the parts it needs) through the one download list (Models → Downloads).</summary>
     Public Async Function DownloadAsync(r As MediaRecipe, v As MediaVariant, progress As Action(Of Integer, String), ct As CancellationToken,
                                         Optional forEdit As Boolean = False, Optional withSpeed As Boolean = False) As Task
+        If FilesFor(r, v, forEdit, withSpeed).All(AddressOf IsPresent) Then
+            Await DownloadCoreAsync(r, v, Nothing, ct, forEdit, withSpeed)       ' (only the small repairs)
+            Return
+        End If
+        progress?.Invoke(0, Localizer.T("Downloading — see Models → Downloads"))
+        Await AppCore.Downloads.RunAsync(r.Name & " · " & v.Label, If(r.IsVideo, "Video", "Picture"),
+                                         $"media:{r.Id}:{v.Label}:{forEdit}:{withSpeed}",
+                                         Function(p, c) DownloadCoreAsync(r, v, p, c, forEdit, withSpeed), ct)
+    End Function
+
+    Private Async Function DownloadCoreAsync(r As MediaRecipe, v As MediaVariant, progress As Action(Of Integer, String), ct As CancellationToken,
+                                             Optional forEdit As Boolean = False, Optional withSpeed As Boolean = False) As Task
         Dim todo = FilesFor(r, v, forEdit, withSpeed).Where(Function(f) Not IsPresent(f)).ToList()
         Dim total = Math.Max(1L, todo.Sum(Function(f) f.Size))
         Dim before As Long = 0
@@ -591,7 +604,8 @@ Public Module MediaStudio
         Dim usesRefs = (job = "edit" OrElse job = "combine") AndAlso r.Refs > 0
         If job = "control" AndAlso Not IsPresent(controlNet) Then
             progress?.Invoke(0, "Downloading the ControlNet…")
-            Await DownloadFilesAsync({CType(controlNet, MediaFile)}.ToList(), progress, ct)
+            Await AppCore.Downloads.RunAsync("ControlNet · " & r.Family, "Picture", "media:controlnet:" & controlNet.Path,
+                                             Function(p, c) DownloadFilesAsync({CType(controlNet, MediaFile)}.ToList(), p, c), ct)
         End If
         ' A part that is missing (e.g. a model now uses a different text encoder) is downloaded first.
         If r.Kind <> "tool" AndAlso FilesFor(r, v).Any(Function(f) Not IsPresent(f)) Then

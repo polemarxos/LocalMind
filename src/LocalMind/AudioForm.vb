@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Drawing
 Imports System.IO
 Imports System.Linq
@@ -260,10 +260,8 @@ Public Class AudioForm
         _cts = New CancellationTokenSource()
         btnDownload.Enabled = False
         Try
-            Await AudioStudio.DownloadAsync(m, Sub(p, t) Me.Post(Sub()
-                                                                       prg.Value = Math.Max(0, Math.Min(100, p))
-                                                                       lblStatus.Text = t
-                                                                   End Sub), _cts.Token)
+            lblStatus.Text = Localizer.T("⬇ Added to the download list (Models → Downloads).")
+            Await AudioStudio.DownloadAsync(m, Nothing, _cts.Token)
             lblStatus.Text = Localizer.T("Ready.")
         Catch ex As OperationCanceledException
             lblStatus.Text = Localizer.T("Download cancelled (it resumes next time).")

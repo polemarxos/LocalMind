@@ -804,10 +804,8 @@ Public Class StudioForm
         _cts = New CancellationTokenSource()
         btnDownload.Enabled = False
         Try
-            Await MediaStudio.DownloadAsync(r, v, Sub(p, t) Me.Post(Sub()
-                                                                            prg.Value = Math.Max(0, Math.Min(100, p))
-                                                                            lblStatus.Text = t
-                                                                        End Sub), _cts.Token, withSpeed:=chkFast.Checked)
+            lblStatus.Text = Localizer.T("⬇ Added to the download list (Models → Downloads).")
+            Await MediaStudio.DownloadAsync(r, v, Nothing, _cts.Token, withSpeed:=chkFast.Checked)
             lblStatus.Text = Localizer.T("Ready — write a description and press Generate.")
         Catch ex As OperationCanceledException
             lblStatus.Text = Localizer.T("Download cancelled (it resumes next time).")

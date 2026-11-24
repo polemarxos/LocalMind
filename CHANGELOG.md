@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.22.0
+
+### Changed
+- **One download list for everything.** Every download appears in the **Downloads** list at the bottom of the Model
+  Manager, with an icon for its kind (💬 LLM, 🖼 picture, 🎬 video, 🎵 music, 🗣 voice, 🧩 LoRA). That covers:
+  - models from the LocalMind lists and from Civitai;
+  - downloads started in the Studio, in Music & voice and from the chat;
+  - missing parts fetched when you press Generate.
+
+  Each row shows its progress, speed and status, up to three run at a time, and Cancel / Retry / Clear finished work
+  for all of them.
+- The other download progress bars and counters are removed: the gallery's bar and "x downloading" line, the
+  Music & Voice list's bar, the Studio's and the Music & voice window's download bars, and the main window's download
+  counter. Those places now just say the model was added to the download list.
+
+
 ## 2.21.3
 
 ### Fixed

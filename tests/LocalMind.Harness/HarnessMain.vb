@@ -742,6 +742,54 @@ Module HarnessMain
                   Civitai.IsUsableFile(New Civitai.CivFile With {.Name = "h3-Q4_K_M.gguf"}) AndAlso Not Civitai.IsUsableFile(New Civitai.CivFile With {.Name = "x_w4a8.safetensors"}), "only formats the engine runs")
         End If
 
+        If only = "downloads" Then
+            Console.WriteLine("== One download list for every kind of model")
+            Dim gate As New TaskCompletionSource(Of Boolean)()
+            Dim runs = 0
+            Dim work = Function(p As Action(Of Integer, String), c As CancellationToken) As Task
+                           Return Task.Run(Async Function()
+                                               Interlocked.Increment(runs)
+                                               p(40, "file.gguf  4 GB / 10 GB")
+                                               Await gate.Task.WaitAsync(c)
+                                               p(100, "done")
+                                           End Function)
+                       End Function
+            Dim t1 = AppCore.Downloads.RunAsync("10Eros Max · Q4_K_M", "Video", "test:a", work, CancellationToken.None)
+            Dim t2 = AppCore.Downloads.RunAsync("10Eros Max · Q4_K_M", "Video", "test:a", work, CancellationToken.None)
+            Await Task.Delay(500)
+            Dim job = AppCore.Downloads.Jobs().FirstOrDefault(Function(j) j.Key = "test:a")
+            Check(job IsNot Nothing AndAlso job.Kind = "Video" AndAlso job.Title.Contains("10Eros"), "a video download shows in the list", job?.Title)
+            Check(job IsNot Nothing AndAlso job.Percent = 40 AndAlso job.StatusText.Contains("4 GB"), "with its progress", job?.StatusText)
+            gate.SetResult(True)
+            Await Task.WhenAll(t1, t2)
+            Check(runs = 1, "asking twice runs it once", runs.ToString())
+            Check(job.Status = DownloadStatus.Completed, "finished", job.StatusText)
+            Dim failing = Function(p As Action(Of Integer, String), c As CancellationToken) As Task
+                              Return Task.FromException(New Exception("disk full"))
+                          End Function
+            Dim err As String = Nothing
+            Try
+                Await AppCore.Downloads.RunAsync("Krea 2", "Picture", "test:b", failing, CancellationToken.None)
+            Catch ex As Exception
+                err = ex.Message
+            End Try
+            Check(err = "disk full" AndAlso AppCore.Downloads.Jobs().Any(Function(j) j.Key = "test:b" AndAlso j.Status = DownloadStatus.Failed), "a failure shows in the list and reaches the caller", err)
+            Dim cts As New CancellationTokenSource()
+            Dim slow = Function(p As Action(Of Integer, String), c As CancellationToken) As Task
+                           Return Task.Delay(-1, c)
+                       End Function
+            Dim t3 = AppCore.Downloads.RunAsync("Qwen3-TTS", "Voice", "test:c", slow, cts.Token)
+            Await Task.Delay(300)
+            cts.Cancel()
+            Dim cancelled = False
+            Try
+                Await t3
+            Catch ex As OperationCanceledException
+                cancelled = True
+            End Try
+            Check(cancelled AndAlso AppCore.Downloads.Jobs().Any(Function(j) j.Key = "test:c" AndAlso j.Status = DownloadStatus.Cancelled), "cancelling works")
+        End If
+
         If only = "gguf" Then
             Console.WriteLine("== GGUF repair (ComfyUI-made files with flattened tensors)")
             ' a small ComfyUI-style file: one 2-D tensor stored flat, its real shape in a comfy.gguf.orig_shape note

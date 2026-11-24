@@ -197,7 +197,7 @@ Public Module Civitai
         Dim f = v.BestFile()
         If f Is Nothing Then Throw New Exception(Localizer.T("This version has no safetensors file to download."))
         Dim dest = Path.Combine(LoraLibrary.Folder, SafeFileName(f.Name))
-        Await DownloadAsync(f, dest, progress, ct)
+        Await AppCore.Downloads.RunAsync(m.Name & " · " & v.Name, "LoRA", "civitai:" & v.Id, Function(p, c) DownloadAsync(f, dest, p, c), ct)
         Dim l = LoraLibrary.All().FirstOrDefault(Function(x) x.Name.Equals(Path.GetFileNameWithoutExtension(dest), StringComparison.OrdinalIgnoreCase))
         If l IsNot Nothing Then
             Dim g = GroupFor(v.BaseModel)
@@ -219,7 +219,7 @@ Public Module Civitai
         If f Is Nothing Then Throw New Exception(Localizer.T("This version has no file LocalMind can run (only formats like NVFP4, INT4 or W4A8). Try another version."))
         Dim fileName = SafeFileName(f.Name)
         Dim dest = Path.Combine(MediaStudio.UserModelFolder, fileName)
-        Await DownloadAsync(f, dest, progress, ct)
+        Await AppCore.Downloads.RunAsync(m.Name & " · " & v.Name, If(IsVideoGroup(g), "Video", "Picture"), "civitai:" & v.Id, Function(p, c) DownloadAsync(f, dest, p, c), ct)
         Dim allInOne = g.Template = "sdxl" OrElse g.Template = "sd15"
         Dim um As New MediaStudio.UserModel With {
             .Name = m.Name & If(m.Versions.Count > 1, " · " & v.Name, ""), .Template = g.Template, .File = fileName,

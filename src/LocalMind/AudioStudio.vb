@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.IO
@@ -84,7 +84,14 @@ Public Module AudioStudio
         Return {m.Model, m.Mmproj}.Where(Function(f) Not Present(f)).Sum(Function(f) f.Size)
     End Function
 
+    ''' <summary>Downloads a voice or music model through the one download list (Models → Downloads).</summary>
     Public Async Function DownloadAsync(m As AudioModel, progress As Action(Of Integer, String), ct As CancellationToken) As Task
+        If IsInstalled(m) Then Return
+        progress?.Invoke(0, Localizer.T("Downloading — see Models → Downloads"))
+        Await AppCore.Downloads.RunAsync(m.Name, If(m.IsMusic, "Music", "Voice"), "audio:" & m.Id, Function(p, c) DownloadCoreAsync(m, p, c), ct)
+    End Function
+
+    Private Async Function DownloadCoreAsync(m As AudioModel, progress As Action(Of Integer, String), ct As CancellationToken) As Task
         Dim todo = {m.Model, m.Mmproj}.Where(Function(f) Not Present(f)).ToList()
         Dim total = Math.Max(1L, todo.Sum(Function(f) f.Size))
         Dim before As Long = 0

@@ -33,7 +33,6 @@ Public Class ModelGallery
     Private ReadOnly lblTitle, lblInfo, lblStatus, lblListInfo As Label
     Private ReadOnly txtAbout As TextBox
     Private ReadOnly btnInstall, btnDelete, btnMore, btnOpen As Button
-    Private ReadOnly prg As ProgressBar
 
     Private _cursor As String
     Private _localItems As List(Of MediaRecipe)
@@ -99,7 +98,6 @@ Public Class ModelGallery
         btnDelete = Theme.MakeButton(Localizer.T("🗑 Delete"))
         btnOpen = Theme.MakeButton(Localizer.T("🌐 Open page"))
         bar.Controls.AddRange({btnInstall, btnDelete, btnOpen})
-        prg = New ProgressBar() With {.Dock = DockStyle.Top, .Height = 8, .Visible = False}
         lblStatus = New Label() With {.Dock = DockStyle.Top, .Height = 40, .ForeColor = Theme.CDim, .UseMnemonic = False}
         txtAbout = New TextBox() With {.Dock = DockStyle.Fill, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
                                        .BorderStyle = BorderStyle.None, .BackColor = Theme.CRaised, .ForeColor = Theme.CText}
@@ -107,7 +105,6 @@ Public Class ModelGallery
         AddHandler right.Resize, Sub() pic.Height = Math.Max(110, Math.Min(360, CInt((right.ClientSize.Height - 370) * 0.8)))
         right.Controls.Add(txtAbout)
         right.Controls.Add(lblStatus)
-        right.Controls.Add(prg)
         right.Controls.Add(bar)
         right.Controls.Add(cmbVersion)
         right.Controls.Add(lblInfo)
@@ -551,8 +548,8 @@ Public Class ModelGallery
                            MediaStudio.RequirementText(r, v, _hw) & vbLf &
                            If(installed, Localizer.T("✔ Installed"), Localizer.T("Download") & ": " & Downloader.FormatBytes(MediaStudio.BytesToDownload(r, v)))
             txtAbout.Text = r.About & vbCrLf & vbCrLf & String.Join(vbCrLf, ModelDetails.SettingsLines(r).Select(Function(x) "•  " & x))
-            btnInstall.Text = If(busy, Localizer.T("Cancel"), If(installed, Localizer.T("✔ Installed"), Localizer.T("⬇ Install")))
-            btnInstall.Enabled = busy OrElse Not installed
+            btnInstall.Text = If(busy, Localizer.T("⬇ In the download list"), If(installed, Localizer.T("✔ Installed"), Localizer.T("⬇ Install")))
+            btnInstall.Enabled = Not busy AndAlso Not installed
             btnDelete.Visible = installed AndAlso Not busy
             pic.Image = Nothing
             Try
@@ -583,8 +580,8 @@ Public Class ModelGallery
                               If(Not m.IsLora AndAlso g.Template Is Nothing, Localizer.T("⚠ LocalMind can't run checkpoints of this type yet — LoRAs work."),
                                  If(f Is Nothing, Localizer.T("⚠ No file LocalMind can run in this version."), "")))
             txtAbout.Text = If(v.TrainedWords.Count > 0, Localizer.T("Trigger words (added to your prompt automatically)") & ": " & String.Join(", ", v.TrainedWords), "")
-            btnInstall.Text = If(busy, Localizer.T("Cancel"), If(installed, Localizer.T("✔ Installed"), Localizer.T("⬇ Install")))
-            btnInstall.Enabled = busy OrElse (Not installed AndAlso f IsNot Nothing AndAlso g.Family IsNot Nothing AndAlso (m.IsLora OrElse g.Template IsNot Nothing))
+            btnInstall.Text = If(busy, Localizer.T("⬇ In the download list"), If(installed, Localizer.T("✔ Installed"), Localizer.T("⬇ Install")))
+            btnInstall.Enabled = Not busy AndAlso (Not installed AndAlso f IsNot Nothing AndAlso g.Family IsNot Nothing AndAlso (m.IsLora OrElse g.Template IsNot Nothing))
             btnDelete.Visible = False
             ' civitai.red: every picture, NSFW too; civitai.com: only the safe ones
             Dim shown = v.Images.Where(Function(x) IsRed OrElse Not x.Nsfw).Select(Function(x) x.Url).ToList()
@@ -606,8 +603,6 @@ Public Class ModelGallery
                                       End Function)
             End If
         End If
-        prg.Visible = busy
-        If busy Then prg.Value = running.Pct
         pic.Image = Nothing
         FillStrip(stripUrls, ver, ct)
         If imgUrl Is Nothing Then Return
@@ -688,28 +683,14 @@ Public Class ModelGallery
         If tag Is Nothing OrElse ver Is Nothing Then Return
         Dim k = Key(tag, ver)
         Dim running As (Cts As CancellationTokenSource, Pct As Integer) = Nothing
-        If _installs.TryGetValue(k, running) Then
-            running.Cts.Cancel()          ' the button reads "Cancel" while it downloads
-            Return
-        End If
+        If _installs.TryGetValue(k, running) Then Return        ' (already in the download list; cancel it there)
         Dim cts As New CancellationTokenSource()
         _installs(k) = (cts, 0)
         Dim name = If(TryCast(tag, MediaRecipe)?.Name, TryCast(tag, Civitai.CivModel)?.Name)
         Dim item = list.SelectedItems(0)
         Await ShowVersionAsync()
-        Dim prog = Sub(p As Integer, t As String)
-                       Me.Post(Sub()
-                                   If Not _installs.ContainsKey(k) Then Return
-                                   _installs(k) = (cts, Math.Max(0, Math.Min(100, p)))
-                                   Dim curVer = cmbVersion.SelectedItem
-                                   If SelectedTag() IsNot Nothing AndAlso curVer IsNot Nothing AndAlso Key(SelectedTag(), curVer) = k Then
-                                       prg.Visible = True
-                                       prg.Value = _installs(k).Pct
-                                       lblStatus.Text = Localizer.T(t)
-                                   End If
-                                   UpdateBusyText()
-                               End Sub)
-                   End Sub
+        Dim prog As Action(Of Integer, String) = Nothing       ' (progress shows in Models → Downloads only)
+        lblStatus.Text = Localizer.T("⬇ Added to the download list (Models → Downloads).")
         Dim message As String
         Dim needsKey = False
         Try
@@ -746,23 +727,12 @@ Public Class ModelGallery
             btnKey.Text = CivitaiKeyForm.ButtonText()
             lblStatus.Text = Localizer.T("✔ Key saved. Press Install again.")
         End If
-        UpdateBusyText()
         Dim cur = cmbVersion.SelectedItem
         If SelectedTag() IsNot Nothing AndAlso cur IsNot Nothing AndAlso Key(SelectedTag(), cur) = k Then
             Await ShowVersionAsync()
             lblStatus.Text = message
         End If
     End Function
-
-    Private Sub UpdateBusyText()
-        If _installs.Count = 0 Then
-            If Not lblListInfo.Text.Contains("⬇") Then Return
-            lblListInfo.Text = lblListInfo.Text.Split({"   ⬇"}, StringSplitOptions.None)(0)
-            Return
-        End If
-        Dim baseText = lblListInfo.Text.Split({"   ⬇"}, StringSplitOptions.None)(0)
-        lblListInfo.Text = baseText & "   ⬇ " & String.Format(Localizer.T("{0} downloading ({1}%)"), _installs.Count, CInt(_installs.Values.Average(Function(x) x.Pct)))
-    End Sub
 
     Private Sub DeleteSelected()
         Dim r = TryCast(SelectedTag(), MediaRecipe)

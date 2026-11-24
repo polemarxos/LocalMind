@@ -249,7 +249,7 @@ Public Class MediaModelsPanel
         lblStatus = Theme.MakeLabel(Localizer.T("Tick models and press Download. Shared parts (VAE, text encoder) are downloaded once and reused."), dim_:=True)
         AddHandler btnDownload.Click, Async Sub() Await DownloadSelectedAsync()
         AddHandler btnCancel.Click, Sub() _cts?.Cancel()
-        actions.Controls.AddRange({btnDownload, btnCancel, bar, lblStatus})
+        actions.Controls.AddRange({btnDownload, lblStatus})          ' (progress: Models → Downloads)
 
         Dim split As New SplitContainer() With {.Dock = DockStyle.Fill, .Orientation = Orientation.Vertical, .FixedPanel = FixedPanel.Panel2,
                                                 .BackColor = Theme.CBorder, .SplitterWidth = 3}
@@ -541,80 +541,33 @@ Public Class MediaModelsPanel
     ''' Downloads everything ticked in the picture, video and music lists at the same time (three at once;
     ''' a part two models share is fetched only once). One failing model does not stop the others.
     ''' </summary>
+    ''' <summary>Puts everything ticked into the download list (Models → Downloads: up to three at a time).</summary>
     Private Async Function DownloadSelectedAsync() As Task
-        Dim jobs As New List(Of (Name As String, Work As Func(Of Action(Of Integer, String), CancellationToken, Task), Done As Action))
+        Dim works As New List(Of Task)
         For Each r In MediaStudio.Recipes().Where(Function(x) _checked.Contains(x.Id)).ToList()
             Dim rr = r, v = ChosenVariant(r)
-            jobs.Add((rr.Name, Function(p, c) MediaStudio.DownloadAsync(rr, v, p, c, forEdit:=rr.Can("edit")), Sub() _checked.Remove(rr.Id)))
+            works.Add(MediaStudio.DownloadAsync(rr, v, Nothing, CancellationToken.None, forEdit:=rr.Can("edit")))
+            _checked.Remove(rr.Id)
         Next
         For Each m In AudioStudio.Models().Where(Function(x) _checkedAudio.Contains(x.Id)).ToList()
-            Dim mm = m
-            jobs.Add((mm.Name, Function(p, c) AudioStudio.DownloadAsync(mm, p, c), Sub() _checkedAudio.Remove(mm.Id)))
+            works.Add(AudioStudio.DownloadAsync(m, Nothing, CancellationToken.None))
+            _checkedAudio.Remove(m.Id)
         Next
-        If jobs.Count = 0 Then
+        If works.Count = 0 Then
             Localizer.Box(Me, "Tick one or more models first (in any of the picture, video or music lists).", "Download")
             Return
         End If
-        _cts = New CancellationTokenSource()
-        Dim ct = _cts.Token
-        btnDownload.Enabled = False
-        btnCancel.Visible = True
-        bar.Visible = True
-        bar.Value = 0
-        Dim pct(jobs.Count - 1) As Integer
-        Dim lines(jobs.Count - 1) As String
-        Dim ok = 0, failed As New List(Of String)
-        Dim gate As New SemaphoreSlim(3, 3)
-        Dim report = Sub()
-                         Dim running = Enumerable.Range(0, jobs.Count).Where(Function(i) pct(i) > 0 AndAlso pct(i) < 100).ToList()
-                         Dim all = CInt(pct.Sum() / jobs.Count)
-                         Me.Post(Sub()
-                                     bar.Value = Math.Max(0, Math.Min(100, all))
-                                     lblStatus.Text = String.Format(Localizer.T("{0} of {1} ready · downloading: {2}"), ok, jobs.Count,
-                                                                    If(running.Count = 0, "…", String.Join("  |  ", running.Select(Function(i) $"{jobs(i).Name} {pct(i)}%"))))
-                                 End Sub)
-                     End Sub
-        Dim tasks = Enumerable.Range(0, jobs.Count).Select(
-            Async Function(i)
-                Await gate.WaitAsync(ct)
-                Try
-                    Await jobs(i).Work(Sub(p, t)
-                                           pct(i) = Math.Max(1, Math.Min(99, p))
-                                           report()
-                                       End Sub, ct)
-                    pct(i) = 100
-                    Interlocked.Increment(ok)
-                    Me.Post(jobs(i).Done)
-                Catch ex As OperationCanceledException
-                Catch ex As Exception
-                    pct(i) = 100
-                    SyncLock failed
-                        failed.Add(jobs(i).Name & ": " & ex.Message)
-                    End SyncLock
-                    Safety.Log(ex, "Model download: " & jobs(i).Name)
-                Finally
-                    gate.Release()
-                    report()
-                End Try
-            End Function).ToList()
-        Try
-            Await Task.WhenAll(tasks)
-            If ct.IsCancellationRequested Then
-                lblStatus.Text = Localizer.T("Download cancelled.")
-            ElseIf failed.Count > 0 Then
-                lblStatus.Text = String.Format(Localizer.T("{0} ready, {1} failed."), ok, failed.Count) & "  ⚠ " & failed(0)
-            Else
-                lblStatus.Text = String.Format(Localizer.T("Done: {0} model(s) ready."), ok)
-            End If
-        Catch ex As OperationCanceledException
-            lblStatus.Text = Localizer.T("Download cancelled.")
-        Finally
-            btnCancel.Visible = False
-            bar.Visible = False
-            _cts = Nothing
-            btnDownload.Enabled = True
-            Fill()
-            RaiseEvent Downloaded()
-        End Try
+        lblStatus.Text = String.Format(Localizer.T("⬇ {0} added to the download list below."), works.Count)
+        Fill()
+        For Each w In works
+            Try
+                Await w
+            Catch
+            End Try
+        Next
+        If IsDisposed Then Return
+        lblStatus.Text = ""
+        Fill()
+        RaiseEvent Downloaded()
     End Function
 End Class

@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -36,6 +36,14 @@ Public Class DownloadJob
     <JsonIgnore> Public Property Speed As Double
     <JsonIgnore> Public Property ErrorText As String
     <JsonIgnore> Public Property Cts As CancellationTokenSource
+    ''' <summary>LLM, Picture, Video, Music, Voice or LoRA.</summary>
+    Public Property Kind As String = "LLM"
+    ''' <summary>Picture, video, music, voice and LoRA downloads: the work itself (progress 0-100 and a line of text).</summary>
+    <JsonIgnore> Public Property Work As Func(Of Action(Of Integer, String), CancellationToken, Task)
+    ''' <summary>Same key = same download (asking again joins the running one).</summary>
+    <JsonIgnore> Public Property Key As String
+    <JsonIgnore> Public Property Detail As String
+    <JsonIgnore> Public Property Done As New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
 
     <JsonIgnore> Public ReadOnly Property Percent As Integer
         Get
@@ -48,6 +56,7 @@ Public Class DownloadJob
         Get
             Select Case Status
                 Case DownloadStatus.Downloading
+                    If Work IsNot Nothing Then Return $"{Percent}%" & If(String.IsNullOrEmpty(Detail), "", "  ·  " & Detail)
                     Dim eta = If(Speed > 0, TimeSpan.FromSeconds((BytesTotal - BytesDone) / Speed), TimeSpan.Zero)
                     Return $"{Percent}%  ·  {Downloader.FormatBytes(BytesDone)} / {Downloader.FormatBytes(BytesTotal)}  ·  " &
                            $"{Downloader.FormatBytes(CLng(Speed))}/s" & If(Speed > 0, $"  ·  {FormatEta(eta)} left", "")
@@ -60,6 +69,17 @@ Public Class DownloadJob
         End Get
     End Property
 
+    Public Shared Function KindIcon(kind As String) As String
+        Select Case kind
+            Case "Picture" : Return "🖼  "
+            Case "Video" : Return "🎬  "
+            Case "Music" : Return "🎵  "
+            Case "Voice" : Return "🗣  "
+            Case "LoRA" : Return "🧩  "
+            Case Else : Return "💬  "
+        End Select
+    End Function
+
     Private Shared Function FormatEta(t As TimeSpan) As String
         If t.TotalHours >= 1 Then Return $"{CInt(Math.Floor(t.TotalHours))}h {t.Minutes}m"
         If t.TotalMinutes >= 1 Then Return $"{t.Minutes}m {t.Seconds}s"
@@ -68,7 +88,9 @@ Public Class DownloadJob
 
     <JsonIgnore> Public ReadOnly Property Title As String
         Get
-            Return ModelName & " · " & If(String.IsNullOrEmpty(Quant), RequestedQuant, Quant)
+            Dim icon = KindIcon(Kind)
+            If Work IsNot Nothing Then Return icon & ModelName
+            Return icon & ModelName & " · " & If(String.IsNullOrEmpty(Quant), RequestedQuant, Quant)
         End Get
     End Property
 End Class
@@ -127,10 +149,35 @@ Public Class DownloadManager
         End SyncLock
     End Function
 
+    ''' <summary>
+    ''' Every picture, video, music, voice and LoRA download goes through here, so all downloads show in one list
+    ''' (Models → Downloads), with up to three at a time. Returns when it is done; asking for a download that is
+    ''' already running waits for that one.
+    ''' </summary>
+    Public Async Function RunAsync(name As String, kind As String, key As String,
+                                   work As Func(Of Action(Of Integer, String), CancellationToken, Task), ct As CancellationToken) As Task
+        Dim job As DownloadJob
+        SyncLock _lock
+            job = _jobs.FirstOrDefault(Function(j) j.Key = key AndAlso j.Status <= DownloadStatus.Verifying)
+            If job Is Nothing Then
+                job = New DownloadJob With {.ModelName = name, .Kind = kind, .Key = key, .Work = work, .Repo = key, .RequestedQuant = ""}
+                _jobs.RemoveAll(Function(j) j.Key = key AndAlso j.Status > DownloadStatus.Verifying)
+                _jobs.Add(job)
+                EnsureWorker()
+            End If
+        End SyncLock
+        RaiseEvent JobChanged(job)
+        Dim waitFor = job.Done.Task
+        Using ct.Register(Sub() Cancel(job))
+            Await waitFor
+        End Using
+    End Function
+
     Public Sub Cancel(job As DownloadJob)
         If job Is Nothing Then Return
         If job.Status = DownloadStatus.Queued Then
             job.Status = DownloadStatus.Cancelled
+            job.Done.TrySetCanceled()
             RaiseEvent JobChanged(job)
         Else
             job.Cts?.Cancel()
@@ -155,6 +202,7 @@ Public Class DownloadManager
     Public Sub Retry(job As DownloadJob)
         If job Is Nothing Then Return
         If job.Status = DownloadStatus.Failed OrElse job.Status = DownloadStatus.Cancelled Then
+            job.Done = New TaskCompletionSource(Of Boolean)(TaskCreationOptions.RunContinuationsAsynchronously)
             job.Status = DownloadStatus.Queued
             job.ErrorText = Nothing
             RaiseEvent JobChanged(job)
@@ -226,6 +274,36 @@ Public Class DownloadManager
     Private Async Function RunJobAsync(job As DownloadJob) As Task
         job.Cts = New CancellationTokenSource()
         Dim ct = job.Cts.Token
+        If job.Work IsNot Nothing Then
+            ' picture / video / music / voice / LoRA
+            Try
+                job.Status = DownloadStatus.Downloading
+                job.BytesTotal = 100
+                job.BytesDone = 0
+                RaiseEvent JobChanged(job)
+                Await job.Work(Sub(p, t)
+                                   job.BytesDone = Math.Max(0, Math.Min(100, p))
+                                   job.Detail = t
+                                   RaiseEvent JobChanged(job)
+                               End Sub, ct)
+                job.BytesDone = 100
+                job.Status = DownloadStatus.Completed
+                job.Detail = Nothing
+                RaiseEvent JobChanged(job)
+                RaiseEvent JobCompleted(job)
+                job.Done.TrySetResult(True)
+            Catch ex As OperationCanceledException
+                job.Status = DownloadStatus.Cancelled
+                RaiseEvent JobChanged(job)
+                job.Done.TrySetCanceled()
+            Catch ex As Exception
+                job.Status = DownloadStatus.Failed
+                job.ErrorText = ex.Message
+                RaiseEvent JobChanged(job)
+                job.Done.TrySetException(ex)
+            End Try
+            Return
+        End If
         Dim s = _settings()
         Try
             ' 1) Resolve the exact files (unless resuming a job that already knows them)

@@ -488,17 +488,8 @@ Public Class MainForm
 
     ''' <summary>UI-thread housekeeping: download progress, refreshes requested by background threads.</summary>
     Private Async Sub StatusTick(sender As Object, e As EventArgs)
-        Dim active = AppCore.Downloads.Jobs().Where(Function(j) j.Status = DownloadStatus.Downloading OrElse
-                                                                 j.Status = DownloadStatus.Resolving OrElse
-                                                                 j.Status = DownloadStatus.Verifying OrElse
-                                                                 j.Status = DownloadStatus.Queued).ToList()
-        If active.Count > 0 Then
-            Dim cur = active.FirstOrDefault(Function(j) j.Status <> DownloadStatus.Queued)
-            lblDownloads.Text = $"⬇ {active.Count}: " & If(cur IsNot Nothing, $"{cur.ModelName} {cur.Percent}% ({Downloader.FormatBytes(CLng(cur.Speed))}/s)", "queued")
-            lblDownloads.Visible = True
-        ElseIf lblDownloads.Visible Then
-            lblDownloads.Visible = False
-        End If
+        ' (download progress shows only in Models → Downloads)
+        If lblDownloads.Visible Then lblDownloads.Visible = False
         Dim lanText = LanButtonText()
         If btnLan.Text <> lanText Then btnLan.Text = lanText
 
@@ -513,6 +504,7 @@ Public Class MainForm
     End Sub
 
     Private Sub OnDownloadCompleted(job As DownloadJob)
+        If job.Work IsNot Nothing Then Return          ' (pictures, video, music, voice: nothing to do for the chat)
         _modelsDirty = True
         SetStatus($"✔ {job.ModelName} ({job.Quant}) downloaded — ready to chat")
         If String.IsNullOrEmpty(Settings.LastModel) OrElse AppCore.Library.FindByName(Settings.LastModel) Is Nothing Then

@@ -1073,5 +1073,9 @@
 "voice cloning": "κλωνοποίηση φωνής",
 "any model": "κάθε μοντέλο",
 "free on": "ελεύθερα στο",
-"models": "μοντέλα"
+"models": "μοντέλα",
+"Downloading — see Models → Downloads": "Λήψη — δείτε Μοντέλα → Λήψεις",
+"⬇ Added to the download list (Models → Downloads).": "⬇ Προστέθηκε στη λίστα λήψεων (Μοντέλα → Λήψεις).",
+"⬇ In the download list": "⬇ Στη λίστα λήψεων",
+"⬇ {0} added to the download list below.": "⬇ {0} προστέθηκαν στη λίστα λήψεων παρακάτω."
 }
