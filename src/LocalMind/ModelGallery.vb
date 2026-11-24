@@ -26,6 +26,8 @@ Public Class ModelGallery
     Private ReadOnly txtSearch, txtKey As TextBox
     Private ReadOnly chkNsfw As CheckBox
     Private ReadOnly lblKey As Label
+    Private ReadOnly btnSaveKey As Button
+    Private ReadOnly lnkKeyHelp As LinkLabel
     Private ReadOnly list As ListView
     Private ReadOnly thumbs As New ImageList() With {.ImageSize = New Size(ThumbSize, ThumbSize), .ColorDepth = ColorDepth.Depth32Bit}
     Private ReadOnly pic As PictureBox
@@ -76,7 +78,13 @@ Public Class ModelGallery
         txtKey = New TextBox() With {.Width = 220, .UseSystemPasswordChar = True, .Text = AppCore.Settings.CivitaiApiKey, .Margin = New Padding(3, 6, 3, 3),
                                      .PlaceholderText = Localizer.T("only needed for some downloads")}
         Theme.StyleInput(txtKey)
-        top.Controls.AddRange({cmbSource, cmbType, cmbBase, cmbSort, txtSearch, chkNsfw, lblKey, txtKey})
+        btnSaveKey = Theme.MakeButton(Localizer.T("💾 Save"))
+        btnSaveKey.Margin = New Padding(3, 5, 3, 3)
+        lnkKeyHelp = New LinkLabel() With {.Text = Localizer.T("How do I get a key?"), .AutoSize = True, .LinkColor = Theme.CAccentHover,
+                                           .ActiveLinkColor = Theme.CAccentHover, .Margin = New Padding(6, 11, 3, 3)}
+        AddHandler btnSaveKey.Click, Sub() SaveKey(True)
+        AddHandler lnkKeyHelp.LinkClicked, Sub() ShowKeyHelp(FindForm())
+        top.Controls.AddRange({cmbSource, cmbType, cmbBase, cmbSort, txtSearch, chkNsfw, lblKey, txtKey, btnSaveKey, lnkKeyHelp})
 
         '──── right: the model's page ────
         Dim right As New Panel() With {.Dock = DockStyle.Right, .Width = 430, .Padding = New Padding(12, 10, 12, 10), .BackColor = Theme.CRaised}
@@ -171,10 +179,13 @@ Public Class ModelGallery
                                                AppCore.SaveSettings()
                                                Await SearchAsync(True)
                                            End Sub
-        AddHandler txtKey.Leave, Sub()
-                                     AppCore.Settings.CivitaiApiKey = txtKey.Text.Trim()
-                                     AppCore.SaveSettings()
-                                 End Sub
+        AddHandler txtKey.Leave, Sub() SaveKey(False)
+        AddHandler txtKey.KeyDown, Sub(s, e)
+                                       If e.KeyCode = Keys.Enter Then
+                                           e.SuppressKeyPress = True
+                                           SaveKey(True)
+                                       End If
+                                   End Sub
         AddHandler btnMore.Click, Async Sub() Await SearchAsync(False)
         AddHandler list.SelectedIndexChanged, Sub() ShowSelected()
         AddHandler cmbVersion.SelectedIndexChanged, Async Sub() Await ShowVersionAsync()
@@ -185,6 +196,31 @@ Public Class ModelGallery
                                       If url IsNot Nothing Then ModelManagerForm.OpenUrl(url)
                                   End Sub
         UpdateSourceUi()
+    End Sub
+
+    ''' <summary>Keeps the Civitai key in LocalMind's settings (it is used for every Civitai download).</summary>
+    Private Sub SaveKey(confirm As Boolean)
+        Dim k = txtKey.Text.Trim()
+        If k = If(AppCore.Settings.CivitaiApiKey, "") AndAlso Not confirm Then Return
+        AppCore.Settings.CivitaiApiKey = k
+        AppCore.SaveSettings()
+        If confirm Then lblListInfo.Text = If(k = "", Localizer.T("Civitai API key removed."), Localizer.T("✔ Civitai API key saved. It is used for every Civitai download."))
+    End Sub
+
+    ''' <summary>How to get a Civitai API key (shown from the model gallery and Settings).</summary>
+    Public Shared Sub ShowKeyHelp(owner As IWin32Window)
+        Dim text = Localizer.T("A Civitai API key lets LocalMind download models that need a Civitai account (many NSFW and early-access models). It is free:") & vbCrLf & vbCrLf &
+                   "1.  " & Localizer.T("Sign in (or sign up) at civitai.com.") & vbCrLf &
+                   "2.  " & Localizer.T("Click your profile picture (top right) → ⚙ Account settings.") & vbCrLf &
+                   "3.  " & Localizer.T("Scroll down to ""API Keys"" and click ""+ Add API key"".") & vbCrLf &
+                   "4.  " & Localizer.T("Type a name (e.g. LocalMind) and click Save.") & vbCrLf &
+                   "5.  " & Localizer.T("Copy the key that appears (it is shown only once).") & vbCrLf &
+                   "6.  " & Localizer.T("Paste it in the ""Civitai API key"" box in LocalMind and click 💾 Save.") & vbCrLf & vbCrLf &
+                   Localizer.T("The same key works for civitai.red. Keep it private: anyone with it can download as you. You can delete it on the same page at any time.") & vbCrLf & vbCrLf &
+                   Localizer.T("Open the Civitai account settings page now?")
+        If Localizer.Box(owner, text, "Civitai API key", MessageBoxButtons.YesNo, MessageBoxIcon.Information) = DialogResult.Yes Then
+            ModelManagerForm.OpenUrl("https://civitai.com/user/account")
+        End If
     End Sub
 
     Private Shared Function MakeCombo(width As Integer) As ComboBox
@@ -265,6 +301,8 @@ Public Class ModelGallery
         chkNsfw.Visible = IsLocal
         lblKey.Visible = Not IsLocal
         txtKey.Visible = Not IsLocal
+        btnSaveKey.Visible = Not IsLocal
+        lnkKeyHelp.Visible = Not IsLocal
         txtSearch.PlaceholderText = Localizer.T(If(IsLocal, If(_kind = "video", "Search, e.g. minimax, 10eros, ltx", "Search, e.g. flux, krea, qwen-image"),
                                                    "Search Civitai, e.g. realistic, anime, 10eros"))
     End Sub

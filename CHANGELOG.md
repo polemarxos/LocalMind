@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.20.3
+
+### Added
+- **Save your Civitai API key.** Next to the "Civitai API key" box in Models → Picture / Video (Civitai source) and in
+  the Civitai window there is a **💾 Save** button (Enter works too). The key is also in **Settings → Built-in engine**,
+  under the Hugging Face token. Once saved it is used for every Civitai download.
+- **"How do I get a key?"** explains step by step how to create a free key on civitai.com and can open the page:
+  1. Sign in at civitai.com.
+  2. Profile picture → Account settings.
+  3. API Keys → "+ Add API key".
+  4. Copy the key and paste it in LocalMind.
+
+
 ## 2.20.2
 
 ### Fixed

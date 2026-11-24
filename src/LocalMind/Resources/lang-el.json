@@ -1017,5 +1017,19 @@
 "uncensored": "χωρίς λογοκρισία",
 "is ready in the studio.": "είναι έτοιμο στο στούντιο.",
 "{0} downloading ({1}%)": "{0} σε λήψη ({1}%)",
-"⚠ No file LocalMind can run in this version.": "⚠ Αυτή η έκδοση δεν έχει αρχείο που μπορεί να τρέξει το LocalMind."
+"⚠ No file LocalMind can run in this version.": "⚠ Αυτή η έκδοση δεν έχει αρχείο που μπορεί να τρέξει το LocalMind.",
+"💾 Save": "💾 Αποθήκευση",
+"How do I get a key?": "Πώς παίρνω κλειδί;",
+"Civitai API key removed.": "Το κλειδί API του Civitai αφαιρέθηκε.",
+"✔ Civitai API key saved. It is used for every Civitai download.": "✔ Το κλειδί API του Civitai αποθηκεύτηκε. Χρησιμοποιείται σε κάθε λήψη από το Civitai.",
+"For Civitai downloads that need an account": "Για λήψεις από το Civitai που χρειάζονται λογαριασμό",
+"A Civitai API key lets LocalMind download models that need a Civitai account (many NSFW and early-access models). It is free:": "Το κλειδί API του Civitai επιτρέπει στο LocalMind να κατεβάζει μοντέλα που χρειάζονται λογαριασμό Civitai (πολλά NSFW και πρώιμης πρόσβασης). Είναι δωρεάν:",
+"Sign in (or sign up) at civitai.com.": "Συνδεθείτε (ή εγγραφείτε) στο civitai.com.",
+"Click your profile picture (top right) → ⚙ Account settings.": "Πατήστε την εικόνα προφίλ (πάνω δεξιά) → ⚙ Account settings.",
+"Type a name (e.g. LocalMind) and click Save.": "Γράψτε ένα όνομα (π.χ. LocalMind) και πατήστε Save.",
+"Copy the key that appears (it is shown only once).": "Αντιγράψτε το κλειδί που εμφανίζεται (φαίνεται μόνο μία φορά).",
+"The same key works for civitai.red. Keep it private: anyone with it can download as you. You can delete it on the same page at any time.": "Το ίδιο κλειδί λειτουργεί και για το civitai.red. Κρατήστε το ιδιωτικό: όποιος το έχει μπορεί να κατεβάζει ως εσάς. Μπορείτε να το διαγράψετε από την ίδια σελίδα οποιαδήποτε στιγμή.",
+"Open the Civitai account settings page now?": "Άνοιγμα της σελίδας ρυθμίσεων λογαριασμού Civitai τώρα;",
+"Scroll down to \"API Keys\" and click \"+ Add API key\".": "Κατεβείτε στο \"API Keys\" και πατήστε \"+ Add API key\".",
+"Paste it in the \"Civitai API key\" box in LocalMind and click 💾 Save.": "Επικολλήστε το στο πλαίσιο \"Κλειδί API Civitai\" του LocalMind και πατήστε 💾 Αποθήκευση."
 }

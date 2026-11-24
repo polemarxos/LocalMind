@@ -30,7 +30,7 @@ Public Class SettingsForm
     Private txtHotkey As TextBox
     Private cmbNgl, cmbKv, cmbSpeed As ComboBox
     Private chkMtp As CheckBox
-    Private txtExtra, txtHfToken As TextBox
+    Private txtExtra, txtHfToken, txtCivitaiKey As TextBox
     Private chkVerify, chkResume As CheckBox
     ' Chat
     Private numHistory, numImages, numMaxTok As NumericUpDown
@@ -230,6 +230,14 @@ Public Class SettingsForm
         Row(t, "Extra engine arguments", txtExtra, "Advanced llama-server flags, e.g. --n-cpu-moe 20")
         txtHfToken = New TextBox() With {.Text = _s.HuggingFaceToken, .Width = 360, .UseSystemPasswordChar = True}
         Row(t, "Hugging Face token", txtHfToken, "Only needed for gated models (Llama, some Gemma)")
+        txtCivitaiKey = New TextBox() With {.Text = _s.CivitaiApiKey, .Width = 360, .UseSystemPasswordChar = True}
+        Dim lnkCiv As New LinkLabel() With {.Text = Localizer.T("How do I get a key?"), .AutoSize = True, .LinkColor = Theme.CAccentHover, .Margin = New Padding(6, 6, 3, 3)}
+        AddHandler lnkCiv.LinkClicked, Sub() ModelGallery.ShowKeyHelp(Me)
+        Row(t, "Civitai API key", txtCivitaiKey)
+        Dim civHelp As New FlowLayoutPanel() With {.AutoSize = True, .Margin = New Padding(0)}
+        civHelp.Controls.Add(Theme.MakeLabel("For Civitai downloads that need an account", dim_:=True))
+        civHelp.Controls.Add(lnkCiv)
+        Row(t, "", civHelp)
         chkVerify = New CheckBox() With {.Text = "Verify downloads with SHA-256", .Checked = _s.VerifyDownloads, .AutoSize = True}
         chkResume = New CheckBox() With {.Text = "Resume unfinished downloads when the app starts", .Checked = _s.AutoResumeDownloads, .AutoSize = True}
         Row(t, "Downloads", chkVerify)
@@ -447,6 +455,7 @@ Public Class SettingsForm
         _s.SpeedUpMode = cmbSpeed.SelectedItem.ToString().Split(" "c)(0)
         _s.DownloadSpeedUpFiles = chkMtp.Checked
         _s.HuggingFaceToken = txtHfToken.Text.Trim()
+        _s.CivitaiApiKey = txtCivitaiKey.Text.Trim()
         _s.VerifyDownloads = chkVerify.Checked
         _s.AutoResumeDownloads = chkResume.Checked
         _s.HistoryMessages = CInt(numHistory.Value)
