@@ -203,7 +203,7 @@ Public Class ModelManagerForm
         btnRefresh = Theme.MakeButton("⟳ Update list")
         btnHub = Theme.MakeButton("🔍 Search all of Hugging Face")
         btnRecommend = Theme.MakeButton("★ Recommend for my PC")
-        chkFitGpu = New CheckBox() With {.Text = Localizer.T("✔ Only models that fit my GPU"), .AutoSize = True, .Checked = AppCore.Settings.OnlyFitGpu,
+        chkFitGpu = New CheckBox() With {.Text = Localizer.T("Only models that fit my GPU"), .AutoSize = True, .Checked = AppCore.Settings.OnlyFitGpu,
                                          .ForeColor = Theme.CText, .Margin = New Padding(10, 9, 3, 3)}
         AddHandler chkFitGpu.CheckedChanged, Sub()
                                                  AppCore.Settings.OnlyFitGpu = chkFitGpu.Checked
@@ -301,14 +301,15 @@ Public Class ModelManagerForm
 
         ' Details panel
         pnlDetail = New Panel() With {.Dock = DockStyle.Fill, .Padding = New Padding(10), .BackColor = Theme.CRaised}
-        lblDetailTitle = New Label() With {.Dock = DockStyle.Top, .Height = 46, .Font = New Font("Segoe UI", 11.0!, FontStyle.Bold), .ForeColor = Color.White, .Text = "Select a model"}
-        lblDetailInfo = New Label() With {.Dock = DockStyle.Top, .Height = 110, .ForeColor = Theme.CDim, .Font = Theme.SmallFont}
+        lblDetailTitle = New Label() With {.Dock = DockStyle.Top, .Height = 36, .Font = New Font("Segoe UI", 11.0!, FontStyle.Bold), .ForeColor = Color.White, .Text = "Select a model"}
+        lblDetailInfo = New Label() With {.Dock = DockStyle.Top, .Height = 96, .ForeColor = Theme.CDim, .Font = Theme.SmallFont}
         Dim lblQ = New Label() With {.Dock = DockStyle.Top, .Height = 22, .Text = "Available files (click one to choose it):", .ForeColor = Theme.CText}
         lstQuants = New ListView() With {.Dock = DockStyle.Fill}
         Theme.StyleListView(lstQuants)
         lstQuants.Columns.Add("Quant", 110)
         lstQuants.Columns.Add("Size", 80)
         lstQuants.Columns.Add("On this PC", 140)
+        Theme.FillLastColumn(lstQuants)
         AddHandler lstQuants.ItemActivate, AddressOf QuantPicked
         AddHandler lstQuants.Click, AddressOf QuantPicked
         chkVision = New CheckBox() With {.Dock = DockStyle.Bottom, .Height = 26, .Text = "Include vision projector (image input)", .Checked = True}

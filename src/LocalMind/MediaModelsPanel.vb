@@ -83,6 +83,7 @@ Public Class MediaModelsPanel
     ''' <summary>Shows one kind of model: "picture", "video", "music" or "voice".</summary>
     Public Sub ShowKind(kind As String)
         _audioKind = If(kind = "music" OrElse kind = "voice", kind, "")
+        chkNsfw.Visible = _audioKind = ""          ' (no uncensored sound models)
         Dim target = If(kind = "video", optVideos, If(_audioKind <> "", optMusic, optPictures))
         If target.Checked Then
             Fill()
@@ -145,7 +146,7 @@ Public Class MediaModelsPanel
                                             f.Activate()
                                         End If
                                     End Sub
-        chkNsfw.Text = Localizer.T("🔓 Show NSFW / uncensored")
+        chkNsfw.Text = Localizer.T("Show NSFW / uncensored")
         chkNsfw.Checked = AppCore.Settings.ShowNsfw
         details.ShowNsfw = chkNsfw.Checked
         AddHandler chkNsfw.CheckedChanged, Sub()
@@ -155,7 +156,7 @@ Public Class MediaModelsPanel
                                                Fill()
                                                ShowAbout()
                                            End Sub
-        chkFit.Text = Localizer.T("✔ Only models that fit my GPU")
+        chkFit.Text = Localizer.T("Only models that fit my GPU")
         chkFit.Checked = AppCore.Settings.OnlyFitGpu
         AddHandler chkFit.CheckedChanged, Sub()
                                               AppCore.Settings.OnlyFitGpu = chkFit.Checked

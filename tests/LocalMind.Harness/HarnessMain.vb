@@ -783,10 +783,11 @@ Module HarnessMain
                   ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "gemma3"}) AndAlso Not ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "llama"}) AndAlso
                   Not ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "gemma2"}), "chat: Qwen and Gemma 3/4 only")
             Dim chat = ModelFamilies.KeepChat(ModelCatalog.LoadEmbedded())
-            Check(chat.Count > 100 AndAlso chat.Count < 400 AndAlso chat.All(AddressOf ModelFamilies.ChatAllowed), "chat list: official + well-known uncensored", chat.Count.ToString())
+            Check(chat.Count > 300 AndAlso chat.All(AddressOf ModelFamilies.ChatAllowed), "LLM list: Qwen 3.8 + Gemma 3/4", chat.Count.ToString())
             Check(chat.Any(Function(x) x.Repo = "unsloth/Qwen3.8-27B-GGUF") AndAlso chat.Any(Function(x) x.Repo = "huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF") AndAlso
-                  chat.Any(Function(x) x.Repo.StartsWith("google/gemma-4")) AndAlso Not chat.Any(Function(x) x.Repo.StartsWith("prithivMLmods/")),
-                  "official Qwen/Gemma and the popular abliterated kept, other fine-tunes gone")
+                  chat.Any(Function(x) x.Repo.StartsWith("google/gemma-4")) AndAlso chat.Any(Function(x) x.Repo = "unsloth/gemma-3-27b-it-GGUF") AndAlso
+                  Not chat.Any(Function(x) x.Repo.Contains("Qwen3-8B") OrElse x.Repo.Contains("Qwen2.5")),
+                  "all Qwen 3.8 / Gemma 3 / Gemma 4 kept, older Qwen gone")
         End If
 
         If only = "v212" Then

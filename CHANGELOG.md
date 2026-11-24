@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.18.0
+
+### Changed
+- **Simpler Model Manager.**
+  - Two tabs: **Models** and **Installed**.
+  - Models has one bar of categories: **LLM · Picture · Video · Music · Voice**.
+  - The category and "Most popular" lists, and the picture/video type list, are gone. Each list has only the
+    search box, "Best for my GPU" and two checkboxes, with plain text and no extra icons.
+- **LLM list: every Qwen 3.8, Gemma 3 and Gemma 4 model** (official and community versions), about 470.
+- Music and voice models have their own categories. The NSFW checkbox shows only where it applies.
+
+### Fixed
+- The "Available files" list on a chat model's page could show only its header and a scrollbar. It now fits the
+  width.
+
+
 ## 2.17.2
 
 ### Fixed

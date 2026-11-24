@@ -185,6 +185,21 @@ Public Module Theme
     ''' Makes a list exactly tall enough for its rows (up to <paramref name="maxRows"/>), measured after it exists,
     ''' so it is right at every Windows display scale.
     ''' </summary>
+    ''' <summary>The last column fills the list's width, so no horizontal scrollbar covers the rows.</summary>
+    Public Sub FillLastColumn(lv As ListView)
+        Dim fit = Sub()
+                      If Not lv.IsHandleCreated OrElse lv.Columns.Count = 0 Then Return
+                      Dim used = 0
+                      For i = 0 To lv.Columns.Count - 2
+                          used += lv.Columns(i).Width
+                      Next
+                      Dim w = Math.Max(60, lv.ClientSize.Width - used - 2)
+                      If Math.Abs(lv.Columns(lv.Columns.Count - 1).Width - w) > 2 Then lv.Columns(lv.Columns.Count - 1).Width = w
+                  End Sub
+        AddHandler lv.SizeChanged, Sub() fit()
+        AddHandler lv.HandleCreated, Sub() fit()
+    End Sub
+
     Public Sub FitListHeight(lv As ListView, maxRows As Integer)
         ' Measured from the header and one row (the first row's rectangle is not reliable right after the
         ' list is created), with the last column filling the width so no horizontal scrollbar hides the rows.

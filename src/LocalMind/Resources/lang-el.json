@@ -981,5 +981,18 @@
 "Could not read the sound in the attached file.": "Δεν ήταν δυνατή η ανάγνωση του ήχου στο συνημμένο αρχείο.",
 "Writing down the words of the recording…": "Καταγραφή των λέξεων της ηχογράφησης…",
 "Last chat voice": "Τελευταία φωνή συνομιλίας",
-"(saved — say \"with {0}'s voice\" next time)": "(αποθηκεύτηκε — την επόμενη φορά πείτε «με τη φωνή {0}»)"
+"(saved — say \"with {0}'s voice\" next time)": "(αποθηκεύτηκε — την επόμενη φορά πείτε «με τη φωνή {0}»)",
+"Show NSFW / uncensored": "Εμφάνιση NSFW / χωρίς λογοκρισία",
+"Only models that fit my GPU": "Μόνο μοντέλα που χωράνε στην κάρτα γραφικών",
+"Models": "Μοντέλα",
+"💬  LLM": "💬  LLM",
+"🖼  Picture": "🖼  Εικόνα",
+"🎬  Video": "🎬  Βίντεο",
+"🎵  Music": "🎵  Μουσική",
+"🗣  Voice": "🗣  Φωνή",
+"Search, e.g. minimax, 10eros, ltx": "Αναζήτηση, π.χ. minimax, 10eros, ltx",
+"Search, e.g. qwen3-tts, chatterbox": "Αναζήτηση, π.χ. qwen3-tts, chatterbox",
+"Search, e.g. flux, krea, qwen-image": "Αναζήτηση, π.χ. flux, krea, qwen-image",
+"Showing {0} of {1} music models · click a column title to sort": "Εμφανίζονται {0} από {1} μοντέλα μουσικής · κλικ στον τίτλο στήλης για ταξινόμηση",
+"Showing {0} of {1} voice models · click a column title to sort": "Εμφανίζονται {0} από {1} μοντέλα φωνής · κλικ στον τίτλο στήλης για ταξινόμηση"
 }
