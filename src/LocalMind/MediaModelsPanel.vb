@@ -80,6 +80,21 @@ Public Class MediaModelsPanel
         cmbType.SelectedIndex = 0
     End Sub
 
+    ''' <summary>Shows one kind of model: "picture", "video", "music" or "voice".</summary>
+    Public Sub ShowKind(kind As String)
+        _audioKind = If(kind = "music" OrElse kind = "voice", kind, "")
+        Dim target = If(kind = "video", optVideos, If(_audioKind <> "", optMusic, optPictures))
+        If target.Checked Then
+            Fill()
+            ShowAbout()
+        Else
+            target.Checked = True
+        End If
+        txtFilter.PlaceholderText = Localizer.T(If(kind = "video", "Search, e.g. minimax, 10eros, ltx", If(_audioKind <> "", "Search, e.g. qwen3-tts, chatterbox", "Search, e.g. flux, krea, qwen-image")))
+    End Sub
+
+    Private _audioKind As String = ""
+
     Private Sub StyleKind(o As RadioButton)
         o.FlatAppearance.BorderColor = Theme.CBorder
         o.FlatAppearance.CheckedBackColor = Theme.CAccent
@@ -147,7 +162,7 @@ Public Class MediaModelsPanel
                                               AppCore.SaveSettings()
                                               Fill()
                                           End Sub
-        top.Controls.AddRange({optPictures, optVideos, optMusic, cmbShow, cmbType, txtFilter, chkFit, chkNsfw, btnStudio})
+        top.Controls.AddRange({cmbShow, txtFilter, chkFit, chkNsfw, btnStudio})      ' (the kind is chosen above, in the Model Manager)
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False
@@ -242,11 +257,6 @@ Public Class MediaModelsPanel
                                               _filterTimer.Start()
                                           End Sub
         Fill()
-        ' (screenshot checks)
-        Select Case Environment.GetEnvironmentVariable("LOCALMIND_MODELS_KIND")
-            Case "video" : optVideos.Checked = True
-            Case "music" : optMusic.Checked = True
-        End Select
     End Sub
 
     Private Shared Function TypeText(r As MediaRecipe) As String
@@ -365,9 +375,9 @@ Public Class MediaModelsPanel
     ''' <summary>The voice and music models (read aloud, voice cloning, songs) in the same list.</summary>
     Private Sub FillAudio()
         Dim q = txtFilter.Text.Trim().ToLowerInvariant()
-        Dim all = AudioStudio.Models()
-        Dim test = AudioTypes(Math.Max(0, Math.Min(AudioTypes.Length - 1, cmbType.SelectedIndex))).Test
-        Dim list As IEnumerable(Of AudioModel) = all.Where(test)
+        Dim test = If(_audioKind = "music", AudioTypes(1).Test, If(_audioKind = "voice", AudioTypes(2).Test, AudioTypes(0).Test))
+        Dim all = AudioStudio.Models().Where(test).ToList()
+        Dim list As IEnumerable(Of AudioModel) = all
         If cmbShow.SelectedIndex = 3 Then list = list.Where(AddressOf AudioStudio.IsInstalled)
         If cmbShow.SelectedIndex = 0 OrElse chkFit.Checked Then list = list.Where(Function(m) AudioStudio.Fit(m, _hw) <> FitLevel.TooBig OrElse AudioStudio.IsInstalled(m))
         If q.Length > 0 Then
@@ -414,7 +424,7 @@ Public Class MediaModelsPanel
         Next
         grid.ResumeLayout()
         _suppress = False
-        lblInfo.Text = String.Format(Localizer.T("Showing {0} of {1} music and voice models · click a column title to sort"), items.Count, all.Count)
+        lblInfo.Text = String.Format(Localizer.T(If(_audioKind = "music", "Showing {0} of {1} music models · click a column title to sort", "Showing {0} of {1} voice models · click a column title to sort")), items.Count, all.Count)
         UpdateButton()
     End Sub
 

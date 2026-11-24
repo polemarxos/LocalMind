@@ -109,23 +109,71 @@ Public Class ModelManagerForm
         dlPanel.Controls.Add(gridDl)
         dlPanel.Controls.Add(dlBar)
 
-        ' Tabs
+        ' Tabs: Models (with a category bar: LLM / Picture / Video / Music / Voice) and Installed
         tabs = New TabControl() With {.Dock = DockStyle.Fill}
-        Dim tabCatalog As New TabPage("Get models")
-        Dim tabInstalled As New TabPage("Installed")
+        Dim tabCatalog As New TabPage(Localizer.T("Models"))
+        Dim tabInstalled As New TabPage(Localizer.T("Installed"))
         tabs.TabPages.AddRange({tabCatalog, tabInstalled})
-        If AppCore.Settings.EnableImages Then
-            ' picture, picture-editing and video models
-            Dim tabMedia As New TabPage(Localizer.T("🎨 Pictures & video"))
-            tabMedia.Controls.Add(New MediaModelsPanel())
-            tabs.TabPages.Add(tabMedia)
-            ' (screenshot checks open this tab directly)
-            If Environment.GetEnvironmentVariable("LOCALMIND_MODELS_TAB") = "media" Then tabs.SelectedTab = tabMedia
-        End If
         Theme.StyleTabs(tabs)
         AddHandler tabs.SelectedIndexChanged, Sub() If tabs.SelectedIndex = 1 Then RefreshInstalled()
 
-        BuildCatalogTab(tabCatalog)
+        Dim host As New Panel() With {.Dock = DockStyle.Fill, .BackColor = Theme.CPanel}
+        Dim llmPage As New Panel() With {.Dock = DockStyle.Fill, .BackColor = Theme.CPanel}
+        BuildCatalogTab(llmPage)
+        host.Controls.Add(llmPage)
+        Dim media As MediaModelsPanel = Nothing
+        Dim cats As New List(Of (Id As String, Label As String)) From {("llm", "💬  LLM")}
+        If AppCore.Settings.EnableImages Then
+            cats.Add(("picture", "🖼  Picture"))
+            cats.Add(("video", "🎬  Video"))
+        End If
+        If AppCore.Settings.EnableAudio Then
+            cats.Add(("music", "🎵  Music"))
+            cats.Add(("voice", "🗣  Voice"))
+        End If
+        If cats.Count > 1 Then
+            media = New MediaModelsPanel() With {.Visible = False}
+            host.Controls.Add(media)
+        End If
+        Dim strip As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 50, .WrapContents = False, .Padding = New Padding(10, 9, 10, 5), .BackColor = Theme.CPanel}
+        Dim segs As New List(Of RadioButton)
+        For Each c In cats
+            Dim id = c.Id
+            Dim rb As New RadioButton() With {.Appearance = Appearance.Button, .Text = Localizer.T(c.Label), .UseMnemonic = False,
+                                              .FlatStyle = FlatStyle.Flat, .TextAlign = ContentAlignment.MiddleCenter, .AutoSize = False,
+                                              .Size = New Size(118, 34), .Margin = New Padding(0, 0, 0, 0), .Cursor = Cursors.Hand}
+            rb.FlatAppearance.BorderColor = Theme.CBorder
+            rb.FlatAppearance.CheckedBackColor = Theme.CAccent
+            rb.FlatAppearance.MouseOverBackColor = Theme.CHover
+            rb.BackColor = Theme.CControl
+            Dim paint = Sub()
+                            rb.ForeColor = If(rb.Checked, Color.White, Theme.CText)
+                            rb.Font = If(rb.Checked, Theme.BoldFont, Theme.UiFont)
+                        End Sub
+            paint()
+            AddHandler rb.CheckedChanged, Sub()
+                                              paint()
+                                              If Not rb.Checked Then Return
+                                              llmPage.Visible = (id = "llm")
+                                              If media IsNot Nothing Then
+                                                  media.Visible = (id <> "llm")
+                                                  If id <> "llm" Then media.ShowKind(id)
+                                              End If
+                                          End Sub
+            segs.Add(rb)
+            strip.Controls.Add(rb)
+        Next
+        tabCatalog.Controls.Add(host)
+        tabCatalog.Controls.Add(strip)
+        If segs.Count > 0 Then segs(0).Checked = True
+        ' (screenshot checks open a category directly)
+        If Environment.GetEnvironmentVariable("LOCALMIND_MODELS_TAB") = "media" Then
+            Dim k = Environment.GetEnvironmentVariable("LOCALMIND_MODELS_KIND")
+            Dim want = If(k = "video" OrElse k = "music" OrElse k = "voice", k, "picture")
+            Dim i = cats.FindIndex(Function(x) x.Id = want)
+            If i >= 0 Then segs(i).Checked = True
+        End If
+
         BuildInstalledTab(tabInstalled)
 
         Controls.Add(tabs)
@@ -133,7 +181,7 @@ Public Class ModelManagerForm
         Controls.Add(header)
     End Sub
 
-    Private Sub BuildCatalogTab(page As TabPage)
+    Private Sub BuildCatalogTab(page As Control)
         Dim bar As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink,
                                                .WrapContents = True, .Padding = New Padding(4, 4, 4, 2)}
         txtFilter = New TextBox() With {.Width = 260, .PlaceholderText = "Search, e.g. qwen coder or Qwen3.8-27B-Uncensored:iq4_xs", .Margin = New Padding(3, 6, 3, 3)}
@@ -162,7 +210,7 @@ Public Class ModelManagerForm
                                                  AppCore.SaveSettings()
                                                  ApplyFilter()
                                              End Sub
-        bar.Controls.AddRange({cmbShow, txtFilter, cmbCategory, cmbSort, chkFitGpu, btnRecommend, btnHub, btnRefresh})
+        bar.Controls.AddRange({cmbShow, txtFilter, chkFitGpu, btnRecommend, btnHub, btnRefresh})      ' (no category or order lists: simpler)
 
         _filterTimer = New System.Windows.Forms.Timer() With {.Interval = 250}
         AddHandler _filterTimer.Tick, Sub()
