@@ -158,7 +158,8 @@ Public Module ChatAgent
             Catch ex As OperationCanceledException
                 Throw
             Catch ex As Exception
-                md.AppendLine().AppendLine().Append("⚠ " & ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).LastOrDefault())
+                Dim ls = ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries)
+                md.AppendLine().AppendLine().Append("⚠ " & String.Join("  " & vbLf & "⚠ ", ls.Skip(Math.Max(0, ls.Length - 4))))
             End Try
         Next
         Return (result, md.ToString(), sources)
@@ -167,13 +168,13 @@ Public Module ChatAgent
     '──────────────── pictures and songs for the chat ────────────────
     ''' <summary>The chosen chat image model if downloaded, else the best one: with a photo one that edits or restyles, else one that creates.</summary>
     Public Function PickImageRecipe(withPhoto As Boolean) As MediaRecipe
-        Dim all = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).
+        Dim all = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.UsableVariant(r) IsNot Nothing).
                   Where(Function(r) If(withPhoto, r.Can("edit") OrElse r.Can("restyle"), r.Can("create"))).ToList()
         Dim chosen = all.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatImageModel)
         If chosen IsNot Nothing Then Return chosen
         Dim hw = HardwareInfo.Current()
         Return all.OrderBy(Function(r) If(withPhoto AndAlso r.Can("edit"), 0, 1)).
-                   ThenBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.InstalledVariant(r), hw) = FitLevel.Fits, 0, 1)).
+                   ThenBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.UsableVariant(r), hw) = FitLevel.Fits, 0, 1)).
                    ThenBy(Function(r) r.Steps).FirstOrDefault()
     End Function
 
@@ -199,7 +200,7 @@ Public Module ChatAgent
             End If
         End If
         If r Is Nothing Then Return Localizer.T("(No picture model is downloaded yet — open 🎨 Create to get one.)")
-        Dim v = MediaStudio.InstalledVariant(r)
+        Dim v = MediaStudio.UsableVariant(r)
         Dim fast = AppCore.Settings.MediaFast AndAlso r.Speed IsNot Nothing
         status?.Invoke(If(photoFile IsNot Nothing, "Editing the picture…", "Drawing…"))
         Dim req As New MediaStudio.GenerateRequest With {
@@ -216,13 +217,13 @@ Public Module ChatAgent
     ''' <summary>A downloaded video model: with a photo one that animates it (else one that creates from text).</summary>
     Public Function PickVideoRecipe(withPhoto As Boolean) As MediaRecipe
         Dim hw = HardwareInfo.Current()
-        Dim all = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
+        Dim all = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.UsableVariant(r) IsNot Nothing).ToList()
         Dim ok = all.Where(Function(r) If(withPhoto, r.Can("animate"), r.Can("create") AndAlso r.Input <> "required")).ToList()
         If ok.Count = 0 AndAlso withPhoto Then ok = all.Where(Function(r) r.Can("create") AndAlso r.Input <> "required").ToList()
         ' the default the user chose (if it can do this kind of video)
         Dim chosen = ok.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatVideoModel)
         If chosen IsNot Nothing Then Return chosen
-        Return ok.OrderBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.InstalledVariant(r), hw) = FitLevel.Fits, 0, 1)).
+        Return ok.OrderBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.UsableVariant(r), hw) = FitLevel.Fits, 0, 1)).
                   ThenBy(Function(r) If(r.Uncensored, 1, 0)).
                   ThenBy(Function(r) If(r.Speed IsNot Nothing AndAlso AppCore.Settings.MediaFast, r.Speed.Steps, r.Steps)).FirstOrDefault()
     End Function

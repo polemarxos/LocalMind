@@ -5546,9 +5546,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 1715,
@@ -5632,9 +5632,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 11276,
@@ -5732,9 +5732,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 6257,
@@ -5832,9 +5832,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 2719,
@@ -5938,9 +5938,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 1186,
@@ -5995,9 +5995,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 0,
@@ -6053,9 +6053,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 1226,
@@ -6110,9 +6110,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 1226,
@@ -6123,7 +6123,7 @@
   "name": "AfterMidnight · MiniMax H3 Ref2VA (NSFW LoRA)",
   "kind": "video",
   "family": "MiniMax-H3",
-  "about": "MiniMax H3 Ref2VA with the AfterMidnight NSFW LoRA (adult scenes, coherent motion) and the uncensored encoder. Uses your reference pictures or 🎭 cast.",
+  "about": "MiniMax H3 Ref2VA with the AfterMidnight NSFW LoRA (adult scenes, coherent motion) Uses your reference pictures or 🎭 cast.",
   "steps": 20,
   "cfg": 1.0,
   "width": 864,
@@ -6212,9 +6212,9 @@
    },
    {
     "role": "llm",
-    "repo": "webmp3/Sakura-MiniMax-H3-Uncensored-GGUF",
-    "path": "Sakura-MiniMax-H3-TextEncoder-Uncensored-Q4_K_M-14.05GiB.gguf",
-    "size": 15084123104
+    "repo": "PrunaAI/P-Image-OSS-Comfy",
+    "path": "text_encoders/p-h3-image_text_encoder_bf16.safetensors",
+    "size": 9138027824
    }
   ],
   "dl": 3563159,

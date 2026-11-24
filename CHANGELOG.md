@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.16.2
+
+### Fixed
+- **"prompt encoding failed" with 10Eros Max.** The 10Eros, PinkCherry and AfterMidnight MiniMax H3 models used the
+  32B Sakura text encoder (14 GB). Together with the video model that is more than a 16 GB graphics card and
+  32 GB of RAM can hold, so the prompt could not be read. They now use the compact 4B MiniMax H3 text encoder
+  (the video model itself is what makes them uncensored). "MiniMax H3 Uncensored (Sakura encoder)" still uses the
+  32B one, for PCs with lots of memory.
+- When a model's files are larger than the free RAM, the engine now reads them from the disk as needed
+  instead of failing to load them.
+- A model whose main file is downloaded but which now needs another part (like the encoder above) is still
+  used by the chat; the missing part downloads by itself when you generate.
+- Error messages show the engine's real error lines, not only "generate failed". The full engine output of the
+  last failed run is saved to `Data\engine-last.log`.
+
+
 ## 2.16.1
 
 ### Fixed

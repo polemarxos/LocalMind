@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.IO
 Imports System.Linq
 Imports System.Text
@@ -37,7 +37,7 @@ Partial Class MainForm
 
     Private Sub FillImageMenu(mi As ToolStripMenuItem)
         mi.DropDownItems.Clear()
-        Dim installed = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing).ToList()
+        Dim installed = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.UsableVariant(r) IsNot Nothing).ToList()
         mi.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("Default picture model")) With {.Enabled = False})
         If installed.Count = 0 Then
             mi.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("(no image model downloaded)")) With {.Enabled = False})
@@ -52,7 +52,7 @@ Partial Class MainForm
         End If
         For Each r In installed
             Dim rr = r
-            Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.InstalledVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatImageModel}
+            Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.UsableVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatImageModel}
             AddHandler it.Click, Sub()
                                      Settings.ChatImageModel = rr.Id
                                      AppCore.SaveSettings()
@@ -61,7 +61,7 @@ Partial Class MainForm
         Next
 
         ' the video model for "make a video …" in the chat
-        Dim videos = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing AndAlso
+        Dim videos = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.UsableVariant(r) IsNot Nothing AndAlso
                                                      (r.Can("create") OrElse r.Can("animate"))).ToList()
         Dim miVideo As New ToolStripMenuItem(Localizer.T("Default video model"))
         If videos.Count = 0 Then
@@ -76,7 +76,7 @@ Partial Class MainForm
             miVideo.DropDownItems.Add(autoV)
             For Each r In videos
                 Dim rr = r
-                Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.InstalledVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatVideoModel}
+                Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.UsableVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatVideoModel}
                 AddHandler it.Click, Sub()
                                          Settings.ChatVideoModel = rr.Id
                                          AppCore.SaveSettings()

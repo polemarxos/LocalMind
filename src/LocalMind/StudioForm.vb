@@ -786,7 +786,7 @@ Public Class StudioForm
         btnDelete.Enabled = installed AndAlso _cts Is Nothing
         Dim isDefault = r.Id = If(r.IsVideo, AppCore.Settings.ChatVideoModel, AppCore.Settings.ChatImageModel)
         btnDefault.Visible = Not r.IsUpscaler AndAlso r.Kind <> "tool"
-        btnDefault.Enabled = MediaStudio.InstalledVariant(r) IsNot Nothing
+        btnDefault.Enabled = MediaStudio.UsableVariant(r) IsNot Nothing
         btnDefault.Text = If(isDefault, Localizer.T("★ Default"), Localizer.T("☆ Make default"))
         _tips.SetToolTip(btnDefault, Localizer.T(If(r.IsVideo, "Use this model when you ask the chat for a video (click again for automatic)",
                                                             "Use this model when you ask the chat for a picture (click again for automatic)")))

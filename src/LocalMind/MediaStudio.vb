@@ -338,6 +338,13 @@ Public Module MediaStudio
         Next
     End Sub
 
+    ''' <summary>The downloaded variant, or one whose main model file is downloaded (its smaller parts are fetched when it is used).</summary>
+    Public Function UsableVariant(r As MediaRecipe) As MediaVariant
+        Dim v = InstalledVariant(r)
+        If v IsNot Nothing Then Return v
+        Return r.Variants.Where(Function(x) IsPresent(x) AndAlso (x.High Is Nothing OrElse IsPresent(x.High))).OrderByDescending(Function(x) x.Total).FirstOrDefault()
+    End Function
+
     Public Function InstalledVariant(r As MediaRecipe) As MediaVariant
         Return r.Variants.Where(Function(v) IsInstalled(r, v)).OrderByDescending(Function(v) v.Total).FirstOrDefault()
     End Function
@@ -585,6 +592,11 @@ Public Module MediaStudio
             progress?.Invoke(0, "Downloading the ControlNet…")
             Await DownloadFilesAsync({CType(controlNet, MediaFile)}.ToList(), progress, ct)
         End If
+        ' A part that is missing (e.g. a model now uses a different text encoder) is downloaded first.
+        If r.Kind <> "tool" AndAlso FilesFor(r, v).Any(Function(f) Not IsPresent(f)) Then
+            progress?.Invoke(0, "Downloading the missing parts…")
+            Await DownloadAsync(r, v, progress, ct)
+        End If
         If usesRefs AndAlso FilesFor(r, v, True).Any(Function(f) Not IsPresent(f)) Then
             Await DownloadAsync(r, v, progress, ct, forEdit:=True)       ' e.g. the vision part needed for editing
         End If
@@ -700,6 +712,8 @@ Public Module MediaStudio
             End Select
             ' Memory: keep parts in RAM and move them to the GPU as needed; tile the VAE on smaller GPUs.
             If FilesFor(r, v).Sum(Function(f) f.Size) > hw.VramBytes * 0.85 OrElse r.IsVideo Then a.Append("--offload-to-cpu ")
+            ' (parts larger than the free RAM are read from the disk as needed instead of failing to load)
+            If hw.RamBytes > 0 AndAlso FilesFor(r, v).Sum(Function(f) f.Size) > hw.RamBytes * 0.6 Then a.Append("--mmap ")
             If hw.VramGB < 12 Then a.Append("--vae-tiling ")
             If pkg.Flavor = "cuda12" Then a.Append("--diffusion-fa ")
         End If
@@ -764,8 +778,15 @@ Public Module MediaStudio
                 req.Outputs = New List(Of String) From {out}
             End If
             If code <> 0 OrElse Not File.Exists(out) Then
-                Dim tail = String.Join(Environment.NewLine, log.ToString().Split({vbLf}, StringSplitOptions.RemoveEmptyEntries).Reverse().Take(15).Reverse())
-                Dim hint = If(tail.ToLowerInvariant().Contains("out of memory") OrElse tail.Contains("alloc"),
+                Try
+                    File.WriteAllText(Path.Combine(AppPaths.Roaming, "engine-last.log"), exe & " " & a.ToString() & Environment.NewLine & Environment.NewLine & log.ToString())
+                Catch
+                End Try
+                Dim lines = log.ToString().Split({vbLf}, StringSplitOptions.RemoveEmptyEntries).Select(Function(x) x.TrimEnd(ChrW(13))).ToList()
+                ' the engine's own error lines first (the last line alone is often just "generate failed")
+                Dim errs = lines.Where(Function(x) x.Contains("[E]") OrElse x.Contains("[ERROR]") OrElse x.Contains("error:", StringComparison.OrdinalIgnoreCase)).Distinct().ToList()
+                Dim tail = String.Join(Environment.NewLine, If(errs.Count > 0, errs.Skip(Math.Max(0, errs.Count - 6)), lines.Skip(Math.Max(0, lines.Count - 15))))
+                Dim hint = If(tail.ToLowerInvariant().Contains("out of memory") OrElse tail.Contains("alloc") OrElse tail.Contains("ErrorOutOfDeviceMemory"),
                               "Not enough memory: try a smaller size, fewer frames, or a smaller quality level." & Environment.NewLine & Environment.NewLine, "")
                 Throw New Exception(hint & tail)
             End If

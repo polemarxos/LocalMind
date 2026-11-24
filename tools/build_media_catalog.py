@@ -488,40 +488,40 @@ h3("10eros-max-h3", "10Eros Max · MiniMax H3 (NSFW, sound)",
    "Video with sound from text, a start picture, or first + last picture. No content filter. GPU 12 GB+ and 32 GB RAM.",
    variants_list(gguf_variants(ER + "10Eros-Max-GGUF")) +
    cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot", r"^10Eros_Max_h3_fl2va_beta2_pruned_int8_convrot\.safetensors$")]),
-   H3_TE_UNC, uncensored=True)
+   H3_TE4, uncensored=True)
 h3("10eros-max-h3-turbo", "10Eros Max Turbo · MiniMax H3 (NSFW, 8 steps)",
    "10Eros Max Turbo beta 7: uncensored MiniMax H3 with sound in only 8 steps (several times faster). Keep the guidance at 1.",
-   variants_list(gguf_variants(ER + "10Eros-Max-Turbo-Beta7-GGUF")), H3_TE_UNC, uncensored=True, steps=8, cfg=1.0)
+   variants_list(gguf_variants(ER + "10Eros-Max-Turbo-Beta7-GGUF")), H3_TE4, uncensored=True, steps=8, cfg=1.0)
 h3("10eros-max-h3-turbo-hybrid", "10Eros Max Turbo Hybrid · MiniMax H3 (NSFW, fast)",
    "10Eros Max Turbo Hybrid beta 5: fast (8 steps) uncensored MiniMax H3 with more motion variety.",
    variants_list(gguf_variants(ER + "10Eros-Max-Turbo-Hybrid-Beta5-GGUF")) +
    cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot (beta 3)", r"^10Eros_Max_h3_TURBO-hybrid_beta3_int8_convrot\.safetensors$")]),
-   H3_TE_UNC, uncensored=True, steps=8, cfg=1.0)
+   H3_TE4, uncensored=True, steps=8, cfg=1.0)
 h3("10eros-max-h3-hybrid", "10Eros Max Hybrid · MiniMax H3 (NSFW)",
    "10Eros Max Hybrid beta 5 at full quality (20 steps): uncensored MiniMax H3 with sound.",
-   variants_list(gguf_variants(ER + "10Eros-Max-Hybrid-Beta5-GGUF")), H3_TE_UNC, uncensored=True)
+   variants_list(gguf_variants(ER + "10Eros-Max-Hybrid-Beta5-GGUF")), H3_TE4, uncensored=True)
 h3("10eros-max-h3-ref2va", "10Eros Max Ref2VA · MiniMax H3 (NSFW, from pictures)",
    "Uncensored 10Eros Max that puts the people of your reference pictures (or your 🎭 cast) into a video with sound.",
    variants_list(gguf_variants(ER + "10Eros-Max-ref2va-Beta2-GGUF")) +
    cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot", r"^10Eros_Max_h3_ref2va_beta2_pruned_int8_convrot\.safetensors$")]),
-   H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3)
+   H3_TE4, uncensored=True, tasks=["create", "reference"], refs=3)
 h3("10eros-max-h3-turbo-ref2va", "10Eros Max Turbo Ref2VA · MiniMax H3 (NSFW, fast, from pictures)",
    "Fast (8 steps) uncensored 10Eros Max for your reference pictures or 🎭 cast.",
    cr_list("cicalooo/10Eros-Max-h3-int8-convrot", [("INT8 ConvRot", r"^10Eros_Max_h3_TURBO_ref2va_beta2_int8_convrot\.safetensors$")]),
-   H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3, steps=8, cfg=1.0)
+   H3_TE4, uncensored=True, tasks=["create", "reference"], refs=3, steps=8, cfg=1.0)
 PC = "SexGod1979/PinkCherry-NSFW_MiniMax-H3"
 h3("pinkcherry-h3", "PinkCherry · MiniMax H3 (NSFW, sound)",
    "PinkCherry: an uncensored MiniMax H3 fine-tune for adult scenes, with sound. Text, start picture or first + last picture.",
    cr_list(PC, [("INT8 ConvRot", r"^beta-0\.6-fl2va/PinkCherry_fl2va_MiniMax_H3_pruned_int8_convrot-beta-0\.6\.safetensors$")]),
-   H3_TE_UNC, uncensored=True)
+   H3_TE4, uncensored=True)
 h3("pinkcherry-h3-ref2va", "PinkCherry Ref2VA · MiniMax H3 (NSFW, from pictures)",
    "Uncensored PinkCherry that uses your reference pictures or 🎭 cast.",
    cr_list(PC, [("INT8 ConvRot", r"^ref2va-beta-06/pinkcherrry_minimax_h3_ref2va_beta-0\.6_int8_convrot\.safetensors$")]),
-   H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3)
+   H3_TE4, uncensored=True, tasks=["create", "reference"], refs=3)
 AM = "SexGod1979/AfterMidnight-MiniMax-H3-NSFW"
 h3("aftermidnight-h3-ref2va", "AfterMidnight · MiniMax H3 Ref2VA (NSFW LoRA)",
-   "MiniMax H3 Ref2VA with the AfterMidnight NSFW LoRA (adult scenes, coherent motion) and the uncensored encoder. Uses your reference pictures or 🎭 cast.",
-   ref2va, H3_TE_UNC, uncensored=True, tasks=["create", "reference"], refs=3,
+   "MiniMax H3 Ref2VA with the AfterMidnight NSFW LoRA (adult scenes, coherent motion) Uses your reference pictures or 🎭 cast.",
+   ref2va, H3_TE4, uncensored=True, tasks=["create", "reference"], refs=3,
    loras=[lora(AM, r"sexytime_rank64-v1\.2\.safetensors$", "builtin-h3-aftermidnight-v1.2")])
 
 # LTX-2.3 dev fine-tunes (10Eros, PinkCherry): dev parts; a distilled LoRA makes them fast
