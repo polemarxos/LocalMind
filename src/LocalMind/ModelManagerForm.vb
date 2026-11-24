@@ -428,7 +428,7 @@ Public Class ModelManagerForm
 
     Private Sub UpdateInfoLabel(age As String)
         Dim vramNote = If(_hw.VramBytes = 0, "No GPU found — models run on the CPU (smaller models recommended). ", "")
-        lblInfo.Text = $"{vramNote}Showing the {_best.Count} best models for {_hw.VramGB:0.#} GB VRAM (of {_entries.Count}, {age}) — choose 'All models' to see everything · estimates use {AppCore.Settings.ContextSize \ 1024}K context · " &
+        lblInfo.Text = $"{vramNote}{_entries.Count} LLM models (Qwen 3.8, Gemma 3, Gemma 4 · {age}) · {_best.Count} fit fully in {_hw.VramGB:0.#} GB VRAM · estimates use {AppCore.Settings.ContextSize \ 1024}K context · " &
                        $"installed: {AppCore.Library.All().Count} ({Downloader.FormatBytes(AppCore.Library.TotalSize())}) · " &
                        $"folder: {AppCore.Library.Folder}"
     End Sub
@@ -741,6 +741,7 @@ Public Class ModelManagerForm
                 chkVision.Text = $"Include vision projector ({Downloader.FormatBytes(files.Mmproj.Size)})"
             End If
             lstQuants.EndUpdate()
+            Theme.FitLastColumn(lstQuants)
 
             ' Replace the estimate in the grid with the real size of the auto/selected file.
             If row IsNot Nothing AndAlso row.Tag Is e AndAlso auto IsNot Nothing Then

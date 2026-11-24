@@ -187,17 +187,19 @@ Public Module Theme
     ''' </summary>
     ''' <summary>The last column fills the list's width, so no horizontal scrollbar covers the rows.</summary>
     Public Sub FillLastColumn(lv As ListView)
-        Dim fit = Sub()
-                      If Not lv.IsHandleCreated OrElse lv.Columns.Count = 0 Then Return
-                      Dim used = 0
-                      For i = 0 To lv.Columns.Count - 2
-                          used += lv.Columns(i).Width
-                      Next
-                      Dim w = Math.Max(60, lv.ClientSize.Width - used - 2)
-                      If Math.Abs(lv.Columns(lv.Columns.Count - 1).Width - w) > 2 Then lv.Columns(lv.Columns.Count - 1).Width = w
-                  End Sub
-        AddHandler lv.SizeChanged, Sub() fit()
-        AddHandler lv.HandleCreated, Sub() fit()
+        AddHandler lv.SizeChanged, Sub() FitLastColumn(lv)
+        AddHandler lv.HandleCreated, Sub() FitLastColumn(lv)
+    End Sub
+
+    ' Call again after filling the list: a vertical scrollbar may have appeared (room for it is always kept).
+    Public Sub FitLastColumn(lv As ListView)
+        If Not lv.IsHandleCreated OrElse lv.Columns.Count = 0 Then Return
+        Dim used = 0
+        For i = 0 To lv.Columns.Count - 2
+            used += lv.Columns(i).Width
+        Next
+        Dim w = Math.Max(60, lv.Width - SystemInformation.VerticalScrollBarWidth - 4 - used)
+        If Math.Abs(lv.Columns(lv.Columns.Count - 1).Width - w) > 2 Then lv.Columns(lv.Columns.Count - 1).Width = w
     End Sub
 
     Public Sub FitListHeight(lv As ListView, maxRows As Integer)

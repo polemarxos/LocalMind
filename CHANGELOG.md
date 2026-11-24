@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.18.1
+
+### Fixed
+- **Model lists showed the wrong model.** After a list changed (a search, the GPU filter, Update list, or switching
+  between LLM / Picture / Video / Music / Voice), the page on the right could still show an earlier model, and
+  picking a file there could change a different row. The page now always shows the selected row's model, and a
+  file you pick applies to that model.
+- **"Update list" failed** with "Index was out of range… (Parameter 'index')". It happened while the list was being
+  rebuilt; it is fixed.
+- **The LLM list shows all its models by default**: every Qwen 3.8, Gemma 3 and Gemma 4 model (about 470). Before,
+  it opened on "Best that fit my GPU", which hides models that don't fit fully, such as Qwen 3.8 27B on a 16 GB
+  card. "Only models that fit my GPU" still narrows it.
+- The file list on a model's page no longer gets a horizontal scrollbar that hides its rows.
+
+
 ## 2.18.0
 
 ### Changed
