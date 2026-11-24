@@ -388,6 +388,11 @@ Public Class ModelGallery
                 Dim s = info.Samples.FirstOrDefault(Function(x) chkNsfw.Checked OrElse Not x.Nsfw)
                 Dim img As Image = Nothing
                 If s IsNot Nothing Then img = Await ModelDetails.GetImageAsync(s.Url, ct)
+                If img Is Nothing Then
+                    ' no example pictures on its Hugging Face page (most GGUF uploads): show one made with this family
+                    Dim url = Await FamilyPictureAsync(r, ct)
+                    If url IsNot Nothing Then img = Await ModelDetails.GetImageAsync(url, ct)
+                End If
                 If ct.IsCancellationRequested OrElse IsDisposed Then Return
                 AddThumb("r:" & r.Id, If(img, TextTile(r.Family)))
             Finally
@@ -395,6 +400,33 @@ Public Class ModelGallery
             End Try
         Catch
         End Try
+    End Function
+
+    ' Civitai's name for each model family, for example pictures of models that have none of their own.
+    Private Shared ReadOnly CivitaiBase As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+        {"LTX-2.5", "LTXV 2.5"}, {"MiniMax-H3", "MiniMax H3"}, {"Qwen-Image", "Qwen"}, {"Qwen-Image-Edit", "Qwen"},
+        {"FLUX.1", "Flux.1 D"}, {"FLUX.1-Kontext", "Flux.1 Kontext"}, {"FLUX.2", "Flux.2 Klein 9B"}, {"Krea", "Krea 2"},
+        {"Z-Image", "ZImageTurbo"}, {"SDXL", "SDXL 1.0"}, {"SD1.5", "SD 1.5"}, {"Anima", "Anima"}}
+    Private Shared ReadOnly _familyPics As New System.Collections.Concurrent.ConcurrentDictionary(Of String, Task(Of List(Of String)))
+
+    Private Async Function FamilyPictureAsync(r As MediaRecipe, ct As CancellationToken) As Task(Of String)
+        Dim base As String = Nothing
+        If r.Family Is Nothing OrElse Not CivitaiBase.TryGetValue(r.Family, base) Then Return Nothing
+        Dim nsfw = chkNsfw.Checked
+        Dim urls = Await _familyPics.GetOrAdd(base & "|" & nsfw.ToString(),
+            Function(k) Task.Run(Async Function()
+                                     Dim res = Await Civitai.SearchAsync("", False, {base}, False, "Most Downloaded", Nothing, CancellationToken.None)
+                                     Return res.Items.SelectMany(Function(m) m.Versions.Take(2)).
+                                                Where(Function(v) v.ImageUrl IsNot Nothing AndAlso (nsfw OrElse Not v.ImageNsfw)).
+                                                Select(Function(v) Civitai.ThumbUrl(v.ImageUrl, 320)).Distinct().ToList()
+                                 End Function))
+        If urls Is Nothing OrElse urls.Count = 0 Then Return Nothing
+        ' each model gets its own picture of the family (the same one every time)
+        Dim h = 0
+        For Each c In r.Id
+            h = (h * 31 + AscW(c)) And &HFFFFFF
+        Next
+        Return urls(h Mod urls.Count)
     End Function
 
     Private Async Function LoadThumbAsync(key As String, url As String, ct As CancellationToken) As Task
@@ -519,6 +551,7 @@ Public Class ModelGallery
                 Dim s = info.Samples.FirstOrDefault(Function(x) chkNsfw.Checked OrElse Not x.Nsfw)
                 If info.Description <> "" Then txtAbout.Text &= vbCrLf & vbCrLf & info.Description
                 imgUrl = s?.Url
+                If imgUrl Is Nothing Then imgUrl = Await FamilyPictureAsync(r, ct)
             Catch
             End Try
         Else
