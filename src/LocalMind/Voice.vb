@@ -57,6 +57,11 @@ Public Module Voice
 
     '════════════════ Whisper ════════════════
     Private Function WhisperPackage(flavor As String) As ExternalTools.ToolPackage
+        If flavor = "cuda13" Then
+            ' whisper.cpp has no Windows x64 CUDA 13 build: LocalMind builds its own (engines-cuda13 release)
+            Return New ExternalTools.ToolPackage With {.Name = "whisper", .Flavor = "cuda13", .Repo = Updater.Repo, .ExeName = "whisper-cli.exe",
+                                                       .AssetPatterns = {"^whisper-.+-bin-win-cuda13-x64\.zip$"}}
+        End If
         Return New ExternalTools.ToolPackage With {
             .Name = "whisper", .Flavor = flavor, .Repo = "ggml-org/whisper.cpp", .ExeName = "whisper-cli.exe",
             .AssetPatterns = If(flavor = "cuda12",
@@ -67,14 +72,15 @@ Public Module Voice
     ''' <summary>Updates whisper.cpp builds that are installed, when a newer one exists.</summary>
     Public Async Function UpdateWhisperAsync(progress As Action(Of String), ct As CancellationToken) As Task
         If Not OperatingSystem.IsWindows() Then Return
-        For Each flavor In {"cuda12", "cpu"}
+        For Each flavor In {"cuda13", "cuda12", "cpu"}
             Dim p = WhisperPackage(flavor)
             If ExternalTools.FindExe(p) IsNot Nothing Then Await ExternalTools.InstallAsync(p, progress, ct, onlyIfNewer:=True)
         Next
     End Function
 
     Private Function PreferredFlavor() As String
-        Return If(HardwareInfo.Current().PrimaryVendor = GpuVendor.Nvidia, "cuda12", "cpu")
+        If HardwareInfo.Current().PrimaryVendor <> GpuVendor.Nvidia Then Return "cpu"
+        Return If(AppCore.Engine.EffectiveVariant = "cuda13", "cuda13", "cuda12")
     End Function
 
     ''' <summary>Whisper model by hardware: large-v3-turbo on NVIDIA, small on other PCs.</summary>
@@ -98,6 +104,17 @@ Public Module Voice
             Catch ex As Exception When flavor <> "cpu"
                 gpuInstallFailed = True
             End Try
+            If gpuInstallFailed AndAlso flavor = "cuda13" Then
+                ' CUDA 13 build not published yet: the CUDA 12 build
+                gpuInstallFailed = False
+                flavor = "cuda12"
+                pkg = WhisperPackage(flavor)
+                Try
+                    If ExternalTools.FindExe(pkg) Is Nothing Then Await ExternalTools.InstallAsync(pkg, progress, ct)
+                Catch ex As Exception
+                    gpuInstallFailed = True
+                End Try
+            End If
             If gpuInstallFailed Then
                 pkg = WhisperPackage("cpu")
                 If ExternalTools.FindExe(pkg) Is Nothing Then Await ExternalTools.InstallAsync(pkg, progress, ct)

@@ -1,0 +1,162 @@
+name: CUDA 13 engines
+
+# Builds stable-diffusion.cpp (pictures & video) and whisper.cpp (speech) for CUDA 13, because their projects publish
+# Windows CUDA builds for CUDA 12 only. The zips go to the "engines-cuda13" pre-release of this repository, where
+# LocalMind downloads them when the GPU backend is CUDA 13. Runs every week and on demand.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+
+permissions:
+  contents: write
+
+env:
+  CUDA_ARCHS: '75;80;86;89;90;100;120'
+
+jobs:
+  sd:
+    runs-on: windows-2022
+    timeout-minutes: 300
+    steps:
+      - name: Latest stable-diffusion.cpp release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release view -R leejet/stable-diffusion.cpp --json tagName -q .tagName)
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "Building $TAG"
+
+      - name: Clone
+        uses: actions/checkout@v6
+        with:
+          repository: leejet/stable-diffusion.cpp
+          ref: ${{ env.TAG }}
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10.15.1
+
+      - name: Install CUDA 13
+        uses: ggml-org/llama.cpp/.github/actions/windows-setup-cuda@master
+        with:
+          cuda_version: '13.1'
+          cuda_arch: 'x64'
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_CXX_FLAGS='/bigobj' -G Ninja -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_BUILD_TYPE=Release `
+            -DSD_CUDA=ON -DSD_BUILD_SHARED_LIBS=ON "-DCMAKE_CUDA_ARCHITECTURES=$env:CUDA_ARCHS" `
+            '-DCMAKE_CUDA_FLAGS=-Xcudafe "--diag_suppress=177" -Xcudafe "--diag_suppress=550"' `
+            -DGGML_NATIVE=OFF -DSD_BUILD_SHARED_GGML_LIB=ON -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON
+          cmake --build .
+
+      - name: Pack (with the CUDA runtime)
+        shell: pwsh
+        run: |
+          $bin = if (Test-Path .\build\bin\Release\sd-cli.exe) { '.\build\bin\Release' } else { '.\build\bin' }
+          if (-not (Test-Path "$bin\sd-cli.exe")) { ls .\build\bin; throw "sd-cli.exe not found" }
+          Get-ChildItem $env:CUDA_PATH -Recurse -Include cudart64_*.dll,cublas64_*.dll,cublasLt64_*.dll | Copy-Item -Destination $bin
+          Copy-Item ggml/LICENSE "$bin\ggml.txt"
+          Copy-Item LICENSE "$bin\stable-diffusion.cpp.txt"
+          7z a "sd-$env:TAG-bin-win-cuda13-x64.zip" "$bin\*"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: sd-cuda13
+          path: sd-*-bin-win-cuda13-x64.zip
+
+  whisper:
+    runs-on: windows-2022
+    timeout-minutes: 240
+    steps:
+      - name: Latest whisper.cpp release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release view -R ggml-org/whisper.cpp --json tagName -q .tagName)
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "Building $TAG"
+
+      - name: Clone
+        uses: actions/checkout@v6
+        with:
+          repository: ggml-org/whisper.cpp
+          ref: ${{ env.TAG }}
+
+      - name: Install CUDA 13
+        uses: ggml-org/llama.cpp/.github/actions/windows-setup-cuda@master
+        with:
+          cuda_version: '13.1'
+          cuda_arch: 'x64'
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          & "$vsPath\Common7\Tools\Launch-VsDevShell.ps1" -Arch amd64 -HostArch amd64 -SkipAutomaticLocation
+          cmake -B build -G Ninja -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_BUILD_TYPE=Release `
+            -DGGML_CUDA=ON -DGGML_NATIVE=OFF -DBUILD_SHARED_LIBS=ON "-DCMAKE_CUDA_ARCHITECTURES=$env:CUDA_ARCHS" `
+            -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_SERVER=OFF
+          cmake --build build --config Release
+
+      - name: Pack (with the CUDA runtime)
+        shell: pwsh
+        run: |
+          $bin = if (Test-Path .\build\bin\Release\whisper-cli.exe) { '.\build\bin\Release' } else { '.\build\bin' }
+          if (-not (Test-Path "$bin\whisper-cli.exe")) { ls .\build\bin; throw "whisper-cli.exe not found" }
+          Get-ChildItem $env:CUDA_PATH -Recurse -Include cudart64_*.dll,cublas64_*.dll,cublasLt64_*.dll | Copy-Item -Destination $bin
+          Copy-Item LICENSE "$bin\whisper.cpp.txt"
+          7z a "whisper-$env:TAG-bin-win-cuda13-x64.zip" "$bin\*"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: whisper-cuda13
+          path: whisper-*-bin-win-cuda13-x64.zip
+
+  publish:
+    needs: [sd, whisper]
+    if: ${{ always() && (needs.sd.result == 'success' || needs.whisper.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Upload to the engines-cuda13 pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          R="$GITHUB_REPOSITORY"
+          ls -la out
+          if ! gh release view engines-cuda13 -R "$R" > /dev/null 2>&1; then
+            gh release create engines-cuda13 -R "$R" --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "CUDA 13 engines (pictures, video, speech)" \
+              --notes "stable-diffusion.cpp and whisper.cpp built for CUDA 13. LocalMind downloads these by itself when the GPU backend is CUDA 13; you don't need to download anything here."
+          fi
+          # replace only the engines that were rebuilt
+          for f in out/*.zip; do
+            kind=$(basename "$f" | cut -d- -f1)
+            for old in $(gh release view engines-cuda13 -R "$R" --json assets -q '.assets[].name' | grep "^$kind-" || true); do
+              gh release delete-asset engines-cuda13 "$old" -R "$R" --yes
+            done
+            gh release upload engines-cuda13 "$f" -R "$R" --clobber
+          done

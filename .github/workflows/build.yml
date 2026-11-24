@@ -75,5 +75,5 @@ jobs:
             gh release upload "$env:VERSION" LocalMind-win-x64.zip --clobber
             gh release edit "$env:VERSION" --notes-file notes.md
           } else {
-            gh release create "$env:VERSION" LocalMind-win-x64.zip --target "${{ github.sha }}" --title "LocalMind $env:VERSION" --notes-file notes.md
+            gh release create "$env:VERSION" LocalMind-win-x64.zip --target "${{ github.sha }}" --title "LocalMind $env:VERSION" --notes-file notes.md --latest
           }

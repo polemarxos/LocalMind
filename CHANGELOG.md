@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.23.1
+
+### Added
+- **Full CUDA 13 support.** With the GPU backend set to CUDA 13, everything runs on CUDA 13:
+  - chat (llama.cpp);
+  - pictures and video (stable-diffusion.cpp);
+  - speech-to-text and subtitles (whisper.cpp).
+
+  Those two projects only publish Windows CUDA 12 builds, so LocalMind now builds them for CUDA 13 itself, every
+  week, from their latest releases. The builds support RTX 20xx through RTX 50 and include the CUDA runtime.
+  LocalMind downloads them by itself. If a CUDA 13 build isn't available yet, it uses the CUDA 12 one, which runs
+  on the same cards.
+- Fast attention for pictures and video is now on with CUDA 13 too.
+
+### Fixed
+- Installing a GPU build of speech-to-text no longer removes the CPU build it falls back to.
+
 ## 2.23.0
 
 ### Added

@@ -537,8 +537,13 @@ Public Module MediaStudio
         Await ExternalTools.InstallAsync(pkg, progress, ct, onlyIfNewer:=True)
     End Function
 
-    Private Function EnginePackage() As ExternalTools.ToolPackage
+    Private Function EnginePackage(Optional allowCuda13 As Boolean = True) As ExternalTools.ToolPackage
         Dim v = AppCore.Engine.EffectiveVariant
+        ' CUDA 13: stable-diffusion.cpp publishes CUDA 12 builds only, so LocalMind builds its own (engines-cuda13 release).
+        If v = "cuda13" AndAlso allowCuda13 Then
+            Return New ExternalTools.ToolPackage With {.Name = "sd", .Flavor = "cuda13", .Repo = Updater.Repo,
+                                                       .ExeName = "sd-cli.exe", .AssetPatterns = {"^sd-.+-bin-win-cuda13-x64\.zip$"}}
+        End If
         Dim flavor = If(v.StartsWith("cuda"), "cuda12", If(v = "cpu", "cpu", "vulkan"))
         Dim pats As String() = If(flavor = "cuda12",
             {"^sd-.+-bin-win-cuda12-x64\.zip$", "^cudart-sd-bin-win-cu12-x64\.zip$"},
@@ -619,7 +624,18 @@ Public Module MediaStudio
         Dim hw = HardwareInfo.Current()
         If r.Kind = "tool" Then Return Await RunToolAsync(req, progress, ct)
         Dim pkg = EnginePackage()
-        If ExternalTools.FindExe(pkg) Is Nothing Then Await ExternalTools.InstallAsync(pkg, Sub(t) progress?.Invoke(0, t), ct)
+        If ExternalTools.FindExe(pkg) Is Nothing Then
+            Dim fallBack = False
+            Try
+                Await ExternalTools.InstallAsync(pkg, Sub(t) progress?.Invoke(0, t), ct)
+            Catch ex As Exception When pkg.Flavor = "cuda13" AndAlso Not ct.IsCancellationRequested
+                fallBack = True   ' (CUDA 13 build not published yet: the CUDA 12 build works on the same cards)
+            End Try
+            If fallBack Then
+                pkg = EnginePackage(False)
+                If ExternalTools.FindExe(pkg) Is Nothing Then Await ExternalTools.InstallAsync(pkg, Sub(t) progress?.Invoke(0, t), ct)
+            End If
+        End If
         Dim exe = ExternalTools.FindExe(pkg)
         If v.Format = "convrot" Then
             Await Task.Run(Sub()
@@ -780,7 +796,7 @@ Public Module MediaStudio
             If AppCore.Settings.LowRamActive(hw.VramGB) OrElse
                (hw.RamBytes > 0 AndAlso FilesFor(r, v).Sum(Function(f) f.Size) > hw.RamBytes * 0.6) Then a.Append("--mmap ")
             If hw.VramGB < 12 Then a.Append("--vae-tiling ")
-            If pkg.Flavor = "cuda12" Then a.Append("--diffusion-fa ")
+            If pkg.Flavor.StartsWith("cuda", StringComparison.Ordinal) Then a.Append("--diffusion-fa ")
         End If
         a.Append($"-o {Q(out)} -v")
 

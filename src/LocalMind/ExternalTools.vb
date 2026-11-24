@@ -64,6 +64,8 @@ Public Module ExternalTools
                     If found.Count = rx.Length Then
                         urls = found
                         tag = rel.Value(Of String)("tag_name")
+                        ' LocalMind's own engine builds keep one release tag: the zip name tells the version
+                        If tag.StartsWith("engines-", StringComparison.Ordinal) Then tag &= "/" & Path.GetFileName(New Uri(found(0).Url).LocalPath)
                         Exit For
                     End If
                 Next
@@ -93,7 +95,11 @@ Public Module ExternalTools
         ' the builds for another GPU backend (after switching CUDA ↔ Vulkan ↔ CPU) are no longer used
         Try
             For Each other In Directory.GetDirectories(Path.GetDirectoryName(target))
-                If Not String.Equals(other.TrimEnd(Path.DirectorySeparatorChar), target.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) Then
+                Dim name = Path.GetFileName(other.TrimEnd(Path.DirectorySeparatorChar))
+                ' (the CPU build stays: speech falls back to it when the GPU build can't start)
+                If Not String.Equals(other.TrimEnd(Path.DirectorySeparatorChar), target.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) AndAlso
+                   Not name.Equals("cpu", StringComparison.OrdinalIgnoreCase) AndAlso Not name.EndsWith(".new", StringComparison.OrdinalIgnoreCase) AndAlso
+                   (p.Flavor <> "cpu") Then
                     Try : Directory.Delete(other, True) : Catch : End Try
                 End If
             Next

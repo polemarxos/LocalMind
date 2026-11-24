@@ -22,7 +22,8 @@ jobs:
         run: |
           gh release view "$KEEP" -R "$GITHUB_REPOSITORY" > /dev/null || { echo "Release $KEEP not found — nothing deleted"; exit 1; }
           for tag in $(gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName --jq '.[].tagName'); do
-            if [ "$tag" != "$KEEP" ]; then
+            # the CUDA 13 engine builds stay (LocalMind downloads them)
+            if [ "$tag" != "$KEEP" ] && [[ "$tag" != engines-* ]]; then
               gh release delete "$tag" -R "$GITHUB_REPOSITORY" --yes --cleanup-tag
               echo "deleted $tag"
             fi
