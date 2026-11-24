@@ -17,7 +17,7 @@ Public Class StudioForm
     Inherits Form
 
     ''' <summary>Task id, menu label, and whether it works on video models.</summary>
-    Private Shared ReadOnly TaskList As (Id As String, Label As String, Video As Boolean)() = {
+    Private Shared ReadOnly AllTasks As (Id As String, Label As String, Video As Boolean)() = {
         ("create", "✨ Create a picture", False),
         ("edit", "✏ Edit a picture (describe the change)", False),
         ("inpaint", "🖌 Change part of a picture (paint the area)", False),
@@ -38,11 +38,12 @@ Public Class StudioForm
         ("talk", "🗣 Talking character (picture + voice)", True),
         ("extend", "⏩ Extend a video", True),
         ("enhance", "✨ Enhance a video (sharper, smoother)", True)}
+    ' Only the tasks a listed (or downloaded) model can do; "enhance" and background removal need none of the listed kinds.
+    Private Shared ReadOnly TaskList As (Id As String, Label As String, Video As Boolean)() =
+        AllTasks.Where(Function(t) t.Id = "enhance" OrElse MediaStudio.Recipes().Any(Function(r) Suits(r, t))).ToArray()
 
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
     Private ReadOnly cmbShow, cmbTask, cmbVariant, cmbSize As ComboBox
-    Private ReadOnly cmbTop As ComboBox = Popular.MakeCombo(205)
-    Private _keepId As String
     Private ReadOnly grid As DataGridView
     Private ReadOnly lblAbout, lblStatus, lblStrength, lblVideo, lblFrames, lblNeed As Label
     Private ReadOnly btnDefault As Button
@@ -135,7 +136,7 @@ Public Class StudioForm
         Theme.StyleInput(cmbShow) : Theme.StyleInput(cmbTask)
         Dim btnCivitai = Theme.MakeButton("🌐 More on Civitai…")
         filt.Height = 74
-        filt.Controls.AddRange({cmbTask, cmbShow, cmbTop, btnCivitai})
+        filt.Controls.AddRange({cmbTask, cmbShow, btnCivitai})
         AddHandler btnCivitai.Click, Sub()
                                          Using f As New CivitaiForm(checkpoints:=True, family:=SelectedRecipe()?.Family)
                                              f.ShowDialog(Me)
@@ -360,7 +361,6 @@ Public Class StudioForm
 
         '──── events ────
         AddHandler cmbShow.SelectedIndexChanged, Sub() FillGrid()
-        AddHandler cmbTop.SelectedIndexChanged, Sub() FillGrid()
         AddHandler cmbTask.SelectedIndexChanged, Sub()
                                                     FillGrid()
                                                     UpdateTaskUi()
@@ -547,7 +547,8 @@ Public Class StudioForm
         If gallery.SelectedItems.Count = 0 Then Return
         Dim f = CStr(gallery.SelectedItems(0).Tag)
         If Not IsVideoFile(f) Then Return
-        cmbTask.SelectedIndex = Array.FindIndex(TaskList, Function(x) x.Id = task)
+        Dim ti = Array.FindIndex(TaskList, Function(x) x.Id = task)
+        If ti >= 0 Then cmbTask.SelectedIndex = ti
         SetVideo(f)
     End Sub
 
@@ -676,8 +677,6 @@ Public Class StudioForm
         End Select
         Dim t = CurrentTask()
         list = list.Where(Function(r) Suits(r, t)).ToList()
-        list = Popular.Top(list, Popular.Count(cmbTop), Function(r) r.Downloads,
-                           Function(r) r.Id = _keepId OrElse MediaStudio.InstalledVariant(r) IsNot Nothing)
         grid.Rows.Clear()
         For Each r In list
             Dim v = MediaStudio.PickVariant(r, _hw)
@@ -891,7 +890,8 @@ Public Class StudioForm
     Private Sub SetVideo(f As String)
         _videoPath = f
         lblVideo.Text = If(f Is Nothing, "", "🎞 " & Path.GetFileName(f))
-        If Not TakesVideo(CurrentTask().Id) Then cmbTask.SelectedIndex = Array.FindIndex(TaskList, Function(t) t.Id = "video-edit")
+        Dim vi = Array.FindIndex(TaskList, Function(t) t.Id = "video-edit")
+        If Not TakesVideo(CurrentTask().Id) AndAlso vi >= 0 Then cmbTask.SelectedIndex = vi
         UpdateTaskUi()
     End Sub
 
@@ -1390,7 +1390,6 @@ Public Class StudioForm
         If r Is Nothing Then Return
         Dim ti = Array.FindIndex(TaskList, Function(x) x.Id = s.Task AndAlso x.Video = r.IsVideo)
         If ti < 0 Then ti = Array.FindIndex(TaskList, Function(x) x.Id = "create" AndAlso x.Video = r.IsVideo)
-        _keepId = r.Id                     ' listed even if it is not among the most popular
         cmbShow.SelectedIndex = 1          ' all models, so the one used is surely listed
         cmbTask.SelectedIndex = ti
         FillGridKeepSelection(r)

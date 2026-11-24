@@ -35,7 +35,6 @@ Public Class ModelManagerForm
     Private cmbCategory As ComboBox
     Private cmbSort As ComboBox
     Private cmbShow As ComboBox
-    Private cmbTop As ComboBox
     Private _best As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
     Private _bestUncensored As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
     Private btnRefresh As Button
@@ -153,7 +152,6 @@ Public Class ModelManagerForm
         cmbShow.Items.AddRange({"★ Best that fit my GPU", "Everything that runs on this PC", "All models (show everything)"}.Select(Function(x) Localizer.T(x)).ToArray())
         cmbShow.SelectedIndex = 0
         Theme.StyleInput(cmbShow)
-        cmbTop = Popular.MakeCombo()
         btnRefresh = Theme.MakeButton("⟳ Update list")
         btnHub = Theme.MakeButton("🔍 Search all of Hugging Face")
         btnRecommend = Theme.MakeButton("★ Recommend for my PC")
@@ -164,7 +162,7 @@ Public Class ModelManagerForm
                                                  AppCore.SaveSettings()
                                                  ApplyFilter()
                                              End Sub
-        bar.Controls.AddRange({cmbShow, cmbTop, txtFilter, cmbCategory, cmbSort, chkFitGpu, btnRecommend, btnHub, btnRefresh})
+        bar.Controls.AddRange({cmbShow, txtFilter, cmbCategory, cmbSort, chkFitGpu, btnRecommend, btnHub, btnRefresh})
 
         _filterTimer = New System.Windows.Forms.Timer() With {.Interval = 250}
         AddHandler _filterTimer.Tick, Sub()
@@ -187,7 +185,6 @@ Public Class ModelManagerForm
                                                      ApplyFilter()
                                                  End Sub
         AddHandler cmbShow.SelectedIndexChanged, Sub() ApplyFilter()
-        AddHandler cmbTop.SelectedIndexChanged, Sub() ApplyFilter()
         AddHandler btnRefresh.Click, Async Sub() Await RefreshCatalogAsync(force:=True)
         AddHandler btnHub.Click, Async Sub() Await SearchHubAsync()
         AddHandler btnRecommend.Click, Sub() RecommendForMe()
@@ -352,6 +349,7 @@ Public Class ModelManagerForm
         MyBase.OnLoad(e)
         lblHw.Text = _hw.Summary
         Dim age As String = Nothing
+        ModelCatalog.Installed = Function(x) AppCore.Library.HasRepo(x.Repo)
         _entries = ModelCatalog.LoadCachedOrEmbedded(age)
         RecomputeBest()
         UpdateInfoLabel(age)
@@ -389,7 +387,7 @@ Public Class ModelManagerForm
         Try
             Dim list = Await ModelCatalog.FetchLiveAsync(CancellationToken.None)
             If list.Count > 50 Then
-                _entries = list
+                _entries = ModelFamilies.KeepChat(list, Function(e) AppCore.Library.HasRepo(e.Repo))
                 _searchResults = Nothing
                 RecomputeBest()
                 UpdateInfoLabel("updated just now")
@@ -488,10 +486,6 @@ Public Class ModelManagerForm
                    ModelCatalog.Fit(e, ModelCatalog.EstimateFileBytes(e, EffectiveQuant(e)), _hw, ctx) = FitLevel.Fits))
         End If
 
-        ' Only the most downloaded ones (a search shows everything that matches).
-        If _searchResults Is Nothing AndAlso q.Length = 0 AndAlso cmbCategory.SelectedIndex <> 13 Then
-            src = Popular.Top(src, Popular.Count(cmbTop), Function(e) e.Downloads, Function(e) AppCore.Library.HasRepo(e.Repo))
-        End If
         If _sortCol IsNot Nothing Then
             Dim ctx2 = ctx
             Dim key As Func(Of CatalogEntry, IComparable)

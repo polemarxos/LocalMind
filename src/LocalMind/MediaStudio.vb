@@ -145,8 +145,9 @@ Public Module MediaStudio
                     End Using
                 End Using
             End If
-            Dim list = JsonConvert.DeserializeObject(Of List(Of MediaRecipe))(_catalogJson)
-            list.AddRange(UserRecipes(list))
+            Dim all = JsonConvert.DeserializeObject(Of List(Of MediaRecipe))(_catalogJson)
+            Dim list = all.Where(Function(x) ModelFamilies.MediaAllowed(x) OrElse InstalledVariant(x) IsNot Nothing).ToList()
+            list.AddRange(UserRecipes(all))
             _recipes = list
         End If
         Return _recipes

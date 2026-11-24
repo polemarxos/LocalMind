@@ -376,14 +376,17 @@ Public Module ModelCatalog
                 If list IsNot Nothing AndAlso list.Count > 50 Then
                     Dim age = DateTime.Now - File.GetLastWriteTime(CachePath)
                     ageText = If(age.TotalHours < 1, "updated just now", $"updated {age.TotalHours:0}h ago")
-                    Return list
+                    Return ModelFamilies.KeepChat(list, Installed)
                 End If
             End If
         Catch
         End Try
         ageText = "built-in list"
-        Return LoadEmbedded()
+        Return ModelFamilies.KeepChat(LoadEmbedded(), Installed)
     End Function
+
+    ''' <summary>Set by the app: whether a catalog model is already downloaded (it stays listed).</summary>
+    Public Installed As Func(Of CatalogEntry, Boolean) = Nothing
 
     Public Function CacheIsStale() As Boolean
         Return Not File.Exists(CachePath) OrElse (DateTime.Now - File.GetLastWriteTime(CachePath)).TotalHours > 24

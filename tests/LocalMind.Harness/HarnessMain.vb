@@ -774,6 +774,16 @@ Module HarnessMain
             Dim msg = Await ChatAgent.CloneVoiceAsync("hello", kept, Nothing, Nothing, Nothing, CancellationToken.None)
             Check(msg.StartsWith("(") OrElse msg.Contains("🗣"), "without a voice model: a clear note, no crash", msg)
             File.Delete(kept)
+            Dim fams = MediaStudio.Recipes().Select(Function(x) x.Family).Distinct().ToList()
+            Check(fams.All(Function(x) ModelFamilies.MediaAllowed(New MediaRecipe With {.Family = x}) OrElse MediaStudio.Recipes().Any(Function(y) y.Family = x AndAlso MediaStudio.InstalledVariant(y) IsNot Nothing)),
+                  "only FLUX, Krea, Qwen-Image, LTX-2.5, MiniMax H3 (+ tools) listed", String.Join(", ", fams))
+            Check(MediaStudio.Recipes().Any(Function(x) x.Id = "10eros-max-h3-turbo") AndAlso Not MediaStudio.Recipes().Any(Function(x) x.Id = "wan2.2-t2v-a14b"),
+                  "10Eros (MiniMax H3) kept, Wan removed")
+            Check(ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "qwen35"}) AndAlso ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "gemma4"}) AndAlso
+                  ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "gemma3"}) AndAlso Not ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "llama"}) AndAlso
+                  Not ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "gemma2"}), "chat: Qwen and Gemma 3/4 only")
+            Dim chat = ModelFamilies.KeepChat(ModelCatalog.LoadEmbedded())
+            Check(chat.Count > 1000 AndAlso chat.All(AddressOf ModelFamilies.ChatAllowed), "chat list filtered", chat.Count.ToString())
         End If
 
         If only = "v212" Then

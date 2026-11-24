@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.17.0
+
+### Changed
+- **Shorter model lists: only the families worth using.**
+  - Chat: **Qwen** and **Gemma 3 / Gemma 4** (with their fine-tunes), about 3,300 instead of 9,900.
+  - Pictures: **FLUX** (FLUX.1, Kontext, FLUX.2), **Krea 2** and **Qwen-Image** (also Edit).
+  - Video: **LTX-2.5** and **MiniMax H3**, with its fine-tunes (10Eros, PinkCherry, AfterMidnight, HyperFlow).
+  - Kept as tools: the picture enlargers and the background remover.
+  - Models you already downloaded always stay listed, whatever their family. "Search all of Hugging Face" still
+    finds anything.
+- The "⭐ Top … most popular" selector is gone.
+- The Studio only offers tasks that a listed model can do. Talking character and Edit / restyle a video needed
+  Wan, so they appear only if you already have such a model.
+
+
 ## 2.16.2
 
 ### Fixed

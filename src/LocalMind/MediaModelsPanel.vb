@@ -35,7 +35,6 @@ Public Class MediaModelsPanel
     Private ReadOnly _filterTimer As New System.Windows.Forms.Timer() With {.Interval = 250}
     Private ReadOnly details As New MediaDetailsView() With {.Dock = DockStyle.Fill}
     Private ReadOnly chkNsfw As New CheckBox() With {.AutoSize = True, .Margin = New Padding(10, 9, 3, 3), .ForeColor = Theme.CText}
-    Private ReadOnly cmbTop As ComboBox = Popular.MakeCombo()
     Private ReadOnly chkFit As New CheckBox() With {.AutoSize = True, .Margin = New Padding(10, 9, 3, 3), .ForeColor = Theme.CText}
 
     ''' <summary>Raised after downloads, so the Studio can refresh.</summary>
@@ -148,7 +147,7 @@ Public Class MediaModelsPanel
                                               AppCore.SaveSettings()
                                               Fill()
                                           End Sub
-        top.Controls.AddRange({optPictures, optVideos, optMusic, cmbShow, cmbTop, cmbType, txtFilter, chkFit, chkNsfw, btnStudio})
+        top.Controls.AddRange({optPictures, optVideos, optMusic, cmbShow, cmbType, txtFilter, chkFit, chkNsfw, btnStudio})
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False
@@ -234,7 +233,6 @@ Public Class MediaModelsPanel
         AddHandler cmbType.SelectedIndexChanged, Sub()
                                                      If Not _suppressType Then Fill()
                                                  End Sub
-        AddHandler cmbTop.SelectedIndexChanged, Sub() Fill()
         AddHandler _filterTimer.Tick, Sub()
                                           _filterTimer.Stop()
                                           Fill()
@@ -318,10 +316,6 @@ Public Class MediaModelsPanel
                                   Return words.All(Function(w) hay.Contains(w))
                               End Function)
         End If
-        ' Only the most downloaded ones (a search, or the Installed list, shows everything that matches).
-        If q.Length = 0 AndAlso cmbShow.SelectedIndex <> 3 Then
-            list = Popular.Top(list, Popular.Count(cmbTop), Function(r) r.Downloads, Function(r) MediaStudio.InstalledVariant(r) IsNot Nothing)
-        End If
         list = If(_sortDesc, list.OrderByDescending(AddressOf SortKey), list.OrderBy(AddressOf SortKey))
         Dim items = list.ToList()
 
@@ -379,8 +373,6 @@ Public Class MediaModelsPanel
         If q.Length > 0 Then
             Dim words = q.Split(" "c, StringSplitOptions.RemoveEmptyEntries)
             list = list.Where(Function(m) words.All(Function(w) (m.Name & " " & m.Kind & " " & m.Model.Repo & " " & m.Id & " " & String.Join(" ", m.Langs)).ToLowerInvariant().Contains(w)))
-        ElseIf cmbShow.SelectedIndex <> 3 Then
-            list = Popular.Top(list, Popular.Count(cmbTop), Function(m) m.Downloads, AddressOf AudioStudio.IsInstalled)
         End If
         Dim key As Func(Of AudioModel, IComparable)
         Select Case _sortCol
