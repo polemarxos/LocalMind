@@ -84,10 +84,19 @@ Public Class MediaModelsPanel
     Public Sub ShowKind(kind As String)
         _audioKind = If(kind = "music" OrElse kind = "voice", kind, "")
         chkNsfw.Visible = _audioKind = ""          ' (no uncensored sound models)
+        btnCivitai.Visible = _audioKind = ""       ' (Civitai has no voice or music models LocalMind can use)
         Dim target = If(kind = "video", optVideos, If(_audioKind <> "", optMusic, optPictures))
+        ' The three kind buttons are no longer on screen (the Model Manager's category bar replaced them), so
+        ' Windows does not switch the others off by itself: do it here, or e.g. the video models would stay
+        ' listed under Picture after switching back and forth.
+        For Each o In {optPictures, optVideos, optMusic}
+            If o IsNot target AndAlso o.Checked Then o.Checked = False
+        Next
         If target.Checked Then
+            _suppressType = True
+            FillTypes()
+            _suppressType = False
             Fill()
-            ShowAbout()
         Else
             target.Checked = True
         End If
@@ -95,6 +104,7 @@ Public Class MediaModelsPanel
     End Sub
 
     Private _audioKind As String = ""
+    Private btnCivitai As Button
 
     ' The page on the right always shows the selected row's model (or nothing when the list is empty).
     Private Sub SyncDetails()
@@ -158,6 +168,18 @@ Public Class MediaModelsPanel
                                             f.Activate()
                                         End If
                                     End Sub
+        ' Civitai (civitai.com, or civitai.red for everything): checkpoints and LoRAs, installed into the studio
+        btnCivitai = Theme.MakeButton(Localizer.T("🌐 Browse Civitai"))
+        AddHandler btnCivitai.Click, Sub()
+                                         Dim fam = TryCast(grid.CurrentRow?.Tag, MediaRecipe)?.Family
+                                         Using f As New CivitaiForm(checkpoints:=True, family:=fam)
+                                             f.ShowDialog(Me)
+                                             If f.InstalledSomething Then
+                                                 Fill()
+                                                 RaiseEvent Downloaded()
+                                             End If
+                                         End Using
+                                     End Sub
         chkNsfw.Text = Localizer.T("Show NSFW / uncensored")
         chkNsfw.Checked = AppCore.Settings.ShowNsfw
         details.ShowNsfw = chkNsfw.Checked
@@ -175,7 +197,7 @@ Public Class MediaModelsPanel
                                               AppCore.SaveSettings()
                                               Fill()
                                           End Sub
-        top.Controls.AddRange({cmbShow, txtFilter, chkFit, chkNsfw, btnStudio})      ' (the kind is chosen above, in the Model Manager)
+        top.Controls.AddRange({cmbShow, txtFilter, chkFit, chkNsfw, btnCivitai, btnStudio})      ' (the kind is chosen above, in the Model Manager)
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False

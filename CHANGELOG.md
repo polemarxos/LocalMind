@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.18.2
+
+### Fixed
+- **Switching between Picture and Video several times listed the wrong models.** The kind of list could stay on
+  Video after you went back to Picture (or the other way round). It now always matches the category you pick.
+
+### Added
+- **🌐 Browse Civitai** in Models → Picture and Video. It opens the Civitai browser: civitai.com, or civitai.red for
+  the full catalogue (18+). Search checkpoints and LoRAs, see their pictures and install them with one click. They
+  then appear in the list and in the studio.
+
+### Changed
+- "Recommend for my PC" is removed from the LLM list.
+
+
 ## 2.18.1
 
 ### Fixed

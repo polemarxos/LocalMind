@@ -210,7 +210,7 @@ Public Class ModelManagerForm
                                                  AppCore.SaveSettings()
                                                  ApplyFilter()
                                              End Sub
-        bar.Controls.AddRange({cmbShow, txtFilter, chkFitGpu, btnRecommend, btnHub, btnRefresh})      ' (no category or order lists: simpler)
+        bar.Controls.AddRange({cmbShow, txtFilter, chkFitGpu, btnHub, btnRefresh})      ' (no category or order lists: simpler)
 
         _filterTimer = New System.Windows.Forms.Timer() With {.Interval = 250}
         AddHandler _filterTimer.Tick, Sub()

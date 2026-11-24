@@ -994,5 +994,6 @@
 "Search, e.g. qwen3-tts, chatterbox": "Αναζήτηση, π.χ. qwen3-tts, chatterbox",
 "Search, e.g. flux, krea, qwen-image": "Αναζήτηση, π.χ. flux, krea, qwen-image",
 "Showing {0} of {1} music models · click a column title to sort": "Εμφανίζονται {0} από {1} μοντέλα μουσικής · κλικ στον τίτλο στήλης για ταξινόμηση",
-"Showing {0} of {1} voice models · click a column title to sort": "Εμφανίζονται {0} από {1} μοντέλα φωνής · κλικ στον τίτλο στήλης για ταξινόμηση"
+"Showing {0} of {1} voice models · click a column title to sort": "Εμφανίζονται {0} από {1} μοντέλα φωνής · κλικ στον τίτλο στήλης για ταξινόμηση",
+"🌐 Browse Civitai": "🌐 Περιήγηση στο Civitai"
 }
