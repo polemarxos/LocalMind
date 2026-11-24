@@ -50,6 +50,17 @@ Public Class AppSettings
     Public Property FeaturesAsked As Boolean = False
     ''' <summary>Use Turbo / Lightning LoRAs when a model has one.</summary>
     Public Property MediaFast As Boolean = True
+    ''' <summary>Pictures/video: auto | on | off. On = no pinned (locked) RAM for the model and the file is read as needed.</summary>
+    Public Property LowRamMode As String = "auto"
+
+    ''' <summary>Low-RAM mode in effect: auto turns it on for graphics cards with 16 GB or less.</summary>
+    Public Function LowRamActive(vramGB As Double) As Boolean
+        Select Case If(LowRamMode, "auto").ToLowerInvariant()
+            Case "on" : Return True
+            Case "off" : Return False
+            Case Else : Return vramGB > 0 AndAlso vramGB <= 16.5
+        End Select
+    End Function
     ''' <summary>Keep llama.cpp, stable-diffusion.cpp and FFmpeg up to date automatically (checked every few days).</summary>
     Public Property AutoUpdateEngines As Boolean = True
     ''' <summary>Let the chat model use tools by itself (draw, compose, search the web) when you ask for it.</summary>

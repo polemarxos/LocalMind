@@ -76,14 +76,18 @@ Public Module ModelDetails
     Public Function PlainText(s As String, Optional maxLen As Integer = 2500) As String
         If String.IsNullOrEmpty(s) Then Return ""
         Dim t = Regex.Replace(s, "^---[\s\S]*?\n---\s*", "")                 ' YAML front matter
-        t = Regex.Replace(t, "<(script|style)[\s\S]*?</\1>", "", RegexOptions.IgnoreCase)
+        t = Regex.Replace(t, "<(script|style|video|audio|iframe|object|noscript|svg)\b[\s\S]*?</\1\s*>", "", RegexOptions.IgnoreCase)
+        t = Regex.Replace(t, "<(video|audio|source|track|iframe|embed)\b[^>]*>", "", RegexOptions.IgnoreCase)
         t = Regex.Replace(t, "!\[[^\]]*\]\([^)]*\)", "")                       ' images
         t = Regex.Replace(t, "\[([^\]]+)\]\([^)]*\)", "$1")                    ' links → text
         t = Regex.Replace(t, "<br\s*/?>|</p>|</li>|</h\d>", vbLf, RegexOptions.IgnoreCase)
         t = Regex.Replace(t, "<[^>]+>", "")
         t = WebUtility.HtmlDecode(t)
+        t = Regex.Replace(t, "Your browser does not support (the )?(video|audio)( tag| element)?\.?", "", RegexOptions.IgnoreCase)
         t = Regex.Replace(t, "^#{1,6}\s*", "", RegexOptions.Multiline)
         t = Regex.Replace(t, "[*_`]{1,3}", "")
+        t = Regex.Replace(t, "\r", "")
+        t = Regex.Replace(t, "[ \t\u00A0]+(?=\n)|(?<=\n)[ \t\u00A0]+", "")      ' stray indentation
         t = Regex.Replace(t, "\n{3,}", vbLf & vbLf).Trim()
         If t.Length > maxLen Then t = t.Substring(0, maxLen).TrimEnd() & "…"
         Return t.Replace(vbLf, vbCrLf)

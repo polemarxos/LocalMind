@@ -147,6 +147,21 @@ Public Module MarkdownRenderer
         sb.AppendLine("  }")
         sb.AppendLine("  .msg .role { font-size: 11px; color: #888; margin-bottom: 6px; letter-spacing: .3px; text-transform: uppercase; }")
         sb.AppendLine("  .msg.user .role { text-align: right; }")
+        sb.AppendLine("  .uactions { display:flex; gap:4px; justify-content:flex-end; margin-top:4px; opacity:0; transition:opacity .15s; }")
+        sb.AppendLine("  .msg.user:hover .uactions { opacity:1; }")
+        sb.AppendLine("  body.busy .uactions .ua:first-child { display:none; }")
+        sb.AppendLine("  .ua { background:transparent; color:#a1a1aa; border:1px solid transparent; border-radius:6px; padding:2px 8px; font-size:11.5px; cursor:pointer; font-family:inherit; }")
+        sb.AppendLine("  .ua:hover { background:#2a2b30; color:#e4e4e7; border-color:#3a3b41; }")
+        sb.AppendLine("  .msg.user.editing > .editbox { width:78%; }")
+        sb.AppendLine("  .editbox { background:#1c1d21; border:1px solid #2563eb; border-radius:14px; padding:10px 12px; box-shadow:0 0 0 3px rgba(37,99,235,.18); }")
+        sb.AppendLine("  .editbox textarea { width:100%; box-sizing:border-box; background:transparent; color:#f4f4f5; border:none; outline:none; resize:none; font:inherit; line-height:1.5; }")
+        sb.AppendLine("  .editbar { display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-top:8px; }")
+        sb.AppendLine("  .ehint { color:#71717a; font-size:11px; margin-right:auto; }")
+        sb.AppendLine("  .editbar button { border-radius:8px; padding:5px 14px; font-size:12.5px; cursor:pointer; font-family:inherit; }")
+        sb.AppendLine("  .ecancel { background:transparent; color:#d4d4d8; border:1px solid #3f3f46; }")
+        sb.AppendLine("  .ecancel:hover { background:#27272a; }")
+        sb.AppendLine("  .esend { background:#2563eb; color:#fff; border:1px solid #2563eb; }")
+        sb.AppendLine("  .esend:hover { background:#1d4ed8; }")
         sb.AppendLine("  .meta { font-size: 11px; color: #777; margin-top: 6px; display:flex; gap:10px; align-items:center; }")
         sb.AppendLine("  .meta button { background:#333; color:#ccc; border:1px solid #444; border-radius:4px; padding:1px 8px; font-size:11px; cursor:pointer; }")
         sb.AppendLine("  .meta button:hover { background:#444; }")
@@ -252,17 +267,51 @@ Public Module MarkdownRenderer
   function removeEmpty() { var e = document.getElementById('empty'); if (e) e.remove(); }
   function zoom(src) { document.getElementById('lightboxImg').src = src; document.getElementById('lightbox').style.display = 'flex'; }
 
-  function userNode(text, imgs) {
+  function userNode(text, imgs, ui) {
     var d = document.createElement('div');
     d.className = 'msg user';
+    d.setAttribute('data-u', ui);
     var thumbs = '';
     if (imgs && imgs.length) {
       thumbs = '<div class=""thumbs"">' + imgs.map(function (s) { return '<img src=""' + s + '"" onclick=""zoom(this.src)"">'; }).join('') + '</div>';
     }
-    d.innerHTML = '<div><div class=""role"">' + tr('You') + '</div>' + thumbs + (text ? '<div class=""bubble"">' + esc(text) + '</div>' : '') + '</div>';
+    d.innerHTML = '<div><div class=""role"">' + tr('You') + '</div>' + thumbs + (text ? '<div class=""bubble"">' + esc(text) + '</div>' : '') +
+      '<div class=""uactions""><button class=""ua"" title=""' + tr('Edit message') + '"">✏ ' + tr('Edit') + '</button><button class=""ua"">⧉ ' + tr('Copy') + '</button></div></div>';
+    d.setAttribute('data-text', text || '');
+    var bs = d.querySelectorAll('.ua');
+    bs[0].onclick = function () { startEdit(d); };
+    bs[1].onclick = function () { copyToClipboard(d.getAttribute('data-text'), bs[1]); };
     return d;
   }
-  function appendUser(text, imgs) { removeEmpty(); body().appendChild(userNode(text, imgs)); scroll(true); }
+  function appendUser(text, imgs) { removeEmpty(); body().appendChild(userNode(text, imgs, document.querySelectorAll('.msg.user').length)); scroll(true); }
+  function setBusy(b) { if (b) document.body.classList.add('busy'); else document.body.classList.remove('busy'); }
+  function startEdit(d) {
+    if (document.body.classList.contains('busy') || d.classList.contains('editing')) return;
+    var open = document.querySelector('.msg.user.editing'); if (open) open._cancel();
+    var inner = d.firstChild, old = d.getAttribute('data-text');
+    var box = document.createElement('div'); box.className = 'editbox';
+    box.innerHTML = '<textarea rows=""3""></textarea><div class=""editbar""><span class=""ehint"">' + tr('Enter sends · Shift+Enter new line · Esc cancels') + '</span><button class=""ecancel"">' + tr('Cancel') + '</button><button class=""esend"">' + tr('Send') + '</button></div>';
+    var ta = box.querySelector('textarea'); ta.value = old;
+    function fit() { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 360) + 'px'; }
+    function cancel() { d.classList.remove('editing'); box.remove(); inner.style.display = ''; }
+    function send() {
+      var t = ta.value.replace(/\s+$/, '');
+      if (!t.trim() && !d.querySelector('.thumbs')) return;
+      if (t === old) { cancel(); return; }
+      try { window.chrome.webview.postMessage({ type: 'edit', index: parseInt(d.getAttribute('data-u'), 10), text: t }); } catch (e) {}
+      cancel();
+    }
+    d._cancel = cancel;
+    box.querySelector('.ecancel').onclick = cancel;
+    box.querySelector('.esend').onclick = send;
+    ta.addEventListener('input', fit);
+    ta.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+      else if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+    inner.style.display = 'none'; d.classList.add('editing'); d.appendChild(box);
+    fit(); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  }
 
   function assistantNode(id) {
     var d = document.createElement('div');
@@ -385,8 +434,9 @@ Public Module MarkdownRenderer
     clearAll();
     var frag = document.createDocumentFragment();
     var finals = [];
+    var ui = 0;
     items.forEach(function (it, i) {
-      if (it.role === 'user') { frag.appendChild(userNode(it.text, it.imgs)); }
+      if (it.role === 'user') { frag.appendChild(userNode(it.text, it.imgs, ui++)); }
       else { var id = 'h' + i; frag.appendChild(assistantNode(id)); finals.push([id, it]); }
     });
     body().appendChild(frag);

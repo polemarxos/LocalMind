@@ -28,7 +28,7 @@ Public Class SettingsForm
     Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent, chkAutoInstall As CheckBox
     Private cmbLang As ComboBox
     Private txtHotkey As TextBox
-    Private cmbNgl, cmbKv, cmbSpeed As ComboBox
+    Private cmbNgl, cmbKv, cmbSpeed, cmbLowRam As ComboBox
     Private chkMtp As CheckBox
     Private txtExtra, txtHfToken As TextBox
     Private chkVerify, chkResume As CheckBox
@@ -58,6 +58,14 @@ Public Class SettingsForm
         BuildChat(tChat)
         BuildTools(tTools)
         BuildLook(tLook)
+        ' Room under the last row: a scrolling table stops right at its last control, so that row looked cut off.
+        For Each tp In {tBackend, tEngine, tChat, tTools, tLook}
+            For Each g In tp.Controls.OfType(Of TableLayoutPanel)().ToList()
+                Dim spacer As New Panel() With {.Height = 36, .Width = 10, .Margin = New Padding(0)}
+                g.Controls.Add(spacer)
+                g.SetColumnSpan(spacer, 2)
+            Next
+        Next
 
         Dim bottom As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 46, .FlowDirection = FlowDirection.RightToLeft, .Padding = New Padding(8)}
         Dim btnOk = Theme.MakeButton("Save", primary:=True, width:=100)
@@ -168,7 +176,7 @@ Public Class SettingsForm
         cmbVariant = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 330}
         Dim autoV = LlamaEngine.AutoVariant(hw)
         cmbVariant.Items.AddRange({$"auto  → {LlamaEngine.VariantLabel(autoV)}", "cuda12  (NVIDIA, most compatible)",
-                                   "cuda13  (NVIDIA RTX 20xx and newer)", "vulkan  (AMD / Intel / any GPU)", "rocm  (AMD, experimental)", "cpu  (no GPU)"})
+                                   "cuda13  (NVIDIA RTX 20xx and newer, best for RTX 50)", "vulkan  (AMD / Intel / any GPU)", "rocm  (AMD, experimental)", "cpu  (no GPU)"})
         cmbVariant.SelectedIndex = Math.Max(0, Array.IndexOf({"auto", "cuda12", "cuda13", "vulkan", "rocm", "cpu"}, If(_s.EngineVariant, "auto")))
         Row(t, "GPU backend", cmbVariant)
 
@@ -237,6 +245,11 @@ Public Class SettingsForm
                                         btnCivKey.Text = CivitaiKeyForm.ButtonText()
                                     End Sub
         Row(t, "Civitai", btnCivKey, "For Civitai downloads that need an account")
+        cmbLowRam = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 330}
+        Dim lowAuto = If(hw.VramGB > 0 AndAlso hw.VramGB <= 16.5, "on", "off")
+        cmbLowRam.Items.AddRange({Localizer.T("Automatic") & "  → " & Localizer.T(lowAuto) & "  " & Localizer.T("(on for 16 GB cards and smaller)"), Localizer.T("on"), Localizer.T("off")})
+        cmbLowRam.SelectedIndex = Math.Max(0, Array.IndexOf({"auto", "on", "off"}, If(_s.LowRamMode, "auto")))
+        Row(t, "Reduce system RAM usage", cmbLowRam, "Pictures & video: stops the engine from locking a large block of RAM for the model. Recommended for 16 GB cards, where that can fill your RAM and stall video generation.")
         chkVerify = New CheckBox() With {.Text = "Verify downloads with SHA-256", .Checked = _s.VerifyDownloads, .AutoSize = True}
         chkResume = New CheckBox() With {.Text = "Resume unfinished downloads when the app starts", .Checked = _s.AutoResumeDownloads, .AutoSize = True}
         Row(t, "Downloads", chkVerify)
@@ -407,6 +420,7 @@ Public Class SettingsForm
         _s.OpenAiUrl = txtOpenAiUrl.Text.Trim()
         _s.OpenAiKey = txtOpenAiKey.Text.Trim()
         _s.EngineVariant = SelectedVariant()
+        _s.LowRamMode = {"auto", "on", "off"}(Math.Max(0, cmbLowRam.SelectedIndex))
         Dim folder = txtModels.Text.Trim()
         _s.ModelsFolder = If(String.Equals(folder, AppPaths.DefaultModelsFolder, StringComparison.OrdinalIgnoreCase), "", folder)
         _s.ContextSize = CInt(numCtx.Value)

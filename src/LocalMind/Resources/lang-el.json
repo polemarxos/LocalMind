@@ -1077,5 +1077,16 @@
 "Downloading — see Models → Downloads": "Λήψη — δείτε Μοντέλα → Λήψεις",
 "⬇ Added to the download list (Models → Downloads).": "⬇ Προστέθηκε στη λίστα λήψεων (Μοντέλα → Λήψεις).",
 "⬇ In the download list": "⬇ Στη λίστα λήψεων",
-"⬇ {0} added to the download list below.": "⬇ {0} προστέθηκαν στη λίστα λήψεων παρακάτω."
+"⬇ {0} added to the download list below.": "⬇ {0} προστέθηκαν στη λίστα λήψεων παρακάτω.",
+"Edit message": "Επεξεργασία μηνύματος",
+"Send": "Αποστολή",
+"Enter sends · Shift+Enter new line · Esc cancels": "Enter αποστολή · Shift+Enter νέα γραμμή · Esc ακύρωση",
+"Wait for the answer to finish (or press Stop), then edit.": "Περιμένετε να τελειώσει η απάντηση (ή πατήστε Διακοπή) και μετά επεξεργαστείτε.",
+"Reduce system RAM usage": "Λιγότερη χρήση RAM",
+"Pictures & video: stops the engine from locking a large block of RAM for the model. Recommended for 16 GB cards, where that can fill your RAM and stall video generation.": "Εικόνες & βίντεο: η μηχανή δεν δεσμεύει μεγάλο κομμάτι RAM για το μοντέλο. Συνιστάται για κάρτες 16 GB, όπου αυτό μπορεί να γεμίσει τη RAM και να κολλήσει τη δημιουργία βίντεο.",
+"(on for 16 GB cards and smaller)": "(ενεργό για κάρτες 16 GB και μικρότερες)",
+"on": "ενεργό",
+"Fixed the model file's tensor shapes — trying again…": "Διορθώθηκαν τα σχήματα tensor του αρχείου μοντέλου — νέα προσπάθεια…",
+"cuda13  (NVIDIA RTX 20xx and newer, best for RTX 50)": "cuda13  (NVIDIA RTX 20xx και νεότερες, καλύτερο για RTX 50)",
+"Automatic": "Αυτόματο"
 }

@@ -1,5 +1,39 @@
 # Changelog
 
+## 2.23.0
+
+### Added
+- **Edit a message you sent, like in Claude chat.** Point at one of your messages and press **✏ Edit**. Change
+  the text and press **Send** (or Enter; Shift+Enter for a new line, Esc to cancel). Everything after that message
+  is dropped and the answer is written again. Pictures and files attached to the message stay with it. You can't
+  edit while an answer is being written; press Stop first. **⧉ Copy** copies the message.
+- **Change persona from the chat.** For example: "your persona is image prompt writer and generate me an image of a
+  tree on a mountain. After you do that your persona is video prompt writer and, using that image, create an
+  earthquake that destroys the mountain".
+  - Each named persona writes the prompt for its own step. A saved persona is used when the name matches (for
+    example "Simple Teacher"); otherwise a new role is made for it.
+  - The steps run one after another: the picture first, then the video starts from that picture.
+  - The chat shows who wrote each prompt (🎭 name: prompt).
+  - "From now on your persona is …" switches the chat's persona. A new role is saved to the persona list.
+
+- **Reduce system RAM usage** (Settings → Built-in engine). For pictures and video, the engine no longer locks a
+  large block of RAM for the model, and the model file is read as needed. Recommended for 16 GB graphics cards,
+  where that locked RAM can fill your memory and stall video generation. Automatic (the default) turns it on for
+  cards with 16 GB or less; you can also set it on or off.
+
+### Changed
+- Switching the GPU backend (for example CUDA 12 → CUDA 13) removes the files of the previous backend once the new
+  one is installed. The picture engine does the same.
+- The CUDA 13 choice now says it is the best one for RTX 50 cards.
+
+### Fixed
+- Model descriptions no longer show "Your browser does not support the video tag." where a model page had videos.
+  Stray indentation and blank lines are also cleaned up.
+- Int8 MiniMax-H3 checkpoints (for example Singularity × 10Eros Max int8) that failed with "tensor … weight_scale
+  has wrong shape: got [1, N, 1, 1], expected [N, 1, 1, 1]". LocalMind corrects the shapes in the file header
+  (the file keeps its size) and tries again automatically.
+- The last setting on a Settings page was cut off at the bottom.
+
 ## 2.22.1
 
 ### Changed

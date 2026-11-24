@@ -138,6 +138,7 @@ Partial Class MainForm
         End If
 
         _isGenerating = True
+        Dim busyJs = Js("setBusy(true)")
         btnSend.Enabled = False
         btnStop.Enabled = True
         btnRegenerate.Enabled = False
@@ -196,6 +197,7 @@ Partial Class MainForm
             content = "⚠ Error: " & ex.Message
         Finally
             _isGenerating = False
+            Dim busyOff = Js("setBusy(false)")
             btnSend.Enabled = True
             btnStop.Enabled = False
             btnRegenerate.Enabled = True

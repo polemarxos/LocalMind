@@ -700,6 +700,49 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "v223" Then
+            Console.WriteLine("== v2.23: personas from chat, step order, descriptions")
+            Dim ask = "your persona is image prompt writer and you will generate me an image of a tree on a mountain.after you do that your persona is video prompt writer and by using that image create an earthquake that will destroy the mountain"
+            Dim names = ChatAgent.PersonasNamed(ask)
+            Check(names.Count = 2 AndAlso names(0) = "image prompt writer" AndAlso names(1) = "video prompt writer", "two personas found in order", String.Join(" | ", names))
+            Dim tl As New Newtonsoft.Json.Linq.JArray()
+            For Each n In {"generate_image", "generate_video"}
+                tl.Add(New Newtonsoft.Json.Linq.JObject From {{"type", "function"}, {"function", New Newtonsoft.Json.Linq.JObject From {{"name", n}}}})
+            Next
+            Check(ChatAgent.RequestedTool(ask, tl) = "generate_image", "first step is the picture", ChatAgent.RequestedTool(ask, tl))
+            Check(ChatAgent.RequestedTool("draw me a cat and then make a video of it", tl) = "generate_image", "picture before video")
+            Check(ChatAgent.RequestedTool("make a video of this picture", tl) = "generate_video", "tie keeps video first")
+            Dim g = ChatAgent.PersonasNamed("η περσόνα σου είναι σεναριογράφος και γράψε μου κάτι")
+            Check(g.Count = 1 AndAlso g(0) = "σεναριογράφος", "greek persona", String.Join("|", g))
+            Dim isNew As Boolean
+            Dim p1 = ChatAgent.FindOrMakePersona("simple teacher", isNew)
+            Check(p1 IsNot Nothing AndAlso Not isNew AndAlso p1.Name.Contains("Simple Teacher"), "finds saved persona", p1?.Name)
+            Dim p2 = ChatAgent.FindOrMakePersona("an image prompt writer", isNew)
+            Check(p2 IsNot Nothing AndAlso isNew AndAlso p2.Name = "🎭 Image prompt writer", "makes new role", p2?.Name)
+            Dim d = ModelDetails.PlainText("<p>Method</p><video controls autoplay><source src=""a.mp4"" type=""video/mp4"">Your browser does not support the video tag.</video>" & vbLf & "    <video src=x>Your browser does not support the video tag.</video><p>End</p>")
+            Check(Not d.Contains("browser") AndAlso d.Contains("Method") AndAlso d.Contains("End"), "video tags removed", d.Replace(vbCrLf, "/"))
+            Dim d2 = ModelDetails.PlainText("Text &lt;video&gt; Your browser does not support the video tag. more")
+            Check(Not d2.Contains("browser"), "fallback text removed", d2)
+            ' int8 scales stored as [N, 1]: the engine wants [N]
+            Dim sf = Path.Combine(Path.GetTempPath(), "lm-shape-test.safetensors")
+            Dim hdr = "{""blocks.9.mlp.fc1.weight_scale"":{""dtype"":""F32"",""shape"":[4,1],""data_offsets"":[0,16]},""blocks.9.mlp.fc1.weight"":{""dtype"":""I8"",""shape"":[4,2],""data_offsets"":[16,24]}}"
+            Dim hbytes = Text.Encoding.UTF8.GetBytes(hdr & "        ")
+            Using fsw As New FileStream(sf, FileMode.Create)
+                fsw.Write(BitConverter.GetBytes(CLng(hbytes.Length)), 0, 8)
+                fsw.Write(hbytes, 0, hbytes.Length)
+                fsw.Write(New Byte(23) {}, 0, 24)
+            End Using
+            Dim before = New FileInfo(sf).Length
+            Dim elog = "[E] Diffusion model tensor 'model.diffusion_model.blocks.9.mlp.fc1.weight_scale' has wrong shape in model metadata: got [1, 4, 1, 1], expected [4, 1, 1, 1] --- model_manager.cpp:1120" & vbLf &
+                       "[E] generate failed: line 61, column 18: cannot load component from '" & sf & "' --- main.cpp:815"
+            Check(ShapeFix.TryFixFromLog(elog), "shape fixed from the log")
+            Dim txt = File.ReadAllText(sf)
+            Check(txt.Contains("""shape"":[4]") AndAlso New FileInfo(sf).Length = before, "header now [4], same size", txt.Substring(8, 90))
+            Check(Not ShapeFix.TryFixFromLog(elog), "second time: nothing to do")
+            Check(String.Join(",", ShapeFix.TorchShape({5376, 1, 1, 1})) = "5376", "torch shape")
+            Return
+        End If
+
         If only = "llmlist" Then
             Console.WriteLine("== LLM list from the live catalog")
             Dim live As List(Of CatalogEntry) = Nothing

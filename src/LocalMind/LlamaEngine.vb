@@ -134,6 +134,21 @@ Public Class LlamaEngine
         Return ServerExe(v) IsNot Nothing
     End Function
 
+    Private Shared ReadOnly AllVariants As String() = {"cuda12", "cuda13", "vulkan", "rocm", "cpu"}
+
+    ''' <summary>Deletes the engine builds of the other GPU backends (and unfinished downloads of them).</summary>
+    Public Sub RemoveOtherVariants(keep As String)
+        For Each o In AllVariants.Where(Function(x) Not String.Equals(x, keep, StringComparison.OrdinalIgnoreCase))
+            For Each d In {VariantDir(o), VariantDir(o) & ".new"}
+                Try
+                    If Directory.Exists(d) Then Directory.Delete(d, True)
+                Catch
+                    ' (still in use: removed next time)
+                End Try
+            Next
+        Next
+    End Sub
+
     Public Function InstalledVersion(Optional v As String = Nothing) As String
         Dim f = Path.Combine(VariantDir(v), "version.txt")
         Return If(File.Exists(f), File.ReadAllText(f).Trim(), Nothing)
@@ -257,6 +272,8 @@ Public Class LlamaEngine
             Dim target = VariantDir(v)
             If Directory.Exists(target) Then Directory.Delete(target, True)
             Directory.Move(staging, target)
+            ' Switched backend (e.g. CUDA 12 → CUDA 13): the other builds are removed, they are hundreds of MB each.
+            If v = EffectiveVariant Then RemoveOtherVariants(v)
 
             progress?.Report(("Installed llama.cpp " & rel.Tag, 100))
             SetState(EngineState.Stopped, "Engine installed (" & rel.Tag & ")")

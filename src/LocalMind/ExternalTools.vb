@@ -90,6 +90,15 @@ Public Module ExternalTools
         File.WriteAllText(Path.Combine(staging, "version.txt"), tag)
         If Directory.Exists(target) Then Directory.Delete(target, True)
         Directory.Move(staging, target)
+        ' the builds for another GPU backend (after switching CUDA ↔ Vulkan ↔ CPU) are no longer used
+        Try
+            For Each other In Directory.GetDirectories(Path.GetDirectoryName(target))
+                If Not String.Equals(other.TrimEnd(Path.DirectorySeparatorChar), target.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) Then
+                    Try : Directory.Delete(other, True) : Catch : End Try
+                End If
+            Next
+        Catch
+        End Try
         progress?.Invoke($"{p.Name} installed ({tag})")
         Return tag
     End Function

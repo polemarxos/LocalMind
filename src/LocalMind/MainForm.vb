@@ -113,6 +113,7 @@ Public Class MainForm
         btnThinking.Checked = Settings.ShowThinking
         AddHandler cmbModels.SelectedIndexChanged, AddressOf SaveModelSelection
         AddHandler cmbPersonas.SelectedIndexChanged, AddressOf SavePersonaSelection
+        AddHandler ChatAgent.PersonaRequested, AddressOf OnPersonaRequested
         AddHandler btnThinking.CheckedChanged, AddressOf SaveThinkingPreference
 
         _webReady = True
@@ -319,6 +320,27 @@ Public Class MainForm
             Next
         End If
         If cmbPersonas.Items.Count > 0 Then cmbPersonas.SelectedIndex = idx
+    End Sub
+
+    ''' <summary>The chat said "your persona is …": pick that persona (a new role is saved so it can be picked again).</summary>
+    Private Sub OnPersonaRequested(p As Persona)
+        If p Is Nothing OrElse IsDisposed Then Return
+        If InvokeRequired Then
+            BeginInvoke(Sub() OnPersonaRequested(p))
+            Return
+        End If
+        Try
+            Dim list = AppCore.Personas.Load()
+            If Not list.Any(Function(x) x.Id = p.Id OrElse String.Equals(x.Name, p.Name, StringComparison.OrdinalIgnoreCase)) Then
+                list.Add(p)
+                AppCore.Personas.Save(list)
+            End If
+            LoadPersonasIntoCombo()
+            Dim i = cmbPersonas.Items.IndexOf(p.Name)
+            If i > 0 Then cmbPersonas.SelectedIndex = i
+            SetStatus(Localizer.T("Persona") & ": " & p.Name)
+        Catch
+        End Try
     End Sub
 
     Private ReadOnly Property CurrentPersona As Persona
@@ -602,6 +624,12 @@ Public Class MainForm
                 txtInput.Focus()
                 Return
             End If
+            If obj("type")?.ToString() = "edit" Then
+                Dim idx = If(obj("index")?.Value(Of Integer)(), -1)
+                Dim txt = obj("text")?.ToString()
+                BeginInvoke(Async Sub() Await EditAndResendAsync(idx, txt))
+                Return
+            End If
             If obj("type")?.ToString() = "speak" Then
                 SpeakAnswer(obj("text")?.ToString())
                 Return
@@ -704,7 +732,7 @@ Public Class MainForm
         _session.PersonaName = If(CurrentPersona IsNot Nothing, CurrentPersona.Name, "")
         _session.UpdatedAt = DateTime.Now
 
-        Await Js($"appendUser({JsonConvert.SerializeObject(DisplayText(userMsg.Content))}, {ImagesJson(userMsg)})")
+        Await Js($"appendUser({JsonConvert.SerializeObject(DisplayText(userMsg.Content))}, {ImagesJson(userMsg)}, {JsonConvert.SerializeObject(EditableText(userMsg.Content))})")
 
         txtInput.Clear()
         ClearAttachments()
@@ -719,6 +747,7 @@ Public Class MainForm
         If _isGenerating Then Return
 
         _isGenerating = True
+        Dim busyJs = Js("setBusy(true)")
         btnSend.Enabled = False
         btnStop.Enabled = True
         btnRegenerate.Enabled = False
@@ -802,6 +831,7 @@ Public Class MainForm
             sw.Stop()
             _flushTimer.Stop()
             _isGenerating = False
+            Dim busyOff = Js("setBusy(false)")
             btnSend.Enabled = True
             btnStop.Enabled = False
             btnRegenerate.Enabled = True
@@ -907,7 +937,7 @@ Public Class MainForm
         Dim items As New JArray()
         For Each m In _session.Messages
             If m.Role = "user" Then
-                Dim o As New JObject From {{"role", "user"}, {"text", DisplayText(m.Content)}}
+                Dim o As New JObject From {{"role", "user"}, {"text", DisplayText(m.Content)}, {"edit", EditableText(m.Content)}}
                 If m.Images IsNot Nothing AndAlso m.Images.Count > 0 Then
                     o("imgs") = New JArray(m.Images.Select(Function(i) ImageUtil.ToDataUrl(i)).ToArray())
                 End If
@@ -936,6 +966,56 @@ Public Class MainForm
     Private Shared Function DisplayText(content As String) As String
         If String.IsNullOrEmpty(content) Then Return ""
         Return DocBlock.Replace(content, "📎 $1").Trim()
+    End Function
+
+    Private Const AttachMark As String = vbCrLf & vbCrLf & "[Attached "
+
+    ''' <summary>The part of a user message the user typed (attachment blocks cut off).</summary>
+    Friend Shared Function EditableText(content As String) As String
+        If String.IsNullOrEmpty(content) Then Return ""
+        If content.StartsWith("[Attached ", StringComparison.Ordinal) Then Return ""
+        Dim i = content.IndexOf(AttachMark, StringComparison.Ordinal)
+        Return If(i < 0, content, content.Substring(0, i))
+    End Function
+
+    ''' <summary>The attachment blocks after the typed text ("" when there are none).</summary>
+    Friend Shared Function AttachmentPart(content As String) As String
+        If String.IsNullOrEmpty(content) Then Return ""
+        If content.StartsWith("[Attached ", StringComparison.Ordinal) Then Return vbCrLf & vbCrLf & content
+        Dim i = content.IndexOf(AttachMark, StringComparison.Ordinal)
+        Return If(i < 0, "", content.Substring(i))
+    End Function
+
+    ''' <summary>Edit a sent message like Claude chat: replace its text, drop everything after it and answer again.</summary>
+    Private Async Function EditAndResendAsync(userIndex As Integer, newText As String) As Task
+        If _isGenerating Then
+            SetStatus("Wait for the answer to finish (or press Stop), then edit.")
+            Return
+        End If
+        Dim n = -1, pos = -1
+        For k = 0 To _session.Messages.Count - 1
+            If _session.Messages(k).Role = "user" Then
+                n += 1
+                If n = userIndex Then pos = k : Exit For
+            End If
+        Next
+        If pos < 0 Then Return
+        Dim msg = _session.Messages(pos)
+        newText = If(newText, "").TrimEnd()
+        Dim rest = AttachmentPart(msg.Content)
+        If newText.Length = 0 AndAlso rest.Length = 0 AndAlso (msg.Images Is Nothing OrElse msg.Images.Count = 0) Then Return
+        msg.Content = If(newText.Length = 0, rest.TrimStart(), newText & rest)
+        If _session.Messages.Count > pos + 1 Then _session.Messages.RemoveRange(pos + 1, _session.Messages.Count - pos - 1)
+        If pos = 0 AndAlso newText.Length > 0 Then _session.Title = Truncate(newText, 40)
+        _session.Model = If(cmbModels.SelectedItem?.ToString(), _session.Model)
+        _session.UpdatedAt = DateTime.Now
+        AppCore.History.Save(_session)
+        Await RebuildChatDisplayAsync()
+        If _btnImage IsNot Nothing AndAlso _btnImage.Checked AndAlso newText.Length > 0 Then
+            Await GenerateImageAsync(newText, msg)
+        Else
+            Await GenerateAsync()
+        End If
     End Function
 
     Private Shared Function ImagesJson(m As ChatMessage) As String

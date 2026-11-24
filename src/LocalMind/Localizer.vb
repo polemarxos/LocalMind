@@ -79,7 +79,8 @@ Public Module Localizer
     ''' <summary>Strings used inside the chat view (JavaScript).</summary>
     Public Function ChatViewStrings() As String
         Dim keys = {"You", "Assistant", "Copy", "Copied!", "Copy answer", "🔊 Read", "Read aloud (click again to stop)",
-                    "💭 Thinking…", "💭 Thinking (click to expand)"}
+                    "💭 Thinking…", "💭 Thinking (click to expand)",
+                    "Edit", "Edit message", "Cancel", "Send", "Enter sends · Shift+Enter new line · Esc cancels"}
         Return JsonConvert.SerializeObject(keys.ToDictionary(Function(k) k, Function(k) T(k)))
     End Function
 

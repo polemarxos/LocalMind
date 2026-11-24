@@ -601,6 +601,19 @@ Public Module MediaStudio
 
     ''' <summary>Runs sd-cli and returns the output file (PNG or WebM).</summary>
     Public Async Function GenerateAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
+        ' A checkpoint whose tensor shapes the engine rejects (int8 scales stored as [N, 1]) is fixed and tried again.
+        For attempt = 0 To 3
+            Try
+                Return Await GenerateOnceAsync(req, progress, ct)
+            Catch ex As Exception When attempt < 3 AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
+                                       ShapeFix.TryFixFromLog(CStr(ex.Data("engineLog")))
+                progress?.Invoke(0, "Fixed the model file's tensor shapes — trying again…")
+            End Try
+        Next
+        Return Await GenerateOnceAsync(req, progress, ct)
+    End Function
+
+    Private Async Function GenerateOnceAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
         Dim r = req.Recipe
         Dim v = req.Variant
         Dim hw = HardwareInfo.Current()
@@ -763,7 +776,9 @@ Public Module MediaStudio
             ' Memory: keep parts in RAM and move them to the GPU as needed; tile the VAE on smaller GPUs.
             If FilesFor(r, v).Sum(Function(f) f.Size) > hw.VramBytes * 0.85 OrElse r.IsVideo Then a.Append("--offload-to-cpu ")
             ' (parts larger than the free RAM are read from the disk as needed instead of failing to load)
-            If hw.RamBytes > 0 AndAlso FilesFor(r, v).Sum(Function(f) f.Size) > hw.RamBytes * 0.6 Then a.Append("--mmap ")
+            ' Reduce system RAM usage: the file is mapped (read as needed, the OS can drop it again) instead of copied into RAM.
+            If AppCore.Settings.LowRamActive(hw.VramGB) OrElse
+               (hw.RamBytes > 0 AndAlso FilesFor(r, v).Sum(Function(f) f.Size) > hw.RamBytes * 0.6) Then a.Append("--mmap ")
             If hw.VramGB < 12 Then a.Append("--vae-tiling ")
             If pkg.Flavor = "cuda12" Then a.Append("--diffusion-fa ")
         End If
@@ -780,6 +795,11 @@ Public Module MediaStudio
             Dim psi As New ProcessStartInfo(exe, a.ToString()) With {
                 .UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardOutput = True, .RedirectStandardError = True,
                 .WorkingDirectory = Path.GetDirectoryName(exe), .StandardOutputEncoding = Encoding.UTF8, .StandardErrorEncoding = Encoding.UTF8}
+            ' Reduce system RAM usage: no pinned (page-locked) RAM for the weights. Pinned RAM streams a little faster,
+            ' but Windows can't page it out, so on 16 GB cards it fills the RAM and stalls video generation.
+            If AppCore.Settings.LowRamActive(hw.VramGB) AndAlso pkg.Flavor IsNot Nothing AndAlso pkg.Flavor.StartsWith("cuda", StringComparison.OrdinalIgnoreCase) Then
+                psi.Environment("GGML_CUDA_NO_PINNED") = "1"
+            End If
             Dim stepRx As New Regex("(\d+)/(\d+)\s*-\s*([\d.]+)\s*(s/it|it/s)")
             Dim hsTotal = If(req.Fast AndAlso r.Speed IsNot Nothing AndAlso r.Speed.HighSteps > 0, r.Speed.HighSteps, r.HighSteps)
             Dim totalSteps = req.Steps + If(hsTotal > 0, hsTotal, 0)
@@ -838,7 +858,9 @@ Public Module MediaStudio
                 Dim tail = String.Join(Environment.NewLine, If(errs.Count > 0, errs.Skip(Math.Max(0, errs.Count - 6)), lines.Skip(Math.Max(0, lines.Count - 15))))
                 Dim hint = If(tail.ToLowerInvariant().Contains("out of memory") OrElse tail.Contains("alloc") OrElse tail.Contains("ErrorOutOfDeviceMemory"),
                               "Not enough memory: try a smaller size, fewer frames, or a smaller quality level." & Environment.NewLine & Environment.NewLine, "")
-                Throw New Exception(hint & tail)
+                Dim failure As New Exception(hint & tail)
+                failure.Data("engineLog") = log.ToString()
+                Throw failure
             End If
         Finally
             lease?.Dispose()
