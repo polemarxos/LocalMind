@@ -131,10 +131,24 @@ Public Class ModelManagerForm
             cats.Add(("music", "🎵  Music"))
             cats.Add(("voice", "🗣  Voice"))
         End If
-        If cats.Count > 1 Then
-            media = New MediaModelsPanel() With {.Visible = False}
+        If AppCore.Settings.EnableAudio Then
+            media = New MediaModelsPanel() With {.Visible = False}      ' (music and voice: a short table)
             host.Controls.Add(media)
         End If
+        ' Picture and Video: galleries like Civitai's (LocalMind's list or Civitai itself as the source)
+        Dim galleries As New Dictionary(Of String, ModelGallery)
+        If AppCore.Settings.EnableImages Then
+            For Each k In {"picture", "video"}
+                Dim g As New ModelGallery(k) With {.Visible = False}
+                galleries(k) = g
+                host.Controls.Add(g)
+            Next
+        End If
+        AddHandler FormClosing, Sub()
+                                    For Each g In galleries.Values
+                                        g.Shutdown()
+                                    Next
+                                End Sub
         Dim strip As New FlowLayoutPanel() With {.Dock = DockStyle.Top, .Height = 50, .WrapContents = False, .Padding = New Padding(10, 9, 10, 5), .BackColor = Theme.CPanel}
         Dim segs As New List(Of RadioButton)
         For Each c In cats
@@ -155,9 +169,12 @@ Public Class ModelManagerForm
                                               paint()
                                               If Not rb.Checked Then Return
                                               llmPage.Visible = (id = "llm")
+                                              For Each kv In galleries
+                                                  kv.Value.Visible = (kv.Key = id)
+                                              Next
                                               If media IsNot Nothing Then
-                                                  media.Visible = (id <> "llm")
-                                                  If id <> "llm" Then media.ShowKind(id)
+                                                  media.Visible = (id = "music" OrElse id = "voice")
+                                                  If media.Visible Then media.ShowKind(id)
                                               End If
                                           End Sub
             segs.Add(rb)
