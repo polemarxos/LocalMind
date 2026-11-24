@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.17.1
+
+### Changed
+- **Chat model list: about 200 models instead of 3,300.**
+  - The official Qwen and Gemma 3 / 4 releases are listed, from Qwen, Google, unsloth, ggml-org, LM Studio and
+    bartowski's copies of them.
+  - The well-known uncensored versions are listed too: abliterated, uncensored and heretic ones with 40,000+
+    downloads, such as Huihui Qwen3.8 27B abliterated and Gemma 4 uncensored heretic.
+  - Other community fine-tunes are no longer listed. Models you downloaded stay, and "Search all of Hugging
+    Face" still finds anything.
+
+
 ## 2.17.0
 
 ### Changed

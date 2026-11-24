@@ -779,11 +779,14 @@ Module HarnessMain
                   "only FLUX, Krea, Qwen-Image, LTX-2.5, MiniMax H3 (+ tools) listed", String.Join(", ", fams))
             Check(MediaStudio.Recipes().Any(Function(x) x.Id = "10eros-max-h3-turbo") AndAlso Not MediaStudio.Recipes().Any(Function(x) x.Id = "wan2.2-t2v-a14b"),
                   "10Eros (MiniMax H3) kept, Wan removed")
-            Check(ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "qwen35"}) AndAlso ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "gemma4"}) AndAlso
-                  ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "gemma3"}) AndAlso Not ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "llama"}) AndAlso
-                  Not ModelFamilies.ChatAllowed(New CatalogEntry With {.Arch = "gemma2"}), "chat: Qwen and Gemma 3/4 only")
+            Check(ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "qwen35"}) AndAlso ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "gemma4"}) AndAlso
+                  ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "gemma3"}) AndAlso Not ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "llama"}) AndAlso
+                  Not ModelFamilies.IsQwenOrGemma(New CatalogEntry With {.Arch = "gemma2"}), "chat: Qwen and Gemma 3/4 only")
             Dim chat = ModelFamilies.KeepChat(ModelCatalog.LoadEmbedded())
-            Check(chat.Count > 1000 AndAlso chat.All(AddressOf ModelFamilies.ChatAllowed), "chat list filtered", chat.Count.ToString())
+            Check(chat.Count > 100 AndAlso chat.Count < 400 AndAlso chat.All(AddressOf ModelFamilies.ChatAllowed), "chat list: official + well-known uncensored", chat.Count.ToString())
+            Check(chat.Any(Function(x) x.Repo = "unsloth/Qwen3.8-27B-GGUF") AndAlso chat.Any(Function(x) x.Repo = "huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF") AndAlso
+                  chat.Any(Function(x) x.Repo.StartsWith("google/gemma-4")) AndAlso Not chat.Any(Function(x) x.Repo.StartsWith("prithivMLmods/")),
+                  "official Qwen/Gemma and the popular abliterated kept, other fine-tunes gone")
         End If
 
         If only = "v212" Then
