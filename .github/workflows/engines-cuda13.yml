@@ -47,10 +47,11 @@ jobs:
           version: 10.15.1
 
       - name: Install CUDA 13
-        uses: ggml-org/llama.cpp/.github/actions/windows-setup-cuda@master
+        id: cuda
+        uses: Jimver/cuda-toolkit@v0.2.35
         with:
-          cuda_version: '13.5'
-          cuda_arch: 'x64'
+          cuda: '13.0.2'
+          method: 'local'
 
       - name: Build
         shell: pwsh
@@ -101,10 +102,11 @@ jobs:
           ref: ${{ env.TAG }}
 
       - name: Install CUDA 13
-        uses: ggml-org/llama.cpp/.github/actions/windows-setup-cuda@master
+        id: cuda
+        uses: Jimver/cuda-toolkit@v0.2.35
         with:
-          cuda_version: '13.5'
-          cuda_arch: 'x64'
+          cuda: '13.0.2'
+          method: 'local'
 
       - name: Build
         shell: pwsh
