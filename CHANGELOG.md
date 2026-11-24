@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.20.0
+
+### Changed
+- **Picture and Video look like Civitai.** Models → Picture and Video are now galleries: a picture for every model,
+  its page on the right (a large picture, size, whether it fits your GPU, description) and an Install button.
+  - **Source** at the top: the LocalMind list (Hugging Face models, with LocalMind's settings), **Civitai**, or
+    **Civitai.red** (everything, 18+).
+  - With Civitai you choose models (checkpoints) or LoRAs. Video shows MiniMax H3 and LTX-2.5; Picture shows every
+    picture type LocalMind runs.
+  - Family, sort and search filters; "More…" loads the next page.
+  - **Several installs at once**: press Install on one model, pick another and press Install again. The button reads
+    "Cancel" while that model downloads, and the bottom line shows how many are downloading.
+  - Installed models show ✔ and can be deleted from their page.
+- The Civitai window of the studio and the LoRA list uses the same gallery.
+- Music and Voice keep their short table.
+
+
 ## 2.19.0
 
 ### Added

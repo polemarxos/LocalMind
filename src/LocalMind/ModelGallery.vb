@@ -95,6 +95,8 @@ Public Class ModelGallery
         lblStatus = New Label() With {.Dock = DockStyle.Top, .Height = 40, .ForeColor = Theme.CDim, .UseMnemonic = False}
         txtAbout = New TextBox() With {.Dock = DockStyle.Fill, .Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical,
                                        .BorderStyle = BorderStyle.None, .BackColor = Theme.CRaised, .ForeColor = Theme.CText}
+        ' the picture takes a fair share of the height, so the name, files and Install always show
+        AddHandler right.Resize, Sub() pic.Height = Math.Max(120, Math.Min(380, CInt((right.ClientSize.Height - 300) * 0.75)))
         right.Controls.Add(txtAbout)
         right.Controls.Add(lblStatus)
         right.Controls.Add(prg)
@@ -302,7 +304,7 @@ Public Class ModelGallery
             list.BeginUpdate()
             For Each r In page
                 Dim inst = MediaStudio.InstalledVariant(r) IsNot Nothing
-                list.Items.Add(New ListViewItem(If(inst, "✔ ", "") & r.Name & vbLf & $"{r.Family} · ⬇{Compact(r.Downloads)}") With {.Tag = r, .ImageKey = "r:" & r.Id})
+                list.Items.Add(New ListViewItem(If(inst, "✔ ", "") & r.Name & $"  ·  ⬇{Compact(r.Downloads)}") With {.Tag = r, .ImageKey = "r:" & r.Id})
             Next
             list.EndUpdate()
             For Each r In page
@@ -327,7 +329,7 @@ Public Class ModelGallery
             list.BeginUpdate()
             For Each m In res.Items
                 Dim v = m.Versions(0)
-                list.Items.Add(New ListViewItem($"{m.Name}{vbLf}{v.BaseModel} · ⬇{Compact(m.Downloads)}") With {.Tag = m, .ImageKey = $"c:{m.Id}"})
+                list.Items.Add(New ListViewItem($"{m.Name}  ·  {v.BaseModel} · ⬇{Compact(m.Downloads)}") With {.Tag = m, .ImageKey = $"c:{m.Id}"})
             Next
             list.EndUpdate()
             For Each m In res.Items
