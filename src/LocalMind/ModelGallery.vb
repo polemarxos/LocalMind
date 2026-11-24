@@ -585,7 +585,7 @@ Public Class ModelGallery
                                           End Try
                                           If locked AndAlso Not IsDisposed Then
                                               Me.Post(Sub()
-                                                          If cmbVersion.SelectedItem Is vv Then lblInfo.Text &= vbLf & Localizer.T("🔒 Needs a Civitai account: paste your API key at the top first.")
+                                                          If cmbVersion.SelectedItem Is vv Then lblInfo.Text &= vbLf & Localizer.T("🔒 Needs a Civitai account: click 🔑 Civitai API key at the top first.")
                                                       End Sub)
                                           End If
                                       End Function)

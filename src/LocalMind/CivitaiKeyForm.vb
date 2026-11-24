@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Drawing
 Imports System.Net.Http
 Imports System.Threading
@@ -51,13 +51,13 @@ Public Class CivitaiKeyForm
         If reason IsNot Nothing Then intro.ForeColor = Theme.CWarn
 
         ' how to get one
-        Dim steps As New Panel() With {.Location = New Point(26, 108), .Size = New Size(588, 206), .BackColor = Theme.CRaised, .Padding = New Padding(16, 12, 16, 12)}
+        Dim steps As New Panel() With {.Location = New Point(26, 108), .Size = New Size(588, 218), .BackColor = Theme.CRaised, .Padding = New Padding(16, 12, 16, 12)}
         Dim stepsTitle As New Label() With {.Text = Localizer.T("How to get your key (free, about a minute)"), .AutoSize = True, .Location = New Point(16, 12),
                                             .Font = Theme.BoldFont, .ForeColor = Theme.CText}
         steps.Controls.Add(stepsTitle)
         Dim lines = {
             Localizer.T("Sign in (or sign up) at civitai.com."),
-            Localizer.T("Open your Account settings: click the button below, or your profile picture → ⚙ Settings."),
+            Localizer.T("Open Account settings (button below, or profile picture → Settings)."),
             Localizer.T("Scroll down to ""API Keys"" and click ""+ Add API key""."),
             Localizer.T("Give it a name (e.g. LocalMind), save, and copy the key. It is shown only once."),
             Localizer.T("Paste it below and click Save.")}
@@ -75,19 +75,19 @@ Public Class CivitaiKeyForm
         steps.Controls.Add(btnOpen)
 
         ' the key
-        Dim lblKey As New Label() With {.Text = Localizer.T("Your API key"), .AutoSize = True, .Location = New Point(26, 330), .Font = Theme.BoldFont, .ForeColor = Theme.CText}
-        txtKey = New TextBox() With {.Location = New Point(26, 354), .Width = 380, .UseSystemPasswordChar = True, .Text = If(AppCore.Settings.CivitaiApiKey, ""),
+        Dim lblKey As New Label() With {.Text = Localizer.T("Your API key"), .AutoSize = True, .Location = New Point(26, 340), .Font = Theme.BoldFont, .ForeColor = Theme.CText}
+        txtKey = New TextBox() With {.Location = New Point(26, 364), .Width = 380, .UseSystemPasswordChar = True, .Text = If(AppCore.Settings.CivitaiApiKey, ""),
                                      .PlaceholderText = Localizer.T("Paste your key here")}
         Theme.StyleInput(txtKey)
         btnShow = Theme.MakeButton("👁")
-        btnShow.Location = New Point(412, 351)
+        btnShow.Location = New Point(412, 361)
         btnShow.Width = 44
         btnPaste = Theme.MakeButton(Localizer.T("📋 Paste"))
-        btnPaste.Location = New Point(462, 351)
+        btnPaste.Location = New Point(462, 361)
         btnPaste.Width = 152
-        lblState = New Label() With {.AutoSize = False, .Location = New Point(26, 392), .Size = New Size(588, 22), .ForeColor = Theme.CDim, .UseMnemonic = False}
-        lblCheck = New Label() With {.AutoSize = False, .Location = New Point(26, 416), .Size = New Size(588, 44), .ForeColor = Theme.CDim, .UseMnemonic = False}
-        Dim privacy As New Label() With {.AutoSize = False, .Location = New Point(26, 462), .Size = New Size(588, 36), .ForeColor = Theme.CDim, .Font = Theme.SmallFont,
+        lblState = New Label() With {.AutoSize = False, .Location = New Point(26, 400), .Size = New Size(588, 22), .ForeColor = Theme.CDim, .UseMnemonic = False}
+        lblCheck = New Label() With {.AutoSize = False, .Location = New Point(26, 422), .Size = New Size(588, 44), .ForeColor = Theme.CDim, .UseMnemonic = False}
+        Dim privacy As New Label() With {.AutoSize = False, .Location = New Point(26, 466), .Size = New Size(588, 36), .ForeColor = Theme.CDim, .Font = Theme.SmallFont,
                                          .Text = Localizer.T("The key is kept only on this PC and sent only to Civitai. It works for civitai.red too. Keep it private; you can delete it on Civitai at any time.")}
         body.Controls.AddRange({title, intro, steps, lblKey, txtKey, btnShow, btnPaste, lblState, lblCheck, privacy})
 

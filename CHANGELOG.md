@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.21.0
+
+### Changed
+- **One "🔑 Civitai API key" button** replaces the key box. You find it at the top of Models → Picture / Video when
+  the source is Civitai, in the Civitai window, and in Settings → Built-in engine. It shows ✔ when a key is saved.
+  It opens a window that has:
+  - what the key is for, and five numbered steps to get one;
+  - **Open Civitai account settings**, which goes straight to the right page;
+  - a box for the key, with 👁 to show or hide it and 📋 Paste;
+  - **✓ Test key**, which asks Civitai whether the key works and shows the account name;
+  - **Save** (it checks the key first), **Remove key** and **Cancel**;
+  - a note that the key stays on this PC and is sent only to Civitai.
+- When a Civitai download needs an account, this window opens by itself. Save the key and press Install again.
+
+
 ## 2.20.3
 
 ### Added
