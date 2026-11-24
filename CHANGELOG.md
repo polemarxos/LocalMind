@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.17.2
+
+### Fixed
+- "The instance of CoreWebView2 is uninitialized" when a chat was clicked in the list while the chat view was still
+  starting. The chat is now shown as soon as the view is ready, and nothing in the main window writes to the chat
+  view before that.
+
+
 ## 2.17.1
 
 ### Changed

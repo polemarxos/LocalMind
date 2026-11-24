@@ -410,7 +410,7 @@ Public Class MainForm
                         ShowEngineState(state, message)
                         If Not String.IsNullOrEmpty(message) Then SetStatus(message)
                         If _isGenerating AndAlso state = EngineState.Loading AndAlso _streamMsgId IsNot Nothing Then
-                            webChat.ExecuteScriptAsync($"setStatusText('{_streamMsgId}', {JsonConvert.SerializeObject("⏳ " & message)});")
+                            Js($"setStatusText('{_streamMsgId}', {JsonConvert.SerializeObject("⏳ " & message)});")
                         End If
                     End Sub)
     End Sub
@@ -538,6 +538,26 @@ Public Class MainForm
     '════════════════════════════════════════════════════════════
     '  WebView
     '════════════════════════════════════════════════════════════
+    ''' <summary>
+    ''' Runs a script in the chat view. Until the view is ready (it starts in the background, and a chat can be
+    ''' clicked before that), nothing runs: the chat is drawn in full once the view is ready.
+    ''' </summary>
+    Private Function Js(script As String) As Task(Of String)
+        If webChat Is Nothing OrElse webChat.IsDisposed OrElse webChat.CoreWebView2 Is Nothing OrElse Not _viewReady Then
+            _redrawWhenReady = True
+            Return Task.FromResult(Of String)(Nothing)
+        End If
+        Try
+            Return webChat.ExecuteScriptAsync(script)
+        Catch ex As InvalidOperationException
+            _redrawWhenReady = True
+            Return Task.FromResult(Of String)(Nothing)
+        End Try
+    End Function
+
+    Private _viewReady As Boolean
+    Private _redrawWhenReady As Boolean
+
     Private Async Function InitWebViewAsync() As Task
         Try
             Dim env = Await CoreWebView2Environment.CreateAsync(Nothing, AppPaths.WebViewFolder)
@@ -567,8 +587,14 @@ Public Class MainForm
             AddHandler webChat.CoreWebView2.NavigationCompleted, handler
             webChat.CoreWebView2.NavigateToString(MarkdownRenderer.ShellHtml())
             Await Task.WhenAny(tcs.Task, Task.Delay(5000))
-            Await webChat.ExecuteScriptAsync("L = " & Localizer.ChatViewStrings() & ";")
+            _viewReady = True
+            Await Js("L = " & Localizer.ChatViewStrings() & ";")
             RemoveHandler webChat.CoreWebView2.NavigationCompleted, handler
+            ' a chat chosen while the view was starting is drawn now
+            If _redrawWhenReady AndAlso _session IsNot Nothing Then
+                _redrawWhenReady = False
+                Await RebuildChatDisplayAsync()
+            End If
         Catch ex As Exception
             Localizer.Box("WebView2 runtime not found." & vbCrLf & ex.Message,
                             "WebView2", MessageBoxButtons.OK, MessageBoxIcon.Error)
@@ -639,7 +665,7 @@ Public Class MainForm
                    "<div class='cards'>" & cards.ToString() & "</div>" &
                    "<div class='hint'>" & enc("Ctrl+Enter sends · paste or drop pictures and files to attach them") & "</div>"
         End If
-        webChat.ExecuteScriptAsync($"showEmpty({JsonConvert.SerializeObject(html)});")
+        Js($"showEmpty({JsonConvert.SerializeObject(html)});")
     End Sub
 
     '════════════════════════════════════════════════════════════
@@ -686,7 +712,7 @@ Public Class MainForm
         _session.PersonaName = If(CurrentPersona IsNot Nothing, CurrentPersona.Name, "")
         _session.UpdatedAt = DateTime.Now
 
-        Await webChat.ExecuteScriptAsync($"appendUser({JsonConvert.SerializeObject(DisplayText(userMsg.Content))}, {ImagesJson(userMsg)})")
+        Await Js($"appendUser({JsonConvert.SerializeObject(DisplayText(userMsg.Content))}, {ImagesJson(userMsg)})")
 
         txtInput.Clear()
         ClearAttachments()
@@ -720,7 +746,7 @@ Public Class MainForm
         lblTokens.Text = "0 tok/s"
 
         _streamMsgId = "msg-" & Guid.NewGuid().ToString("N").Substring(0, 8)
-        Await webChat.ExecuteScriptAsync($"appendAssistantStart('{_streamMsgId}')")
+        Await Js($"appendAssistantStart('{_streamMsgId}')")
         SetStatus("Thinking…")
         _flushTimer.Start()
 
@@ -747,7 +773,7 @@ Public Class MainForm
                 sources = Await AppCore.AugmentAsync(payload, _btnDocs.Checked, _btnWeb.Checked,
                     Sub(t)
                         SetStatus(t)
-                        webChat.ExecuteScriptAsync($"setStatusText('{msgId}', {JsonConvert.SerializeObject(t)});")
+                        Js($"setStatusText('{msgId}', {JsonConvert.SerializeObject(t)});")
                     End Sub, ct)
             End If
             ' Run off the UI thread: token callbacks only append to buffers; the timer renders.
@@ -806,7 +832,7 @@ Public Class MainForm
             .Role = "assistant", .Content = assistantText, .Thinking = thinkingText,
             .Model = _session.Model, .TokensPerSecond = Math.Round(tps, 1)}
 
-        Await webChat.ExecuteScriptAsync(
+        Await Js(
             $"finalizeAssistant('{_streamMsgId}', {JsonConvert.SerializeObject(MarkdownRenderer.ToHtml(assistantText))}, " &
             $"{JsonConvert.SerializeObject(If(String.IsNullOrEmpty(thinkingText), "", MarkdownRenderer.ToHtml(thinkingText)))}, " &
             $"{JsonConvert.SerializeObject(MetaText(msg))});")
@@ -848,17 +874,17 @@ Public Class MainForm
         If thinkingChanged Then
             _lastRenderedThinkingLength = thinkingSnapshot.Length
             Dim tHtml = MarkdownRenderer.ToHtml(MarkdownRenderer.BalanceFences(thinkingSnapshot))
-            webChat.ExecuteScriptAsync($"setThinkingHtml('{_streamMsgId}', {JsonConvert.SerializeObject(tHtml)});")
+            Js($"setThinkingHtml('{_streamMsgId}', {JsonConvert.SerializeObject(tHtml)});")
             SetStatus("Thinking…")
         End If
 
         If contentChanged Then
             _lastRenderedLength = contentSnapshot.Length
             Dim html = MarkdownRenderer.ToHtml(MarkdownRenderer.BalanceFences(contentSnapshot))
-            webChat.ExecuteScriptAsync($"setAssistantHtml('{_streamMsgId}', {JsonConvert.SerializeObject(html)});")
+            Js($"setAssistantHtml('{_streamMsgId}', {JsonConvert.SerializeObject(html)});")
             If Not _firstContentSeen Then
                 _firstContentSeen = True
-                webChat.ExecuteScriptAsync($"collapseThinking('{_streamMsgId}');")
+                Js($"collapseThinking('{_streamMsgId}');")
                 SetStatus("Writing…")
             End If
         End If
@@ -902,7 +928,7 @@ Public Class MainForm
                     {"meta", MetaText(m)}})
             End If
         Next
-        Await webChat.ExecuteScriptAsync("loadAll(" & items.ToString(Formatting.None) & ");")
+        Await Js("loadAll(" & items.ToString(Formatting.None) & ");")
     End Function
 
     Private Shared Function MetaText(m As ChatMessage) As String

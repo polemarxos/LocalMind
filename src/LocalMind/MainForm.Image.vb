@@ -145,7 +145,7 @@ Partial Class MainForm
         Dim ct = _cts.Token
         Dim msgId = "msg-" & Guid.NewGuid().ToString("N").Substring(0, 8)
         _streamMsgId = msgId
-        Await webChat.ExecuteScriptAsync($"appendAssistantStart('{msgId}')")
+        Await Js($"appendAssistantStart('{msgId}')")
         Dim status = Sub(t As String)
                          If InvokeRequired Then
                              Me.Post(Sub() ShowImageStatus(msgId, t))
@@ -203,7 +203,7 @@ Partial Class MainForm
         End Try
 
         Dim msg As New ChatMessage With {.Role = "assistant", .Content = content, .Model = r.Name}
-        Await webChat.ExecuteScriptAsync(
+        Await Js(
             $"finalizeAssistant('{msgId}', {JsonConvert.SerializeObject(MarkdownRenderer.ToHtml(content))}, """", {JsonConvert.SerializeObject(MetaText(msg))});")
         _session.Messages.Add(msg)
         _session.UpdatedAt = DateTime.Now
@@ -214,7 +214,7 @@ Partial Class MainForm
 
     Private Sub ShowImageStatus(msgId As String, t As String)
         SetStatus(t)
-        webChat.ExecuteScriptAsync($"setStatusText('{msgId}', {JsonConvert.SerializeObject(Localizer.T(t))});")
+        Js($"setStatusText('{msgId}', {JsonConvert.SerializeObject(Localizer.T(t))});")
     End Sub
 
 End Class
