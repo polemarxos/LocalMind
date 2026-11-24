@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
@@ -13,6 +13,8 @@ Public Class CivitaiForm
 
     Private ReadOnly _hw As HardwareInfo = HardwareInfo.Current()
     Private ReadOnly cmbSite, cmbType, cmbBase, cmbSort, cmbVersion As ComboBox
+    ' (list items before the base-model groups: all / all pictures / all videos)
+    Private Const FirstGroup As Integer = 3
     Private ReadOnly txtSearch, txtKey As TextBox
     Private ReadOnly list As ListView
     Private ReadOnly thumbs As New ImageList() With {.ImageSize = New Size(150, 150), .ColorDepth = ColorDepth.Depth32Bit}
@@ -28,7 +30,8 @@ Public Class CivitaiForm
 
     ''' <param name="checkpoints">Open on the checkpoints list instead of LoRAs.</param>
     ''' <param name="family">LoRA family / recipe family to preselect (e.g. "SDXL").</param>
-    Public Sub New(Optional checkpoints As Boolean = False, Optional family As String = Nothing)
+    ''' <param name="kind">"picture" or "video": open on all models of that kind.</param>
+    Public Sub New(Optional checkpoints As Boolean = False, Optional family As String = Nothing, Optional kind As String = Nothing)
         Text = "Civitai — LoRAs & models"
         Size = New Size(1300, 860)
         MinimumSize = New Size(1000, 640)
@@ -42,6 +45,8 @@ Public Class CivitaiForm
         cmbType.Items.AddRange({Localizer.T("LoRAs"), Localizer.T("Checkpoints (models)")})
         cmbBase = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 250}
         cmbBase.Items.Add(Localizer.T("All models LocalMind can use"))
+        cmbBase.Items.Add(Localizer.T("All picture models"))
+        cmbBase.Items.Add(Localizer.T("All video models (MiniMax H3, LTX-2.5)"))
         cmbBase.Items.AddRange(Civitai.Groups.Select(Function(g) CObj(g.Label)).ToArray())
         cmbSort = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 150}
         cmbSort.Items.AddRange({"Most Downloaded", "Highest Rated", "Newest"})
@@ -91,7 +96,7 @@ Public Class CivitaiForm
         cmbType.SelectedIndex = If(checkpoints, 1, 0)
         cmbSort.SelectedIndex = 0
         Dim gi = Array.FindIndex(Civitai.Groups, Function(g) family IsNot Nothing AndAlso LoraLibrary.FamilyMatches(g.Family, family))
-        cmbBase.SelectedIndex = If(gi >= 0, gi + 1, 0)
+        cmbBase.SelectedIndex = If(gi >= 0, gi + FirstGroup, If(kind = "video", 2, If(kind = "picture", 1, 0)))
 
         AddHandler btnSearch.Click, Async Sub() Await SearchAsync(True)
         AddHandler txtSearch.KeyDown, Async Sub(s, e)
@@ -152,9 +157,11 @@ Public Class CivitaiForm
             list.Items.Clear()
             thumbs.Images.Clear()
         End If
-        Dim bases As IEnumerable(Of String) = If(cmbBase.SelectedIndex <= 0,
-                                                 Civitai.Groups.Where(Function(g) cmbType.SelectedIndex = 0 OrElse g.Template IsNot Nothing).SelectMany(Function(g) g.BaseModels),
-                                                 Civitai.Groups(cmbBase.SelectedIndex - 1).BaseModels)
+        Dim sel = cmbBase.SelectedIndex
+        Dim bases As IEnumerable(Of String) = If(sel >= FirstGroup,
+                                                 Civitai.Groups(sel - FirstGroup).BaseModels,
+                                                 Civitai.Groups.Where(Function(g) (cmbType.SelectedIndex = 0 OrElse g.Template IsNot Nothing) AndAlso
+                                                                                  (sel = 0 OrElse Civitai.IsVideoGroup(g) = (sel = 2))).SelectMany(Function(g) g.BaseModels))
         lblStatus.Text = Localizer.T("Searching Civitai…")
         btnMore.Enabled = False
         Try
@@ -231,7 +238,7 @@ Public Class CivitaiForm
         End If
         lblInfo.Text = $"{m.Name}" & vbLf & $"{Localizer.T("by")} {m.Creator} · ⬇ {Compact(m.Downloads)} · 👍 {Compact(m.Likes)}" & vbLf &
                        $"{m.Type} · {v.BaseModel}" & If(f IsNot Nothing, $" · {Downloader.FormatBytes(f.SizeBytes)}", "") & If(fitText <> "", " · " & fitText, "") &
-                       If(g.Family Is Nothing, vbLf & Localizer.T("⚠ LocalMind can't use this base model."), If(Not m.IsLora AndAlso g.Template Is Nothing, vbLf & Localizer.T("⚠ Video checkpoints aren't supported yet — LoRAs are."), ""))
+                       If(g.Family Is Nothing, vbLf & Localizer.T("⚠ LocalMind can't use this base model."), If(Not m.IsLora AndAlso g.Template Is Nothing, vbLf & Localizer.T("⚠ LocalMind can't run checkpoints of this type yet — LoRAs work."), ""))
         txtTriggers.Text = String.Join(", ", v.TrainedWords)
         If f IsNot Nothing Then
             Dim vv = v

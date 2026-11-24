@@ -726,6 +726,22 @@ Module HarnessMain
             End If
         End If
 
+        If only = "civitai" Then
+            Console.WriteLine("== Civitai video checkpoints (MiniMax H3, LTX-2.5)")
+            For Each g In Civitai.Groups.Where(Function(x) Civitai.IsVideoGroup(x))
+                Dim res = Await Civitai.SearchAsync("", False, g.BaseModels, False, "Most Downloaded", Nothing, CancellationToken.None)
+                Check(res.Items.Count > 0, g.Label & ": checkpoints found", res.Items.Count.ToString())
+                For Each m In res.Items.Take(6)
+                    Dim v = m.Versions.First()
+                    Dim f = v.BestFile()
+                    Console.WriteLine($"    {m.Name} · {v.BaseModel} → {If(f?.Name, "(no usable file)")}")
+                Next
+                Check(Civitai.GroupFor(g.BaseModels(0)).Template IsNot Nothing AndAlso MediaStudio.Recipes().Any(Function(r) r.Id = g.Template), g.Label & ": installable (template exists)")
+            Next
+            Check(Not Civitai.IsUsableFile(New Civitai.CivFile With {.Name = "h3_nvfp4.safetensors"}) AndAlso Civitai.IsUsableFile(New Civitai.CivFile With {.Name = "h3_int8_convrot.safetensors"}) AndAlso
+                  Civitai.IsUsableFile(New Civitai.CivFile With {.Name = "h3-Q4_K_M.gguf"}) AndAlso Not Civitai.IsUsableFile(New Civitai.CivFile With {.Name = "x_w4a8.safetensors"}), "only formats the engine runs")
+        End If
+
         If only = "gguf" Then
             Console.WriteLine("== GGUF repair (ComfyUI-made files with flattened tensors)")
             ' a small ComfyUI-style file: one 2-D tensor stored flat, its real shape in a comfy.gguf.orig_shape note

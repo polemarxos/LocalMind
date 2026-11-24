@@ -172,7 +172,7 @@ Public Class MediaModelsPanel
         btnCivitai = Theme.MakeButton(Localizer.T("🌐 Browse Civitai"))
         AddHandler btnCivitai.Click, Sub()
                                          Dim fam = TryCast(grid.CurrentRow?.Tag, MediaRecipe)?.Family
-                                         Using f As New CivitaiForm(checkpoints:=True, family:=fam)
+                                         Using f As New CivitaiForm(checkpoints:=True, family:=fam, kind:=If(optVideos.Checked, "video", "picture"))
                                              f.ShowDialog(Me)
                                              If f.InstalledSomething Then
                                                  Fill()

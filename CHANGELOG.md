@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.19.0
+
+### Added
+- **Video models from Civitai: MiniMax H3 and LTX-2.5.** In Models → Video, "🌐 Browse Civitai" opens on all video
+  checkpoints (DaSiWa MiniMax H3, Singularity × 10Eros Max, H3 Remix, Joy-LTX 2.5 and others). Install one with one
+  click; it appears in the video list and the studio and uses the matching MiniMax H3 or LTX-2.5 parts.
+  - Ref2VA models (people from pictures) are recognised, and turbo / 8-step versions get 8 steps.
+  - LTX-2.5 dev and distilled versions get their own settings.
+  - INT8 / ConvRot, GGUF and FP8 files are used. Formats the engine can't run (NVFP4, INT4, W4A8) are skipped.
+- **Picture models from Civitai:** "All picture models" lists every type LocalMind runs: SDXL / Pony / Illustrious,
+  SD 1.5, FLUX.1 (dev, Krea, schnell, Kontext), FLUX.2 klein, Z-Image, Qwen-Image (also 2.1), Krea 2 and Anima.
+
+### Changed
+- The Civitai browser's model list starts with "All picture models" and "All video models". Wan and LTX-2.3 video
+  checkpoints are no longer listed.
+
+
 ## 2.18.2
 
 ### Fixed

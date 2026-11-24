@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -36,8 +36,7 @@ Public Module Civitai
 
         ''' <summary>The file to download: the primary model file, safetensors preferred (never pickle files).</summary>
         Public Function BestFile() As CivFile
-            Dim safe = Files.Where(Function(f) f.Format <> "PickleTensor" AndAlso
-                                               (f.Name.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase) OrElse f.Name.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))).ToList()
+            Dim safe = Files.Where(Function(f) IsUsableFile(f)).ToList()
             Return If(safe.FirstOrDefault(Function(f) f.Primary), safe.OrderBy(Function(f) f.SizeBytes).FirstOrDefault())
         End Function
 
@@ -78,8 +77,20 @@ Public Module Civitai
         ("Qwen-Image 2.1", {"Qwen 2.1"}, "Qwen-Image", "qwen-image-2.1"),
         ("Krea 2", {"Krea 2", "Krea 2 Turbo"}, "Krea", "krea2-turbo"),
         ("Anima", {"Anima"}, "Anima", "anima"),
-        ("Wan video", {"Wan Video 2.2 T2V-A14B", "Wan Video 2.2 I2V-A14B", "Wan Video 2.2 TI2V-5B", "Wan Video 14B t2v", "Wan Video 1.3B t2v"}, "Wan", Nothing),
-        ("LTX video", {"LTXV 2.3", "LTXV2"}, "LTX", Nothing)}
+        ("MiniMax H3 video", {"MiniMax H3"}, "MiniMax-H3", "minimax-h3"),
+        ("LTX-2.5 video", {"LTXV 2.5"}, "LTX-2.5", "ltx-2.5-distilled")}
+
+    Public Function IsVideoGroup(g As (Label As String, BaseModels As String(), Family As String, Template As String)) As Boolean
+        Return g.Family = "MiniMax-H3" OrElse g.Family = "LTX-2.5"
+    End Function
+
+    ' Weight formats the engine can't run (4-bit float / mixed formats made for other apps).
+    Private ReadOnly Unusable As New Regex("nvfp4|mxfp|[-_. ]fp4|w4a8|w4a16|int4|svdq|nunchaku|awq|gptq", RegexOptions.IgnoreCase)
+
+    Public Function IsUsableFile(f As CivFile) As Boolean
+        Return f.Format <> "PickleTensor" AndAlso Not Unusable.IsMatch(If(f.Name, "")) AndAlso
+               (f.Name.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase) OrElse f.Name.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
+    End Function
 
     Public Function GroupFor(baseModel As String) As (Label As String, BaseModels As String(), Family As String, Template As String)
         For Each g In Groups
@@ -199,7 +210,7 @@ Public Module Civitai
         Dim g = GroupFor(v.BaseModel)
         If g.Template Is Nothing Then Throw New Exception(Localizer.T("LocalMind can't run checkpoints of this type yet:") & " " & v.BaseModel)
         Dim f = v.BestFile()
-        If f Is Nothing Then Throw New Exception(Localizer.T("This version has no safetensors file to download."))
+        If f Is Nothing Then Throw New Exception(Localizer.T("This version has no file LocalMind can run (only formats like NVFP4, INT4 or W4A8). Try another version."))
         Dim fileName = SafeFileName(f.Name)
         Dim dest = Path.Combine(MediaStudio.UserModelFolder, fileName)
         Await DownloadAsync(f, dest, progress, ct)
@@ -208,8 +219,17 @@ Public Module Civitai
             .Name = m.Name & If(m.Versions.Count > 1, " · " & v.Name, ""), .Template = g.Template, .File = fileName,
             .Size = New FileInfo(dest).Length, .Format = If(allInOne, "checkpoint", If(fileName.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase), "gguf", "safetensors")),
             .BaseModel = v.BaseModel, .Source = $"Civitai #{m.Id}"}
+        ' INT8 (ConvRot) files get the same small repair as the built-in ones.
+        If um.Format = "safetensors" AndAlso Regex.IsMatch(fileName, "int8|convrot", RegexOptions.IgnoreCase) Then um.Format = "convrot"
+        Dim what = (m.Name & " " & v.Name & " " & fileName).ToLowerInvariant()
         ' FLUX.1 dev fine-tunes need dev settings, not the schnell template's 4 steps.
-        If v.BaseModel = "Flux.1 D" OrElse v.BaseModel = "Flux.1 Krea" Then
+        If v.BaseModel = "MiniMax H3" Then
+            ' Ref2VA (people from pictures) or first/last-frame model; turbo / 8-step versions need 8 steps
+            If what.Contains("ref2va") Then um.Template = "minimax-h3-ref2va"
+            If Regex.IsMatch(what, "turbo|8[- ]?step|flash|distill") Then um.Steps = 8 : um.Cfg = 1.0
+        ElseIf v.BaseModel = "LTXV 2.5" Then
+            If what.Contains("dev") AndAlso Not what.Contains("distill") Then um.Template = "ltx-2.5-dev"
+        ElseIf v.BaseModel = "Flux.1 D" OrElse v.BaseModel = "Flux.1 Krea" Then
             um.Steps = 24 : um.Cfg = 1.0 : um.Extra = "--guidance 3.5"
         ElseIf v.BaseModel = "ZImageBase" Then
             um.Template = "z-image"

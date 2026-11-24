@@ -995,5 +995,8 @@
 "Search, e.g. flux, krea, qwen-image": "Αναζήτηση, π.χ. flux, krea, qwen-image",
 "Showing {0} of {1} music models · click a column title to sort": "Εμφανίζονται {0} από {1} μοντέλα μουσικής · κλικ στον τίτλο στήλης για ταξινόμηση",
 "Showing {0} of {1} voice models · click a column title to sort": "Εμφανίζονται {0} από {1} μοντέλα φωνής · κλικ στον τίτλο στήλης για ταξινόμηση",
-"🌐 Browse Civitai": "🌐 Περιήγηση στο Civitai"
+"🌐 Browse Civitai": "🌐 Περιήγηση στο Civitai",
+"All video models (MiniMax H3, LTX-2.5)": "Όλα τα μοντέλα βίντεο (MiniMax H3, LTX-2.5)",
+"⚠ LocalMind can't run checkpoints of this type yet — LoRAs work.": "⚠ Το LocalMind δεν μπορεί ακόμη να τρέξει τέτοια μοντέλα — τα LoRA λειτουργούν.",
+"This version has no file LocalMind can run (only formats like NVFP4, INT4 or W4A8). Try another version.": "Αυτή η έκδοση δεν έχει αρχείο που μπορεί να τρέξει το LocalMind (μόνο μορφές όπως NVFP4, INT4 ή W4A8). Δοκιμάστε άλλη έκδοση."
 }
