@@ -99,7 +99,14 @@ Public Module ChatAgent
         If forced IsNot Nothing Then
             ' (Enumerable.First: JArray's own "First" property would index the JSON with the lambda)
             opts.Tools = New JArray(Enumerable.First(opts.Tools, Function(t As JToken) t("function")?.Value(Of String)("name") = forced))
-            opts.ToolChoice = "required"
+            ' "required" makes the engine force the tool call from the first word, which cuts a thinking model's
+            ' reasoning off halfway. With thinking on, the model may think to the end and then calls the tool (the only
+            ' one offered); if it still answers in words, the tool runs anyway below.
+            opts.ToolChoice = If(opts.EnableThinking, "auto", "required")
+            If opts.EnableThinking AndAlso payload IsNot Nothing AndAlso payload.Count > 0 Then
+                payload.Insert(payload.Count - 1, New ChatMessage With {.Role = "system",
+                    .Content = $"The user's next message asks for something the {forced} tool makes. Think it through as long as you need, then call {forced} (do not answer in words instead)."})
+            End If
         End If
         Dim result As ChatResult = Nothing
         Dim failed = False

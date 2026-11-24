@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.21.3
+
+### Fixed
+- **Asking for a picture or video cut the model's thinking off halfway.** LocalMind made the engine write the
+  picture request from the very first word, which stopped a thinking model's reasoning in the middle. With
+  **Think** on, the model now thinks to the end and then asks for the picture (or video). If it answers in words
+  instead, the picture is still made. With Think off nothing changes.
+
+
 ## 2.21.2
 
 ### Fixed

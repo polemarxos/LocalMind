@@ -983,6 +983,17 @@ Module HarnessMain
             Next
             Check(seen(0) = "generate_image|required" AndAlso seen(1) = "generate_video|required" AndAlso seen(2) = "generate_image|required" AndAlso Not seen(3).Contains("required"),
                   "the asked-for tool is required (and only offered tool)", String.Join(" ; ", seen))
+            ' a thinking model is not forced from the first word (that cut its reasoning off); it is told to call the tool
+            Dim tp As New List(Of ChatMessage) From {New ChatMessage With {.Role = "user", .Content = "make me a picture of a red apple"}}
+            Dim topts As New ChatRequestOptions With {.Model = "test", .EnableThinking = True}
+            Dim tsent As String = Nothing
+            Dim tres = Await ChatAgent.AnswerAsync(Function(o As ChatRequestOptions)
+                                                       tsent = String.Join(",", o.Tools.Select(Function(t) t("function")?.Value(Of String)("name"))) & "|" & o.ToolChoice
+                                                       Return Task.FromResult(New ChatResult With {.Content = "thinking…"})
+                                                   End Function, tp, topts, False, Sub(t) Return, Sub() Return, CancellationToken.None)
+            Check(tsent = "generate_image|auto" AndAlso tp.Any(Function(m) m.Role = "system" AndAlso m.Content.Contains("Think it through")),
+                  "thinking on: the model may finish thinking, then calls the tool", tsent)
+            Check(tres.Result.ToolCalls.Any(Function(c) c.Name = "generate_image"), "and the picture is still made if it answers in words")
             ' one system message, at the start (chat templates reject others)
             Dim msgs As New List(Of ChatMessage) From {
                 New ChatMessage With {.Role = "system", .Content = "You are a pirate."},
