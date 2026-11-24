@@ -49,7 +49,7 @@ jobs:
       - name: Install CUDA 13
         uses: ggml-org/llama.cpp/.github/actions/windows-setup-cuda@master
         with:
-          cuda_version: '13.1'
+          cuda_version: '13.5'
           cuda_arch: 'x64'
 
       - name: Build
@@ -103,7 +103,7 @@ jobs:
       - name: Install CUDA 13
         uses: ggml-org/llama.cpp/.github/actions/windows-setup-cuda@master
         with:
-          cuda_version: '13.1'
+          cuda_version: '13.5'
           cuda_arch: 'x64'
 
       - name: Build
