@@ -198,7 +198,7 @@ Public Class ModelManagerForm
         Theme.StyleInput(cmbSort)
         cmbShow = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 215, .Margin = New Padding(3, 6, 3, 3)}
         cmbShow.Items.AddRange({"★ Best that fit my GPU", "Everything that runs on this PC", "All models (show everything)"}.Select(Function(x) Localizer.T(x)).ToArray())
-        cmbShow.SelectedIndex = 0
+        cmbShow.SelectedIndex = 2          ' (the list holds only Qwen 3.8 and Gemma 3 / 4: show them all)
         Theme.StyleInput(cmbShow)
         btnRefresh = Theme.MakeButton("⟳ Update list")
         btnHub = Theme.MakeButton("🔍 Search all of Hugging Face")
@@ -290,7 +290,10 @@ Public Class ModelManagerForm
                                                           If grid.IsCurrentCellDirty Then grid.CommitEdit(DataGridViewDataErrorContexts.Commit)
                                                       End Sub
         AddHandler grid.CellValueChanged, AddressOf Grid_CellValueChanged
-        AddHandler grid.SelectionChanged, Async Sub() Await ShowDetailsAsync()
+        AddHandler grid.SelectionChanged, Async Sub()
+                                              If _suppressGridEvents Then Return
+                                              Await ShowDetailsAsync()
+                                          End Sub
         AddHandler grid.DataError, Sub(s, e) e.ThrowException = False
         AddHandler grid.CellDoubleClick, Sub(s, e)
                                              If e.RowIndex >= 0 AndAlso grid.Columns(e.ColumnIndex).Name <> "quant" Then
@@ -566,8 +569,10 @@ Public Class ModelManagerForm
         Next
 
         Dim list = src.ToList()
+        Dim wasRepo = SelectedEntry()?.Repo
         _suppressGridEvents = True
         grid.SuspendLayout()
+        grid.CurrentCell = Nothing
         grid.Rows.Clear()
         Dim rows As New List(Of DataGridViewRow)(list.Count)
         For Each e In list
@@ -609,9 +614,24 @@ Public Class ModelManagerForm
                 If e0 IsNot Nothing Then _checked.Add(e0.Repo)
             End If
         End If
+        ' keep the same model selected when it is still listed, else the first one
+        Dim keepIdx = If(wasRepo Is Nothing, -1, list.FindIndex(Function(x) x.Repo = wasRepo))
+        If grid.Rows.Count > 0 Then
+            Dim idx = Math.Max(0, keepIdx)
+            grid.CurrentCell = grid.Rows(idx).Cells(1)
+            grid.Rows(idx).Selected = True
+        End If
         grid.ResumeLayout()
         _suppressGridEvents = False
         UpdateDownloadButton()
+        ShowDetailsLater()
+    End Sub
+
+    Private Async Sub ShowDetailsLater()
+        Try
+            Await ShowDetailsAsync()
+        Catch
+        End Try
     End Sub
 
     Private Sub FillFitCells(r As DataGridViewRow, e As CatalogEntry, Optional realBytes As Long = 0)
@@ -652,16 +672,32 @@ Public Class ModelManagerForm
     End Sub
 
     Private Function SelectedEntry() As CatalogEntry
-        If grid.CurrentRow Is Nothing Then Return Nothing
-        Return TryCast(grid.CurrentRow.Tag, CatalogEntry)
+        Try
+            Dim r = grid.CurrentRow
+            If r Is Nothing OrElse r.Index < 0 OrElse r.Index >= grid.Rows.Count Then Return Nothing
+            Return TryCast(r.Tag, CatalogEntry)
+        Catch ex As ArgumentException
+            Return Nothing          ' (the list is being rebuilt)
+        End Try
     End Function
+
+    ' The model whose details (and file list) are shown on the right.
+    Private _detailEntry As CatalogEntry
 
     '════════════════════════════════════════════════════════════
     '  Details panel (real file sizes from Hugging Face)
     '════════════════════════════════════════════════════════════
     Private Async Function ShowDetailsAsync() As Task
         Dim e = SelectedEntry()
-        If e Is Nothing Then Return
+        If e Is Nothing Then
+            _detailEntry = Nothing
+            lblDetailTitle.Text = Localizer.T("Select a model")
+            lblDetailInfo.Text = ""
+            lstQuants.Items.Clear()
+            Return
+        End If
+        If e Is _detailEntry AndAlso lstQuants.Items.Count > 0 AndAlso TypeOf lstQuants.Items(0).Tag Is QuantOption Then Return
+        _detailEntry = e
         _detailCts?.Cancel()
         _detailCts = New CancellationTokenSource()
         Dim ct = _detailCts.Token
@@ -683,7 +719,7 @@ Public Class ModelManagerForm
         Try
             Await Task.Delay(250, ct)   ' debounce fast scrolling
             Dim files = Await ModelCatalog.GetRepoFilesAsync(e.Repo, AppCore.Settings.HuggingFaceToken, ct)
-            If ct.IsCancellationRequested Then Return
+            If ct.IsCancellationRequested OrElse _detailEntry IsNot e Then Return
             If e.Params <= 0 Then
                 Dim q4 = files.Quants.FirstOrDefault(Function(q) q.Label.Contains("Q4_K_M"))
                 If q4 IsNot Nothing Then e.Params = CLng(q4.TotalBytes * 8 / 4.85)
@@ -725,10 +761,12 @@ Public Class ModelManagerForm
     End Function
 
     Private Sub QuantPicked(sender As Object, e As EventArgs)
-        If lstQuants.SelectedItems.Count = 0 OrElse grid.CurrentRow Is Nothing Then Return
+        If lstQuants.SelectedItems.Count = 0 OrElse _detailEntry Is Nothing Then Return
         Dim q = TryCast(lstQuants.SelectedItems(0).Tag, QuantOption)
         If q Is Nothing Then Return
-        Dim row = grid.CurrentRow
+        ' the row of the model the file list belongs to (not whatever row happens to be current)
+        Dim row = grid.Rows.Cast(Of DataGridViewRow)().FirstOrDefault(Function(x) x.Tag Is _detailEntry)
+        If row Is Nothing Then Return
         Dim cell = CType(row.Cells(4), DataGridViewComboBoxCell)
         If Not cell.Items.Contains(q.Label) Then
             ' Column items are shared; give this cell its own list including the exact quant.

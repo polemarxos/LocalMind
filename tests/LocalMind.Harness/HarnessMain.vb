@@ -700,6 +700,32 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "llmlist" Then
+            Console.WriteLine("== LLM list from the live catalog")
+            Dim live As List(Of CatalogEntry) = Nothing
+            Try
+                live = Await ModelCatalog.FetchLiveAsync(CancellationToken.None)
+            Catch ex As Exception
+                Console.WriteLine("FETCH ERROR " & ex.ToString())
+            End Try
+            If live IsNot Nothing Then
+                Console.WriteLine($"live {live.Count}")
+                Dim kept = ModelFamilies.KeepChat(live)
+                Console.WriteLine($"kept {kept.Count}: qwen3.8 {kept.AsEnumerable().Count(Function(x) x.Repo.ToLower().Contains("qwen3.8"))} gemma-3 {kept.AsEnumerable().Count(Function(x) x.Repo.ToLower().Contains("gemma-3"))} gemma-4 {kept.AsEnumerable().Count(Function(x) x.Repo.ToLower().Contains("gemma-4"))}")
+                For Each x In live.Where(Function(y) y.Repo.ToLower().Contains("gemma-4") OrElse y.Repo.ToLower().Contains("qwen3.8")).Take(8)
+                    Console.WriteLine($"  {x.Repo} arch={x.Arch} allowed={ModelFamilies.ChatAllowed(x)}")
+                Next
+                Dim hw As New HardwareInfo With {.RamBytes = 32L * 1024 * 1024 * 1024}
+                hw.Gpus.Add(New GpuDevice With {.Name = "RTX 5070 Ti", .Vendor = GpuVendor.Nvidia, .VramBytes = 16L * 1024 * 1024 * 1024})
+                Try
+                    Dim best = ModelCatalog.BestThatFit(kept, hw, 16384)
+                    Console.WriteLine($"best {best.Count}: " & String.Join(", ", best.Take(20)))
+                Catch ex As Exception
+                    Console.WriteLine("BEST ERROR " & ex.ToString())
+                End Try
+            End If
+        End If
+
         If only = "gguf" Then
             Console.WriteLine("== GGUF repair (ComfyUI-made files with flattened tensors)")
             ' a small ComfyUI-style file: one 2-D tensor stored flat, its real shape in a comfy.gguf.orig_shape note

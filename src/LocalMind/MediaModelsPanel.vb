@@ -96,6 +96,18 @@ Public Class MediaModelsPanel
 
     Private _audioKind As String = ""
 
+    ' The page on the right always shows the selected row's model (or nothing when the list is empty).
+    Private Sub SyncDetails()
+        If grid.Rows.Count = 0 OrElse grid.CurrentRow Is Nothing Then
+            _shown = Nothing
+            details.Clear()
+            lblAbout.Text = ""
+        Else
+            If grid.CurrentRow.Tag IsNot _shown Then _shown = Nothing
+            ShowAbout()
+        End If
+    End Sub
+
     Private Sub StyleKind(o As RadioButton)
         o.FlatAppearance.BorderColor = Theme.CBorder
         o.FlatAppearance.CheckedBackColor = Theme.CAccent
@@ -367,10 +379,12 @@ Public Class MediaModelsPanel
         If items.Count = 0 AndAlso cmbShow.SelectedIndex = 0 AndAlso q.Length = 0 Then
             lblInfo.Text = Localizer.T("None of these fits this PC's graphics card — choose 'All models' above to see them all (they can use system RAM).")
             UpdateButton()
+            SyncDetails()
             Return
         End If
         lblInfo.Text = String.Format(Localizer.T(If(optVideos.Checked, "Showing {0} of {1} video models · click a column title to sort", "Showing {0} of {1} picture models · click a column title to sort")), items.Count, all.Count)
         UpdateButton()
+        SyncDetails()
     End Sub
 
     ''' <summary>The voice and music models (read aloud, voice cloning, songs) in the same list.</summary>
@@ -427,6 +441,7 @@ Public Class MediaModelsPanel
         _suppress = False
         lblInfo.Text = String.Format(Localizer.T(If(_audioKind = "music", "Showing {0} of {1} music models · click a column title to sort", "Showing {0} of {1} voice models · click a column title to sort")), items.Count, all.Count)
         UpdateButton()
+        SyncDetails()
     End Sub
 
     Private Sub FillFit(row As DataGridViewRow, r As MediaRecipe)
