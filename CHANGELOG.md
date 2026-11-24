@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.16.1
+
+### Fixed
+- **"generate failed: cannot load component" with 10Eros Max (MiniMax H3) and other community GGUF models.**
+  Files made with the ComfyUI-GGUF converter store a few small tensors flattened, with their real shape written
+  in a note that only ComfyUI reads, so the engine refused them. LocalMind now gives those tensors their real
+  shape back. Only the file's header changes, in place, in under a second: nothing is downloaded or copied again.
+  Already downloaded models are repaired by themselves the next time you press Generate.
+
+
 ## 2.16.0
 
 ### Added

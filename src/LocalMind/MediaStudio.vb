@@ -327,6 +327,17 @@ Public Module MediaStudio
         Return FilesFor(r, v).All(AddressOf IsPresent)
     End Function
 
+    ''' <summary>Gives flattened tensors of ComfyUI-made GGUF files their real shape (see GgufFix).</summary>
+    Public Sub RepairGguf(r As MediaRecipe, v As MediaVariant)
+        For Each f In FilesFor(r, v, True, True).Where(Function(x) x IsNot Nothing AndAlso x.Path.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
+            Try
+                GgufFix.EnsurePatched(LocalPath(f))
+            Catch ex As IOException
+                ' (in use or unreadable: the engine reports what is wrong)
+            End Try
+        Next
+    End Sub
+
     Public Function InstalledVariant(r As MediaRecipe) As MediaVariant
         Return r.Variants.Where(Function(v) IsInstalled(r, v)).OrderByDescending(Function(v) v.Total).FirstOrDefault()
     End Function
@@ -370,6 +381,7 @@ Public Module MediaStudio
                 ConvRotFix.EnsurePatched(LocalPath(f))
             Next
         End If
+        RepairGguf(r, v)
         progress?.Invoke(100, "Ready")
     End Function
 
@@ -546,6 +558,7 @@ Public Module MediaStudio
                                If v.High IsNot Nothing Then ConvRotFix.EnsurePatched(LocalPath(v.High))
                            End Sub, ct)
         End If
+        Await Task.Run(Sub() RepairGguf(r, v), ct)
 
         ' Inputs and task
         Dim imgs = req.InputImages.Where(Function(f) Not String.IsNullOrEmpty(f) AndAlso File.Exists(f)).ToList()

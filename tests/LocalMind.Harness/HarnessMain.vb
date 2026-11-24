@@ -700,6 +700,43 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "gguf" Then
+            Console.WriteLine("== GGUF repair (ComfyUI-made files with flattened tensors)")
+            ' a small ComfyUI-style file: one 2-D tensor stored flat, its real shape in a comfy.gguf.orig_shape note
+            Dim f = Path.Combine(Path.GetTempPath(), "lm-comfy.gguf")
+            Using ms As New MemoryStream(), w As New BinaryWriter(ms)
+                Dim wstr = Sub(t As String)
+                               Dim b = Text.Encoding.UTF8.GetBytes(t)
+                               w.Write(CULng(b.Length)) : w.Write(b)
+                           End Sub
+                w.Write(Text.Encoding.ASCII.GetBytes("GGUF")) : w.Write(3UI) : w.Write(2UL) : w.Write(3UL)
+                wstr("general.architecture") : w.Write(8UI) : wstr("wan")
+                wstr("comfy.gguf.orig_shape.adaln_t_table") : w.Write(9UI) : w.Write(5UI) : w.Write(2UL) : w.Write(3I) : w.Write(4I)
+                wstr("general.file_type") : w.Write(4UI) : w.Write(12UI)
+                wstr("adaln_t_table") : w.Write(1UI) : w.Write(12UL) : w.Write(0UI) : w.Write(0UL)
+                wstr("blocks.0.norm1.weight") : w.Write(1UI) : w.Write(4UL) : w.Write(0UI) : w.Write(64UL)
+                While ms.Length Mod 32 <> 0 : w.Write(CByte(0)) : End While
+                Dim dataStart = ms.Length
+                For i = 0 To 15 : w.Write(CSng(i)) : Next
+                For i = 0 To 3 : w.Write(1.0F) : Next
+                File.WriteAllBytes(f, ms.ToArray())
+                Dim before = New FileInfo(f).Length
+                Check(GgufFix.EnsurePatched(f), "flattened tensor repaired")
+                Check(New FileInfo(f).Length = before, "the file keeps its size (header rewritten in place)")
+                Dim bytes = File.ReadAllBytes(f)
+                Check(BitConverter.ToSingle(bytes, CInt(dataStart) + 4 * 5) = 5.0F, "the weights are untouched")
+                Dim txt = Text.Encoding.ASCII.GetString(bytes, 0, CInt(dataStart))
+                Check(Not txt.Contains("comfy.gguf") AndAlso txt.Contains("general.architecture") AndAlso txt.Contains("blocks.0.norm1.weight"), "shape notes removed, other settings kept")
+                ' adaln_t_table: torch shape [3,4] → GGUF dims [4,3]
+                Dim p = txt.IndexOf("adaln_t_table", txt.IndexOf("localmind.pad")) + "adaln_t_table".Length
+                Check(BitConverter.ToUInt32(bytes, p) = 2UI AndAlso BitConverter.ToUInt64(bytes, p + 4) = 4UL AndAlso BitConverter.ToUInt64(bytes, p + 12) = 3UL,
+                      "real shape back (4 × 3)", $"{BitConverter.ToUInt32(bytes, p)} dims: {BitConverter.ToUInt64(bytes, p + 4)} x {BitConverter.ToUInt64(bytes, p + 12)}")
+                Check(Not GgufFix.EnsurePatched(f), "a repaired file is left alone the next time")
+            End Using
+            Dim real = Environment.GetEnvironmentVariable("LM_GGUF")
+            If Not String.IsNullOrEmpty(real) AndAlso File.Exists(real) Then Check(GgufFix.EnsurePatched(real), "real file repaired", real)
+        End If
+
         If only = "v215" Then
             Console.WriteLine("== 2.15: voice cloning from the chat")
             Dim tools As New Newtonsoft.Json.Linq.JArray(
