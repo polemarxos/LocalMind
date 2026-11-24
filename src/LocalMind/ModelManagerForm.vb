@@ -35,6 +35,8 @@ Public Class ModelManagerForm
     Private cmbCategory As ComboBox
     Private cmbSort As ComboBox
     Private cmbShow As ComboBox
+    Private cmbInstalledType As ComboBox
+    Private _btnUse, _btnSpeed, _btnStudioInst, _btnImport As Button
     Private _best As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
     Private _bestUncensored As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
     Private btnRefresh As Button
@@ -368,26 +370,50 @@ Public Class ModelManagerForm
         Dim btnUse = Theme.MakeButton("Use in chat", primary:=True)
         Dim btnSpeed = Theme.MakeButton("⚡ Speed test")
         lblInstalledInfo = Theme.MakeLabel("", dim_:=True)
-        bar.Controls.AddRange({btnUse, btnSpeed, btnDelete, btnOpen, btnImport, btnRescan, lblInstalledInfo})
+        lblInstalledInfo.Margin = New Padding(10, 10, 3, 3)
+        cmbInstalledType = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 150, .Margin = New Padding(3, 6, 3, 3)}
+        cmbInstalledType.Items.AddRange(InstalledTypes.Select(Function(x) CObj(Localizer.T(x))).ToArray())
+        cmbInstalledType.SelectedIndex = 0
+        Theme.StyleInput(cmbInstalledType)
+        AddHandler cmbInstalledType.SelectedIndexChanged, Sub() RefreshInstalled()
+        Dim btnStudioInst = Theme.MakeButton(Localizer.T("🎨 Open in the studio"), primary:=True)
+        AddHandler btnStudioInst.Click, Sub()
+                                            Dim f = Application.OpenForms.OfType(Of StudioForm)().FirstOrDefault()
+                                            If f Is Nothing Then
+                                                f = New StudioForm()
+                                                f.Show()
+                                            Else
+                                                f.Activate()
+                                            End If
+                                        End Sub
+        _btnUse = btnUse : _btnSpeed = btnSpeed : _btnStudioInst = btnStudioInst : _btnImport = btnImport
+        bar.Controls.AddRange({cmbInstalledType, btnUse, btnStudioInst, btnSpeed, btnDelete, btnOpen, btnImport, btnRescan, lblInstalledInfo})
         AddHandler btnSpeed.Click, Async Sub() Await RunSpeedTestsAsync(btnSpeed)
 
         lstInstalled = New ListView() With {.Dock = DockStyle.Fill}
         Theme.StyleListView(lstInstalled)
         lstInstalled.MultiSelect = True
-        lstInstalled.Columns.Add("Model", 360)
-        lstInstalled.Columns.Add("Quant", 95)
-        lstInstalled.Columns.Add("Size", 80)
-        lstInstalled.Columns.Add("Vision", 55)
+        lstInstalled.Columns.Add(Localizer.T("Model"), 330)
+        lstInstalled.Columns.Add(Localizer.T("Type"), 95)
+        lstInstalled.Columns.Add(Localizer.T("File"), 110)
+        lstInstalled.Columns.Add(Localizer.T("Size"), 80)
+        lstInstalled.Columns.Add(Localizer.T("Details"), 220)
         lstInstalled.Columns.Add("Speed", 85)
         lstInstalled.Columns.Add("Reading", 90)
         lstInstalled.Columns.Add("Load", 60)
         lstInstalled.Columns.Add("Context", 70)
         lstInstalled.Columns.Add("Source", 240)
+        AddHandler lstInstalled.SelectedIndexChanged, Sub() UpdateInstalledButtons()
 
         AddHandler btnDelete.Click, AddressOf DeleteInstalled
         AddHandler btnOpen.Click, Sub()
-                                      Dim m = SelectedInstalled()
-                                      OpenFolder(If(m?.Folder, AppCore.Library.Folder))
+                                      Dim tag = If(lstInstalled.SelectedItems.Count = 0, Nothing, lstInstalled.SelectedItems(0).Tag)
+                                      Dim folder = AppCore.Library.Folder
+                                      If TypeOf tag Is LocalModel Then folder = CType(tag, LocalModel).Folder
+                                      If TypeOf tag Is InstalledMedia Then folder = Path.GetDirectoryName(MediaStudio.LocalPath(CType(tag, InstalledMedia).Variant))
+                                      If TypeOf tag Is AudioModel Then folder = AudioStudio.Folder
+                                      If TypeOf tag Is UserLora Then folder = LoraLibrary.Folder
+                                      OpenFolder(folder)
                                   End Sub
         AddHandler btnImport.Click, AddressOf ImportGguf
         AddHandler btnRescan.Click, Sub()
@@ -401,7 +427,9 @@ Public Class ModelManagerForm
                                      DialogResult = DialogResult.OK
                                      Close()
                                  End Sub
-        AddHandler lstInstalled.DoubleClick, Sub() btnUse.PerformClick()
+        AddHandler lstInstalled.DoubleClick, Sub()
+                                                 If TypeOf SelectedTag() Is LocalModel Then btnUse.PerformClick() Else If _btnStudioInst.Visible Then _btnStudioInst.PerformClick()
+                                             End Sub
 
         page.Controls.Add(lstInstalled)
         page.Controls.Add(bar)
@@ -932,30 +960,95 @@ Public Class ModelManagerForm
     '════════════════════════════════════════════════════════════
     '  Installed tab
     '════════════════════════════════════════════════════════════
+    ' What the Installed list holds: chat models, picture and video models, music and voice models, and LoRAs.
+    Private Shared ReadOnly InstalledTypes As String() = {"All types", "💬 LLM", "🖼 Picture", "🎬 Video", "🎵 Music", "🗣 Voice", "🧩 LoRA"}
+
     Private Sub RefreshInstalled()
+        Dim want = Math.Max(0, cmbInstalledType.SelectedIndex)
+        Dim show = Function(i As Integer) want = 0 OrElse want = i
+        Dim total As Long = 0, count = 0
         lstInstalled.BeginUpdate()
         lstInstalled.Items.Clear()
+        Dim add = Sub(tag As Object, type As Integer, name As String, file As String, size As Long, details As String, source As String,
+                      sp As SpeedResult)
+                      total += size
+                      count += 1
+                      If Not show(type) Then Return
+                      Dim it As New ListViewItem(name) With {.Tag = tag}
+                      it.SubItems.Add(Localizer.T(InstalledTypes(type)))
+                      it.SubItems.Add(If(file, ""))
+                      it.SubItems.Add(Downloader.FormatBytes(size))
+                      it.SubItems.Add(If(details, ""))
+                      it.SubItems.Add(If(sp IsNot Nothing, $"{sp.GenTokensPerSecond:0.0} tok/s", ""))
+                      it.SubItems.Add(If(sp IsNot Nothing, $"{sp.PromptTokensPerSecond:0} tok/s", ""))
+                      it.SubItems.Add(If(sp IsNot Nothing, $"{sp.LoadSeconds:0.0}s", ""))
+                      it.SubItems.Add(If(sp IsNot Nothing AndAlso sp.ContextTokens > 0, $"{sp.ContextTokens \ 1024}K", ""))
+                      it.SubItems.Add(If(source, ""))
+                      lstInstalled.Items.Add(it)
+                  End Sub
+        ' chat models
         For Each m In AppCore.Library.All()
-            Dim it As New ListViewItem(m.DisplayName) With {.Tag = m}
-            it.SubItems.Add(If(m.Quant, ""))
-            it.SubItems.Add(Downloader.FormatBytes(m.SizeBytes))
-            it.SubItems.Add(If(m.IsVision, "👁 yes", ""))
-            Dim sp = SpeedTest.GetResult(m)
-            it.SubItems.Add(If(sp IsNot Nothing, $"{sp.GenTokensPerSecond:0.0} tok/s", "—"))
-            it.SubItems.Add(If(sp IsNot Nothing, $"{sp.PromptTokensPerSecond:0} tok/s", ""))
-            it.SubItems.Add(If(sp IsNot Nothing, $"{sp.LoadSeconds:0.0}s", ""))
-            it.SubItems.Add(If(sp IsNot Nothing AndAlso sp.ContextTokens > 0, $"{sp.ContextTokens \ 1024}K", ""))
-            it.SubItems.Add(If(m.Repo, Path.GetFileName(m.MainFile)))
-            lstInstalled.Items.Add(it)
+            add(m, 1, m.DisplayName, m.Quant, m.SizeBytes, If(m.IsVision, "👁 " & Localizer.T("vision"), ""), If(m.Repo, Path.GetFileName(m.MainFile)), SpeedTest.GetResult(m))
+        Next
+        ' picture and video models (the main file downloaded; shared parts are counted once)
+        Dim counted As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        ' Several models can share one downloaded file (e.g. MiniMax H3 with another text encoder). List the ones that are
+        ' complete; a model whose other parts are missing only when no complete one already uses its main file.
+        Dim mains As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Dim picks As New List(Of (R As MediaRecipe, V As MediaVariant))
+        For Each r In MediaStudio.Recipes()
+            Dim v = MediaStudio.InstalledVariant(r)
+            If v IsNot Nothing Then
+                picks.Add((r, v))
+                mains.Add(MediaStudio.LocalPath(v))
+            End If
+        Next
+        For Each r In MediaStudio.Recipes()
+            If MediaStudio.InstalledVariant(r) IsNot Nothing Then Continue For
+            Dim v = MediaStudio.UsableVariant(r)
+            If v IsNot Nothing AndAlso mains.Add(MediaStudio.LocalPath(v)) Then picks.Add((r, v))
+        Next
+        For Each pk In picks
+            Dim r = pk.R, v = pk.V
+            Dim files = MediaStudio.FilesFor(r, v).Where(AddressOf MediaStudio.IsPresent).ToList()
+            Dim size = files.Where(Function(f) counted.Add(MediaStudio.LocalPath(f))).Sum(Function(f) f.Size)
+            Dim missing = Not MediaStudio.IsInstalled(r, v)
+            add(New InstalledMedia With {.Recipe = r, .Variant = v}, If(r.IsVideo, 3, 2), r.Name, v.Label, size,
+                r.Family & If(r.Uncensored, " · 🔓", "") & If(missing, " · " & Localizer.T("parts download when used"), ""), If(r.Repo, ""), Nothing)
+        Next
+        ' music and voice
+        For Each a In AudioStudio.Models().Where(AddressOf AudioStudio.IsInstalled)
+            add(a, If(a.IsMusic, 4, 5), a.Name, Path.GetFileName(a.Model.Path), a.Size, If(a.Clone, Localizer.T("voice cloning"), ""), a.Model.Repo, Nothing)
+        Next
+        ' LoRAs
+        For Each l In LoraLibrary.All()
+            Dim size = If(File.Exists(l.FullPath), New FileInfo(l.FullPath).Length, 0L)
+            add(l, 6, l.Name, l.Extension.TrimStart("."c), size, If(String.IsNullOrEmpty(l.Family), Localizer.T("any model"), l.Family) &
+                If(String.IsNullOrEmpty(l.Triggers), "", " · " & l.Triggers), If(l.Source, ""), Nothing)
         Next
         lstInstalled.EndUpdate()
         Dim free = ""
         Try
             Dim d As New DriveInfo(Path.GetPathRoot(AppCore.Library.Folder))
-            free = $" · {Downloader.FormatBytes(d.AvailableFreeSpace)} free on {d.Name}"
+            free = $" · {Downloader.FormatBytes(d.AvailableFreeSpace)} {Localizer.T("free on")} {d.Name}"
         Catch
         End Try
-        lblInstalledInfo.Text = $"{AppCore.Library.All().Count} models · {Downloader.FormatBytes(AppCore.Library.TotalSize())}{free}"
+        lblInstalledInfo.Text = $"{count} {Localizer.T("models")} · {Downloader.FormatBytes(total)}{free}"
+        UpdateInstalledButtons()
+    End Sub
+
+    ''' <summary>A downloaded picture or video model in the Installed list.</summary>
+    Private Class InstalledMedia
+        Public Recipe As MediaRecipe
+        Public [Variant] As MediaVariant
+    End Class
+
+    Private Sub UpdateInstalledButtons()
+        Dim tag = If(lstInstalled.SelectedItems.Count = 0, Nothing, lstInstalled.SelectedItems(0).Tag)
+        _btnUse.Visible = tag Is Nothing OrElse TypeOf tag Is LocalModel
+        _btnSpeed.Visible = tag Is Nothing OrElse TypeOf tag Is LocalModel
+        _btnStudioInst.Visible = TypeOf tag Is InstalledMedia OrElse TypeOf tag Is UserLora
+        _btnImport.Visible = cmbInstalledType.SelectedIndex <= 1
     End Sub
 
     ''' <summary>Benchmarks the selected models (or all) one after another.</summary>
@@ -964,7 +1057,7 @@ Public Class ModelManagerForm
             Localizer.Box(Me, "The speed test uses the built-in engine (Tools → Settings → Backend).", "Speed test")
             Return
         End If
-        Dim models = lstInstalled.SelectedItems.Cast(Of ListViewItem)().Select(Function(i) CType(i.Tag, LocalModel)).ToList()
+        Dim models = lstInstalled.SelectedItems.Cast(Of ListViewItem)().Select(Function(i) TryCast(i.Tag, LocalModel)).Where(Function(x) x IsNot Nothing).ToList()
         If models.Count = 0 Then models = AppCore.Library.All()
         If models.Count = 0 Then Return
         If models.Count > 1 AndAlso Localizer.Box(Me, $"Test {models.Count} models? Each one is loaded once (this can take a few minutes).",
@@ -992,9 +1085,28 @@ Public Class ModelManagerForm
         Return TryCast(lstInstalled.SelectedItems(0).Tag, LocalModel)
     End Function
 
+    Private Function SelectedTag() As Object
+        Return If(lstInstalled.SelectedItems.Count = 0, Nothing, lstInstalled.SelectedItems(0).Tag)
+    End Function
+
     Private Async Sub DeleteInstalled(sender As Object, e As EventArgs)
-        Dim m = SelectedInstalled()
-        If m Is Nothing Then Return
+        Dim tag = SelectedTag()
+        If tag Is Nothing Then Return
+        If Not TypeOf tag Is LocalModel Then
+            Dim name = lstInstalled.SelectedItems(0).Text
+            If Localizer.Box(Me, $"Delete {name} ({lstInstalled.SelectedItems(0).SubItems(3).Text}) from disk?", "Delete model",
+                             MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
+            Try
+                If TypeOf tag Is InstalledMedia Then MediaStudio.DeleteVariant(CType(tag, InstalledMedia).Recipe, CType(tag, InstalledMedia).Variant)
+                If TypeOf tag Is AudioModel Then AudioStudio.Delete(CType(tag, AudioModel))
+                If TypeOf tag Is UserLora Then LoraLibrary.Delete(CType(tag, UserLora))
+            Catch ex As Exception
+                Localizer.Box(Me, "Could not delete: " & ex.Message, "Delete", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+            RefreshInstalled()
+            Return
+        End If
+        Dim m = CType(tag, LocalModel)
         If Localizer.Box(Me, $"Delete {m.DisplayName} ({Downloader.FormatBytes(m.SizeBytes)}) from disk?", "Delete model",
                            MessageBoxButtons.YesNo, MessageBoxIcon.Warning) <> DialogResult.Yes Then Return
         Try

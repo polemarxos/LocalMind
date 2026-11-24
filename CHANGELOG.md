@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.21.2
+
+### Fixed
+- **Installed showed only chat models.** It now lists everything you downloaded: LLM, picture and video models
+  (also the ones installed from Civitai), music and voice models, and LoRAs.
+  - A **type** list at the top filters by kind. The total size and the free disk space count all of them.
+  - **Delete** and **Open folder** work for every kind. "Use in chat" and "Speed test" are for LLMs, and **Open in
+    the studio** is for picture / video models and LoRAs.
+  - A model whose main file is downloaded but which still needs a part says "parts download when used". A file
+    shared by several models is listed once.
+
+
 ## 2.21.1
 
 ### Changed

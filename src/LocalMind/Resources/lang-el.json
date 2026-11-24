@@ -1062,5 +1062,16 @@
 "Civitai": "Civitai",
 "Open Account settings (button below, or profile picture → Settings).": "Ανοίξτε τις ρυθμίσεις λογαριασμού (κουμπί παρακάτω ή εικόνα προφίλ → Settings).",
 "🔒 Needs a Civitai account: click 🔑 Civitai API key at the top first.": "🔒 Χρειάζεται λογαριασμό Civitai: πατήστε πρώτα 🔑 Κλειδί API Civitai επάνω.",
-"Scroll down to \"Security & apps\" and click \"Add API Key\".": "Κατεβείτε στο \"Security & apps\" και πατήστε \"Add API Key\"."
+"Scroll down to \"Security & apps\" and click \"Add API Key\".": "Κατεβείτε στο \"Security & apps\" και πατήστε \"Add API Key\".",
+"💬 LLM": "💬 LLM",
+"🎬 Video": "🎬 Βίντεο",
+"🧩 LoRA": "🧩 LoRA",
+"🎨 Open in the studio": "🎨 Άνοιγμα στο στούντιο",
+"Details": "Λεπτομέρειες",
+"vision": "όραση",
+"parts download when used": "τα υπόλοιπα κατεβαίνουν όταν χρησιμοποιηθεί",
+"voice cloning": "κλωνοποίηση φωνής",
+"any model": "κάθε μοντέλο",
+"free on": "ελεύθερα στο",
+"models": "μοντέλα"
 }
