@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.20.2
+
+### Fixed
+- **The LTX-2.5 list looked empty.** Its models have no example pictures on Hugging Face, so every card was a blank
+  tile. Cards and model pages now show pictures made with that model family on Civitai (the same picture for a model
+  every time). This also helps many MiniMax H3, FLUX and Qwen-Image uploads. The LTX-2.5 list holds 12 models, plus
+  2 uncensored ones with "Show NSFW".
+
+
 ## 2.20.1
 
 ### Added

@@ -456,6 +456,8 @@ Public Class ModelGallery
         If thumbs.Images.ContainsKey(key) Then thumbs.Images.RemoveByKey(key)
         thumbs.Images.Add(key, bmp)
         list.Invalidate()
+        ' the selected model's page shows the same picture until (or unless) a better one loads
+        If pic.Image Is Nothing AndAlso list.SelectedItems.Count > 0 AndAlso list.SelectedItems(0).ImageKey = key Then pic.Image = img
     End Sub
 
     Private Shared Function TextTile(text As String) As Image
