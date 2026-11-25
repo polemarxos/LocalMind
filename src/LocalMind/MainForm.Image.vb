@@ -38,17 +38,14 @@ Partial Class MainForm
     Private Sub FillImageMenu(mi As ToolStripMenuItem)
         mi.DropDownItems.Clear()
         ' 🧩 the default picture and video profiles (a model with its LoRAs and prompts)
-        For Each video In {False, True}
-            Dim vid = video
-            Dim profiles = ProfileLibrary.All().Where(Function(p) p.IsVideo = vid).ToList()
-            Dim current = If(vid, Settings.ChatVideoProfile, Settings.ChatImageProfile)
-            Dim head As New ToolStripMenuItem(Localizer.T(If(vid, "Video profile for the chat", "Picture profile for the chat")))
+        For Each kind In {"picture", "edit", "video"}
+            Dim k = kind
+            Dim profiles = ProfileLibrary.All().Where(Function(p) p.Kind = k).ToList()
+            Dim current = ProfileLibrary.DefaultIdFor(k)
+            Dim head As New ToolStripMenuItem(Localizer.T(If(k = "video", "Video profile for the chat", If(k = "edit", "Edit profile for the chat (changing pictures)", "Picture profile for the chat"))))
             Dim auto As New ToolStripMenuItem(Localizer.T("Automatic (best downloaded model, no profile)")) With {
                 .Checked = Not profiles.Any(Function(x) x.Id = current)}
-            AddHandler auto.Click, Sub()
-                                       If vid Then Settings.ChatVideoProfile = "" Else Settings.ChatImageProfile = ""
-                                       AppCore.SaveSettings()
-                                   End Sub
+            AddHandler auto.Click, Sub() ProfileLibrary.SetDefault(k, "")
             head.DropDownItems.Add(auto)
             For Each p In profiles
                 Dim pp = p
@@ -56,10 +53,7 @@ Partial Class MainForm
                 Dim usable = r IsNot Nothing AndAlso MediaStudio.UsableVariant(r) IsNot Nothing
                 Dim it As New ToolStripMenuItem(p.Name & If(usable, "", "  " & Localizer.T("(model not downloaded)"))) With {
                     .Checked = p.Id = current, .Enabled = usable}
-                AddHandler it.Click, Sub()
-                                         If vid Then Settings.ChatVideoProfile = pp.Id Else Settings.ChatImageProfile = pp.Id
-                                         AppCore.SaveSettings()
-                                     End Sub
+                AddHandler it.Click, Sub() ProfileLibrary.SetDefault(k, pp.Id)
                 head.DropDownItems.Add(it)
             Next
             mi.DropDownItems.Add(head)

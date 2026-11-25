@@ -1168,5 +1168,21 @@
 "Preparing the voice…": "Προετοιμασία της φωνής…",
 "Pictures & video: the parts of the model that don't fit on the graphics card are read from the disk when needed instead of being kept in RAM (the engine would otherwise fill almost all free RAM with them). Recommended for 16 GB cards, where that fills the RAM and stalls video generation.": "Εικόνες & βίντεο: τα μέρη του μοντέλου που δεν χωρούν στην κάρτα γραφικών διαβάζονται από τον δίσκο όταν χρειάζονται, αντί να κρατιούνται στη RAM (αλλιώς η μηχανή γεμίζει σχεδόν όλη την ελεύθερη RAM). Συνιστάται για κάρτες 16 GB, όπου αυτό γεμίζει τη RAM και κολλάει τη δημιουργία βίντεο.",
 "Library — everything you made": "Βιβλιοθήκη — ό,τι έχετε δημιουργήσει",
-"Trying again with the model in RAM…": "Νέα προσπάθεια με το μοντέλο στη RAM…"
+"Trying again with the model in RAM…": "Νέα προσπάθεια με το μοντέλο στη RAM…",
+"➕ Edit profile": "➕ Προφίλ επεξεργασίας",
+"Edit profile (changes pictures)": "Προφίλ επεξεργασίας (αλλάζει εικόνες)",
+"★ Default edit profile for the chat": "★ Προεπιλεγμένο προφίλ επεξεργασίας για τη συνομιλία",
+"Edit profile for the chat (changing pictures)": "Προφίλ επεξεργασίας για τη συνομιλία (αλλαγή εικόνων)",
+"Download a picture model that can edit pictures first (Models → Picture, e.g. Qwen-Image-Edit or FLUX Kontext).": "Κατεβάστε πρώτα ένα μοντέλο που επεξεργάζεται εικόνες (Μοντέλα → Εικόνα, π.χ. Qwen-Image-Edit ή FLUX Kontext).",
+"Merge both into one video": "Ένωση και των δύο σε ένα βίντεο",
+"Merged video": "Ενωμένο βίντεο",
+"Export…": "Εξαγωγή…",
+"(There is no video in this chat to extend yet — make one first.)": "(Δεν υπάρχει ακόμη βίντεο σε αυτή τη συνομιλία για επέκταση — φτιάξτε πρώτα ένα.)",
+"Could not read the last frame of the video.": "Δεν διαβάστηκε το τελευταίο καρέ του βίντεο.",
+"Delete this message and its answer": "Διαγραφή αυτού του μηνύματος και της απάντησής του",
+"Delete this message and its answer?": "Διαγραφή αυτού του μηνύματος και της απάντησής του;",
+"Merging the videos…": "Ένωση των βίντεο…",
+"Videos merged": "Τα βίντεο ενώθηκαν",
+"Message deleted": "Το μήνυμα διαγράφηκε",
+"Taking the last frame of the video…": "Λήψη του τελευταίου καρέ του βίντεο…"
 }

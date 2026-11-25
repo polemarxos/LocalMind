@@ -38,7 +38,7 @@ Public Class ProfilesPanel
         lblChat = Theme.MakeLabel("", dim_:=True)
         lblChat.Dock = DockStyle.Top
         lblChat.AutoSize = False
-        lblChat.Height = 58
+        lblChat.Height = 76
         lstProfiles.Dock = DockStyle.Fill
         lstProfiles.BackColor = Theme.CBack
         lstProfiles.ForeColor = Theme.CText
@@ -51,13 +51,15 @@ Public Class ProfilesPanel
         Dim btns As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = True, .BackColor = Theme.CPanel}
         Dim btnNewPic = Theme.MakeButton(Localizer.T("➕ Picture profile"))
         Dim btnNewVid = Theme.MakeButton(Localizer.T("➕ Video profile"))
+        Dim btnNewEdit = Theme.MakeButton(Localizer.T("➕ Edit profile"))
+        AddHandler btnNewEdit.Click, Sub() NewProfile("edit", Nothing)
         Dim btnCopy = Theme.MakeButton(Localizer.T("⧉ Duplicate"))
         Dim btnDel = Theme.MakeButton(Localizer.T("🗑 Delete"))
         AddHandler btnNewPic.Click, Sub() NewProfile("picture", Nothing)
         AddHandler btnNewVid.Click, Sub() NewProfile("video", Nothing)
         AddHandler btnCopy.Click, Sub() DuplicateCurrent()
         AddHandler btnDel.Click, Sub() DeleteCurrent()
-        btns.Controls.AddRange({btnNewPic, btnNewVid, btnCopy, btnDel})
+        btns.Controls.AddRange({btnNewPic, btnNewVid, btnNewEdit, btnCopy, btnDel})
         left.Controls.Add(lstProfiles)
         left.Controls.Add(lblChat)
         left.Controls.Add(btns)
@@ -152,13 +154,15 @@ Public Class ProfilesPanel
     Public Sub Reload(Optional selectId As String = Nothing)
         _list = ProfileLibrary.All()
         lstProfiles.Items.Clear()
-        For Each p In _list.OrderBy(Function(x) If(x.IsVideo, 1, 0)).ThenBy(Function(x) x.Name)
+        For Each p In _list.OrderBy(Function(x) If(x.IsVideo, 2, If(x.IsEdit, 1, 0))).ThenBy(Function(x) x.Name)
             lstProfiles.Items.Add(p)
         Next
         Dim pic = ProfileLibrary.Find(AppCore.Settings.ChatImageProfile)
         Dim vid = ProfileLibrary.Find(AppCore.Settings.ChatVideoProfile)
+        Dim edt = ProfileLibrary.Find(AppCore.Settings.ChatEditProfile)
         lblChat.Text = Localizer.T("Chat uses") & ":" & vbCrLf &
                        "🖼 " & If(pic?.Name, Localizer.T("automatic")) & vbCrLf &
+                       "✏ " & If(edt?.Name, Localizer.T("automatic")) & vbCrLf &
                        "🎬 " & If(vid?.Name, Localizer.T("automatic"))
         Dim want = _list.FirstOrDefault(Function(x) x.Id = selectId)
         If want IsNot Nothing Then
@@ -177,8 +181,8 @@ Public Class ProfilesPanel
         Using b As New SolidBrush(If(sel, Theme.CAccentSoft, Theme.CBack))
             e.Graphics.FillRectangle(b, e.Bounds)
         End Using
-        Dim isDefault = p.Id = If(p.IsVideo, AppCore.Settings.ChatVideoProfile, AppCore.Settings.ChatImageProfile)
-        Dim text = If(p.IsVideo, "🎬 ", "🖼 ") & p.Name & If(isDefault, "   ★", "")
+        Dim isDefault = p.Id = ProfileLibrary.DefaultIdFor(p.Kind)
+        Dim text = If(p.IsVideo, "🎬 ", If(p.IsEdit, "✏ ", "🖼 ")) & p.Name & If(isDefault, "   ★", "")
         TextRenderer.DrawText(e.Graphics, text, If(isDefault, Theme.BoldFont, Theme.UiFont), New Rectangle(e.Bounds.X + 6, e.Bounds.Y, e.Bounds.Width - 8, e.Bounds.Height),
                               Theme.CText, TextFormatFlags.VerticalCenter Or TextFormatFlags.EndEllipsis)
     End Sub
@@ -186,7 +190,8 @@ Public Class ProfilesPanel
     Private Function ModelsFor(kind As String) As List(Of MediaRecipe)
         Dim video = kind = "video"
         Return MediaStudio.Recipes().Where(Function(r) r.IsVideo = video AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso
-                                               MediaStudio.UsableVariant(r) IsNot Nothing).OrderBy(Function(r) r.Name).ToList()
+                                               MediaStudio.UsableVariant(r) IsNot Nothing AndAlso
+                                               (kind <> "edit" OrElse r.Can("edit") OrElse r.Can("restyle"))).OrderBy(Function(r) r.Name).ToList()
     End Function
 
     Private Function SelectedRecipe() As MediaRecipe
@@ -207,7 +212,7 @@ Public Class ProfilesPanel
         If p Is Nothing Then Return
         _loading = True
         Try
-            lblKind.Text = If(p.IsVideo, "🎬 " & Localizer.T("Video profile"), "🖼 " & Localizer.T("Picture profile"))
+            lblKind.Text = If(p.IsVideo, "🎬 " & Localizer.T("Video profile"), If(p.IsEdit, "✏ " & Localizer.T("Edit profile (changes pictures)"), "🖼 " & Localizer.T("Picture profile")))
             txtName.Text = p.Name
             cmbModel.Items.Clear()
             For Each r In ModelsFor(p.Kind)
@@ -227,8 +232,9 @@ Public Class ProfilesPanel
             txtDefault.Text = p.DefaultPrompt
             txtPositive.Text = p.Positive
             txtNegative.Text = p.Negative
-            chkDefault.Text = If(p.IsVideo, Localizer.T("★ Default video profile for the chat"), Localizer.T("★ Default picture profile for the chat"))
-            chkDefault.Checked = p.Id = If(p.IsVideo, AppCore.Settings.ChatVideoProfile, AppCore.Settings.ChatImageProfile)
+            chkDefault.Text = If(p.IsVideo, Localizer.T("★ Default video profile for the chat"),
+                                 If(p.IsEdit, Localizer.T("★ Default edit profile for the chat"), Localizer.T("★ Default picture profile for the chat")))
+            chkDefault.Checked = p.Id = ProfileLibrary.DefaultIdFor(p.Kind)
             FillLoras(p, SelectedRecipe())
         Finally
             _loading = False
@@ -286,31 +292,29 @@ Public Class ProfilesPanel
         list.Add(_current)
         ProfileLibrary.Save(list)
         If chkDefault.Checked Then
-            If _current.IsVideo Then AppCore.Settings.ChatVideoProfile = _current.Id Else AppCore.Settings.ChatImageProfile = _current.Id
-        ElseIf _current.Id = If(_current.IsVideo, AppCore.Settings.ChatVideoProfile, AppCore.Settings.ChatImageProfile) Then
-            If _current.IsVideo Then AppCore.Settings.ChatVideoProfile = "" Else AppCore.Settings.ChatImageProfile = ""
+            ProfileLibrary.SetDefault(_current.Kind, _current.Id)
+        ElseIf _current.Id = ProfileLibrary.DefaultIdFor(_current.Kind) Then
+            ProfileLibrary.SetDefault(_current.Kind, "")
         End If
-        AppCore.SaveSettings()
         Reload(_current.Id)
     End Sub
 
     ''' <summary>A new profile (for a model when one is given, e.g. from Installed → New profile).</summary>
     Public Sub NewProfile(kind As String, r As MediaRecipe)
-        If r IsNot Nothing Then kind = If(r.IsVideo, "video", "picture")
+        If r IsNot Nothing AndAlso kind <> "edit" Then kind = If(r.IsVideo, "video", "picture")
         Dim models = ModelsFor(kind)
         If r Is Nothing Then r = models.FirstOrDefault()
         If r Is Nothing Then
-            Localizer.Box(FindForm(), If(kind = "video", "Download a video model first (Models → Video).", "Download a picture model first (Models → Picture)."), "Profiles")
+            Localizer.Box(FindForm(), If(kind = "video", "Download a video model first (Models → Video).",
+                                         If(kind = "edit", "Download a picture model that can edit pictures first (Models → Picture, e.g. Qwen-Image-Edit or FLUX Kontext).",
+                                            "Download a picture model first (Models → Picture).")), "Profiles")
             Return
         End If
         Dim p As New MediaProfile With {.Kind = kind, .Model = r.Id, .Name = r.Name & " · " & Localizer.T("my profile")}
         Dim list = ProfileLibrary.All()
         list.Add(p)
         ' the first profile of a kind becomes the chat's default
-        If list.Where(Function(x) x.Kind = kind).Count() = 1 Then
-            If kind = "video" Then AppCore.Settings.ChatVideoProfile = p.Id Else AppCore.Settings.ChatImageProfile = p.Id
-            AppCore.SaveSettings()
-        End If
+        If list.Where(Function(x) x.Kind = kind).Count() = 1 Then ProfileLibrary.SetDefault(kind, p.Id)
         ProfileLibrary.Save(list)
         Reload(p.Id)
         txtName.Focus()
@@ -335,9 +339,7 @@ Public Class ProfilesPanel
         Dim list = ProfileLibrary.All()
         list.RemoveAll(Function(x) x.Id = _current.Id)
         ProfileLibrary.Save(list)
-        If AppCore.Settings.ChatImageProfile = _current.Id Then AppCore.Settings.ChatImageProfile = ""
-        If AppCore.Settings.ChatVideoProfile = _current.Id Then AppCore.Settings.ChatVideoProfile = ""
-        AppCore.SaveSettings()
+        If ProfileLibrary.DefaultIdFor(_current.Kind) = _current.Id Then ProfileLibrary.SetDefault(_current.Kind, "")
         Reload()
     End Sub
 End Class

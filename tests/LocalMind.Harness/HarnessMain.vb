@@ -724,6 +724,15 @@ Module HarnessMain
             prof.Negative = ""
             Check(ProfileLibrary.Compose(prof, "x", "low quality").Negative = "low quality", "model's negative when the profile has none")
             Check(ProfileLibrary.Compose(Nothing, "x", "n").Prompt = "x", "no profile: unchanged")
+            Dim tl2 As New JArray()
+            For Each n In {"generate_image", "generate_video", "extend_video"}
+                tl2.Add(New JObject From {{"type", "function"}, {"function", New JObject From {{"name", n}}}})
+            Next
+            Check(ChatAgent.RequestedTool("extend generated video by 6 seconds.this bird now fly to the moon", tl2) = "extend_video", "extend request", ChatAgent.RequestedTool("extend generated video by 6 seconds.this bird now fly to the moon", tl2))
+            Check(ChatAgent.RequestedTool("generate a 6 sec video of a bird flying", tl2) = "generate_video", "new video request")
+            Check(ChatAgent.RequestedTool("change the sky in that picture to orange", tl2) = "generate_image", "edit request goes to the picture tool")
+            Dim six = MediaSize.From(Nothing, "generate a 6 sec video of a bird flying")
+            Check(Math.Abs(six.Seconds - 6) < 0.01, "6 sec", six.Seconds.ToString())
             Return
         End If
 

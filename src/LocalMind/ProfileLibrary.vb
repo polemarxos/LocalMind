@@ -17,7 +17,7 @@ End Class
 Public Class MediaProfile
     Public Property Id As String = Guid.NewGuid().ToString("N").Substring(0, 10)
     Public Property Name As String = ""
-    ''' <summary>picture | video</summary>
+    ''' <summary>picture | video | edit (changes a picture: an attached one or one made in the chat)</summary>
     Public Property Kind As String = "picture"
     ''' <summary>The model (recipe id).</summary>
     Public Property Model As String = ""
@@ -32,6 +32,12 @@ Public Class MediaProfile
     Public Property Negative As String = ""
     ''' <summary>Use the model's speed LoRA (fewer steps) when it has one.</summary>
     Public Property Fast As Boolean = True
+
+    <JsonIgnore> Public ReadOnly Property IsEdit As Boolean
+        Get
+            Return String.Equals(Kind, "edit", StringComparison.OrdinalIgnoreCase)
+        End Get
+    End Property
 
     <JsonIgnore> Public ReadOnly Property IsVideo As Boolean
         Get
@@ -82,11 +88,38 @@ Public Module ProfileLibrary
     ''' <summary>The default picture or video profile for the chat, when its model is still downloaded.</summary>
     Public Function ForChat(video As Boolean) As MediaProfile
         Dim p = Find(If(video, AppCore.Settings.ChatVideoProfile, AppCore.Settings.ChatImageProfile))
-        If p Is Nothing OrElse p.IsVideo <> video Then Return Nothing
+        If p Is Nothing OrElse p.IsVideo <> video OrElse p.IsEdit Then Return Nothing
         Dim r = RecipeOf(p)
         If r Is Nothing OrElse MediaStudio.UsableVariant(r) Is Nothing Then Return Nothing
         Return p
     End Function
+
+    ''' <summary>The default edit profile for the chat ("change the sky in that picture"), when its model is downloaded.</summary>
+    Public Function ForChatEdit() As MediaProfile
+        Dim p = Find(AppCore.Settings.ChatEditProfile)
+        If p Is Nothing OrElse Not p.IsEdit Then Return Nothing
+        Dim r = RecipeOf(p)
+        If r Is Nothing OrElse MediaStudio.UsableVariant(r) Is Nothing Then Return Nothing
+        Return p
+    End Function
+
+    ''' <summary>The chat default setting that belongs to a profile kind.</summary>
+    Public Function DefaultIdFor(kind As String) As String
+        Select Case kind
+            Case "video" : Return AppCore.Settings.ChatVideoProfile
+            Case "edit" : Return AppCore.Settings.ChatEditProfile
+            Case Else : Return AppCore.Settings.ChatImageProfile
+        End Select
+    End Function
+
+    Public Sub SetDefault(kind As String, id As String)
+        Select Case kind
+            Case "video" : AppCore.Settings.ChatVideoProfile = id
+            Case "edit" : AppCore.Settings.ChatEditProfile = id
+            Case Else : AppCore.Settings.ChatImageProfile = id
+        End Select
+        AppCore.SaveSettings()
+    End Sub
 
     Public Function RecipeOf(p As MediaProfile) As MediaRecipe
         If p Is Nothing Then Return Nothing

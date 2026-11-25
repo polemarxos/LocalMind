@@ -34,6 +34,13 @@ Public Module ChatAgent
     Private ReadOnly AskClone As New Regex("\b(clone|copy|mimic|imitate|use)\b[^.?!\n]{0,40}\bvoice\b|\b(this|that|his|her|the same|my)\s+voice\b|\bvoice\s+(clone|cloning)\b|" &
                                            "(κλών|κλωνοπ|αντέγραψ|μιμήσ|μιμου)[^.?!;\n]{0,40}φων|(αυτή|ίδια|τη|την|του|της|μου)\s+(τη\s+)?φωνή",
                                            RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    ' "extend the video by 6 seconds", "continue it", "συνέχισε το βίντεο"
+    Private ReadOnly AskExtend As New Regex("\b(extend|continue|lengthen|prolong)\b[^.?!\n]{0,50}\b(video|clip|it|animation)\b|\bmake (it|the video|the clip) longer\b|" &
+                                            "(επέκτεινε|συνέχισε|μάκρυνε)[^.?!;\n]{0,50}(βίντεο|κλιπ|το)", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    ' "change the sky in that picture", "edit the image: …"
+    Private ReadOnly AskEditPicture As New Regex("\b(edit|change|modify|recolou?r|retouch|fix|remove|replace|add)\b[^.?!\n]{0,50}\b(that|this|the|last|previous|my)\s+(image|picture|photo|drawing)\b|" &
+                                                 "\b(edit|retouch)\b\s+(it|the (image|picture|photo))\b|" &
+                                                 "(άλλαξε|επεξεργάσου|διόρθωσε|αφαίρεσε|πρόσθεσε)[^.?!;\n]{0,50}(εικόνα|φωτογραφία)", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
     Private ReadOnly HowTo As New Regex("\bhow (do|to|can|should|would)\b|\bπώς\b|\bπως\b|\btutorial\b", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
 
     ''' <summary>The tool the user plainly asked for in their latest message ("generate me a video"), if offered.</summary>
@@ -43,7 +50,7 @@ Public Module ChatAgent
         ' The request that comes first in the message ("a picture … then a video of it" starts with the picture);
         ' on a tie: voice, then video, then picture.
         Dim best As String = Nothing, bestAt = Integer.MaxValue
-        For Each c In {("clone_voice", AskClone), ("generate_video", AskVideo), ("generate_image", AskPicture)}
+        For Each c In {("clone_voice", AskClone), ("extend_video", AskExtend), ("generate_video", AskVideo), ("generate_image", AskEditPicture), ("generate_image", AskPicture)}
             Dim m = c.Item2.Match(text)
             If m.Success AndAlso offered.Contains(c.Item1) AndAlso m.Index < bestAt Then best = c.Item1 : bestAt = m.Index
         Next
@@ -57,9 +64,11 @@ Public Module ChatAgent
         If NoToolModels.Contains(If(model, "")) Then Return Nothing
         Dim list As New JArray()
         If s.EnableImages Then
-            list.Add(Tool("generate_image", "Create a picture with the local image model. Use it only when the user asks for a picture, drawing, photo, logo or illustration.",
+            list.Add(Tool("generate_image", "Create a picture with the local image model, or change one: a photo the user attached, or (edit_last_picture) the last picture made in this chat. " &
+                          "Use it when the user asks for a picture, drawing, photo, logo or illustration, or asks to edit / change a picture.",
                 New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the picture: subject, setting, style, lighting. Keep any text that must appear exactly. Keep every @Name exactly as the user wrote it (saved characters and places)."}}},
                                   {"megapixels", New JObject From {{"type", "number"}, {"description", "Picture size in megapixels when the user asked for one (e.g. 0.5, 1, 2)"}}},
+                                  {"edit_last_picture", New JObject From {{"type", "boolean"}, {"description", "true to change the last picture made in this chat (the prompt then says only what to change)"}}},
                                   {"persona", PersonaArg()}},
                 {"prompt"}))
             list.Add(Tool("generate_video", "Create a short video clip (a few seconds, with sound on models that make it) with the local video model. If the user attached a photo, it is animated; " &
@@ -90,6 +99,14 @@ Public Module ChatAgent
                     {"voice_name", New JObject From {{"type", "string"}, {"description", "A saved voice to use when no recording is attached" & If(saved <> "", " (saved voices: " & saved & ")", "")}}},
                     {"save_as", New JObject From {{"type", "string"}, {"description", "Name to save the attached voice under, only if the user gave one"}}}},
                 {"text"}))
+        End If
+        If s.EnableImages Then
+            list.Add(Tool("extend_video", "Continue the last video made in this chat: a new clip that starts where it ends (the user can then merge both into one video). " &
+                          "Use it when the user asks to extend / continue / make longer the video.",
+                New JObject From {
+                    {"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of what happens next in the continuation"}}},
+                    {"seconds", New JObject From {{"type", "number"}, {"description", "How many seconds to add"}}}},
+                {"prompt"}))
         End If
         list.Add(Tool("set_persona", "Change your persona (role) for the rest of this chat, when the user says 'your persona is …', 'be a …', 'act as …' for the conversation (not for a single picture/video step: use that tool's persona field for that).",
             New JObject From {{"name", New JObject From {{"type", "string"}, {"description", "The persona the user named, e.g. 'Simple Teacher' or 'image prompt writer'"}}}}, {"name"}))
@@ -184,6 +201,48 @@ Public Module ChatAgent
         Catch
             Return (draft, Nothing)
         End Try
+    End Function
+
+    Private ReadOnly VideoLink As New Regex("https://outputs\.localmind/([^)\s""']+?\.(?:mp4|webm))", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+
+    ''' <summary>The last video made in this chat (this answer first, then earlier ones), if any.</summary>
+    Public Function LastMadeVideo(md As String, payload As List(Of ChatMessage)) As String
+        Dim texts As New List(Of String) From {md}
+        If payload IsNot Nothing Then texts.AddRange(payload.Where(Function(m) m.Role = "assistant").Reverse().Select(Function(m) m.Content))
+        For Each txt As String In texts
+            Dim ms = VideoLink.Matches(If(txt, ""))
+            For i = ms.Count - 1 To 0 Step -1
+                Dim f = Path.Combine(MediaStudio.OutputFolder, Uri.UnescapeDataString(ms(i).Groups(1).Value))
+                If File.Exists(f) Then Return f
+            Next
+        Next
+        Return Nothing
+    End Function
+
+    ''' <summary>
+    ''' ➕ Continues the last video: its last frame starts a new clip. The answer shows the new clip and a button that
+    ''' joins both into one video.
+    ''' </summary>
+    Public Async Function ExtendVideoAsync(prompt As String, size As MediaSize, md As String, payload As List(Of ChatMessage),
+                                           status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Dim first = LastMadeVideo(md, payload)
+        If first Is Nothing Then Return Localizer.T("(There is no video in this chat to extend yet — make one first.)")
+        status?.Invoke("Taking the last frame of the video…")
+        Dim frame = Path.Combine(Path.GetTempPath(), $"localmind-lastframe-{Guid.NewGuid():N}.png")
+        Await VideoTools.FfmpegAsync($"-hide_banner -loglevel error -y -sseof -0.25 -i ""{first}"" -update 1 -frames:v 1 ""{frame}""", ct)
+        If Not File.Exists(frame) Then Throw New Exception(Localizer.T("Could not read the last frame of the video."))
+        Dim original = MediaStudio.LoadSettingsFor(first)
+        Dim text = prompt
+        If original IsNot Nothing AndAlso Not String.IsNullOrWhiteSpace(original.Prompt) Then
+            text = prompt.Trim().TrimEnd("."c) & ". Continue the same scene, same look and style as before."
+        End If
+        Dim made = Await MakeVideoAsync(text, frame, status, ct, Nothing, size)
+        Try : File.Delete(frame) : Catch : End Try
+        Dim m = VideoLink.Match(made)
+        If Not m.Success Then Return made
+        Dim second = Uri.UnescapeDataString(m.Groups(1).Value)
+        Return made & vbCrLf & vbCrLf &
+               $"[🔗 {Localizer.T("Merge both into one video")}](https://action.localmind/merge?a={Uri.EscapeDataString(Path.GetFileName(first))}&b={Uri.EscapeDataString(second)})"
     End Function
 
     ''' <summary>The last picture made in this chat (by this answer or an earlier one) as a file, if any.</summary>
@@ -287,8 +346,13 @@ Public Module ChatAgent
                             If byLine <> "" Then md.AppendLine().AppendLine().Append(byLine)
                             Dim size = MediaSize.From(args, userText)
                             If tc.Name = "generate_image" Then
-                                md.AppendLine().AppendLine().Append(Await MakePictureAsync(prompt, Nothing, status, ct, cast, size))
-                                stepsThisRound.Add("picture made (" & EscapeAlt(prompt) & ")")
+                                ' ✏ change a picture: the attached one, or the last one made in the chat when asked
+                                Dim toEdit = LastPhoto(asked)
+                                If toEdit Is Nothing AndAlso (args.Value(Of Boolean?)("edit_last_picture") = True OrElse AskEditPicture.IsMatch(If(userText, ""))) Then
+                                    toEdit = LastMadePicture(md.ToString(), payload)
+                                End If
+                                md.AppendLine().AppendLine().Append(Await MakePictureAsync(prompt, toEdit, status, ct, cast, size))
+                                stepsThisRound.Add(If(toEdit IsNot Nothing, "picture changed (", "picture made (") & EscapeAlt(prompt) & ")")
                             Else
                                 Dim photo = LastPhoto(asked)
                                 If photo Is Nothing AndAlso (args.Value(Of Boolean?)("use_last_picture") = True OrElse
@@ -299,6 +363,10 @@ Public Module ChatAgent
                                 md.AppendLine().AppendLine().Append(Await MakeVideoAsync(prompt, photo, status, ct, cast, size, voices))
                                 stepsThisRound.Add("video made" & If(photo IsNot Nothing, " from the picture", "") & " (" & EscapeAlt(prompt) & ")")
                             End If
+                        Case "extend_video"
+                            Dim prompt = If(args.Value(Of String)("prompt"), userText)
+                            md.AppendLine().AppendLine().Append(Await ExtendVideoAsync(prompt, MediaSize.From(args, userText), md.ToString(), payload, status, ct))
+                            stepsThisRound.Add("video extended")
                         Case "clone_voice"
                             Dim words = If(args.Value(Of String)("text"), args.Value(Of String)("prompt"))
                             ' (a forced call carries the whole message: keep only the words to say)
@@ -372,8 +440,8 @@ Public Module ChatAgent
     Public Function PickImageRecipe(withPhoto As Boolean) As MediaRecipe
         Dim all = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.UsableVariant(r) IsNot Nothing).
                   Where(Function(r) If(withPhoto, r.Can("edit") OrElse r.Can("restyle"), r.Can("create"))).ToList()
-        ' the default picture profile's model first, then the default model
-        Dim prof = ProfileLibrary.ForChat(False)
+        ' the default picture (or edit) profile's model first, then the default model
+        Dim prof = If(withPhoto, ProfileLibrary.ForChatEdit(), ProfileLibrary.ForChat(False))
         Dim chosen = If(If(prof IsNot Nothing, all.FirstOrDefault(Function(r) r.Id = prof.Model), Nothing),
                         all.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatImageModel))
         If chosen IsNot Nothing Then Return chosen
@@ -407,8 +475,8 @@ Public Module ChatAgent
         End If
         If r Is Nothing Then Return Localizer.T("(No picture model is downloaded yet — open ⬇ Get models → Picture to get one.)")
         Dim v = MediaStudio.UsableVariant(r)
-        ' 🧩 the default picture profile: its LoRAs, trigger words and prompts
-        Dim prof = ProfileLibrary.ForChat(False)
+        ' 🧩 the default picture (or edit) profile: its LoRAs, trigger words and prompts
+        Dim prof = If(photoFile IsNot Nothing, ProfileLibrary.ForChatEdit(), ProfileLibrary.ForChat(False))
         If prof IsNot Nothing AndAlso prof.Model <> r.Id Then prof = Nothing
         Dim fast = If(prof IsNot Nothing, prof.Fast, AppCore.Settings.MediaFast) AndAlso r.Speed IsNot Nothing
         Dim composed = ProfileLibrary.Compose(prof, prompt, r.Negative)

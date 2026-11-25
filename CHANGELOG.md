@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.25.0
+
+### Added
+- **Edit pictures from the chat.** Attach a photo or refer to a picture made earlier in the chat ("change the sky in
+  that picture to orange") and it is changed instead of a new one being made. The new **✏ Edit profile** (Model
+  Manager → Profiles) sets the default editing model with its LoRAs and prompts. You can also choose it in Tools →
+  Pictures & video in chat.
+- **Extend a video from the chat.** After "generate a 6 sec video of a bird flying", write "extend the video by 6
+  seconds, the bird now flies to the moon". A new clip continues from the last frame of the video. Under it, **🔗
+  Merge both into one video** joins them, and **💾 Export…** saves the merged video wherever you want.
+- **🗑 Delete** on your messages (next to Edit and Copy) removes the message and its answer.
+
 ## 2.24.0
 
 ### Added

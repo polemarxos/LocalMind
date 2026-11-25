@@ -149,7 +149,7 @@ Public Module MarkdownRenderer
         sb.AppendLine("  .msg.user .role { text-align: right; }")
         sb.AppendLine("  .uactions { display:flex; gap:4px; justify-content:flex-end; margin-top:4px; opacity:0; transition:opacity .15s; }")
         sb.AppendLine("  .msg.user:hover .uactions { opacity:1; }")
-        sb.AppendLine("  body.busy .uactions .ua:first-child { display:none; }")
+        sb.AppendLine("  body.busy .uactions .ua:first-child, body.busy .uactions .ua:last-child { display:none; }")
         sb.AppendLine("  .ua { background:transparent; color:#a1a1aa; border:1px solid transparent; border-radius:6px; padding:2px 8px; font-size:11.5px; cursor:pointer; font-family:inherit; }")
         sb.AppendLine("  .ua:hover { background:#2a2b30; color:#e4e4e7; border-color:#3a3b41; }")
         sb.AppendLine("  .msg.user.editing > .editbox { width:78%; }")
@@ -276,11 +276,12 @@ Public Module MarkdownRenderer
       thumbs = '<div class=""thumbs"">' + imgs.map(function (s) { return '<img src=""' + s + '"" onclick=""zoom(this.src)"">'; }).join('') + '</div>';
     }
     d.innerHTML = '<div><div class=""role"">' + tr('You') + '</div>' + thumbs + (text ? '<div class=""bubble"">' + esc(text) + '</div>' : '') +
-      '<div class=""uactions""><button class=""ua"" title=""' + tr('Edit message') + '"">✏ ' + tr('Edit') + '</button><button class=""ua"">⧉ ' + tr('Copy') + '</button></div></div>';
+      '<div class=""uactions""><button class=""ua"" title=""' + tr('Edit message') + '"">✏ ' + tr('Edit') + '</button><button class=""ua"">⧉ ' + tr('Copy') + '</button><button class=""ua"" title=""' + tr('Delete this message and its answer') + '"">🗑 ' + tr('Delete') + '</button></div></div>';
     d.setAttribute('data-text', text || '');
     var bs = d.querySelectorAll('.ua');
     bs[0].onclick = function () { startEdit(d); };
     bs[1].onclick = function () { copyToClipboard(d.getAttribute('data-text'), bs[1]); };
+    bs[2].onclick = function () { try { window.chrome.webview.postMessage({ type: 'delete', index: parseInt(d.getAttribute('data-u'), 10) }); } catch (e) {} };
     return d;
   }
   function appendUser(text, imgs) { removeEmpty(); body().appendChild(userNode(text, imgs, document.querySelectorAll('.msg.user').length)); scroll(true); }

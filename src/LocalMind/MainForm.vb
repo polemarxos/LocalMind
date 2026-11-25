@@ -583,12 +583,12 @@ Public Class MainForm
             ' Links in answers open in the real browser, not inside the chat view.
             AddHandler webChat.CoreWebView2.NewWindowRequested, Sub(s, a)
                                                                     a.Handled = True
-                                                                    ModelManagerForm.OpenUrl(a.Uri)
+                                                                    If Not TryChatAction(a.Uri) Then ModelManagerForm.OpenUrl(a.Uri)
                                                                 End Sub
             AddHandler webChat.CoreWebView2.NavigationStarting, Sub(s, a)
                                                                     If a.Uri.StartsWith("http", StringComparison.OrdinalIgnoreCase) Then
                                                                         a.Cancel = True
-                                                                        ModelManagerForm.OpenUrl(a.Uri)
+                                                                        If Not TryChatAction(a.Uri) Then ModelManagerForm.OpenUrl(a.Uri)
                                                                     End If
                                                                 End Sub
             Dim tcs As New TaskCompletionSource(Of Boolean)()
@@ -624,6 +624,12 @@ Public Class MainForm
                 Integer.TryParse(If(obj("index")?.ToString(), ""), idx)
                 Dim txt = If(obj("text")?.ToString(), "")
                 StartEdit(idx, txt)
+                Return
+            End If
+            If obj("type")?.ToString() = "delete" Then
+                Dim di As Integer = -1
+                Integer.TryParse(If(obj("index")?.ToString(), ""), di)
+                DeleteMessage(di)
                 Return
             End If
             If obj("type")?.ToString() = "speak" Then
