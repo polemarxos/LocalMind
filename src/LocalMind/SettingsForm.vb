@@ -249,7 +249,7 @@ Public Class SettingsForm
         Dim lowAuto = If(hw.VramGB > 0 AndAlso hw.VramGB <= 16.5, "on", "off")
         cmbLowRam.Items.AddRange({Localizer.T("Automatic") & "  → " & Localizer.T(lowAuto) & "  " & Localizer.T("(on for 16 GB cards and smaller)"), Localizer.T("on"), Localizer.T("off")})
         cmbLowRam.SelectedIndex = Math.Max(0, Array.IndexOf({"auto", "on", "off"}, If(_s.LowRamMode, "auto")))
-        Row(t, "Reduce system RAM usage", cmbLowRam, "Pictures & video: stops the engine from locking a large block of RAM for the model. Recommended for 16 GB cards, where that can fill your RAM and stall video generation.")
+        Row(t, "Reduce system RAM usage", cmbLowRam, "Pictures & video: the parts of the model that don't fit on the graphics card are read from the disk when needed instead of being kept in RAM (the engine would otherwise fill almost all free RAM with them). Recommended for 16 GB cards, where that fills the RAM and stalls video generation.")
         chkVerify = New CheckBox() With {.Text = "Verify downloads with SHA-256", .Checked = _s.VerifyDownloads, .AutoSize = True}
         chkResume = New CheckBox() With {.Text = "Resume unfinished downloads when the app starts", .Checked = _s.AutoResumeDownloads, .AutoSize = True}
         Row(t, "Downloads", chkVerify)

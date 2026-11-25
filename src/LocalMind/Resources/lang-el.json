@@ -1165,5 +1165,8 @@
 "Edit profiles (models, LoRAs, prompts)…": "Επεξεργασία προφίλ (μοντέλα, LoRA, prompt)…",
 "Get picture & video models…": "Λήψη μοντέλων εικόνας & βίντεο…",
 "No picture model is downloaded yet. Open the Model Manager to get one?": "Δεν έχει κατέβει μοντέλο εικόνας. Άνοιγμα του Διαχειριστή μοντέλων;",
-"Preparing the voice…": "Προετοιμασία της φωνής…"
+"Preparing the voice…": "Προετοιμασία της φωνής…",
+"Pictures & video: the parts of the model that don't fit on the graphics card are read from the disk when needed instead of being kept in RAM (the engine would otherwise fill almost all free RAM with them). Recommended for 16 GB cards, where that fills the RAM and stalls video generation.": "Εικόνες & βίντεο: τα μέρη του μοντέλου που δεν χωρούν στην κάρτα γραφικών διαβάζονται από τον δίσκο όταν χρειάζονται, αντί να κρατιούνται στη RAM (αλλιώς η μηχανή γεμίζει σχεδόν όλη την ελεύθερη RAM). Συνιστάται για κάρτες 16 GB, όπου αυτό γεμίζει τη RAM και κολλάει τη δημιουργία βίντεο.",
+"Library — everything you made": "Βιβλιοθήκη — ό,τι έχετε δημιουργήσει",
+"Trying again with the model in RAM…": "Νέα προσπάθεια με το μοντέλο στη RAM…"
 }

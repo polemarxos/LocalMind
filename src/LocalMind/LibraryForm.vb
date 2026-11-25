@@ -25,18 +25,18 @@ Public Class LibraryForm
     Private ReadOnly txtSearch As New TextBox() With {.Width = 260}
     Private ReadOnly list As New ListView()
     Private ReadOnly thumbs As New ImageList() With {.ImageSize = New Size(160, 120), .ColorDepth = ColorDepth.Depth32Bit}
-    Private ReadOnly preview As New PictureBox() With {.Dock = DockStyle.Top, .Height = 260, .SizeMode = PictureBoxSizeMode.Zoom}
+    Private ReadOnly preview As New PictureBox() With {.Dock = DockStyle.Top, .Height = 220, .SizeMode = PictureBoxSizeMode.Zoom}
     Private ReadOnly lblInfo As Label
     Private ReadOnly txtPrompt As New TextBox() With {.Multiline = True, .ReadOnly = True, .ScrollBars = ScrollBars.Vertical, .Dock = DockStyle.Fill}
     Private ReadOnly lblStatus As Label
-    Private ReadOnly actions As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 118, .WrapContents = True}
+    Private ReadOnly actions As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = True}
     Private btnUpscale, btnCutout, btnAttach, btnEnhance As Button
     Private _cts As New CancellationTokenSource()
     Private _items As New List(Of String)()
     Private _busy As Boolean
 
     Public Sub New()
-        Text = Localizer.T("🖼 Library — everything you made")
+        Text = Localizer.T("Library — everything you made")
         Size = New Size(1180, 760)
         MinimumSize = New Size(860, 540)
         StartPosition = FormStartPosition.CenterParent
@@ -172,6 +172,7 @@ Public Class LibraryForm
             list.Items.Add(it)
         Next
         list.EndUpdate()
+        If list.Items.Count > 0 Then list.Items(0).Selected = True Else ShowSelected()
         lblStatus.Text = String.Format(Localizer.T("{0} file(s) in {1}"), files.Count, MediaStudio.OutputFolder)
         Dim unused = LoadThumbsAsync(files, ct)
     End Sub

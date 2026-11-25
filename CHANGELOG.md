@@ -36,6 +36,12 @@
   made from the chat, and the Library holds the results.
 
 ### Fixed
+- **Reduce system RAM usage now really lowers RAM use.** The 2.23 version only stopped the RAM from being locked; the
+  model was still copied into RAM, and the engine fills almost all free RAM with it. Now, when a model doesn't fit
+  on the graphics card, its parts stay on the disk and are read when needed (Windows caches them and frees that
+  cache by itself). It is on automatically for cards with 16 GB or less. If an engine build can't do this,
+  LocalMind falls back to keeping the model in RAM.
+- Library and Profiles: buttons are no longer cut off on small screens.
 - Editing a sent message: Send now always does something. The new text appears at once, the old answer goes away
   and the new one is written. If an answer is still being written, the edit box says so.
 

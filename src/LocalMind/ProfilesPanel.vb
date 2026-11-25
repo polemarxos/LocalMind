@@ -48,7 +48,7 @@ Public Class ProfilesPanel
         lstProfiles.DrawMode = DrawMode.OwnerDrawFixed
         AddHandler lstProfiles.DrawItem, AddressOf DrawProfile
         AddHandler lstProfiles.SelectedIndexChanged, Sub() ShowProfile(TryCast(lstProfiles.SelectedItem, MediaProfile))
-        Dim btns As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 76, .WrapContents = True, .BackColor = Theme.CPanel}
+        Dim btns As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .AutoSize = True, .AutoSizeMode = AutoSizeMode.GrowAndShrink, .WrapContents = True, .BackColor = Theme.CPanel}
         Dim btnNewPic = Theme.MakeButton(Localizer.T("➕ Picture profile"))
         Dim btnNewVid = Theme.MakeButton(Localizer.T("➕ Video profile"))
         Dim btnCopy = Theme.MakeButton(Localizer.T("⧉ Duplicate"))
@@ -121,7 +121,9 @@ Public Class ProfilesPanel
 
         lblEmpty = Theme.MakeLabel(Localizer.T("Make a profile: a downloaded model with your LoRAs, trigger words and prompts. " &
                                                "Then pick one picture profile and one video profile for the chat."), dim_:=True)
+        lblEmpty.AutoSize = False
         lblEmpty.Dock = DockStyle.Fill
+        lblEmpty.Padding = New Padding(40)
         lblEmpty.TextAlign = ContentAlignment.MiddleCenter
 
         Controls.Add(editor)

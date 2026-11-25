@@ -615,10 +615,24 @@ Public Module MediaStudio
             Catch ex As Exception When attempt < 3 AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        ShapeFix.TryFixFromLog(CStr(ex.Data("engineLog")))
                 progress?.Invoke(0, "Fixed the model file's tensor shapes — trying again…")
+            Catch ex As Exception When attempt < 3 AndAlso Not _diskParamsFailed AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
+                                       CStr(ex.Data("engineLog")).Contains("--params-backend disk") AndAlso
+                                       Regex.IsMatch(AfterFirstLine(CStr(ex.Data("engineLog"))), "(params[_ ]backend|disk)[^\n]*(unknown|unsupported|not supported|invalid|failed)|unknown argument", RegexOptions.IgnoreCase)
+                ' an engine build that can't read weights from the disk: keep them in RAM instead
+                _diskParamsFailed = True
+                progress?.Invoke(0, "Trying again with the model in RAM…")
             End Try
         Next
         Return Await GenerateOnceAsync(req, progress, ct)
     End Function
+
+    Private Function AfterFirstLine(t As String) As String
+        Dim i = t.IndexOf(ControlChars.Lf)
+        Return If(i < 0, "", t.Substring(i + 1))
+    End Function
+
+    ''' <summary>Set when the engine refused to read weights from the disk (low-RAM mode then keeps them in RAM).</summary>
+    Private _diskParamsFailed As Boolean
 
     Private Async Function GenerateOnceAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
         Dim r = req.Recipe
@@ -794,12 +808,18 @@ Public Module MediaStudio
                     If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} ")
                     a.Append(FormattableString.Invariant($"--vace-strength {Math.Clamp(req.Strength, 0.1, 2.0)} "))
             End Select
-            ' Memory: keep parts in RAM and move them to the GPU as needed; tile the VAE on smaller GPUs.
-            If FilesFor(r, v).Sum(Function(f) f.Size) > hw.VramBytes * 0.85 OrElse r.IsVideo Then a.Append("--offload-to-cpu ")
+            ' Memory: when the model doesn't fit on the GPU, its weights wait outside the GPU and move in as needed.
+            '  - normally they wait in RAM (--offload-to-cpu). The engine keeps them there and may use almost all free RAM
+            '    for them (it only leaves 1 GB), which on 16 GB cards fills the RAM and stalls video generation;
+            '  - with "Reduce system RAM usage" they stay on the disk and are read when needed, then released
+            '    (--params-backend disk). Windows keeps recently read parts in its file cache, which it frees by itself.
+            Dim lowRam = AppCore.Settings.LowRamActive(hw.VramGB)
+            Dim modelBytes = FilesFor(r, v).Sum(Function(f) f.Size)
+            If modelBytes > hw.VramBytes * 0.85 OrElse r.IsVideo Then
+                a.Append(If(lowRam AndAlso Not _diskParamsFailed, "--params-backend disk ", "--offload-to-cpu "))
+            End If
             ' (parts larger than the free RAM are read from the disk as needed instead of failing to load)
-            ' Reduce system RAM usage: the file is mapped (read as needed, the OS can drop it again) instead of copied into RAM.
-            If AppCore.Settings.LowRamActive(hw.VramGB) OrElse
-               (hw.RamBytes > 0 AndAlso FilesFor(r, v).Sum(Function(f) f.Size) > hw.RamBytes * 0.6) Then a.Append("--mmap ")
+            If lowRam OrElse (hw.RamBytes > 0 AndAlso modelBytes > hw.RamBytes * 0.6) Then a.Append("--mmap ")
             If hw.VramGB < 12 Then a.Append("--vae-tiling ")
             If pkg.Flavor.StartsWith("cuda", StringComparison.Ordinal) Then a.Append("--diffusion-fa ")
         End If
@@ -880,7 +900,7 @@ Public Module MediaStudio
                 Dim hint = If(tail.ToLowerInvariant().Contains("out of memory") OrElse tail.Contains("alloc") OrElse tail.Contains("ErrorOutOfDeviceMemory"),
                               "Not enough memory: try a smaller size, fewer frames, or a smaller quality level." & Environment.NewLine & Environment.NewLine, "")
                 Dim failure As New Exception(hint & tail)
-                failure.Data("engineLog") = log.ToString()
+                failure.Data("engineLog") = a.ToString() & Environment.NewLine & log.ToString()
                 Throw failure
             End If
         Finally
