@@ -31,8 +31,53 @@ Public Class CastForm
     ''' <summary>The members ticked when the window closed with "Use".</summary>
     Public ReadOnly Property Picked As New List(Of CastLibrary.CastMember)
 
+    ''' <summary>Opened to pick characters (shows "Use the ticked ones"); otherwise just to manage them.</summary>
+    <ComponentModel.DesignerSerializationVisibility(ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property PickMode As Boolean
+
+    ''' <summary>
+    ''' A voice from an MP3 / WAV / M4A file, saved for cloning (the first 20 seconds, cleaned up). With a character it
+    ''' becomes that character's voice: videos with @Name then speak with it.
+    ''' </summary>
+    Private Async Function NewVoiceAsync(member As CastLibrary.CastMember) As Task
+        Dim file As String
+        Using d As New OpenFileDialog() With {.Title = Localizer.T("A recording of the voice (10–20 seconds of clear speech)"),
+                                              .Filter = Localizer.T("Sound files") & "|*.mp3;*.wav;*.m4a;*.ogg;*.flac;*.aac;*.wma;*.mp4;*.webm|*.*|*.*"}
+            If d.ShowDialog(Me) <> DialogResult.OK Then Return
+            file = d.FileName
+        End Using
+        Dim name = If(member IsNot Nothing, member.Name, "")
+        If member Is Nothing Then
+            name = Microsoft.VisualBasic.Interaction.InputBox(Localizer.T("Name of the voice (you write it as @name in the chat):"), Localizer.T("New voice"),
+                                                              IO.Path.GetFileNameWithoutExtension(file)).Trim()
+            If name = "" Then Return
+        End If
+        name = String.Concat(name.Where(Function(c) Char.IsLetterOrDigit(c) OrElse c = "_"c OrElse c = "-"c OrElse c = " "c)).Trim().Replace(" ", "_")
+        If name = "" Then name = "voice" & (VoiceLibrary.All().Count + 1).ToString()
+        lblWork.Text = Localizer.T("Preparing the voice sample…")
+        Try
+            Dim sample = IO.Path.Combine(IO.Path.GetTempPath(), $"localmind-voice-{Guid.NewGuid():N}.wav")
+            Dim info = Await VideoTools.InfoAsync(file, Threading.CancellationToken.None)
+            Dim start = If(info.Seconds > 25, 1.0, 0.0)
+            Dim inv = Globalization.CultureInfo.InvariantCulture
+            Await VideoTools.FfmpegAsync($"-hide_banner -loglevel error -y -ss {start.ToString("0.###", inv)} -t 20 -i ""{file}"" -vn -ac 1 -ar 24000 -c:a pcm_s16le ""{sample}""", Threading.CancellationToken.None)
+            If Not IO.File.Exists(sample) Then Throw New Exception(Localizer.T("Could not read the sound in that file."))
+            VoiceLibrary.Add(name, sample, "", "")
+            Try : IO.File.Delete(sample) : Catch : End Try
+            If member IsNot Nothing Then
+                member.Voice = name
+                CastLibrary.Save(_list)
+            End If
+            ShowMember()
+            lblWork.Text = String.Format(Localizer.T("✔ Voice saved as @{0}."), name) &
+                           If(member IsNot Nothing, " " & String.Format(Localizer.T("{0} now speaks with it in videos."), member.Name), "")
+        Catch ex As Exception
+            lblWork.Text = "⚠ " & ex.Message
+        End Try
+    End Function
+
     Public Sub New(Optional preselected As IEnumerable(Of String) = Nothing)
-        Text = Localizer.T("🎭 Cast — characters and locations")
+        Text = Localizer.T("🎭 Characters — people, places and voices")
         Size = New Size(1060, 760)
         MinimumSize = New Size(860, 520)
         StartPosition = FormStartPosition.CenterParent
@@ -43,13 +88,15 @@ Public Class CastForm
         Dim btnChar = Theme.MakeButton(Localizer.T("＋ Character"))
         Dim btnPlace = Theme.MakeButton(Localizer.T("＋ Location"))
         Dim btnDel = Theme.MakeButton(Localizer.T("🗑 Delete"))
-        Dim hint = Theme.MakeLabel(Localizer.T("Tick who and where to use, or write @Name in your prompt. 2–3 clear pictures of each work best."), dim_:=True)
-        top.Controls.AddRange({btnChar, btnPlace, btnDel, hint})
+        Dim btnNewVoice = Theme.MakeButton(Localizer.T("🎙 New voice from a file…"))
+        AddHandler btnNewVoice.Click, Async Sub() Await NewVoiceAsync(Nothing)
+        Dim hint = Theme.MakeLabel(Localizer.T("In the chat write @Name for a character and @voice for a saved voice, e.g. '@Anna using @Grandpa says: good morning'. 2–3 clear pictures of each work best."), dim_:=True)
+        top.Controls.AddRange({btnChar, btnPlace, btnDel, btnNewVoice, hint})
         AddHandler btnChar.Click, Sub() AddMember("character")
         AddHandler btnPlace.Click, Sub() AddMember("location")
         AddHandler btnDel.Click, Sub()
                                      If _current Is Nothing Then Return
-                                     If Localizer.Box(Me, String.Format(Localizer.T("Delete {0} and its pictures?"), _current.Name), "Cast",
+                                     If Localizer.Box(Me, String.Format(Localizer.T("Delete {0} and its pictures?"), _current.Name), "Characters",
                                                       MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
                                      CastLibrary.Delete(_list, _current)
                                      _current = Nothing
@@ -104,6 +151,12 @@ Public Class CastForm
         vl.Controls.Add(Theme.MakeLabel(Localizer.T("Own LoRA (optional)"), bold:=True), 1, 0)
         vl.Controls.Add(cmbVoice, 0, 1)
         vl.Controls.Add(cmbLora, 1, 1)
+        Dim btnVoiceFile = Theme.MakeButton(Localizer.T("🎙 Voice from MP3/WAV…"))
+        AddHandler btnVoiceFile.Click, Async Sub()
+                                           If _current Is Nothing OrElse _current.IsLocation Then Return
+                                           Await NewVoiceAsync(_current)
+                                       End Sub
+        vl.Controls.Add(btnVoiceFile, 0, 2)
         editor.Controls.Add(vl)
         AddHandler cmbVoice.SelectedIndexChanged, Sub() SaveCurrent()
         AddHandler cmbLora.SelectedIndexChanged, Sub() SaveCurrent()
@@ -128,7 +181,7 @@ Public Class CastForm
                                   End Sub
         AddHandler btnTrain.Click, Sub()
                                        If _current Is Nothing OrElse CastLibrary.ImagePaths(_current).Count = 0 Then
-                                           Localizer.Box(Me, "Add a picture first.", "Cast")
+                                           Localizer.Box(Me, "Add a picture first.", "Characters")
                                            Return
                                        End If
                                        Using d As New FolderBrowserDialog() With {.Description = Localizer.T("Where to save the training set")}
@@ -147,7 +200,7 @@ Public Class CastForm
         AddHandler btnAddPic.Click, Sub() AddPictures()
         AddHandler btnDescribe.Click, Async Sub()
                                           If _current Is Nothing OrElse CastLibrary.ImagePaths(_current).Count = 0 Then
-                                              Localizer.Box(Me, "Add a picture first.", "Cast")
+                                              Localizer.Box(Me, "Add a picture first.", "Characters")
                                               Return
                                           End If
                                           btnDescribe.Enabled = False
@@ -155,7 +208,7 @@ Public Class CastForm
                                           Try
                                               txtDesc.Text = Await CastLibrary.DescribeAsync(CastLibrary.ImagePaths(_current)(0), _current.IsLocation, CancellationToken.None)
                                           Catch ex As Exception
-                                              Localizer.Box(Me, ex.Message, "Cast")
+                                              Localizer.Box(Me, ex.Message, "Characters")
                                           Finally
                                               btnDescribe.Enabled = True
                                               btnDescribe.Text = Localizer.T("📝 Describe from picture")
@@ -164,6 +217,7 @@ Public Class CastForm
 
         Dim bottom As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 48, .FlowDirection = FlowDirection.RightToLeft, .Padding = New Padding(8)}
         Dim btnUse = Theme.MakeButton(Localizer.T("✔ Use the ticked ones"), primary:=True)
+        btnUse.Visible = PickMode
         Dim btnClose = Theme.MakeButton(Localizer.T("Close"))
         AddHandler btnUse.Click, Sub()
                                      Picked.Clear()

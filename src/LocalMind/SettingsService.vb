@@ -42,6 +42,9 @@ Public Class AppSettings
     Public Property ChatImageModel As String = ""
     ''' <summary>Video model used when the chat is asked for a video ("" = pick the best one automatically).</summary>
     Public Property ChatVideoModel As String = ""
+    ''' <summary>Default picture / video profile for the chat (profile id; empty = none: the model's own settings).</summary>
+    Public Property ChatImageProfile As String = ""
+    Public Property ChatVideoProfile As String = ""
     Public Property ImproveImagePrompt As Boolean = True
     ''' <summary>Optional abilities. When off, their buttons are hidden and nothing for them is ever downloaded.</summary>
     Public Property EnableImages As Boolean = False

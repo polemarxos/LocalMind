@@ -119,18 +119,7 @@ Public Class ModelGallery
         btnMore = Theme.MakeButton(Localizer.T("More…"))
         lblListInfo = Theme.MakeLabel("", dim_:=True)
         lblListInfo.Margin = New Padding(10, 9, 3, 3)
-        Dim btnStudio = Theme.MakeButton(Localizer.T("🎨 Open the studio"))
-        AddHandler btnStudio.Click, Sub()
-                                        Dim f = Application.OpenForms.OfType(Of StudioForm)().FirstOrDefault()
-                                        If f Is Nothing Then
-                                            f = New StudioForm()
-                                            f.Show()
-                                        Else
-                                            f.Activate()
-                                        End If
-                                    End Sub
         bottom.Controls.AddRange({btnMore, lblListInfo})
-        If _local Then bottom.Controls.Add(btnStudio)
 
         Controls.Add(list)
         Controls.Add(bottom)

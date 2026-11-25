@@ -17,13 +17,13 @@ Partial Class MainForm
 
     Private Sub BuildImageUi(btnStudio As ToolStripButton, miStudio As ToolStripMenuItem)
         _btnImage = New ToolStripButton("🖼 Image") With {.CheckOnClick = True,
-            .ToolTipText = "Turn your next messages into pictures (choose the model in Tools → Image in chat)"}
+            .ToolTipText = "Turn your next messages into pictures (the picture profile in Tools → Pictures & video in chat)"}
         toolTop.Items.Insert(toolTop.Items.IndexOf(btnStudio), _btnImage)
         AddHandler _btnImage.CheckedChanged, Sub()
                                                  If _btnImage.Checked AndAlso ChatImageRecipe() Is Nothing Then
                                                      _btnImage.Checked = False
-                                                     If Localizer.Box(Me, "No image model is downloaded yet. Open the Image & video studio to get one?",
-                                                                      "Image", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then OpenStudio()
+                                                     If Localizer.Box(Me, "No picture model is downloaded yet. Open the Model Manager to get one?",
+                                                                      "Image", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = DialogResult.Yes Then OpenModelManagerAt("picture")
                                                  End If
                                                  SetStatus(If(_btnImage.Checked, "Image mode: your message will be turned into a picture", "Chat mode"))
                                              End Sub
@@ -32,62 +32,43 @@ Partial Class MainForm
         _miImageChat = miImage
         AddHandler miImage.DropDownOpening, Sub() FillImageMenu(miImage)
         miImage.DropDownItems.Add("-")   ' placeholder so the arrow shows
-        menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 1, miImage)
+        menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 2, miImage)
     End Sub
 
     Private Sub FillImageMenu(mi As ToolStripMenuItem)
         mi.DropDownItems.Clear()
-        Dim installed = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.UsableVariant(r) IsNot Nothing).ToList()
-        mi.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("Default picture model")) With {.Enabled = False})
-        If installed.Count = 0 Then
-            mi.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("(no image model downloaded)")) With {.Enabled = False})
-        Else
-            Dim auto As New ToolStripMenuItem(Localizer.T("Automatic (best one for this PC)")) With {
-                .Checked = Not installed.Any(Function(x) x.Id = Settings.ChatImageModel)}
+        ' 🧩 the default picture and video profiles (a model with its LoRAs and prompts)
+        For Each video In {False, True}
+            Dim vid = video
+            Dim profiles = ProfileLibrary.All().Where(Function(p) p.IsVideo = vid).ToList()
+            Dim current = If(vid, Settings.ChatVideoProfile, Settings.ChatImageProfile)
+            Dim head As New ToolStripMenuItem(Localizer.T(If(vid, "Video profile for the chat", "Picture profile for the chat")))
+            Dim auto As New ToolStripMenuItem(Localizer.T("Automatic (best downloaded model, no profile)")) With {
+                .Checked = Not profiles.Any(Function(x) x.Id = current)}
             AddHandler auto.Click, Sub()
-                                       Settings.ChatImageModel = ""
+                                       If vid Then Settings.ChatVideoProfile = "" Else Settings.ChatImageProfile = ""
                                        AppCore.SaveSettings()
                                    End Sub
-            mi.DropDownItems.Add(auto)
-        End If
-        For Each r In installed
-            Dim rr = r
-            Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.UsableVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatImageModel}
-            AddHandler it.Click, Sub()
-                                     Settings.ChatImageModel = rr.Id
-                                     AppCore.SaveSettings()
-                                 End Sub
-            mi.DropDownItems.Add(it)
-        Next
-
-        ' the video model for "make a video …" in the chat
-        Dim videos = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso MediaStudio.UsableVariant(r) IsNot Nothing AndAlso
-                                                     (r.Can("create") OrElse r.Can("animate"))).ToList()
-        Dim miVideo As New ToolStripMenuItem(Localizer.T("Default video model"))
-        If videos.Count = 0 Then
-            miVideo.DropDownItems.Add(New ToolStripMenuItem(Localizer.T("(no video model downloaded)")) With {.Enabled = False})
-        Else
-            Dim autoV As New ToolStripMenuItem(Localizer.T("Automatic (best one for this PC)")) With {
-                .Checked = Not videos.Any(Function(x) x.Id = Settings.ChatVideoModel)}
-            AddHandler autoV.Click, Sub()
-                                        Settings.ChatVideoModel = ""
-                                        AppCore.SaveSettings()
-                                    End Sub
-            miVideo.DropDownItems.Add(autoV)
-            For Each r In videos
-                Dim rr = r
-                Dim it As New ToolStripMenuItem($"{r.Name}  [{MediaStudio.UsableVariant(r).Label}]") With {.Checked = r.Id = Settings.ChatVideoModel}
+            head.DropDownItems.Add(auto)
+            For Each p In profiles
+                Dim pp = p
+                Dim r = ProfileLibrary.RecipeOf(p)
+                Dim usable = r IsNot Nothing AndAlso MediaStudio.UsableVariant(r) IsNot Nothing
+                Dim it As New ToolStripMenuItem(p.Name & If(usable, "", "  " & Localizer.T("(model not downloaded)"))) With {
+                    .Checked = p.Id = current, .Enabled = usable}
                 AddHandler it.Click, Sub()
-                                         Settings.ChatVideoModel = rr.Id
+                                         If vid Then Settings.ChatVideoProfile = pp.Id Else Settings.ChatImageProfile = pp.Id
                                          AppCore.SaveSettings()
                                      End Sub
-                miVideo.DropDownItems.Add(it)
+                head.DropDownItems.Add(it)
             Next
-        End If
-        mi.DropDownItems.Add(New ToolStripSeparator())
-        mi.DropDownItems.Add(miVideo)
-        Dim getMore As New ToolStripMenuItem(Localizer.T("Get image models…"))
-        AddHandler getMore.Click, Sub() OpenStudio()
+            mi.DropDownItems.Add(head)
+        Next
+        Dim edit As New ToolStripMenuItem(Localizer.T("Edit profiles (models, LoRAs, prompts)…"))
+        AddHandler edit.Click, Sub() OpenModelManagerAt("profiles")
+        mi.DropDownItems.Add(edit)
+        Dim getMore As New ToolStripMenuItem(Localizer.T("Get picture & video models…"))
+        AddHandler getMore.Click, Sub() OpenModelManagerAt("picture")
         mi.DropDownItems.Add(getMore)
         mi.DropDownItems.Add(New ToolStripSeparator())
 

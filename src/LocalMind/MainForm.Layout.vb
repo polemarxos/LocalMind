@@ -55,12 +55,12 @@ Partial Class MainForm
         btnLan.Text = LanButtonText()
         btnLan.ToolTipText = Localizer.T("Use this AI from your phone or other PCs on your network")
         If _btnStudio IsNot Nothing Then
-            _btnStudio.Text = ItemText("🎨 Pictures & video")
-            _btnStudio.ToolTipText = Localizer.T("Create and edit pictures and videos")
+            _btnStudio.Text = ItemText("🖼 Library")
+            _btnStudio.ToolTipText = Localizer.T("Every picture, video, song and voice clip you made, with its prompt")
         End If
         If _btnAudio IsNot Nothing Then
-            _btnAudio.Text = ItemText("🎵 Music & voice")
-            _btnAudio.ToolTipText = Localizer.T("Make songs, speech and cloned voices")
+            _btnAudio.Text = ItemText("🎭 Characters")
+            _btnAudio.ToolTipText = Localizer.T("People, places and voices you use as @Name in the chat")
         End If
 
         ' rebuild the bar in a fixed order
@@ -125,8 +125,8 @@ Partial Class MainForm
         cmbPersonas.Width = CInt(Math.Max(120, Math.Min(220, w * If(compact, 0.13, 0.14))))
         If _compactBar.HasValue AndAlso _compactBar.Value = compact Then Return
         _compactBar = compact
-        If _btnStudio IsNot Nothing Then _btnStudio.Text = ItemText(If(compact, "🎨 Create", "🎨 Pictures & video"))
-        If _btnAudio IsNot Nothing Then _btnAudio.Text = ItemText(If(compact, "🎵 Music", "🎵 Music & voice"))
+        If _btnStudio IsNot Nothing Then _btnStudio.Text = ItemText(If(compact, "🖼", "🖼 Library"))
+        If _btnAudio IsNot Nothing Then _btnAudio.Text = ItemText(If(compact, "🎭", "🎭 Characters"))
         btnLan.Text = LanButtonText()
     End Sub
 

@@ -74,6 +74,12 @@ Public Module VideoTools
         Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{input}"" -ar 16000 -ac 1 -c:a pcm_s16le ""{output}""", ct)
     End Function
 
+    ''' <summary>Any recording → a WAV voice reference (stereo 32 kHz, at most 20 seconds) for MiniMax H3 Ref2VA.</summary>
+    Public Async Function ToRefWavAsync(input As String, output As String, ct As CancellationToken) As Task
+        Dim ff = Await EnsureFfmpegAsync(Nothing, ct)
+        Await RunAsync(ff, $"-hide_banner -loglevel error -y -i ""{input}"" -vn -t 20 -ar 32000 -ac 2 -c:a pcm_s16le ""{output}""", ct)
+    End Function
+
     ''' <summary>Length of a video or audio file in seconds (0 if unknown).</summary>
     Public Async Function DurationAsync(file As String, ct As CancellationToken) As Task(Of Double)
         Dim ff = Await EnsureFfmpegAsync(Nothing, ct)

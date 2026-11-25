@@ -157,17 +157,6 @@ Public Class MediaModelsPanel
         Theme.StyleInput(cmbType)
         txtFilter.PlaceholderText = Localizer.T("Search, e.g. flux, krea, wan i2v, convrot")
         Theme.StyleInput(txtFilter)
-        Dim btnStudio = Theme.MakeButton(Localizer.T("🎨 Open the Pictures & video studio"))
-        btnStudio.UseMnemonic = False
-        AddHandler btnStudio.Click, Sub()
-                                        Dim f = Application.OpenForms.OfType(Of StudioForm)().FirstOrDefault()
-                                        If f Is Nothing Then
-                                            f = New StudioForm()
-                                            f.Show()
-                                        Else
-                                            f.Activate()
-                                        End If
-                                    End Sub
         ' Civitai (civitai.com, or civitai.red for everything): checkpoints and LoRAs, installed into the studio
         btnCivitai = Theme.MakeButton(Localizer.T("🌐 Browse Civitai"))
         AddHandler btnCivitai.Click, Sub()
@@ -197,7 +186,7 @@ Public Class MediaModelsPanel
                                               AppCore.SaveSettings()
                                               Fill()
                                           End Sub
-        top.Controls.AddRange({cmbShow, txtFilter, chkFit, chkNsfw, btnCivitai, btnStudio})      ' (the kind is chosen above, in the Model Manager)
+        top.Controls.AddRange({cmbShow, txtFilter, chkFit, chkNsfw, btnCivitai})      ' (the kind is chosen above, in the Model Manager)
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False

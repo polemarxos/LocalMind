@@ -59,11 +59,17 @@ Public Module ChatAgent
         If s.EnableImages Then
             list.Add(Tool("generate_image", "Create a picture with the local image model. Use it only when the user asks for a picture, drawing, photo, logo or illustration.",
                 New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the picture: subject, setting, style, lighting. Keep any text that must appear exactly. Keep every @Name exactly as the user wrote it (saved characters and places)."}}},
+                                  {"megapixels", New JObject From {{"type", "number"}, {"description", "Picture size in megapixels when the user asked for one (e.g. 0.5, 1, 2)"}}},
                                   {"persona", PersonaArg()}},
                 {"prompt"}))
-            list.Add(Tool("generate_video", "Create a short video clip (a few seconds) with the local video model. If the user attached a photo, it is animated. Use it only when the user asks for a video, clip or animation.",
+            list.Add(Tool("generate_video", "Create a short video clip (a few seconds, with sound on models that make it) with the local video model. If the user attached a photo, it is animated; " &
+                          "use_last_picture animates a picture made earlier in the chat. Use it when the user asks for a video, clip or animation, or asks a saved @character to say or do something " &
+                          "(a talking video: put the exact spoken words in quotes in the prompt; their saved voice is used).",
                 New JObject From {{"prompt", New JObject From {{"type", "string"}, {"description", "Detailed English description of the video: subject, action and motion, camera movement, setting, style, lighting. Keep every @Name exactly as the user wrote it (saved characters and places)."}}},
                                   {"use_last_picture", New JObject From {{"type", "boolean"}, {"description", "true to start the video from the picture made earlier in this chat (the user says 'use that image', 'animate it'…)"}}},
+                                  {"seconds", New JObject From {{"type", "number"}, {"description", "Length in seconds when the user asked for one"}}},
+                                  {"megapixels", New JObject From {{"type", "number"}, {"description", "Frame size in megapixels when the user asked for one (e.g. 0.2, 0.4)"}}},
+                                  {"voice", New JObject From {{"type", "string"}, {"description", "A saved voice (@name) the people in the video speak with, or 'attached' for the recording the user attached. Write the spoken words in the prompt."}}},
                                   {"persona", PersonaArg()}},
                 {"prompt"}))
         End If
@@ -279,16 +285,18 @@ Public Module ChatAgent
                                 If w.Name IsNot Nothing Then byLine = $"_🎭 {w.Name}:_ {EscapeAlt(prompt)}"
                             End If
                             If byLine <> "" Then md.AppendLine().AppendLine().Append(byLine)
+                            Dim size = MediaSize.From(args, userText)
                             If tc.Name = "generate_image" Then
-                                md.AppendLine().AppendLine().Append(Await MakePictureAsync(prompt, Nothing, status, ct, cast))
+                                md.AppendLine().AppendLine().Append(Await MakePictureAsync(prompt, Nothing, status, ct, cast, size))
                                 stepsThisRound.Add("picture made (" & EscapeAlt(prompt) & ")")
                             Else
                                 Dim photo = LastPhoto(asked)
                                 If photo Is Nothing AndAlso (args.Value(Of Boolean?)("use_last_picture") = True OrElse
-                                                             (md.Length > 0 AndAlso ThatPicture.IsMatch(If(userText, "")))) Then
+                                                             ThatPicture.IsMatch(If(userText, ""))) Then
                                     photo = LastMadePicture(md.ToString(), payload)
                                 End If
-                                md.AppendLine().AppendLine().Append(Await MakeVideoAsync(prompt, photo, status, ct, cast))
+                                Dim voices = VoicesFor(args.Value(Of String)("voice"), userText, asked)
+                                md.AppendLine().AppendLine().Append(Await MakeVideoAsync(prompt, photo, status, ct, cast, size, voices))
                                 stepsThisRound.Add("video made" & If(photo IsNot Nothing, " from the picture", "") & " (" & EscapeAlt(prompt) & ")")
                             End If
                         Case "clone_voice"
@@ -364,7 +372,10 @@ Public Module ChatAgent
     Public Function PickImageRecipe(withPhoto As Boolean) As MediaRecipe
         Dim all = MediaStudio.Recipes().Where(Function(r) Not r.IsVideo AndAlso Not r.IsUpscaler AndAlso r.Kind <> "tool" AndAlso MediaStudio.UsableVariant(r) IsNot Nothing).
                   Where(Function(r) If(withPhoto, r.Can("edit") OrElse r.Can("restyle"), r.Can("create"))).ToList()
-        Dim chosen = all.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatImageModel)
+        ' the default picture profile's model first, then the default model
+        Dim prof = ProfileLibrary.ForChat(False)
+        Dim chosen = If(If(prof IsNot Nothing, all.FirstOrDefault(Function(r) r.Id = prof.Model), Nothing),
+                        all.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatImageModel))
         If chosen IsNot Nothing Then Return chosen
         Dim hw = HardwareInfo.Current()
         Return all.OrderBy(Function(r) If(withPhoto AndAlso r.Can("edit"), 0, 1)).
@@ -379,7 +390,8 @@ Public Module ChatAgent
 
     ''' <summary>Makes a picture (or edits the photo) and returns Markdown that shows it.</summary>
     Public Async Function MakePictureAsync(prompt As String, photoFile As String, status As Action(Of String), ct As CancellationToken,
-                                           Optional cast As List(Of CastLibrary.CastMember) = Nothing) As Task(Of String)
+                                           Optional cast As List(Of CastLibrary.CastMember) = Nothing,
+                                           Optional size As MediaSize = Nothing) As Task(Of String)
         cast = If(cast, New List(Of CastLibrary.CastMember)())
         If cast.Count > 0 Then prompt = CastLibrary.ComposePrompt(prompt, cast)
         Dim castPics = If(photoFile Is Nothing, CastLibrary.ReferencePictures(cast, 3), New List(Of String)())
@@ -393,17 +405,24 @@ Public Module ChatAgent
                 combine = True
             End If
         End If
-        If r Is Nothing Then Return Localizer.T("(No picture model is downloaded yet — open 🎨 Create to get one.)")
+        If r Is Nothing Then Return Localizer.T("(No picture model is downloaded yet — open ⬇ Get models → Picture to get one.)")
         Dim v = MediaStudio.UsableVariant(r)
-        Dim fast = AppCore.Settings.MediaFast AndAlso r.Speed IsNot Nothing
-        status?.Invoke(If(photoFile IsNot Nothing, "Editing the picture…", "Drawing…"))
+        ' 🧩 the default picture profile: its LoRAs, trigger words and prompts
+        Dim prof = ProfileLibrary.ForChat(False)
+        If prof IsNot Nothing AndAlso prof.Model <> r.Id Then prof = Nothing
+        Dim fast = If(prof IsNot Nothing, prof.Fast, AppCore.Settings.MediaFast) AndAlso r.Speed IsNot Nothing
+        Dim composed = ProfileLibrary.Compose(prof, prompt, r.Negative)
+        Dim loras = If(prof IsNot Nothing, ProfileLibrary.LorasOf(prof), LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList())
+        loras.AddRange(CastLibrary.LorasFor(cast, r.Family).Where(Function(l) Not loras.Any(Function(x) x.Name = l.Name)))
+        Dim wh = If(size, New MediaSize()).Dims(If(r.Width > 0, r.Width, 1024), If(r.Height > 0, r.Height, 1024))
+        status?.Invoke(If(photoFile IsNot Nothing, "Editing the picture…", "Drawing…") & If(prof IsNot Nothing, " 🧩 " & prof.Name, ""))
         Dim req As New MediaStudio.GenerateRequest With {
-            .Recipe = r, .Variant = v, .Prompt = If(String.IsNullOrWhiteSpace(prompt), "a beautiful picture", prompt), .Negative = r.Negative,
+            .Recipe = r, .Variant = v, .Prompt = If(String.IsNullOrWhiteSpace(composed.Prompt), "a beautiful picture", composed.Prompt), .Negative = composed.Negative,
             .Task = If(combine, "combine", MediaStudio.GuessTask(r, photoFile IsNot Nothing, False, False)),
             .InputImages = If(combine, castPics.Take(Math.Max(1, r.Refs)).ToList(), New List(Of String)()),
-            .Width = If(r.Width > 0, r.Width, 1024), .Height = If(r.Height > 0, r.Height, 1024),
+            .Width = wh.W, .Height = wh.H,
             .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast, .Strength = 0.6,
-            .InputImage = photoFile, .Loras = LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()}
+            .InputImage = photoFile, .Loras = loras}
         Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
         Return $"![{EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
     End Function
@@ -415,7 +434,9 @@ Public Module ChatAgent
         Dim ok = all.Where(Function(r) If(withPhoto, r.Can("animate"), r.Can("create") AndAlso r.Input <> "required")).ToList()
         If ok.Count = 0 AndAlso withPhoto Then ok = all.Where(Function(r) r.Can("create") AndAlso r.Input <> "required").ToList()
         ' the default the user chose (if it can do this kind of video)
-        Dim chosen = ok.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatVideoModel)
+        Dim prof = ProfileLibrary.ForChat(True)
+        Dim chosen = If(If(prof IsNot Nothing, ok.FirstOrDefault(Function(r) r.Id = prof.Model), Nothing),
+                        ok.FirstOrDefault(Function(r) r.Id = AppCore.Settings.ChatVideoModel))
         If chosen IsNot Nothing Then Return chosen
         Return ok.OrderBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.UsableVariant(r), hw) = FitLevel.Fits, 0, 1)).
                   ThenBy(Function(r) If(r.Uncensored, 1, 0)).
@@ -438,8 +459,23 @@ Public Module ChatAgent
 
     ''' <summary>Makes a short video (animates the photo if one is given) and returns Markdown with a player.</summary>
     Public Async Function MakeVideoAsync(prompt As String, photoFile As String, status As Action(Of String), ct As CancellationToken,
-                                         Optional cast As List(Of CastLibrary.CastMember) = Nothing) As Task(Of String)
+                                         Optional cast As List(Of CastLibrary.CastMember) = Nothing,
+                                         Optional size As MediaSize = Nothing,
+                                         Optional voices As List(Of (Who As String, File As String)) = Nothing) As Task(Of String)
         cast = If(cast, New List(Of CastLibrary.CastMember)())
+        size = If(size, New MediaSize())
+        ' 🗣 Voices: the characters' own voices and any voice asked for → a model that takes reference pictures and
+        ' voices (MiniMax H3 Ref2VA) makes the people look and sound like them.
+        Dim audios As New List(Of (Who As String, File As String))()
+        For Each m In cast.Where(Function(x) Not x.IsLocation AndAlso Not String.IsNullOrWhiteSpace(x.Voice))
+            Dim sv = VoiceLibrary.Find(m.Voice)
+            If sv IsNot Nothing Then audios.Add((m.Name, sv.FullPath))
+        Next
+        If voices IsNot Nothing Then audios.AddRange(voices.Where(Function(x) Not audios.Any(Function(a) a.File = x.File)))
+        If audios.Count > 0 OrElse cast.Count > 0 Then
+            Dim refModel = PickReferenceVideoRecipe()
+            If refModel IsNot Nothing Then Return Await MakeReferenceVideoAsync(refModel, prompt, photoFile, cast, audios, size, status, ct)
+        End If
         If cast.Count > 0 AndAlso photoFile Is Nothing Then
             ' with the cast: first the opening scene with their pictures, then it is animated
             Dim animator = PickVideoRecipe(True)
@@ -456,38 +492,138 @@ Public Module ChatAgent
         If r Is Nothing Then
             Dim animOnly = MediaStudio.Recipes().Any(Function(x) x.IsVideo AndAlso MediaStudio.InstalledVariant(x) IsNot Nothing)
             Return Localizer.T(If(animOnly, "(Your video model needs a photo — attach one and ask again.)",
-                                            "(No video model is downloaded yet — open 🎨 Create, pick a video task and get one.)"))
+                                            "(No video model is downloaded yet — open ⬇ Get models → Video to get one.)"))
         End If
-        Dim v = MediaStudio.InstalledVariant(r)
-        Dim fast = AppCore.Settings.MediaFast AndAlso r.Speed IsNot Nothing
+        Dim v = MediaStudio.UsableVariant(r)
+        Dim prof = ProfileLibrary.ForChat(True)
+        If prof IsNot Nothing AndAlso prof.Model <> r.Id Then prof = Nothing
+        Dim fast = If(prof IsNot Nothing, prof.Fast, AppCore.Settings.MediaFast) AndAlso r.Speed IsNot Nothing
+        Dim composed = ProfileLibrary.Compose(prof, prompt, r.Negative)
+        Dim loras = If(prof IsNot Nothing, ProfileLibrary.LorasOf(prof), LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList())
         Dim animate = photoFile IsNot Nothing AndAlso r.Can("animate")
-        status?.Invoke(If(animate, "Animating the photo…", "Making the video…"))
+        Dim wh = size.Dims(If(r.Width > 0, r.Width, 832), If(r.Height > 0, r.Height, 480))
+        Dim frames = size.FramesFor(r)
+        status?.Invoke(If(animate, "Animating the photo…", "Making the video…") & $" ({wh.W}×{wh.H}, {size.SecondsText(frames, r)})" &
+                       If(prof IsNot Nothing, " 🧩 " & prof.Name, ""))
         Dim req As New MediaStudio.GenerateRequest With {
-            .Recipe = r, .Variant = v, .Prompt = If(String.IsNullOrWhiteSpace(prompt), "a beautiful scene, gentle camera movement", prompt), .Negative = r.Negative,
+            .Recipe = r, .Variant = v, .Prompt = If(String.IsNullOrWhiteSpace(composed.Prompt), "a beautiful scene, gentle camera movement", composed.Prompt), .Negative = composed.Negative,
             .Task = If(animate, "animate", "create"), .InputImage = If(animate, photoFile, Nothing),
-            .Width = If(r.Width > 0, r.Width, 832), .Height = If(r.Height > 0, r.Height, 480), .Frames = Math.Max(1, r.Frames),
+            .Width = wh.W, .Height = wh.H, .Frames = frames,
             .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast,
-            .Loras = LoraLibrary.ForFamily(r.Family).Where(Function(l) l.Enabled).ToList()}
+            .Loras = loras}
         Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
-        ' MP4 plays everywhere (iPhone too); keep the original if ffmpeg is not available.
-        If out.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) Then
-            Try
-                status?.Invoke("Converting to MP4…")
-                out = Await VideoTools.ToMp4Async(out, status, ct)
-            Catch ex As OperationCanceledException
-                Throw
-            Catch
-            End Try
-        End If
+        out = Await ToMp4Async(out, status, ct)
         Return $"[🎬 {EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
+    End Function
+
+    ''' <summary>A downloaded video model that takes reference pictures and voices (the video profile's model first).</summary>
+    Public Function PickReferenceVideoRecipe() As MediaRecipe
+        Dim ok = MediaStudio.Recipes().Where(Function(r) r.IsVideo AndAlso r.Can("reference") AndAlso MediaStudio.UsableVariant(r) IsNot Nothing).ToList()
+        If ok.Count = 0 Then Return Nothing
+        Dim prof = ProfileLibrary.ForChat(True)
+        Dim chosen = If(prof IsNot Nothing, ok.FirstOrDefault(Function(r) r.Id = prof.Model), Nothing)
+        If chosen IsNot Nothing Then Return chosen
+        Dim hw = HardwareInfo.Current()
+        Return ok.OrderBy(Function(r) If(MediaStudio.Fit(r, MediaStudio.UsableVariant(r), hw) = FitLevel.Fits, 0, 1)).
+                  ThenBy(Function(r) If(r.Uncensored, 1, 0)).FirstOrDefault()
+    End Function
+
+    ''' <summary>
+    ''' Video from reference pictures (characters, places, an attached or earlier picture) and reference voices:
+    ''' MiniMax H3 Ref2VA sees them as &lt;Picture n&gt; and &lt;Audio n&gt;.
+    ''' </summary>
+    Private Async Function MakeReferenceVideoAsync(r As MediaRecipe, prompt As String, photoFile As String, cast As List(Of CastLibrary.CastMember),
+                                                   audios As List(Of (Who As String, File As String)), size As MediaSize,
+                                                   status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Dim v = MediaStudio.UsableVariant(r)
+        Dim pics As New List(Of String)()
+        If photoFile IsNot Nothing Then pics.Add(photoFile)
+        pics.AddRange(CastLibrary.ReferencePictures(cast, 3))
+        pics = pics.Distinct().Take(Math.Max(1, If(r.Refs > 0, r.Refs, 3))).ToList()
+        Dim wavs As New List(Of String)()
+        Dim lines As New List(Of String)()
+        For Each a In audios.Take(3)
+            status?.Invoke("Preparing the voice…")
+            Dim wav = Path.Combine(Path.GetTempPath(), $"localmind-voice-{Guid.NewGuid():N}.wav")
+            Await VideoTools.ToRefWavAsync(a.File, wav, ct)
+            wavs.Add(wav)
+            lines.Add(If(String.IsNullOrWhiteSpace(a.Who), $"The speaking voice is the voice in <Audio {wavs.Count}>.",
+                         $"{a.Who} speaks with the voice in <Audio {wavs.Count}>."))
+        Next
+        Dim text = CastLibrary.ComposePrompt(prompt, cast)
+        If pics.Count > 0 Then text &= " Keep the people and places looking exactly like the reference pictures."
+        If lines.Count > 0 Then text &= " " & String.Join(" ", lines)
+        Dim prof = ProfileLibrary.ForChat(True)
+        If prof IsNot Nothing AndAlso prof.Model <> r.Id Then prof = Nothing
+        Dim composed = ProfileLibrary.Compose(prof, text, r.Negative)
+        Dim fast = If(prof IsNot Nothing, prof.Fast, AppCore.Settings.MediaFast) AndAlso r.Speed IsNot Nothing
+        Dim wh = size.Dims(If(r.Width > 0, r.Width, 832), If(r.Height > 0, r.Height, 480))
+        Dim frames = size.FramesFor(r)
+        status?.Invoke($"Making the video with {pics.Count} picture(s) and {wavs.Count} voice(s)… ({wh.W}×{wh.H}, {size.SecondsText(frames, r)})")
+        Dim req As New MediaStudio.GenerateRequest With {
+            .Recipe = r, .Variant = v, .Prompt = composed.Prompt, .Negative = composed.Negative, .Task = "reference",
+            .InputImages = pics, .RefAudios = wavs, .Width = wh.W, .Height = wh.H, .Frames = frames,
+            .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast,
+            .Loras = If(prof IsNot Nothing, ProfileLibrary.LorasOf(prof), New List(Of UserLora)())}
+        Dim out As String
+        Try
+            out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
+        Finally
+            For Each w In wavs
+                Try : File.Delete(w) : Catch : End Try
+            Next
+        End Try
+        out = Await ToMp4Async(out, status, ct)
+        Return $"[🎬 {EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
+    End Function
+
+    ''' <summary>MP4 plays everywhere (iPhone too); keeps the original if ffmpeg is not available. The prompt file moves along.</summary>
+    Private Async Function ToMp4Async(out As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        If Not out.EndsWith(".webm", StringComparison.OrdinalIgnoreCase) Then Return out
+        Try
+            status?.Invoke("Converting to MP4…")
+            Dim mp4 = Await VideoTools.ToMp4Async(out, status, ct)
+            MediaStudio.MoveSettings(out, mp4)
+            Return mp4
+        Catch ex As OperationCanceledException
+            Throw
+        Catch
+            Return out
+        End Try
+    End Function
+
+    ''' <summary>Voices for a video: a saved voice named in the tool call or as @name in the message, or the attached recording.</summary>
+    Public Function VoicesFor(voiceArg As String, userText As String, payload As List(Of ChatMessage)) As List(Of (Who As String, File As String))
+        Dim list As New List(Of (Who As String, File As String))()
+        Dim names As New List(Of String)()
+        If Not String.IsNullOrWhiteSpace(voiceArg) Then names.Add(voiceArg.Trim().TrimStart("@"c))
+        For Each sv In VoiceLibrary.All()
+            If Regex.IsMatch(If(userText, ""), "@" & Regex.Escape(sv.Name) & "\b", RegexOptions.IgnoreCase) Then names.Add(sv.Name)
+        Next
+        For Each n In names.Distinct(StringComparer.OrdinalIgnoreCase)
+            If n.Equals("attached", StringComparison.OrdinalIgnoreCase) Then
+                Dim rec = LastRecording(payload)
+                If rec IsNot Nothing Then list.Add(("", rec))
+                Continue For
+            End If
+            Dim sv = VoiceLibrary.Find(n)
+            If sv IsNot Nothing Then list.Add(("", sv.FullPath))
+        Next
+        ' a recording attached with "use this voice / with my voice" and no saved one named
+        If list.Count = 0 AndAlso AskClone.IsMatch(If(userText, "")) Then
+            Dim rec = LastRecording(payload)
+            If rec IsNot Nothing Then list.Add(("", rec))
+        End If
+        Return list
     End Function
 
     Public Async Function MakeSongAsync(style As String, lyrics As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)
         Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.IsMusic AndAlso AudioStudio.IsInstalled(x))
-        If m Is Nothing Then Return Localizer.T("(No music model is downloaded yet — open 🎵 Music & voice to get one.)")
+        If m Is Nothing Then Return Localizer.T("(No music model is downloaded yet — open ⬇ Get models → Music to get one.)")
         status?.Invoke("Composing…")
         Dim wav = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = m, .Text = style, .Lyrics = lyrics},
                                                   Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
+        MediaStudio.SaveInfo(wav, "music", m.Name, style, lyrics)
         Return $"[🎵 {EscapeAlt(style)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})"
     End Function
 
@@ -555,7 +691,7 @@ Public Module ChatAgent
                                           status As Action(Of String), ct As CancellationToken) As Task(Of String)
         Dim m = AudioStudio.Models().Where(Function(x) Not x.IsMusic AndAlso x.Clone AndAlso AudioStudio.IsInstalled(x)).
                     OrderBy(Function(x) If(x.Id = AppCore.Settings.ReadAloudModel, 0, 1)).FirstOrDefault()
-        If m Is Nothing Then Return Localizer.T("(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in Models → 🎵 Music & voice models.)")
+        If m Is Nothing Then Return Localizer.T("(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in ⬇ Get models → Voice.)")
         If String.IsNullOrWhiteSpace(words) Then Return Localizer.T("(Tell me what the voice should say, e.g. clone this voice and say: Good morning!)")
 
         Dim name As String
@@ -598,6 +734,7 @@ Public Module ChatAgent
         End If
 
         Dim wav = Await VideoMaker.SpeakAsync(words, name, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
+        MediaStudio.SaveInfo(wav, "voice", m.Name & " · " & name, words, Nothing)
         Dim note = $"_{Localizer.T("Voice")}: {name} · {m.Name}_"
         If Not String.IsNullOrWhiteSpace(saveAs) Then note &= "  " & String.Format(Localizer.T("(saved — say ""with {0}'s voice"" next time)"), name)
         Return $"[🗣 {EscapeAlt(words)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})" & vbCrLf & vbCrLf & note

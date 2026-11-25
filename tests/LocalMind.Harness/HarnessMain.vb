@@ -700,6 +700,33 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "v224" Then
+            Console.WriteLine("== v2.24: sizes from the chat, profiles")
+            Dim sz = MediaSize.From(Nothing, "generate me a video of 3 secons at 0.2 mp of a bird flying")
+            Check(Math.Abs(sz.Seconds - 3) < 0.01 AndAlso Math.Abs(sz.Megapixels - 0.2) < 0.001, "3 seconds, 0.2 MP read from the message", $"{sz.Seconds} s {sz.Megapixels} MP")
+            Dim wh = sz.Dims(832, 480)
+            Check(wh.W Mod 32 = 0 AndAlso wh.H Mod 32 = 0 AndAlso Math.Abs(wh.W * wh.H / 1_000_000.0 - 0.2) < 0.03 AndAlso wh.W > wh.H, "0.2 MP keeps the shape", $"{wh.W}x{wh.H}")
+            Dim r As New MediaRecipe With {.Frames = 121, .Fps = 24}
+            Dim fr = sz.FramesFor(r)
+            Check(fr Mod 4 = 1 AndAlso Math.Abs(fr / 24.0 - 3) < 0.2, "3 s at 24 fps", fr.ToString())
+            Dim gr = MediaSize.From(Nothing, "φτιάξε βίντεο 5 δευτερόλεπτα")
+            Check(Math.Abs(gr.Seconds - 5) < 0.01, "Greek seconds", gr.Seconds.ToString())
+            Dim none = MediaSize.From(Nothing, "make a video of a cat")
+            Check(none.Seconds = 0 AndAlso none.Dims(832, 480).W = 832 AndAlso none.FramesFor(r) = 121, "defaults kept")
+            Dim toolArgs As New JObject From {{"seconds", 2}, {"megapixels", 1}}
+            Dim fromArgs = MediaSize.From(toolArgs, "10 seconds")
+            Check(fromArgs.Seconds = 2 AndAlso fromArgs.Megapixels = 1, "tool arguments win")
+            Dim prof As New MediaProfile With {.Triggers = "ohwx style", .Positive = "cinematic, 35mm", .DefaultPrompt = "a quiet lake", .Negative = "blurry"}
+            Dim c1 = ProfileLibrary.Compose(prof, "a red fox", "low quality")
+            Check(c1.Prompt = "a red fox, ohwx style, cinematic, 35mm" AndAlso c1.Negative = "blurry", "profile adds triggers and positive", c1.Prompt)
+            Dim c2 = ProfileLibrary.Compose(prof, "", "low quality")
+            Check(c2.Prompt.StartsWith("a quiet lake"), "default prompt when none given", c2.Prompt)
+            prof.Negative = ""
+            Check(ProfileLibrary.Compose(prof, "x", "low quality").Negative = "low quality", "model's negative when the profile has none")
+            Check(ProfileLibrary.Compose(Nothing, "x", "n").Prompt = "x", "no profile: unchanged")
+            Return
+        End If
+
         If only = "v223" Then
             Console.WriteLine("== v2.23: personas from chat, step order, descriptions")
             Dim ask = "your persona is image prompt writer and you will generate me an image of a tree on a mountain.after you do that your persona is video prompt writer and by using that image create an earthquake that will destroy the mountain"
@@ -969,28 +996,6 @@ Module HarnessMain
             mk($"-f lavfi -i sine=frequency=500:duration=2 ""{music}""")
             mk($"-f lavfi -i sine=frequency=800:duration=1 ""{vo}""")
 
-            ' Film: video without sound, video with sound, picture; music looped, voice-over at 1 s
-            Dim film As New FilmProject With {.Name = "Test film", .Width = 640, .Height = 360, .Fades = True, .KeepClipSound = True, .Music = music, .MusicVolume = 0.3}
-            film.Clips.Add(New FilmProject.Clip With {.File = v1})
-            film.Clips.Add(New FilmProject.Clip With {.File = v2})
-            film.Clips.Add(New FilmProject.Clip With {.File = pic, .Seconds = 2.5})
-            film.VoiceOvers.Add(New FilmProject.VoiceOver With {.File = vo, .Start = 1})
-            Dim filmOut = Await film.ExportAsync(Sub(p, t) Return, CancellationToken.None)
-            Dim fi = Await VideoTools.InfoAsync(filmOut, CancellationToken.None)
-            Check(fi.Width = 640 AndAlso fi.Height = 360 AndAlso Math.Abs(fi.Seconds - 6) < 0.3 AndAlso fi.HasAudio AndAlso Math.Abs(fi.Fps - 24) < 0.1,
-                  "film exported: 3 clips (2 s + 1.5 s + picture 2.5 s), music and voice-over", $"{fi.Width}x{fi.Height} {fi.Fps} fps {fi.Seconds:0.00}s audio={fi.HasAudio}")
-            Dim film2 As New FilmProject With {.Fades = False, .KeepClipSound = False}
-            film2.Clips.Add(New FilmProject.Clip With {.File = v2})
-            film2.Clips.Add(New FilmProject.Clip With {.File = pic, .Seconds = 1})
-            Dim filmOut2 = Await film2.ExportAsync(Sub(p, t) Return, CancellationToken.None)
-            Dim fi2 = Await VideoTools.InfoAsync(filmOut2, CancellationToken.None)
-            Check(fi2.Width = 480 AndAlso fi2.Height = 270 AndAlso Math.Abs(fi2.Seconds - 2.5) < 0.3, "film at the size of the first clip, no music", $"{fi2.Width}x{fi2.Height} {fi2.Seconds:0.00}s")
-            Dim saved = Path.Combine(tmp, "f.lmfilm")
-            film.Save(saved)
-            Dim back = FilmProject.Load(saved)
-            Check(back.Clips.Count = 3 AndAlso back.Clips(2).IsPicture AndAlso back.VoiceOvers(0).Start = 1 AndAlso back.Music = music, "film saved and opened again")
-            File.Delete(filmOut2)
-
             ' Talking pieces joined with their sound
             Dim t1 = Path.Combine(tmp, "t1.mp4"), t2 = Path.Combine(tmp, "t2.mp4")
             mk($"-f lavfi -i testsrc=size=320x240:rate=16:duration=1 -f lavfi -i sine=frequency=400:duration=1:sample_rate=24000 -shortest -c:v libx264 -c:a aac ""{t1}""")
@@ -1049,13 +1054,6 @@ Module HarnessMain
                 Check(False, "LoRA registered")
             End If
 
-            ' History: search and favourites
-            Dim found = History.Find("Test_film", False, 50)
-            Check(found.Any(Function(f) f = filmOut), "history finds the film by name", String.Join(", ", found.Select(AddressOf Path.GetFileName)))
-            Dim st = History.ToggleFavorite(filmOut)
-            Check(st AndAlso History.Find("", True, 50).Contains(filmOut) AndAlso Not History.ToggleFavorite(filmOut) AndAlso Not History.Find("", True, 50).Contains(filmOut),
-                  "★ favourite on and off")
-
             ' Notes for the phone
             Dim before = Notifier.LastId
             Notifier.Notify("LocalMind studio", "3 done")
@@ -1073,7 +1071,6 @@ Module HarnessMain
             castList = CastLibrary.Load()
             castList.RemoveAll(Function(m) m.Name = "Nina" OrElse m.Name = "Leo")
             CastLibrary.Save(castList)
-            File.Delete(filmOut)
         End If
 
         If only = "agent" Then

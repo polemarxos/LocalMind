@@ -58,6 +58,32 @@ Public Class ModelManagerForm
                                                          "Q4_0", "Q3_K_L", "Q3_K_M", "IQ3_M", "IQ3_XXS", "Q2_K", "IQ2_M", "BF16"}
 
 
+    ''' <summary>Which tab / category to show first: "profiles", or a category id (llm, picture, video, lora, music, voice).</summary>
+    <ComponentModel.DesignerSerializationVisibility(ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property StartAt As String
+
+    Private _tabsCtl As TabControl
+    Private _profiles As ProfilesPanel
+    Private _segs As List(Of RadioButton)
+    Private _catIds As List(Of String)
+
+    Protected Overrides Sub OnShown(e As EventArgs)
+        MyBase.OnShown(e)
+        If String.IsNullOrEmpty(StartAt) Then Return
+        If StartAt = "profiles" Then
+            _tabsCtl.SelectedIndex = 2
+        Else
+            Dim i = _catIds.IndexOf(StartAt)
+            If i >= 0 Then _segs(i).Checked = True
+        End If
+    End Sub
+
+    ''' <summary>Installed → 🧩 New profile: opens Profiles with a new profile for that model.</summary>
+    Private Sub NewProfileFor(r As MediaRecipe)
+        _tabsCtl.SelectedIndex = 2
+        _profiles.NewProfile(If(r IsNot Nothing AndAlso r.IsVideo, "video", "picture"), r)
+    End Sub
+
     Public Sub New()
         Text = "Model Manager"
         Size = New Size(1320, 860)
@@ -115,9 +141,16 @@ Public Class ModelManagerForm
         tabs = New TabControl() With {.Dock = DockStyle.Fill}
         Dim tabCatalog As New TabPage(Localizer.T("Models"))
         Dim tabInstalled As New TabPage(Localizer.T("Installed"))
-        tabs.TabPages.AddRange({tabCatalog, tabInstalled})
+        Dim tabProfiles As New TabPage(Localizer.T("Profiles"))
+        tabs.TabPages.AddRange({tabCatalog, tabInstalled, tabProfiles})
         Theme.StyleTabs(tabs)
-        AddHandler tabs.SelectedIndexChanged, Sub() If tabs.SelectedIndex = 1 Then RefreshInstalled()
+        _tabsCtl = tabs
+        _profiles = New ProfilesPanel()
+        tabProfiles.Controls.Add(_profiles)
+        AddHandler tabs.SelectedIndexChanged, Sub()
+                                                  If tabs.SelectedIndex = 1 Then RefreshInstalled()
+                                                  If tabs.SelectedIndex = 2 Then _profiles.Reload()
+                                              End Sub
 
         Dim host As New Panel() With {.Dock = DockStyle.Fill, .BackColor = Theme.CPanel}
         Dim llmPage As New Panel() With {.Dock = DockStyle.Fill, .BackColor = Theme.CPanel}
@@ -128,6 +161,7 @@ Public Class ModelManagerForm
         If AppCore.Settings.EnableImages Then
             cats.Add(("picture", "🖼  Picture"))
             cats.Add(("video", "🎬  Video"))
+            cats.Add(("lora", "🧩  LoRA"))
         End If
         If AppCore.Settings.EnableAudio Then
             cats.Add(("music", "🎵  Music"))
@@ -145,6 +179,10 @@ Public Class ModelManagerForm
                 galleries(k) = g
                 host.Controls.Add(g)
             Next
+            ' LoRAs from Civitai for the picture and video models (used in Profiles)
+            Dim lg As New ModelGallery(Nothing, localList:=False, loras:=True) With {.Visible = False}
+            galleries("lora") = lg
+            host.Controls.Add(lg)
         End If
         AddHandler FormClosing, Sub()
                                     For Each g In galleries.Values
@@ -185,10 +223,12 @@ Public Class ModelManagerForm
         tabCatalog.Controls.Add(host)
         tabCatalog.Controls.Add(strip)
         If segs.Count > 0 Then segs(0).Checked = True
+        _segs = segs
+        _catIds = cats.Select(Function(c) c.Id).ToList()
         ' (screenshot checks open a category directly)
         If Environment.GetEnvironmentVariable("LOCALMIND_MODELS_TAB") = "media" Then
             Dim k = Environment.GetEnvironmentVariable("LOCALMIND_MODELS_KIND")
-            Dim want = If(k = "video" OrElse k = "music" OrElse k = "voice", k, "picture")
+            Dim want = If(k = "video" OrElse k = "lora" OrElse k = "music" OrElse k = "voice", k, "picture")
             Dim i = cats.FindIndex(Function(x) x.Id = want)
             If i >= 0 Then segs(i).Checked = True
         End If
@@ -376,15 +416,10 @@ Public Class ModelManagerForm
         cmbInstalledType.SelectedIndex = 0
         Theme.StyleInput(cmbInstalledType)
         AddHandler cmbInstalledType.SelectedIndexChanged, Sub() RefreshInstalled()
-        Dim btnStudioInst = Theme.MakeButton(Localizer.T("🎨 Open in the studio"), primary:=True)
+        Dim btnStudioInst = Theme.MakeButton(Localizer.T("🧩 New profile"), primary:=True)
         AddHandler btnStudioInst.Click, Sub()
-                                            Dim f = Application.OpenForms.OfType(Of StudioForm)().FirstOrDefault()
-                                            If f Is Nothing Then
-                                                f = New StudioForm()
-                                                f.Show()
-                                            Else
-                                                f.Activate()
-                                            End If
+                                            Dim im = TryCast(SelectedTag(), InstalledMedia)
+                                            NewProfileFor(im?.Recipe)
                                         End Sub
         _btnUse = btnUse : _btnSpeed = btnSpeed : _btnStudioInst = btnStudioInst : _btnImport = btnImport
         bar.Controls.AddRange({cmbInstalledType, btnUse, btnStudioInst, btnSpeed, btnDelete, btnOpen, btnImport, btnRescan, lblInstalledInfo})
@@ -1047,7 +1082,7 @@ Public Class ModelManagerForm
         Dim tag = If(lstInstalled.SelectedItems.Count = 0, Nothing, lstInstalled.SelectedItems(0).Tag)
         _btnUse.Visible = tag Is Nothing OrElse TypeOf tag Is LocalModel
         _btnSpeed.Visible = tag Is Nothing OrElse TypeOf tag Is LocalModel
-        _btnStudioInst.Visible = TypeOf tag Is InstalledMedia OrElse TypeOf tag Is UserLora
+        _btnStudioInst.Visible = TypeOf tag Is InstalledMedia
         _btnImport.Visible = cmbInstalledType.SelectedIndex <= 1
     End Sub
 

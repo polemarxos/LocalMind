@@ -298,8 +298,14 @@ Public Module MarkdownRenderer
       var t = ta.value.replace(/\s+$/, '');
       if (!t.trim() && !d.querySelector('.thumbs')) return;
       if (t === old) { cancel(); return; }
-      try { window.chrome.webview.postMessage({ type: 'edit', index: parseInt(d.getAttribute('data-u'), 10), text: t }); } catch (e) {}
+      if (document.body.classList.contains('busy')) { box.querySelector('.ehint').textContent = tr('Wait for the answer to finish (or press Stop), then edit.'); return; }
+      var b = d.querySelector('.bubble');
       cancel();
+      if (b) b.textContent = t;
+      d.setAttribute('data-edit', t); d.setAttribute('data-text', t);
+      // everything after this message is replaced by the new answer
+      while (d.nextSibling) d.parentNode.removeChild(d.nextSibling);
+      try { window.chrome.webview.postMessage({ type: 'edit', index: parseInt(d.getAttribute('data-u'), 10), text: t }); } catch (e) {}
     }
     d._cancel = cancel;
     box.querySelector('.ecancel').onclick = cancel;

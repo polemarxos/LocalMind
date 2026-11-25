@@ -582,6 +582,8 @@ Public Module MediaStudio
         Public Property EndImage As String
         ''' <summary>talk: the voice recording (WAV) that drives the mouth and face.</summary>
         Public Property AudioFile As String
+        ''' <summary>reference (MiniMax H3 Ref2VA): voices to copy, WAV files (&lt;Audio 1&gt;, &lt;Audio 2&gt;…).</summary>
+        Public Property RefAudios As New List(Of String)()
         ''' <summary>Where to save the result (for steps of a longer job); empty = a new file in Outputs.</summary>
         Public Property OutputPath As String
 
@@ -768,9 +770,12 @@ Public Module MediaStudio
                 Case "animate"
                     If imgs.Count > 0 Then a.Append($"-i {Q(imgs(0))} ")
                 Case "reference"
-                    If imgs.Count = 0 Then Throw New Exception(Localizer.T("Choose the reference pictures (who and what to show)."))
+                    If imgs.Count = 0 AndAlso req.RefAudios.Count = 0 Then Throw New Exception(Localizer.T("Choose the reference pictures (who and what to show)."))
                     For Each f In imgs.Take(Math.Max(1, r.Refs))
                         a.Append($"-r {Q(f)} ")
+                    Next
+                    For Each w In req.RefAudios.Where(AddressOf File.Exists)
+                        a.Append($"--ref-audio {Q(w)} ")
                     Next
                 Case "first-last"
                     Dim lastPic = If(Not String.IsNullOrEmpty(req.EndImage) AndAlso File.Exists(req.EndImage), req.EndImage, imgs.Skip(1).FirstOrDefault())
@@ -902,6 +907,11 @@ Public Module MediaStudio
 
     '──────────────── settings of each result ────────────────
     Public Class SavedSettings
+        ''' <summary>picture | video | music | voice</summary>
+        Public Property Kind As String
+        ''' <summary>The model's name as shown to the user.</summary>
+        Public Property Model As String
+        Public Property Lyrics As String
         Public Property Recipe As String
         Public Property [Variant] As String
         Public Property Task As String
@@ -920,6 +930,23 @@ Public Module MediaStudio
         Public Property Created As DateTime
     End Class
 
+    ''' <summary>Saves how a song or voice clip was made (its prompt), for the Library.</summary>
+    Public Sub SaveInfo(output As String, kind As String, model As String, prompt As String, lyrics As String)
+        Try
+            Dim s As New SavedSettings With {.Kind = kind, .Model = model, .Prompt = prompt, .Lyrics = lyrics, .Created = DateTime.Now}
+            File.WriteAllText(SettingsFile(output), JsonConvert.SerializeObject(s, Formatting.Indented))
+        Catch
+        End Try
+    End Sub
+
+    ''' <summary>Keeps the prompt file with a result that was converted (WebM → MP4).</summary>
+    Public Sub MoveSettings(fromFile As String, toFile As String)
+        Try
+            If File.Exists(SettingsFile(fromFile)) Then File.Move(SettingsFile(fromFile), SettingsFile(toFile), True)
+        Catch
+        End Try
+    End Sub
+
     Public Function SettingsFile(output As String) As String
         Return output & ".json"
     End Function
@@ -930,7 +957,8 @@ Public Module MediaStudio
                 .Recipe = req.Recipe.Id, .Variant = req.Variant.Label, .Task = job, .Prompt = req.Prompt, .Negative = req.Negative,
                 .Width = req.Width, .Height = req.Height, .Steps = req.Steps, .Cfg = req.Cfg, .Seed = seed, .Frames = req.Frames,
                 .Strength = req.Strength, .Fast = req.Fast, .Loras = req.Loras.Select(Function(l) $"{l.Name}:{l.Weight}").ToList(),
-                .Inputs = req.InputImages.ToList(), .Created = DateTime.Now}
+                .Inputs = req.InputImages.ToList(), .Created = DateTime.Now,
+                .Kind = If(req.Recipe.IsVideo, "video", "picture"), .Model = req.Recipe.Name & " · " & req.Variant.Label}
             File.WriteAllText(SettingsFile(output), JsonConvert.SerializeObject(s, Formatting.Indented))
         Catch
         End Try

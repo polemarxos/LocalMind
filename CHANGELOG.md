@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.24.0
+
+### Added
+- **Profiles** (Model Manager → Profiles). A profile is one of your downloaded picture or video models, plus:
+  - its LoRAs, each with its own strength;
+  - trigger words;
+  - a default prompt (used when you don't describe the picture), a positive prompt (always added) and a negative
+    prompt.
+
+  Mark one picture profile and one video profile as the chat's defaults, here or in Tools → Pictures & video in
+  chat. Installed → **🧩 New profile** makes one for the selected model.
+- **🧩 LoRA category** in the Model Manager: browse and install LoRAs from Civitai, then use them in profiles.
+  **My LoRAs** (add files, edit trigger words) opens from the profile editor.
+- **🖼 Library**: every picture, video, song and voice clip you made, with the prompt that made it (and the model,
+  size, seed, negative prompt and lyrics). You can search the prompts and:
+  - open a file, copy its prompt, put the prompt back in the chat, or attach the file to the chat;
+  - enlarge a picture 4× or remove its background;
+  - make a video sharper and smoother;
+  - delete files.
+
+  Songs and voice clips now save their prompts too.
+- **🎭 Characters** (formerly Cast) with voices:
+  - Give a character an MP3 / WAV / M4A file and its voice is cloned automatically.
+  - **🎙 New voice from a file** saves a named voice you can use as @name.
+  - In the chat: "@Anna using @Grandpa says: good morning". The video uses Anna's pictures and the voice, with a
+    model that takes reference pictures and voices (MiniMax H3 Ref2VA, e.g. 10Eros Max Ref2VA).
+- **Videos from pictures in the chat**: "make a video from that picture" uses the last picture made in the chat
+  (even in an earlier answer), and an attached photo is used as before.
+- **Length and size from the chat**: "a video of 3 seconds at 0.2 MP" now makes 3 seconds at about 0.2 megapixels
+  (576×352). "A 2 MP picture" works too. The chat shows the size and length while the video is made.
+
+### Removed
+- The Pictures & video studio, the Music & voice studio and the Film maker. Pictures, videos, songs and voices are
+  made from the chat, and the Library holds the results.
+
+### Fixed
+- Editing a sent message: Send now always does something. The new text appears at once, the old answer goes away
+  and the new one is written. If an answer is still being written, the edit box says so.
+
 ## 2.23.1
 
 ### Added

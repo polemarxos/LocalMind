@@ -52,20 +52,20 @@ Partial Class MainForm
                                                    AppCore.SaveSettings()
                                                    If Not _miAutoRead.Checked Then Voice.StopSpeaking()
                                                End Sub
-        Dim miStudio As New ToolStripMenuItem("Image & video studio…")
-        AddHandler miStudio.Click, Sub() OpenStudio()
+        Dim miStudio As New ToolStripMenuItem("Library (everything you made)…")
+        AddHandler miStudio.Click, Sub() OpenLibrary()
         menuTools.DropDownItems.Insert(0, miStudio)
-        Dim btnStudio As New ToolStripButton("🎨 Create") With {.ToolTipText = "Create and edit pictures and videos (Image & video studio)"}
-        AddHandler btnStudio.Click, Sub() OpenStudio()
+        Dim btnStudio As New ToolStripButton("🖼 Library") With {.ToolTipText = "Every picture, video, song and voice clip you made, with its prompt"}
+        AddHandler btnStudio.Click, Sub() OpenLibrary()
         toolTop.Items.Insert(toolTop.Items.IndexOf(_btnWeb) + 1, btnStudio)
         _btnStudio = btnStudio
         _miStudio = miStudio
         BuildImageUi(btnStudio, miStudio)
-        _miAudio = New ToolStripMenuItem("Music & voice studio…")
-        AddHandler _miAudio.Click, Sub() OpenAudio()
-        menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 2, _miAudio)
-        _btnAudio = New ToolStripButton("🎵 Music & voice") With {.ToolTipText = "Make songs, speech and cloned voices"}
-        AddHandler _btnAudio.Click, Sub() OpenAudio()
+        _miAudio = New ToolStripMenuItem("Characters & voices…")
+        AddHandler _miAudio.Click, Sub() OpenCharacters()
+        menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 1, _miAudio)
+        _btnAudio = New ToolStripButton("🎭 Characters") With {.ToolTipText = "People, places and voices you use as @Name in the chat"}
+        AddHandler _btnAudio.Click, Sub() OpenCharacters()
         toolTop.Items.Insert(toolTop.Items.IndexOf(btnStudio) + 1, _btnAudio)
         ApplyFeatures()
         Dim miCompare As New ToolStripMenuItem("Compare models…")
@@ -78,27 +78,29 @@ Partial Class MainForm
 
     Private _btnStudio, _btnAudio As ToolStripButton
     Private _miStudio, _miAudio As ToolStripMenuItem
-    Private _audio As AudioForm
+    Private _characters As CastForm
+    Private _library As LibraryForm
 
     ''' <summary>Shows only the abilities the user chose (Settings → Chat → Extra abilities).</summary>
     Private Sub ApplyFeatures()
         If _btnStudio Is Nothing Then Return
         Dim img = Settings.EnableImages, aud = Settings.EnableAudio
-        _btnStudio.Visible = img
-        _miStudio.Visible = img
+        _btnStudio.Visible = img OrElse aud
+        _miStudio.Visible = img OrElse aud
         _btnImage.Visible = img
         _miImageChat.Visible = img
         If Not img Then _btnImage.Checked = False
-        _btnAudio.Visible = aud
-        _miAudio.Visible = aud
+        _btnAudio.Visible = img OrElse aud
+        _miAudio.Visible = img OrElse aud
     End Sub
 
-    Private Sub OpenAudio()
-        If _audio Is Nothing OrElse _audio.IsDisposed Then
-            _audio = New AudioForm()
-            _audio.Show(Me)
+    ''' <summary>🎭 Characters: people, places and voices used as @Name in the chat.</summary>
+    Private Sub OpenCharacters()
+        If _characters Is Nothing OrElse _characters.IsDisposed Then
+            _characters = New CastForm()
+            _characters.Show(Me)
         Else
-            _audio.Activate()
+            _characters.Activate()
         End If
     End Sub
 
@@ -173,15 +175,29 @@ Partial Class MainForm
         End Try
     End Function
 
-    Private _studio As StudioForm
-
-    Private Sub OpenStudio()
-        If _studio Is Nothing OrElse _studio.IsDisposed Then
-            _studio = New StudioForm()
-            _studio.Show(Me)
+    ''' <summary>🖼 Library: everything made, with its prompt.</summary>
+    Private Sub OpenLibrary()
+        If _library Is Nothing OrElse _library.IsDisposed Then
+            _library = New LibraryForm()
+            AddHandler _library.ReuseRequested, Sub(prompt, file)
+                                                    If Not String.IsNullOrWhiteSpace(prompt) Then txtInput.Text = prompt
+                                                    If Not String.IsNullOrEmpty(file) Then AttachFiles({file})
+                                                    Activate()
+                                                    txtInput.Focus()
+                                                    txtInput.SelectionStart = txtInput.TextLength
+                                                End Sub
+            _library.Show(Me)
         Else
-            _studio.Activate()
+            _library.Activate()
         End If
+    End Sub
+
+    ''' <summary>The Model Manager opened on a category (picture, video, lora…) or on "profiles".</summary>
+    Private Sub OpenModelManagerAt(where As String)
+        Using f As New ModelManagerForm() With {.StartAt = where}
+            f.ShowDialog(Me)
+        End Using
+        _modelsDirty = True
     End Sub
 
     Private Sub OpenKnowledge()

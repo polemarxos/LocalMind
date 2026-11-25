@@ -154,14 +154,9 @@ Public Class MainForm
         PrepareEngineInBackground()
         ' (screenshot checks)
         Select Case Environment.GetEnvironmentVariable("LOCALMIND_PREVIEW")
-            Case "studio" : OpenStudio()
-            Case "cast"
-                Dim cf As New CastForm()
-                cf.Show(Me)
-            Case "film"
-                FilmProject.AddToCurrent(IO.Path.Combine(MediaStudio.OutputFolder, "sample.png"))
-                Dim fm As New FilmForm()
-                fm.Show(Me)
+            Case "library" : OpenLibrary()
+            Case "cast", "characters" : OpenCharacters()
+            Case "profiles" : Me.Post(Sub() OpenModelManagerAt("profiles"))
             Case "box"
                 Me.Post(Sub() Localizer.Box(Me, "Delete Qwen3-8B (Q4_K_M) from disk? The file is 4.7 GB.", "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning))
             Case "settings-look"
@@ -625,9 +620,10 @@ Public Class MainForm
                 Return
             End If
             If obj("type")?.ToString() = "edit" Then
-                Dim idx = If(obj("index")?.Value(Of Integer)(), -1)
-                Dim txt = obj("text")?.ToString()
-                BeginInvoke(Async Sub() Await EditAndResendAsync(idx, txt))
+                Dim idx As Integer = -1
+                Integer.TryParse(If(obj("index")?.ToString(), ""), idx)
+                Dim txt = If(obj("text")?.ToString(), "")
+                StartEdit(idx, txt)
                 Return
             End If
             If obj("type")?.ToString() = "speak" Then
@@ -987,11 +983,25 @@ Public Class MainForm
     End Function
 
     ''' <summary>Edit a sent message like Claude chat: replace its text, drop everything after it and answer again.</summary>
+    Private Async Sub StartEdit(userIndex As Integer, newText As String)
+        Dim failed = False
+        Try
+            Await EditAndResendAsync(userIndex, newText)
+        Catch ex As Exception
+            Safety.Log(ex, "edit message")
+            SetStatus("⚠ " & ex.Message)
+            failed = True
+        End Try
+        If failed Then Await RebuildChatDisplayAsync()
+    End Sub
+
     Private Async Function EditAndResendAsync(userIndex As Integer, newText As String) As Task
         If _isGenerating Then
             SetStatus("Wait for the answer to finish (or press Stop), then edit.")
+            Await RebuildChatDisplayAsync()
             Return
         End If
+        If _session Is Nothing Then Return
         Dim n = -1, pos = -1
         For k = 0 To _session.Messages.Count - 1
             If _session.Messages(k).Role = "user" Then
@@ -999,7 +1009,11 @@ Public Class MainForm
                 If n = userIndex Then pos = k : Exit For
             End If
         Next
-        If pos < 0 Then Return
+        If pos < 0 Then
+            SetStatus("That message could not be found — it was not changed.")
+            Await RebuildChatDisplayAsync()
+            Return
+        End If
         Dim msg = _session.Messages(pos)
         newText = If(newText, "").TrimEnd()
         Dim rest = AttachmentPart(msg.Content)
