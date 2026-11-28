@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.IO
@@ -144,7 +144,7 @@ Public Module JobTimes
 
     Public Function FormatSeconds(s As Double) As String
         If s >= 3600 Then Return $"{CInt(Math.Floor(s / 3600))}h {CInt(Math.Floor(s Mod 3600 / 60))}m"
-        If s >= 60 Then Return $"{CInt(Math.Floor(s / 60))}m {CInt(s Mod 60):00}s"
-        Return $"{s:0}s"
+        If s >= 60 Then Return $"{CInt(Math.Floor(s / 60))}m {CInt(Math.Floor(s Mod 60)):00}s"
+        Return If(s < 10, $"{s:0.0}s", $"{CInt(Math.Floor(s))}s")
     End Function
 End Module

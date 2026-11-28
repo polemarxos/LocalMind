@@ -923,7 +923,7 @@ Public Class MainForm
 
         Dim msg As New ChatMessage With {
             .Role = "assistant", .Content = assistantText, .Thinking = thinkingText,
-            .Model = _session.Model, .TokensPerSecond = Math.Round(tps, 1)}
+            .Model = _session.Model, .TokensPerSecond = Math.Round(tps, 1), .TotalSeconds = Math.Round(sw.Elapsed.TotalSeconds, 1)}
 
         Await Js(
             $"finalizeAssistant('{_streamMsgId}', {JsonConvert.SerializeObject(MarkdownRenderer.ToHtml(assistantText))}, " &
@@ -1032,6 +1032,7 @@ Public Class MainForm
         Dim parts As New List(Of String)
         If Not String.IsNullOrEmpty(m.Model) Then parts.Add(m.Model)
         If m.TokensPerSecond > 0 Then parts.Add($"{m.TokensPerSecond:0.0} tok/s")
+        If m.TotalSeconds > 0 Then parts.Add("⏱ " & JobTimes.FormatSeconds(m.TotalSeconds))
         Return String.Join("  ·  ", parts)
     End Function
 

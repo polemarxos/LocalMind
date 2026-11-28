@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.26.12
+
+### Added
+- Each answer in the chat shows the **total time** it took, under the answer next to the model and tok/s (e.g.
+  "⏱ 7m 42s"). The total covers thinking, searching and every picture, video or song made for that message.
+
 ## 2.26.11
 
 ### Changed

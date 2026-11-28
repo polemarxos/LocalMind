@@ -1,4 +1,4 @@
-Imports System.Collections.Generic
+﻿Imports System.Collections.Generic
 Imports System.Runtime.Serialization
 Imports Newtonsoft.Json
 
@@ -12,6 +12,12 @@ Public Class ChatMessage
     ''' <summary>Model that produced an assistant message (for mixed-model chats).</summary>
     Public Property Model As String
     Public Property TokensPerSecond As Double
+    ''' <summary>How long the whole answer took (thinking, tools, pictures, videos…), in seconds.</summary>
+    Public Property TotalSeconds As Double
+
+    Public Function ShouldSerializeTotalSeconds() As Boolean
+        Return TotalSeconds > 0
+    End Function
 
     Public Function ShouldSerializeImages() As Boolean
         Return Images IsNot Nothing AndAlso Images.Count > 0
