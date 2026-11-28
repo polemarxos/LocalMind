@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.26.30
+
+### Fixed
+- **"Generate a video from that image" also made a new picture.** The words "generate … image" were read as a second
+  request for a picture. A picture named only as the source ("from that image", "using the last picture", "από αυτή
+  την εικόνα") no longer counts as a request; "make an image of a cat, then a video from that image" still makes both.
+
 ## 2.26.29
 
 ### Fixed

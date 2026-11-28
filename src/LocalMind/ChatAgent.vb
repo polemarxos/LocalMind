@@ -61,8 +61,8 @@ Public Module ChatAgent
         Dim found As New List(Of (Name As String, At As Integer))()
         For Each c In {("clone_voice", AskClone), ("extend_video", AskExtend), ("generate_video", AskVideo), ("generate_image", AskEditPicture),
                        ("generate_image", AskPicture), ("make_song", AskSong)}
-            Dim m = c.Item2.Match(text)
-            If m.Success AndAlso offered.Contains(c.Item1) Then found.Add((c.Item1, m.Index))
+            Dim at = AskAt(c.Item2, text)
+            If at >= 0 AndAlso offered.Contains(c.Item1) Then found.Add((c.Item1, at))
         Next
         ' (a song "by cloning this voice" is one step, not two)
         If found.Any(Function(f) f.Name = "make_song") Then found.RemoveAll(Function(f) f.Name = "clone_voice")
@@ -70,6 +70,30 @@ Public Module ChatAgent
             If Not result.Contains(f.Name) Then result.Add(f.Name)
         Next
         Return result
+    End Function
+
+    ' "a video from that image", "using the last picture": the picture already exists, it is what the video starts from
+    Private ReadOnly SourcePicture As New Regex("(\b(from|using|use|with|of|on|animate|based\s+on)\s+(the\s+)?(that|this|these|those|the|last|previous|above|same|my|earlier)\s+(\w+\s+)?|" &
+                                                "\b(that|this|last|previous|above|same|earlier)\s+)" &
+                                                "(image|picture|photo|drawing|painting|illustration|logo|wallpaper|portrait)s?\s*$|" &
+                                                "(από|με|χρησιμοποιώντας)\s+(αυτή(ν)?\s+)?(την\s+|τη\s+)?(ίδια\s+|προηγούμενη\s+|τελευταία\s+)?(εικόνα|φωτογραφ\w*|ζωγραφι\w*)\s*$|" &
+                                                "(αυτή(ν)?|προηγούμενη|τελευταία)\s+(την\s+)?(εικόνα|φωτογραφ\w*)\s*$",
+                                                RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+
+    Private ReadOnly PictureWord As New Regex("\b(image|picture|photo|drawing|painting|illustration|logo|wallpaper|portrait)s?\b|εικόνα|φωτογραφ\w*|ζωγραφι\w*|σκίτσο|λογότυπο|πορτρέτο",
+                                              RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+
+    ''' <summary>Where the request starts, or -1. A picture named only as the source of something else
+    ''' ("a video from that image") is not a request for a new picture.</summary>
+    Private Function AskAt(rx As Regex, text As String) As Integer
+        For Each m As Match In rx.Matches(text)
+            If rx IsNot AskPicture OrElse Not SourcePicture.IsMatch(m.Value) Then Return m.Index
+            ' (the match may run on past a first, new picture: "an image of a cat, then a video from that image")
+            For Each n As Match In PictureWord.Matches(m.Value)
+                If n.Index > 0 AndAlso Not SourcePicture.IsMatch(m.Value.Substring(0, n.Index + n.Length)) Then Return m.Index
+            Next
+        Next
+        Return -1
     End Function
 
     ''' <summary>The tool the user plainly asked for in their latest message ("generate me a video"), if offered.</summary>
@@ -82,8 +106,8 @@ Public Module ChatAgent
         If offered.Contains("make_song") AndAlso AskSong.IsMatch(text) AndAlso Not AskVideo.IsMatch(text) Then Return "make_song"
         Dim best As String = Nothing, bestAt = Integer.MaxValue
         For Each c In {("clone_voice", AskClone), ("extend_video", AskExtend), ("generate_video", AskVideo), ("generate_image", AskEditPicture), ("generate_image", AskPicture)}
-            Dim m = c.Item2.Match(text)
-            If m.Success AndAlso offered.Contains(c.Item1) AndAlso m.Index < bestAt Then best = c.Item1 : bestAt = m.Index
+            Dim at = AskAt(c.Item2, text)
+            If at >= 0 AndAlso offered.Contains(c.Item1) AndAlso at < bestAt Then best = c.Item1 : bestAt = at
         Next
         Return best
     End Function
