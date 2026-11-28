@@ -143,7 +143,7 @@
  },
  {
   "id": "yue2-3b",
-  "name": "YuE2 3B (songs)",
+  "name": "YuE2 3B · Q8 (songs)",
   "kind": "music",
   "about": "Full songs with vocals and instruments from a style and lyrics, 48 kHz stereo, up to 6 minutes.",
   "model": {
@@ -164,7 +164,7 @@
  },
  {
   "id": "minimax-music3",
-  "name": "MiniMax Music 3 (songs)",
+  "name": "MiniMax Music 3 · Q8 (songs)",
   "kind": "music",
   "about": "High-quality songs with vocals from a description and lyrics, 44.1 kHz stereo. Needs 16 GB+ VRAM or lots of RAM.",
   "model": {
@@ -182,5 +182,47 @@
   "transcript": false,
   "design": false,
   "dl": 1393
+ },
+ {
+  "id": "minimax-music3-bf16",
+  "name": "MiniMax Music 3 · BF16 full quality (songs)",
+  "kind": "music",
+  "about": "MiniMax Music 3 unquantized (BF16) from ggml-org: the best sound. Needs about 24 GB; on smaller cards part of it runs on the CPU (slower).",
+  "model": {
+   "repo": "ggml-org/MiniMax-Music3-GGUF",
+   "path": "MiniMax-Music3-BF16.gguf",
+   "size": 17176764800
+  },
+  "mmproj": {
+   "repo": "ggml-org/MiniMax-Music3-GGUF",
+   "path": "mmproj-MiniMax-Music3-BF16.gguf",
+   "size": 6639652832
+  },
+  "clone": false,
+  "langs": [],
+  "transcript": false,
+  "design": false,
+  "dl": 0
+ },
+ {
+  "id": "yue2-3b-bf16",
+  "name": "YuE2 3B · BF16 full quality (songs)",
+  "kind": "music",
+  "about": "YuE2 3B unquantized (BF16) from ggml-org: full songs with vocals, a little cleaner than the Q8 edition.",
+  "model": {
+   "repo": "ggml-org/YuE2-3B-GGUF",
+   "path": "YuE2-3B-BF16.gguf",
+   "size": 4338984832
+  },
+  "mmproj": {
+   "repo": "ggml-org/YuE2-3B-GGUF",
+   "path": "mmproj-YuE2-3B-BF16.gguf",
+   "size": 3104474688
+  },
+  "clone": false,
+  "langs": [],
+  "transcript": false,
+  "design": false,
+  "dl": 0
  }
 ]

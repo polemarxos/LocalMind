@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.26.8
+
+### Changed
+- Music models: the full-quality **BF16** editions of MiniMax Music 3 and YuE2 are back. Both come from ggml-org,
+  next to the Q8 editions. The list now shows **MiniMax Music 3 · Q8 / BF16** and **YuE2 3B · Q8 / BF16**. A
+  YuE2 BF16 you already downloaded is recognized again.
+
 ## 2.26.7
 
 ### Changed
