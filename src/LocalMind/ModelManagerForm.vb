@@ -148,7 +148,10 @@ Public Class ModelManagerForm
         _profiles = New ProfilesPanel()
         tabProfiles.Controls.Add(_profiles)
         AddHandler tabs.SelectedIndexChanged, Sub()
-                                                  If tabs.SelectedIndex = 1 Then RefreshInstalled()
+                                                  If tabs.SelectedIndex = 1 Then
+                                                      RefreshInstalled()
+                                                      IdentifyLorasInBackground()
+                                                  End If
                                                   If tabs.SelectedIndex = 2 Then _profiles.Reload()
                                               End Sub
 
@@ -453,7 +456,12 @@ Public Class ModelManagerForm
         AddHandler btnImport.Click, AddressOf ImportGguf
         AddHandler btnRescan.Click, Sub()
                                         AppCore.Library.Refresh()
+                                        ' (LoRAs not found before are looked up again)
+                                        For Each x In LoraLibrary.All().Where(Function(q) String.IsNullOrEmpty(q.Url))
+                                            x.LookedUp = False
+                                        Next
                                         RefreshInstalled()
+                                        IdentifyLorasInBackground()
                                     End Sub
         AddHandler btnUse.Click, Sub()
                                      Dim m = SelectedInstalled()
@@ -463,6 +471,12 @@ Public Class ModelManagerForm
                                      Close()
                                  End Sub
         AddHandler lstInstalled.DoubleClick, Sub()
+                                                 Dim lr = TryCast(SelectedTag(), UserLora)
+                                                 If lr IsNot Nothing Then
+                                                     ' a LoRA: its Civitai page
+                                                     If Not String.IsNullOrEmpty(lr.PageUrl) Then OpenUrl(lr.PageUrl)
+                                                     Return
+                                                 End If
                                                  If TypeOf SelectedTag() Is LocalModel Then btnUse.PerformClick() Else If _btnStudioInst.Visible Then _btnStudioInst.PerformClick()
                                              End Sub
 
@@ -1059,7 +1073,8 @@ Public Class ModelManagerForm
         For Each l In LoraLibrary.All()
             Dim size = If(File.Exists(l.FullPath), New FileInfo(l.FullPath).Length, 0L)
             add(l, 6, l.Name, l.Extension.TrimStart("."c), size, If(String.IsNullOrEmpty(l.Family), Localizer.T("any model"), l.Family) &
-                If(String.IsNullOrEmpty(l.Triggers), "", " · " & l.Triggers), If(l.Source, ""), Nothing)
+                If(String.IsNullOrEmpty(l.Triggers), "", " · " & l.Triggers),
+                If(Not String.IsNullOrEmpty(l.Source), l.Source, If(l.LookedUp, Localizer.T("(not on Civitai)"), Localizer.T("looking up on Civitai…"))), Nothing)
         Next
         lstInstalled.EndUpdate()
         Dim free = ""
@@ -1070,6 +1085,22 @@ Public Class ModelManagerForm
         End Try
         lblInstalledInfo.Text = $"{count} {Localizer.T("models")} · {Downloader.FormatBytes(total)}{free}"
         UpdateInstalledButtons()
+    End Sub
+
+    Private _identifying As Boolean
+
+    ''' <summary>🔎 Finds the LoRAs added from a file on Civitai (by file hash) and shows where they came from.</summary>
+    Private Async Sub IdentifyLorasInBackground()
+        If _identifying OrElse Not LoraLibrary.All().Any(Function(x) String.IsNullOrEmpty(x.Url) AndAlso Not x.LookedUp) Then Return
+        _identifying = True
+        Try
+            Await Civitai.IdentifyLorasAsync(CancellationToken.None)
+        Catch ex As Exception
+            Safety.Log(ex, "identify LoRAs")
+        Finally
+            _identifying = False
+        End Try
+        If Not IsDisposed AndAlso _tabsCtl IsNot Nothing AndAlso _tabsCtl.SelectedIndex = 1 Then RefreshInstalled()
     End Sub
 
     ''' <summary>A downloaded picture or video model in the Installed list.</summary>

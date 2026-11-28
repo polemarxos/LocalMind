@@ -22,6 +22,10 @@ Public Class UserLora
     Public Property BaseModel As String
     ''' <summary>Where the file was downloaded from (so a setup can download it again on another PC).</summary>
     Public Property Url As String
+    ''' <summary>Its Civitai page, when known.</summary>
+    Public Property PageUrl As String
+    ''' <summary>Already looked up on Civitai by its file hash (found or not).</summary>
+    Public Property LookedUp As Boolean
 
     <JsonIgnore> Public ReadOnly Property FullPath As String
         Get

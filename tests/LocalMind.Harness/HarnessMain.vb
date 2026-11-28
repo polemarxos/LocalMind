@@ -702,6 +702,17 @@ Module HarnessMain
 
         If only = "v2262" Then
             Console.WriteLine("== v2.26.2: full backup and restore")
+            ' 🔎 LoRAs added from a file are looked up on Civitai by their hash (an unknown file: looked up once, no link)
+            Dim fakeLora = Path.Combine(LoraLibrary.Folder, "lm-test-unknown.safetensors")
+            File.WriteAllBytes(fakeLora, Encoding.UTF8.GetBytes("not a real lora " & Guid.NewGuid().ToString()))
+            Try
+                Await Civitai.IdentifyLorasAsync(CancellationToken.None)
+                Dim fl = LoraLibrary.All().First(Function(x) x.Name = "lm-test-unknown")
+                Check(fl.LookedUp AndAlso String.IsNullOrEmpty(fl.Url), "unknown LoRA: looked up once, no link")
+            Catch ex As Exception
+                Console.WriteLine("  SKIP Civitai lookup: " & ex.Message)
+            End Try
+            File.Delete(fakeLora)
             ' 🎵 "generate music … by cloning this voice" is a song, sung with that voice
             Dim offeredTools As New JArray(
                 New JObject From {{"function", New JObject From {{"name", "make_song"}}}},

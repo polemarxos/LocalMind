@@ -204,6 +204,68 @@ Public Module Civitai
         End Using
     End Function
 
+    ''' <summary>
+    ''' Finds LoRAs that were added from a file on Civitai by their SHA-256 (Civitai's lookup by file hash) and fills in
+    ''' where they came from: the page, the download link (so an exported setup can get them again), the base model and
+    ''' the trigger words when none were set. Each file is looked up once. Returns how many were found.
+    ''' </summary>
+    Public Async Function IdentifyLorasAsync(ct As CancellationToken) As Task(Of Integer)
+        Dim found = 0
+        For Each l In LoraLibrary.All().Where(Function(x) String.IsNullOrEmpty(x.Url) AndAlso Not x.LookedUp AndAlso File.Exists(x.FullPath)).ToList()
+            ct.ThrowIfCancellationRequested()
+            Dim hash As String
+            Using fs As New FileStream(l.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 1 << 20, FileOptions.SequentialScan)
+                hash = Convert.ToHexString(Await System.Security.Cryptography.SHA256.HashDataAsync(fs, ct))
+            End Using
+            Dim v As JObject = Nothing
+            Dim failed = False
+            For Each red In {False, True}
+                Try
+                    v = Await ByHashAsync(hash, red, ct)
+                    If v IsNot Nothing Then Exit For
+                Catch ex As OperationCanceledException
+                    Throw
+                Catch
+                    failed = True        ' (offline: try again next time)
+                End Try
+            Next
+            If v Is Nothing Then
+                If Not failed Then l.LookedUp = True
+                Continue For
+            End If
+            Dim modelId = v.Value(Of Long)("modelId")
+            Dim modelName = If(v("model")?.Value(Of String)("name"), "")
+            l.Source = $"Civitai #{modelId} · {modelName} · {v.Value(Of String)("name")}"
+            l.PageUrl = $"https://civitai.com/models/{modelId}?modelVersionId={v.Value(Of Long)("id")}"
+            Dim match = TryCast(v("files"), JArray)?.OfType(Of JObject)().FirstOrDefault(Function(f) String.Equals(f("hashes")?.Value(Of String)("SHA256"), hash, StringComparison.OrdinalIgnoreCase))
+            l.Url = If(match?.Value(Of String)("downloadUrl"), v.Value(Of String)("downloadUrl"))
+            l.BaseModel = v.Value(Of String)("baseModel")
+            Dim g = GroupFor(If(l.BaseModel, ""))
+            If String.IsNullOrEmpty(l.Family) AndAlso g.Family IsNot Nothing Then l.Family = g.Family
+            Dim words = TryCast(v("trainedWords"), JArray)
+            If String.IsNullOrWhiteSpace(l.Triggers) AndAlso words IsNot Nothing AndAlso words.Count > 0 Then l.Triggers = String.Join(", ", words.Select(Function(w) w.ToString()))
+            l.LookedUp = True
+            found += 1
+        Next
+        LoraLibrary.Save()
+        Return found
+    End Function
+
+    ''' <summary>The Civitai model version with this file hash, or Nothing when Civitai doesn't know it.</summary>
+    Private Async Function ByHashAsync(hash As String, red As Boolean, ct As CancellationToken) As Task(Of JObject)
+        Using req As New HttpRequestMessage(HttpMethod.Get, ApiBase(red) & "/model-versions/by-hash/" & hash)
+            req.Headers.UserAgent.ParseAdd("LocalMind/" & Updater.CurrentVersion.ToString())
+            Dim key = AppCore.Settings.CivitaiApiKey
+            If Not String.IsNullOrWhiteSpace(key) Then req.Headers.Authorization = New Headers.AuthenticationHeaderValue("Bearer", key.Trim())
+            Using resp = Await Downloader.Http.SendAsync(req, ct)
+                If resp.StatusCode = Net.HttpStatusCode.NotFound Then Return Nothing
+                resp.EnsureSuccessStatusCode()
+                Dim o = JObject.Parse(Await resp.Content.ReadAsStringAsync(ct))
+                Return If(o("modelId") Is Nothing, Nothing, o)
+            End Using
+        End Using
+    End Function
+
     ''' <summary>Downloads a LoRA into Models\Loras and fills in its family and trigger words.</summary>
     Public Async Function InstallLoraAsync(m As CivModel, v As CivVersion, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of UserLora)
         Dim f = v.BestFile()
@@ -217,6 +279,8 @@ Public Module Civitai
             If v.TrainedWords.Count > 0 Then l.Triggers = String.Join(", ", v.TrainedWords)
             l.Enabled = True
             l.Source = $"Civitai #{m.Id} · {m.Name} · {v.Name}"
+            l.PageUrl = $"https://civitai.com/models/{m.Id}?modelVersionId={v.Id}"
+            l.LookedUp = True
             l.BaseModel = v.BaseModel
             l.Url = f.DownloadUrl
             LoraLibrary.Save()

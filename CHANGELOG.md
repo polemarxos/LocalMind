@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.26.4
+
+### Added
+- **Where your LoRAs came from.** LoRAs you added from a file are now looked up on Civitai by their file
+  fingerprint (SHA-256). When Civitai has the file, the **Source** column in Model Manager → Installed shows the
+  Civitai model and version. LocalMind also fills in:
+  - the base model;
+  - the trigger words, when the LoRA had none;
+  - the download link, so **Export my setup** can include the LoRA.
+
+  Each file is looked up once. LoRAs Civitai doesn't know show "(not on Civitai)". **Rescan** looks those up again.
+  Double-click a LoRA to open its Civitai page.
+
 ## 2.26.3
 
 ### Added

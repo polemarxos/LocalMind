@@ -1289,5 +1289,7 @@
 "Making the MP4…": "Δημιουργία MP4…",
 "Could not convert the file.": "Δεν ήταν δυνατή η μετατροπή του αρχείου.",
 "Export (MP3 / MP4)…": "Εξαγωγή (MP3 / MP4)…",
-"💾 Export…": "💾 Εξαγωγή…"
+"💾 Export…": "💾 Εξαγωγή…",
+"(not on Civitai)": "(δεν υπάρχει στο Civitai)",
+"looking up on Civitai…": "αναζήτηση στο Civitai…"
 }
