@@ -213,7 +213,13 @@ Public Class MainForm
         menuHelp.DropDownItems.Insert(0, miUpdate)
         AutoUpdateEverythingLater()
         LoadDone.TrySetResult(True)
+        ' "Set up myself" at the first start: straight to the Model Manager
+        If OpenModelsAfterLoad Then Me.Post(Sub() OpenModelManagerAt(Nothing))
     End Sub
+
+    ''' <summary>Opens the Model Manager once the window is up (the first start's "Set up myself").</summary>
+    <ComponentModel.DesignerSerializationVisibility(ComponentModel.DesignerSerializationVisibility.Hidden)>
+    Public Property OpenModelsAfterLoad As Boolean
 
     ''' <summary>Set when the window has finished loading (the loading screen waits for it).</summary>
     <System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.26.26
+
+### Fixed
+- **Closing the first-start window left LocalMind stuck on the loading screen.** The first setup now shows before the
+  app loads, with the loading screen hidden. Closing it with X closes LocalMind cleanly, and the window shows again at
+  the next start. If the main window is ever closed while loading, the loading screen now closes too.
+
 ## 2.26.25
 
 ### Changed

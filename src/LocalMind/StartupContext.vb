@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Drawing
 Imports System.Linq
 Imports System.Threading
@@ -75,12 +75,45 @@ Public Class StartupContext
             _splash.Done(1, Localizer.T("skipped (offline?)"))
         End Try
 
+        ' first start: the recommended models (or "set up myself") before the app opens; closing it closes LocalMind
+        Dim openModels = False
+        If Not s.FirstRunDone AndAlso s.Backend = BackendKind.BuiltIn AndAlso AppCore.Library.All().Count = 0 AndAlso
+           Environment.GetEnvironmentVariable("LOCALMIND_PREVIEW") Is Nothing Then
+            _splash.Hide()
+            If Not s.FeaturesAsked Then
+                Using ff As New FeaturesForm()
+                    ff.ShowDialog()
+                End Using
+            End If
+            Dim choice As String
+            Using f As New SetupForm(Localizer.T("Welcome! Download the recommended models for your PC?"), welcome:=True)
+                f.ShowDialog()
+                choice = f.Choice
+            End Using
+            If choice = "" Then
+                AppCore.SaveSettings()
+                _splash.Close()
+                ExitThread()
+                Return
+            End If
+            s.FirstRunDone = True
+            AppCore.SaveSettings()
+            openModels = (choice = "manual")
+            _splash.Show()
+        End If
+
         ' 3. interface
         _splash.Begin(2)
-        Dim main As New MainForm() With {.Opacity = 0}
+        Dim main As New MainForm() With {.Opacity = 0, .OpenModelsAfterLoad = openModels}
         main.Show()
         Await Within(main.LoadDone.Task, 90)
         _splash.Done(2)
+        If main.IsDisposed Then
+            ' (closed while loading)
+            _splash.Close()
+            ExitThread()
+            Return
+        End If
 
         ' the chat model is not loaded here: it loads with the first message (no memory used until then)
         Await Task.Delay(250)
