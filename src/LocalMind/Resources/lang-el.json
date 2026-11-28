@@ -1296,5 +1296,22 @@
 "Finding the download links of your LoRAs…": "Εύρεση των συνδέσμων λήψης των LoRA σας…",
 "Saved {0} files and the download links of {1} models and LoRAs to {2}.": "Αποθηκεύτηκαν {0} αρχεία και οι σύνδεσμοι λήψης {1} μοντέλων και LoRA στο {2}.",
 "These LoRAs have no download link (not found on Civitai), so they can't be downloaded again; keep their files yourself:": "Αυτά τα LoRA δεν έχουν σύνδεσμο λήψης (δεν βρέθηκαν στο Civitai), οπότε δεν μπορούν να κατέβουν ξανά· κρατήστε μόνοι σας τα αρχεία τους:",
-"Model and LoRA files are not copied. The backup keeps their download links, and they download again automatically when you restore it.": "Τα αρχεία μοντέλων και LoRA δεν αντιγράφονται. Το αντίγραφο κρατά τους συνδέσμους λήψης τους και κατεβαίνουν ξανά αυτόματα κατά την επαναφορά."
+"Model and LoRA files are not copied. The backup keeps their download links, and they download again automatically when you restore it.": "Τα αρχεία μοντέλων και LoRA δεν αντιγράφονται. Το αντίγραφο κρατά τους συνδέσμους λήψης τους και κατεβαίνουν ξανά αυτόματα κατά την επαναφορά.",
+"Output": "Αποτέλεσμα",
+"load": "φόρτωση",
+"— (chat or Test speed)": "— (συνομιλήστε ή Δοκιμή ταχύτητας)",
+"text": "κείμενο",
+"reads pictures": "διαβάζει εικόνες",
+"auto": "αυτόματο",
+"fast {0}": "γρήγορο {0}",
+"— (not used yet)": "— (δεν έχει χρησιμοποιηθεί)",
+"per clip": "ανά κλιπ",
+"per picture": "ανά εικόνα",
+"per song": "ανά τραγούδι",
+"song with vocals": "τραγούδι με φωνή",
+"speech": "ομιλία",
+"languages": "γλώσσες",
+"(+{0} more)": "(+{0} ακόμη)",
+"Click to see the downloads": "Κάντε κλικ για να δείτε τις λήψεις",
+"Freeing graphics memory…": "Απελευθέρωση μνήμης γραφικών…"
 }

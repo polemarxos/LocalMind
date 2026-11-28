@@ -327,7 +327,7 @@ Public Module MarkdownRenderer
   function assistantNode(id) {
     var d = document.createElement('div');
     d.className = 'msg assistant'; d.id = id;
-    d.innerHTML = '<div><div class=""role"">' + tr('Assistant') + '</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""work"" id=""' + id + '-work""><span class=""spin""></span><span class=""wt""></span></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
+    d.innerHTML = '<div><div class=""role"">' + tr('Assistant') + '</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""bubble made"" id=""' + id + '-made"" style=""display:none""></div><div class=""work"" id=""' + id + '-work""><span class=""spin""></span><span class=""wt""></span></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
     return d;
   }
   function appendAssistantStart(id) {
@@ -423,9 +423,17 @@ Public Module MarkdownRenderer
       pre.appendChild(btn);
     });
   }
+  // Pictures, videos and songs made so far, shown while the next step runs.
+  function setMade(id, html) {
+    var m = document.getElementById(id + '-made');
+    if (!m) return;
+    m.innerHTML = html; m.style.display = html ? 'block' : 'none';
+    decorate(m); scroll();
+  }
   function finalizeAssistant(id, html, thinkingHtml, meta) {
     var b = document.getElementById(id + '-bubble');
     if (!b) return;
+    var mm = document.getElementById(id + '-made'); if (mm) mm.remove();
     var wk = document.getElementById(id + '-work'); if (wk) { wk.style.display = 'none'; wk.setAttribute('data-done', '1'); }
     b.innerHTML = html;
     decorate(b);

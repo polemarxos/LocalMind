@@ -72,6 +72,8 @@ Public Class ModelManagerForm
         If String.IsNullOrEmpty(StartAt) Then Return
         If StartAt = "profiles" Then
             _tabsCtl.SelectedIndex = 2
+        ElseIf StartAt = "downloads" Then
+            _tabsCtl.SelectedIndex = 1      ' (the downloads list is under Installed)
         Else
             Dim i = _catIds.IndexOf(StartAt)
             If i >= 0 Then _segs(i).Checked = True
@@ -436,10 +438,10 @@ Public Class ModelManagerForm
         lstInstalled.Columns.Add(Localizer.T("File"), 110)
         lstInstalled.Columns.Add(Localizer.T("Size"), 80)
         lstInstalled.Columns.Add(Localizer.T("Details"), 220)
-        lstInstalled.Columns.Add("Speed", 85)
-        lstInstalled.Columns.Add("Reading", 90)
-        lstInstalled.Columns.Add("Load", 60)
-        lstInstalled.Columns.Add("Context", 70)
+        lstInstalled.Columns.Add(Localizer.T("Steps"), 90)
+        lstInstalled.Columns.Add(Localizer.T("Output"), 150)
+        lstInstalled.Columns.Add(Localizer.T("Speed"), 130)
+        lstInstalled.Columns.Add(Localizer.T("Context"), 70)
         lstInstalled.Columns.Add("Source", 240)
         AddHandler lstInstalled.SelectedIndexChanged, Sub() UpdateInstalledButtons()
 
@@ -1019,7 +1021,7 @@ Public Class ModelManagerForm
         lstInstalled.BeginUpdate()
         lstInstalled.Items.Clear()
         Dim add = Sub(tag As Object, type As Integer, name As String, file As String, size As Long, details As String, source As String,
-                      sp As SpeedResult)
+                      info As (Steps As String, Output As String, Speed As String, Context As String))
                       total += size
                       count += 1
                       If Not show(type) Then Return
@@ -1028,16 +1030,16 @@ Public Class ModelManagerForm
                       it.SubItems.Add(If(file, ""))
                       it.SubItems.Add(Downloader.FormatBytes(size))
                       it.SubItems.Add(If(details, ""))
-                      it.SubItems.Add(If(sp IsNot Nothing, $"{sp.GenTokensPerSecond:0.0} tok/s", ""))
-                      it.SubItems.Add(If(sp IsNot Nothing, $"{sp.PromptTokensPerSecond:0} tok/s", ""))
-                      it.SubItems.Add(If(sp IsNot Nothing, $"{sp.LoadSeconds:0.0}s", ""))
-                      it.SubItems.Add(If(sp IsNot Nothing AndAlso sp.ContextTokens > 0, $"{sp.ContextTokens \ 1024}K", ""))
+                      it.SubItems.Add(If(info.Steps, ""))
+                      it.SubItems.Add(If(info.Output, ""))
+                      it.SubItems.Add(If(info.Speed, ""))
+                      it.SubItems.Add(If(info.Context, ""))
                       it.SubItems.Add(If(source, ""))
                       lstInstalled.Items.Add(it)
                   End Sub
         ' chat models
         For Each m In AppCore.Library.All()
-            add(m, 1, m.DisplayName, m.Quant, m.SizeBytes, If(m.IsVision, "👁 " & Localizer.T("vision"), ""), If(m.Repo, Path.GetFileName(m.MainFile)), SpeedTest.GetResult(m))
+            add(m, 1, m.DisplayName, m.Quant, m.SizeBytes, If(m.IsVision, "👁 " & Localizer.T("vision"), ""), If(m.Repo, Path.GetFileName(m.MainFile)), LlmInfo(m))
         Next
         ' picture and video models (the main file downloaded; shared parts are counted once)
         Dim counted As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
@@ -1063,18 +1065,18 @@ Public Class ModelManagerForm
             Dim size = files.Where(Function(f) counted.Add(MediaStudio.LocalPath(f))).Sum(Function(f) f.Size)
             Dim missing = Not MediaStudio.IsInstalled(r, v)
             add(New InstalledMedia With {.Recipe = r, .Variant = v}, If(r.IsVideo, 3, 2), r.Name, v.Label, size,
-                r.Family & If(r.Uncensored, " · 🔓", "") & If(missing, " · " & Localizer.T("parts download when used"), ""), If(r.Repo, ""), Nothing)
+                r.Family & If(r.Uncensored, " · 🔓", "") & If(missing, " · " & Localizer.T("parts download when used"), ""), If(r.Repo, ""), MediaInfo(r))
         Next
         ' music and voice
         For Each a In AudioStudio.Models().Where(AddressOf AudioStudio.IsInstalled)
-            add(a, If(a.IsMusic, 4, 5), a.Name, Path.GetFileName(a.Model.Path), a.Size, If(a.Clone, Localizer.T("voice cloning"), ""), a.Model.Repo, Nothing)
+            add(a, If(a.IsMusic, 4, 5), a.Name, Path.GetFileName(a.Model.Path), a.Size, If(a.Clone, Localizer.T("voice cloning"), ""), a.Model.Repo, AudioInfo(a))
         Next
         ' LoRAs
         For Each l In LoraLibrary.All()
             Dim size = If(File.Exists(l.FullPath), New FileInfo(l.FullPath).Length, 0L)
             add(l, 6, l.Name, l.Extension.TrimStart("."c), size, If(String.IsNullOrEmpty(l.Family), Localizer.T("any model"), l.Family) &
                 If(String.IsNullOrEmpty(l.Triggers), "", " · " & l.Triggers),
-                If(Not String.IsNullOrEmpty(l.Source), l.Source, If(l.LookedUp, Localizer.T("(not on Civitai)"), Localizer.T("looking up on Civitai…"))), Nothing)
+                If(Not String.IsNullOrEmpty(l.Source), l.Source, If(l.LookedUp, Localizer.T("(not on Civitai)"), Localizer.T("looking up on Civitai…"))), LoraInfo(l))
         Next
         lstInstalled.EndUpdate()
         Dim free = ""
@@ -1086,6 +1088,50 @@ Public Class ModelManagerForm
         lblInstalledInfo.Text = $"{count} {Localizer.T("models")} · {Downloader.FormatBytes(total)}{free}"
         UpdateInstalledButtons()
     End Sub
+
+    '── what the Installed columns show: steps, output, speed (measured or from the last run), context ──
+    Private Shared Function LlmInfo(m As LocalModel) As (Steps As String, Output As String, Speed As String, Context As String)
+        Dim sp = SpeedTest.GetResult(m)
+        Dim seen = JobTimes.GetEntry("chat:" & m.DisplayName)
+        Dim speed = ""
+        If sp IsNot Nothing Then
+            speed = $"{sp.GenTokensPerSecond:0.0} tok/s · {Localizer.T("load")} {sp.LoadSeconds:0}s"
+        ElseIf seen IsNot Nothing Then
+            speed = $"{seen.Seconds:0.0} tok/s"
+        Else
+            speed = Localizer.T("— (chat or Test speed)")
+        End If
+        Dim ctx = If(sp IsNot Nothing AndAlso sp.ContextTokens > 0, sp.ContextTokens,
+                     If(AppCore.Engine.CurrentModel IsNot Nothing AndAlso AppCore.Engine.CurrentModel.MainFile = m.MainFile, AppCore.Engine.LoadedContext, 0))
+        Return ("—", Localizer.T("text") & If(m.IsVision, " · " & Localizer.T("reads pictures"), ""), speed,
+                If(ctx > 0, $"{ctx \ 1024}K", If(AppCore.Settings.AutoContext, Localizer.T("auto"), $"{AppCore.Settings.ContextSize \ 1024}K")))
+    End Function
+
+    Private Shared Function MediaInfo(r As MediaRecipe) As (Steps As String, Output As String, Speed As String, Context As String)
+        Dim steps = If(r.Steps > 0, r.Steps.ToString(), "")
+        If r.Speed IsNot Nothing AndAlso r.Speed.Steps > 0 Then steps = If(steps = "", "", steps & " · ") & String.Format(Localizer.T("fast {0}"), r.Speed.Steps)
+        Dim output = If(r.Width > 0, $"{r.Width}×{r.Height}", "")
+        If r.IsVideo AndAlso r.Frames > 0 AndAlso r.Fps > 0 Then output &= $" · {r.Frames / CDbl(r.Fps):0.#} s · {r.Fps} fps"
+        If r.Cfg > 0 Then steps &= $" · CFG {r.Cfg:0.#}"
+        Dim last = JobTimes.GetEntry("media:" & r.Id)
+        Dim speed = If(last Is Nothing, Localizer.T("— (not used yet)"),
+                       JobTimes.FormatSeconds(last.Seconds) & " " & Localizer.T(If(r.IsVideo, "per clip", "per picture")) &
+                       If(String.IsNullOrEmpty(last.Detail), "", " (" & last.Detail.TrimStart(" "c, "·"c).Trim() & ")"))
+        Return (steps, output, speed, "")
+    End Function
+
+    Private Shared Function AudioInfo(a As AudioModel) As (Steps As String, Output As String, Speed As String, Context As String)
+        Dim last = JobTimes.GetEntry("audio:" & a.Id)
+        Dim speed = If(last Is Nothing, Localizer.T("— (not used yet)"),
+                       JobTimes.FormatSeconds(last.Seconds) & " " & Localizer.T(If(a.IsMusic, "per song", "per clip")) &
+                       If(String.IsNullOrEmpty(last.Detail), "", " (" & last.Detail & ")"))
+        Dim output = If(a.IsMusic, Localizer.T("song with vocals"), Localizer.T("speech")) & If(a.Langs.Count > 1, $" · {a.Langs.Count} " & Localizer.T("languages"), "")
+        Return ("—", output, speed, "")
+    End Function
+
+    Private Shared Function LoraInfo(l As UserLora) As (Steps As String, Output As String, Speed As String, Context As String)
+        Return ($"× {l.Weight:0.0#}", If(l.BaseModel, ""), "", "")
+    End Function
 
     Private _identifying As Boolean
 

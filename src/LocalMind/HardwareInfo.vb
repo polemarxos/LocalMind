@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.Globalization
@@ -194,6 +194,35 @@ Public Class HardwareInfo
         If s.Contains("amd") OrElse s.Contains("radeon") Then Return GpuVendor.Amd
         If s.Contains("intel") OrElse s.Contains(" arc") Then Return GpuVendor.Intel
         Return GpuVendor.Other
+    End Function
+
+    ''' <summary>Graphics memory in use right now on the first NVIDIA card (bytes), or -1 when it can't be read.</summary>
+    Public Shared Function UsedVramBytes() As Long
+        Dim csv = RunTool("nvidia-smi", "--query-gpu=memory.used --format=csv,noheader,nounits", 3000)
+        If String.IsNullOrWhiteSpace(csv) Then Return -1
+        Dim mib As Double
+        If Not Double.TryParse(csv.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries)(0).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, mib) Then Return -1
+        Return CLng(mib * 1024 * 1024)
+    End Function
+
+    ''' <summary>
+    ''' Waits (up to <paramref name="maxSeconds"/>) until graphics memory stops dropping after a model was closed:
+    ''' Windows frees it a moment after the program ends, and a model started too early sees too little free memory.
+    ''' </summary>
+    Public Shared Async Function WaitForVramReleaseAsync(ct As Threading.CancellationToken, Optional maxSeconds As Integer = 15) As Threading.Tasks.Task
+        Dim sw = Stopwatch.StartNew()
+        Dim last = Await Threading.Tasks.Task.Run(Function() UsedVramBytes())
+        If last < 0 Then
+            Await Threading.Tasks.Task.Delay(1500, ct)     ' (no reading on this card: a short pause instead)
+            Return
+        End If
+        Const Settled = 96L * 1024 * 1024
+        While sw.Elapsed.TotalSeconds < maxSeconds
+            Await Threading.Tasks.Task.Delay(700, ct)
+            Dim now = Await Threading.Tasks.Task.Run(Function() UsedVramBytes())
+            If now < 0 OrElse last - now < Settled Then Exit While    ' stopped going down
+            last = now
+        End While
     End Function
 
     Friend Shared Function RunTool(exe As String, args As String, Optional timeoutMs As Integer = 6000) As String

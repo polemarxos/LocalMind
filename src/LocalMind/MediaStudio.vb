@@ -609,9 +609,12 @@ Public Module MediaStudio
     ''' <summary>Runs sd-cli and returns the output file (PNG or WebM).</summary>
     Public Async Function GenerateAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
         ' A checkpoint whose tensor shapes the engine rejects (int8 scales stored as [N, 1]) is fixed and tried again.
+        Dim clock = Diagnostics.Stopwatch.StartNew()
+        Dim made As String = Nothing
         For attempt = 0 To 3
             Try
-                Return Await GenerateOnceAsync(req, progress, ct)
+                made = Await GenerateOnceAsync(req, progress, ct)
+                Exit For
             Catch ex As Exception When attempt < 3 AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        ShapeFix.TryFixFromLog(CStr(ex.Data("engineLog")))
                 progress?.Invoke(0, "Fixed the model file's tensor shapes — trying again…")
@@ -623,7 +626,18 @@ Public Module MediaStudio
                 progress?.Invoke(0, "Trying again with the model in RAM…")
             End Try
         Next
-        Return Await GenerateOnceAsync(req, progress, ct)
+        If made Is Nothing Then made = Await GenerateOnceAsync(req, progress, ct)
+        ' ⏱ shown in Model Manager → Installed
+        Try
+            Dim r = req.Recipe
+            Dim w = If(req.Width > 0, req.Width, r.Width), h = If(req.Height > 0, req.Height, r.Height)
+            Dim fr = If(req.Frames > 0, req.Frames, r.Frames)
+            JobTimes.Record("media:" & r.Id, clock.Elapsed.TotalSeconds,
+                            If(w > 0, $"{w}×{h}", "") & If(r.IsVideo AndAlso fr > 0 AndAlso r.Fps > 0, $" · {fr / CDbl(r.Fps):0.#} s", "") &
+                            If(req.Steps > 0, $" · {req.Steps} steps", ""))
+        Catch
+        End Try
+        Return made
     End Function
 
     Private Function AfterFirstLine(t As String) As String

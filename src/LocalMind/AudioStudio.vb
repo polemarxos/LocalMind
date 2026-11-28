@@ -181,6 +181,7 @@ Public Module AudioStudio
     ''' <summary>Runs llama-tts and returns the WAV file.</summary>
     Public Async Function GenerateAsync(req As AudioRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
         Dim m = req.Model
+        Dim total = Stopwatch.StartNew()
         If Not AppCore.Engine.IsInstalled() Then
             progress?.Invoke(0, "Installing the AI engine…")
             Await AppCore.Engine.InstallAsync(New Progress(Of (Text As String, Percent As Integer))(Sub(p) progress?.Invoke(p.Percent, p.Text)), ct)
@@ -290,6 +291,10 @@ Public Module AudioStudio
             If promptFile IsNot Nothing Then Try : File.Delete(promptFile) : Catch : End Try
         End Try
         progress?.Invoke(100, "Done")
+        Try
+            JobTimes.Record("audio:" & m.Id, total.Elapsed.TotalSeconds, If(m.IsMusic AndAlso req.Seconds > 0, $"{req.Seconds} s song", ""))
+        Catch
+        End Try
         Return out
     End Function
 

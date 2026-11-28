@@ -95,3 +95,56 @@ Public Module SpeedTest
         End Using
     End Function
 End Module
+
+''' <summary>How long the last pictures, videos and songs took per model, and the chat speed seen in real answers.</summary>
+Public Module JobTimes
+    Public Class Entry
+        Public Property Seconds As Double
+        Public Property Detail As String
+        Public Property At As DateTime
+    End Class
+
+    Private ReadOnly _lock As New Object()
+    Private _items As Dictionary(Of String, Entry)
+
+    Private ReadOnly Property FilePath As String
+        Get
+            Return Path.Combine(AppPaths.Roaming, "jobtimes.json")
+        End Get
+    End Property
+
+    Private Sub Load()
+        If _items IsNot Nothing Then Return
+        Try
+            If File.Exists(FilePath) Then _items = JsonConvert.DeserializeObject(Of Dictionary(Of String, Entry))(File.ReadAllText(FilePath))
+        Catch
+        End Try
+        If _items Is Nothing Then _items = New Dictionary(Of String, Entry)(StringComparer.OrdinalIgnoreCase)
+    End Sub
+
+    ''' <summary>Remembers one run (key: "media:&lt;id&gt;", "audio:&lt;id&gt;" or "chat:&lt;model&gt;").</summary>
+    Public Sub Record(key As String, seconds As Double, detail As String)
+        SyncLock _lock
+            Load()
+            _items(key) = New Entry With {.Seconds = Math.Round(seconds, 1), .Detail = detail, .At = DateTime.Now}
+            Try
+                File.WriteAllText(FilePath, JsonConvert.SerializeObject(_items, Formatting.Indented))
+            Catch
+            End Try
+        End SyncLock
+    End Sub
+
+    Public Function GetEntry(key As String) As Entry
+        SyncLock _lock
+            Load()
+            Dim e As Entry = Nothing
+            Return If(_items.TryGetValue(key, e), e, Nothing)
+        End SyncLock
+    End Function
+
+    Public Function FormatSeconds(s As Double) As String
+        If s >= 3600 Then Return $"{CInt(Math.Floor(s / 3600))}h {CInt(Math.Floor(s Mod 3600 / 60))}m"
+        If s >= 60 Then Return $"{CInt(Math.Floor(s / 60))}m {CInt(s Mod 60):00}s"
+        Return $"{s:0}s"
+    End Function
+End Module

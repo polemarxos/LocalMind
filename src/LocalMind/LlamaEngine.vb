@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Concurrent
 Imports System.Collections.Generic
 Imports System.Diagnostics
@@ -335,6 +335,10 @@ Public Class LlamaEngine
                     Await StopAsync()
                 End If
             End If
+            ' the chat model (or the last picture / video / sound job) may have just closed: wait until the card
+            ' has really given its memory back, so the next model sees all of it
+            status?.Invoke("Freeing graphics memory…")
+            Await HardwareInfo.WaitForVramReleaseAsync(ct)
         Catch
             _switchLock.Release()
             Throw

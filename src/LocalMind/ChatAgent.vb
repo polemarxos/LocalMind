@@ -273,7 +273,7 @@ Public Module ChatAgent
     ''' </summary>
     Public Async Function AnswerAsync(streamOnce As Func(Of ChatRequestOptions, Task(Of ChatResult)), payload As List(Of ChatMessage),
                                       opts As ChatRequestOptions, offerWebSearch As Boolean, status As Action(Of String), beforeFollowup As Action,
-                                      ct As CancellationToken) As Task(Of (Result As ChatResult, Markdown As String, Sources As List(Of SourceRef)))
+                                      ct As CancellationToken, Optional made As Action(Of String) = Nothing) As Task(Of (Result As ChatResult, Markdown As String, Sources As List(Of SourceRef)))
         opts.Tools = Tools(opts.Model, offerWebSearch)
         ' A plain "make me a video / picture": make sure it happens (small models often answer "I can't")
         ' by offering only that tool and requiring the call; the model still writes the English prompt.
@@ -444,6 +444,8 @@ Public Module ChatAgent
                     stepsThisRound.Add(tc.Name & " failed")
                 End Try
                 stepNo += 1
+                ' 🖼 show each result as soon as it is made (the next step can take minutes)
+                made?.Invoke(md.ToString())
             Next
             doneSteps.AddRange(stepsThisRound)
             ' One step at a time: "picture, then a video of it" → the model is asked for the next step after each one.

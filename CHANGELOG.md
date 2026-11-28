@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.26.6
+
+### Added
+- **Downloads in the main window.** Downloads that keep going after you close the Model Manager now show in the
+  status bar with name, percent, speed and time left (and "+N more"). Click it to open the download list.
+- **Model Manager → Installed shows useful columns.** The old Speed, Reading, Load and Context columns were always
+  empty. They are now:
+  - **Steps:** the steps of each picture and video model, its fast-mode steps and its CFG.
+  - **Output:** the picture size, or the video size, length and fps.
+  - **Speed:** for picture, video, music and voice models, how long the last run took; for chat models, the
+    tok/s seen in your real answers (or the speed test).
+  - **Context:** the chat model's context size.
+
+### Fixed
+- In "make a picture, then a video of it", the picture now appears in the chat as soon as it is made, before the
+  video starts. Results already made are kept if you press Stop or a later step fails.
+- Before a picture, video or sound model starts, LocalMind now waits until the graphics card has really freed the
+  memory of the model before it, either the chat model or the last picture. Before, the next model could start while
+  the previous one was still releasing memory, leaving it less memory than it needed.
+
 ## 2.26.5
 
 ### Changed

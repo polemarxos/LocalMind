@@ -21,6 +21,8 @@ Public Class MainForm
     Private _isGenerating As Boolean
     Private _webReady As Boolean
     Private _streamMsgId As String
+    ''' <summary>Pictures, videos and songs this answer has made so far (kept when it is stopped).</summary>
+    Private _madeMarkdown As String = ""
     Private _streamTokens As Integer
     Private _streamStart As DateTime
     Private _pendingAttachments As New List(Of AttachmentItem)()
@@ -93,6 +95,7 @@ Public Class MainForm
         ' Cheap UI-thread pump for things that change on background threads.
         _statusTimer = New System.Windows.Forms.Timer() With {.Interval = 700}
         AddHandler _statusTimer.Tick, AddressOf StatusTick
+        AddHandler lblDownloads.Click, Sub() OpenModelManagerAt("downloads")
         _statusTimer.Start()
 
         AddHandler AppCore.Engine.StateChanged, AddressOf OnEngineState
@@ -532,8 +535,7 @@ Public Class MainForm
 
     ''' <summary>UI-thread housekeeping: download progress, refreshes requested by background threads.</summary>
     Private Async Sub StatusTick(sender As Object, e As EventArgs)
-        ' (download progress shows only in Models → Downloads)
-        If lblDownloads.Visible Then lblDownloads.Visible = False
+        ShowDownloadProgress()
         Dim lanText = LanButtonText()
         If btnLan.Text <> lanText Then btnLan.Text = lanText
 
@@ -544,6 +546,26 @@ Public Class MainForm
         If _chatListDirty Then
             _chatListDirty = False
             If txtSearch.Text = SearchPlaceholder OrElse txtSearch.Text.Trim() = "" Then RefreshChatList()
+        End If
+    End Sub
+
+    ''' <summary>⬇ Downloads that keep going after the Model Manager is closed, in the status bar (click: open the list).</summary>
+    Private Sub ShowDownloadProgress()
+        Dim active = AppCore.Downloads.Jobs().Where(Function(j) j.Status = DownloadStatus.Downloading OrElse j.Status = DownloadStatus.Resolving OrElse
+                                                                j.Status = DownloadStatus.Verifying OrElse j.Status = DownloadStatus.Queued).ToList()
+        If active.Count = 0 Then
+            If lblDownloads.Visible Then lblDownloads.Visible = False
+            Return
+        End If
+        Dim cur = If(active.FirstOrDefault(Function(j) j.Status = DownloadStatus.Downloading), active(0))
+        Dim t = "⬇ " & cur.ModelName & "  " & If(cur.Status = DownloadStatus.Downloading, cur.StatusText.Replace("  ·  ", " · "), Localizer.T(cur.StatusText))
+        If active.Count > 1 Then t &= "  " & String.Format(Localizer.T("(+{0} more)"), active.Count - 1)
+        If lblDownloads.Text <> t Then lblDownloads.Text = t
+        lblDownloads.ToolTipText = String.Join(vbCrLf, active.Select(Function(j) j.ModelName & " — " & j.StatusText)) & vbCrLf & Localizer.T("Click to see the downloads")
+        If Not lblDownloads.Visible Then
+            lblDownloads.Visible = True
+            lblDownloads.IsLink = False
+            lblDownloads.ForeColor = Color.White
         End If
     End Sub
 
@@ -795,6 +817,7 @@ Public Class MainForm
         _streamStart = DateTime.Now
         lblTokens.Text = "0 tok/s"
 
+        _madeMarkdown = ""
         _streamMsgId = "msg-" & Guid.NewGuid().ToString("N").Substring(0, 8)
         Await Js($"appendAssistantStart('{_streamMsgId}')")
         SetStatus("Thinking…")
@@ -840,12 +863,17 @@ Public Class MainForm
                     Interlocked.Increment(_streamTokens)
                 End Sub, ct))
             ' The model may use tools by itself (draw, make a song, search the web) when the user asks for it.
+            Dim madeId = _streamMsgId
             Dim answer = Await ChatAgent.AnswerAsync(streamOnce, payload, opts, Not _btnWeb.Checked, AddressOf ToolStatus,
                                                      Sub()
                                                          SyncLock _liveTextLock
                                                              _liveAssistantText.Clear()
                                                          End SyncLock
-                                                     End Sub, ct)
+                                                     End Sub, ct,
+                                                     Sub(m)
+                                                         _madeMarkdown = m
+                                                         Me.Post(Sub() Js($"setMade('{madeId}', {JsonConvert.SerializeObject(MarkdownRenderer.ToHtml(m))});"))
+                                                     End Sub)
             result = answer.Result
             If answer.Sources IsNot Nothing Then sources = answer.Sources
             assistantText = result.Content & answer.Markdown & AppCore.SourcesMarkdown(sources)
@@ -853,9 +881,9 @@ Public Class MainForm
             SyncLock _liveTextLock
                 assistantText = _liveAssistantText.ToString()
             End SyncLock
-            assistantText &= vbCrLf & vbCrLf & "_[stopped]_"
+            assistantText &= _madeMarkdown & vbCrLf & vbCrLf & "_[stopped]_"
         Catch ex As Exception
-            assistantText = "⚠ Error: " & ex.Message
+            assistantText = If(_madeMarkdown = "", "", _madeMarkdown.Trim() & vbCrLf & vbCrLf) & "⚠ Error: " & ex.Message
         Finally
             sw.Stop()
             _flushTimer.Stop()
@@ -895,6 +923,10 @@ Public Class MainForm
         RefreshChatList()
 
         lblTokens.Text = $"{tps:0.0} tok/s  ({tokens} tokens, {sw.Elapsed.TotalSeconds:0.0}s)"
+        ' ⏱ the chat speed seen in real answers (Model Manager → Installed)
+        If result IsNot Nothing AndAlso result.EngineTokensPerSecond > 0 AndAlso Not String.IsNullOrEmpty(_session.Model) Then
+            JobTimes.Record("chat:" & _session.Model, result.EngineTokensPerSecond, If(result.PromptTokensPerSecond > 0, $"{result.PromptTokensPerSecond:0}", ""))
+        End If
         SetStatus("Done")
         If Settings.AutoReadAnswers AndAlso result IsNot Nothing AndAlso Not Voice.IsSpeaking AndAlso Not _inVoiceChat Then SpeakAnswer(assistantText)
     End Function
