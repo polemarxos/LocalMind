@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.26.10
+
+### Fixed
+- **"LoRA has no diffusion or text-encoder targets".** Some trainers save LoRA layer names the picture / video engine
+  doesn't recognize, and one such LoRA stopped the whole picture or video. LocalMind now checks every LoRA before
+  a run:
+  - A LoRA whose names are only written differently is renamed once. The weights don't change, and the original
+    file is kept in `Loras\_original`.
+  - A LoRA with nothing the model can use is left out. The picture or video is still made, with a note naming the
+    LoRA.
+  - If the engine still refuses a LoRA, LocalMind tries once more without your LoRAs.
+- A model file with a large settings header could fail when LocalMind prepared it (a size calculation was wrong).
+
 ## 2.26.9
 
 ### Added

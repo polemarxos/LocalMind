@@ -1331,5 +1331,9 @@
 "This repo has no model file + mmproj file pair, so LocalMind's engine can't run it (it may be for another program).": "Αυτό το αποθετήριο δεν έχει ζεύγος αρχείου μοντέλου + mmproj, οπότε η μηχανή του LocalMind δεν μπορεί να το τρέξει (ίσως είναι για άλλο πρόγραμμα).",
 "{0} model files, {1} audio files. Pick the size, then press Add and download.": "{0} αρχεία μοντέλου, {1} αρχεία ήχου. Διαλέξτε μέγεθος και πατήστε Προσθήκη και λήψη.",
 "Added from Hugging Face ({0}). Works like {1}.": "Προστέθηκε από το Hugging Face ({0}). Λειτουργεί όπως το {1}.",
-"Added — downloading. You can follow it in the Downloads list and close this window.": "Προστέθηκε — γίνεται λήψη. Μπορείτε να την παρακολουθείτε στις Λήψεις και να κλείσετε αυτό το παράθυρο."
+"Added — downloading. You can follow it in the Downloads list and close this window.": "Προστέθηκε — γίνεται λήψη. Μπορείτε να την παρακολουθείτε στις Λήψεις και να κλείσετε αυτό το παράθυρο.",
+"Preparing a LoRA for the engine (once)…": "Προετοιμασία ενός LoRA για τη μηχανή (μία φορά)…",
+"LoRA {0} left out: it has nothing this model can use": "Το LoRA {0} παραλείφθηκε: δεν έχει τίποτα που να μπορεί να χρησιμοποιήσει αυτό το μοντέλο",
+"A LoRA doesn't fit this model — trying again without your LoRAs…": "Ένα LoRA δεν ταιριάζει σε αυτό το μοντέλο — νέα προσπάθεια χωρίς τα LoRA σας…",
+"Left out (not made for this model): {0}": "Παραλείφθηκαν (δεν είναι για αυτό το μοντέλο): {0}"
 }

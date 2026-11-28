@@ -611,6 +611,7 @@ Public Module MediaStudio
         ' A checkpoint whose tensor shapes the engine rejects (int8 scales stored as [N, 1]) is fixed and tried again.
         Dim clock = Diagnostics.Stopwatch.StartNew()
         Dim made As String = Nothing
+        Dim failedLoras As List(Of String) = Nothing
         For attempt = 0 To 3
             Try
                 made = Await GenerateOnceAsync(req, progress, ct)
@@ -618,6 +619,13 @@ Public Module MediaStudio
             Catch ex As Exception When attempt < 3 AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        ShapeFix.TryFixFromLog(CStr(ex.Data("engineLog")))
                 progress?.Invoke(0, "Fixed the model file's tensor shapes — trying again…")
+            Catch ex As Exception When attempt < 3 AndAlso req.Loras.Count > 0 AndAlso
+                                       (ex.Message & CStr(If(TypeOf ex.Data("engineLog") Is String, ex.Data("engineLog"), ""))).Contains("no diffusion or text-encoder targets")
+                ' a LoRA the check let through still can't be used: once more without the user's LoRAs
+                Dim names = req.Loras.Select(Function(l) l.Name).ToList()
+                req.Loras = New List(Of UserLora)()
+                progress?.Invoke(0, Localizer.T("A LoRA doesn't fit this model — trying again without your LoRAs…"))
+                failedLoras = names
             Catch ex As Exception When attempt < 3 AndAlso Not _diskParamsFailed AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        CStr(ex.Data("engineLog")).Contains("--params-backend disk") AndAlso
                                        Regex.IsMatch(AfterFirstLine(CStr(ex.Data("engineLog"))), "(params[_ ]backend|disk)[^\n]*(unknown|unsupported|not supported|invalid|failed)|unknown argument", RegexOptions.IgnoreCase)
@@ -627,6 +635,7 @@ Public Module MediaStudio
             End Try
         Next
         If made Is Nothing Then made = Await GenerateOnceAsync(req, progress, ct)
+        If failedLoras IsNot Nothing Then LastSkippedLoras.AddRange(failedLoras.Where(Function(n) Not LastSkippedLoras.Contains(n)))
         ' ⏱ shown in Model Manager → Installed
         Try
             Dim r = req.Recipe
@@ -644,6 +653,9 @@ Public Module MediaStudio
         Dim i = t.IndexOf(ControlChars.Lf)
         Return If(i < 0, "", t.Substring(i + 1))
     End Function
+
+    ''' <summary>LoRAs left out of the last run because the engine can't use them (shown in the chat).</summary>
+    Public LastSkippedLoras As New List(Of String)()
 
     ''' <summary>Set when the engine refused to read weights from the disk (low-RAM mode then keeps them in RAM).</summary>
     Private _diskParamsFailed As Boolean
@@ -743,7 +755,21 @@ Public Module MediaStudio
             Dim prompt = promptPrefix & req.Prompt
             If Not String.IsNullOrEmpty(r.Prefix) AndAlso Not req.Prompt.StartsWith(r.Prefix.Trim().TrimEnd(","c), StringComparison.OrdinalIgnoreCase) Then prompt = r.Prefix & prompt
             Dim tags As New StringBuilder()
+            ' (a LoRA the engine can't use stops the whole run: renamed when that helps, else left out with a note)
+            LastSkippedLoras = New List(Of String)()
+            Dim usable = Function(file As String, name As String) As Boolean
+                             Try
+                                 If LoraKeyFix.Prepare(file, Sub(t) progress?.Invoke(0, t)) Then Return True
+                             Catch ex As Exception
+                                 Diagnostics.Debug.WriteLine("LoRA check " & name & ": " & ex.Message)
+                                 Return True
+                             End Try
+                             LastSkippedLoras.Add(name)
+                             progress?.Invoke(0, String.Format(Localizer.T("LoRA {0} left out: it has nothing this model can use"), name))
+                             Return False
+                         End Function
             For Each l In If(r.Loras, New List(Of MediaLora)())
+                If IsPresent(l) AndAlso Not usable(LocalPath(l), l.Name) Then Continue For
                 tags.Append(FormattableString.Invariant($"<lora:{If(l.High, "|high_noise|", "")}{l.Name}:{l.Weight}>"))
             Next
             Dim speedOn = req.Fast AndAlso r.Speed IsNot Nothing
@@ -753,10 +779,12 @@ Public Module MediaStudio
                     Await DownloadAsync(r, v, progress, ct, withSpeed:=True)
                 End If
                 For Each l In r.Speed.Loras
+                    If IsPresent(l) AndAlso Not usable(LocalPath(l), l.Name) Then Continue For
                     tags.Append(FormattableString.Invariant($"<lora:{If(l.High, "|high_noise|", "")}{l.Name}:{l.Weight}>"))
                 Next
             End If
             For Each u In req.Loras.Where(Function(x) x IsNot Nothing AndAlso File.Exists(x.FullPath))
+                If Not usable(u.FullPath, u.Name) Then Continue For
                 If Not String.IsNullOrWhiteSpace(u.Triggers) AndAlso prompt.IndexOf(u.Triggers.Trim(), StringComparison.OrdinalIgnoreCase) < 0 Then
                     prompt = u.Triggers.Trim().TrimEnd(","c) & ", " & prompt
                 End If

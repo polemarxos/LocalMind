@@ -702,6 +702,35 @@ Module HarnessMain
 
         If only = "v2262" Then
             Console.WriteLine("== v2.26.2: full backup and restore")
+            ' 🧩 LoRAs the engine can't map: renamed when they are transformer layers, else left out
+            Dim mkSt = Function(name As String, keys As String()) As String
+                           Dim f = Path.Combine(Path.GetTempPath(), name & ".safetensors")
+                           Dim h As New JObject()
+                           Dim off = 0
+                           For Each k In keys
+                               h(k) = New JObject From {{"dtype", "F32"}, {"shape", New JArray(1)}, {"data_offsets", New JArray(off, off + 4)}}
+                               off += 4
+                           Next
+                           Dim hb = Encoding.UTF8.GetBytes(h.ToString(Newtonsoft.Json.Formatting.None))
+                           Using fs = File.Create(f)
+                               fs.Write(BitConverter.GetBytes(CLng(hb.Length)), 0, 8)
+                               fs.Write(hb, 0, hb.Length)
+                               fs.Write(New Byte(off - 1) {}, 0, off)
+                           End Using
+                           Return f
+                       End Function
+            Dim okLora = mkSt("lm-ok", {"diffusion_model.blocks.0.attn.q.lora_A.weight", "diffusion_model.blocks.0.attn.q.lora_B.weight"})
+            Dim before = File.ReadAllBytes(okLora)
+            Check(LoraKeyFix.Prepare(okLora) AndAlso File.ReadAllBytes(okLora).SequenceEqual(before), "LoRA with engine names: untouched")
+            Dim peft = mkSt("lm-peft", {"base_model.model.blocks.0.attn.q.lora_A.weight", "base_model.model.blocks.0.attn.q.lora_B.weight"})
+            Check(LoraKeyFix.Prepare(peft) AndAlso File.ReadAllText(peft).Contains("diffusion_model.blocks.0.attn.q.lora_A.weight") AndAlso
+                  File.Exists(Path.Combine(Path.GetTempPath(), "_original", "lm-peft.safetensors")), "PEFT-named LoRA renamed, original kept")
+            Dim foreign = mkSt("lm-foreign", {"something.else.weight"})
+            Check(Not LoraKeyFix.Prepare(foreign), "LoRA with nothing the engine can use: left out")
+            Check(LoraKeyFix.Prepare(mkSt("lm-kohya", {"lora_unet_blocks_0_attn_q.lora_down.weight"})), "kohya LoRA: fine")
+            For Each f In {okLora, peft, foreign, Path.Combine(Path.GetTempPath(), "_original", "lm-peft.safetensors")}
+                Try : File.Delete(f) : Catch : End Try
+            Next
             ' 🎵 music editions, and models added from Hugging Face
             Check({"minimax-music3", "minimax-music3-q4", "minimax-music3-q6", "minimax-music3-bf16", "yue2-3b", "yue2-3b-bf16"}.All(Function(id) AudioStudio.Models().Any(Function(m) m.Id = id)),
                   "all music editions listed")

@@ -485,6 +485,13 @@ Public Module ChatAgent
                    ThenBy(Function(r) r.Steps).FirstOrDefault()
     End Function
 
+    ''' <summary>A note when LoRAs had to be left out of the last picture or video.</summary>
+    Private Function SkippedLorasNote() As String
+        Dim l = MediaStudio.LastSkippedLoras
+        If l Is Nothing OrElse l.Count = 0 Then Return ""
+        Return vbCrLf & vbCrLf & "_⚠ " & String.Format(Localizer.T("Left out (not made for this model): {0}"), String.Join(", ", l)) & "_"
+    End Function
+
     Public Function EscapeAlt(s As String) As String
         Dim t = If(s, "").Replace("[", "(").Replace("]", ")").Replace(vbCr, " ").Replace(vbLf, " ")
         Return If(t.Length > 120, t.Substring(0, 120) & "…", t)
@@ -526,7 +533,7 @@ Public Module ChatAgent
             .Steps = If(fast, r.Speed.Steps, r.Steps), .Cfg = If(fast, r.Speed.Cfg, r.Cfg), .Fast = fast, .Strength = 0.6,
             .InputImage = photoFile, .Loras = loras}
         Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
-        Return $"![{EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
+        Return $"![{EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_" & SkippedLorasNote()
     End Function
 
     ''' <summary>A downloaded video model: with a photo one that animates it (else one that creates from text).</summary>
@@ -615,7 +622,7 @@ Public Module ChatAgent
             .Loras = loras}
         Dim out = Await MediaStudio.GenerateAsync(req, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
         out = Await ToMp4Async(out, status, ct)
-        Return $"[🎬 {EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
+        Return $"[🎬 {EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_" & SkippedLorasNote()
     End Function
 
     ''' <summary>A downloaded video model that takes reference pictures and voices (the video profile's model first).</summary>
@@ -676,7 +683,7 @@ Public Module ChatAgent
             Next
         End Try
         out = Await ToMp4Async(out, status, ct)
-        Return $"[🎬 {EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_"
+        Return $"[🎬 {EscapeAlt(prompt)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf & $"_{r.Name} · {v.Label}_" & SkippedLorasNote()
     End Function
 
     ''' <summary>MP4 plays everywhere (iPhone too); keeps the original if ffmpeg is not available. The prompt file moves along.</summary>

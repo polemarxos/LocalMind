@@ -103,7 +103,7 @@ Public Module QuantMetaFix
 
         ' no room: write a copy with the bigger header (8-byte aligned), then swap it in
         progress?.Invoke(Localizer.T("Preparing the model file (once)…"))
-        Dim padded = CInt((nb.Length + 7) \ 8 * 8)
+        Dim padded = CInt(((nb.Length + 7) \ 8) * 8)
         Dim newHeader(padded - 1) As Byte
         Array.Fill(newHeader, CByte(32))
         Array.Copy(nb, newHeader, nb.Length)
