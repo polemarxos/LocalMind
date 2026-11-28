@@ -72,6 +72,27 @@ Public Module ChatAgent
         Return result
     End Function
 
+    ''' <summary>The tools without the steps the user chose to skip.</summary>
+    Private Function Without(tools As JArray, skipped As HashSet(Of String)) As JArray
+        If tools Is Nothing OrElse skipped Is Nothing OrElse skipped.Count = 0 Then Return tools
+        Dim kept As New JArray(tools.Where(Function(t) Not skipped.Contains(If(t("function")?.Value(Of String)("name"), ""))))
+        Return If(kept.Count = 0, Nothing, kept)
+    End Function
+
+    ''' <summary>A step as the user sees it ("🖼 Picture", "🎬 Video", "🎵 Song"…).</summary>
+    Public Function StepLabel(tool As String) As String
+        Select Case tool
+            Case "generate_image" : Return "🖼 " & Localizer.T("Picture")
+            Case "generate_video" : Return "🎬 " & Localizer.T("Video")
+            Case "extend_video" : Return "🎬 " & Localizer.T("Longer video")
+            Case "make_song" : Return "🎵 " & Localizer.T("Song")
+            Case "clone_voice" : Return "🗣 " & Localizer.T("Voice clip")
+            Case "web_search" : Return "🌐 " & Localizer.T("Web search")
+            Case "set_persona" : Return "🎭 " & Localizer.T("Persona")
+            Case Else : Return tool
+        End Select
+    End Function
+
     ' "a video from that image", "using the last picture": the picture already exists, it is what the video starts from
     Private ReadOnly SourcePicture As New Regex("(\b(from|using|use|with|of|on|animate|based\s+on)\s+(the\s+)?(that|this|these|those|the|last|previous|above|same|my|earlier)\s+(\w+\s+)?|" &
                                                 "\b(that|this|last|previous|above|same|earlier)\s+)" &
@@ -83,14 +104,22 @@ Public Module ChatAgent
     Private ReadOnly PictureWord As New Regex("\b(image|picture|photo|drawing|painting|illustration|logo|wallpaper|portrait)s?\b|εικόνα|φωτογραφ\w*|ζωγραφι\w*|σκίτσο|λογότυπο|πορτρέτο",
                                               RegexOptions.IgnoreCase Or RegexOptions.Compiled)
 
-    ''' <summary>Where the request starts, or -1. A picture named only as the source of something else
+    ''' <summary>Where the request is (the end of the word for what is asked for), or -1. A picture named only as the source of something else
     ''' ("a video from that image") is not a request for a new picture.</summary>
     Private Function AskAt(rx As Regex, text As String) As Integer
+        ' (the place of the thing asked for, "image" / "video", sets the order: in "make an image of a cat, then a video
+        '  of it" both requests start at "make", the picture comes first)
         For Each m As Match In rx.Matches(text)
-            If rx IsNot AskPicture OrElse Not SourcePicture.IsMatch(m.Value) Then Return m.Index
+            If rx IsNot AskPicture OrElse Not SourcePicture.IsMatch(m.Value) Then
+                If rx Is AskPicture Then
+                    Dim first = PictureWord.Match(m.Value)
+                    If first.Success Then Return m.Index + first.Index + first.Length
+                End If
+                Return m.Index + m.Length
+            End If
             ' (the match may run on past a first, new picture: "an image of a cat, then a video from that image")
             For Each n As Match In PictureWord.Matches(m.Value)
-                If n.Index > 0 AndAlso Not SourcePicture.IsMatch(m.Value.Substring(0, n.Index + n.Length)) Then Return m.Index
+                If n.Index > 0 AndAlso Not SourcePicture.IsMatch(m.Value.Substring(0, n.Index + n.Length)) Then Return m.Index + n.Index + n.Length
             Next
         Next
         Return -1
@@ -337,12 +366,29 @@ Public Module ChatAgent
     ''' </summary>
     Public Async Function AnswerAsync(streamOnce As Func(Of ChatRequestOptions, Task(Of ChatResult)), payload As List(Of ChatMessage),
                                       opts As ChatRequestOptions, offerWebSearch As Boolean, status As Action(Of String), beforeFollowup As Action,
-                                      ct As CancellationToken, Optional made As Action(Of String) = Nothing) As Task(Of (Result As ChatResult, Markdown As String, Sources As List(Of SourceRef)))
-        opts.Tools = Tools(opts.Model, offerWebSearch)
+                                      ct As CancellationToken, Optional made As Action(Of String) = Nothing,
+                                      Optional confirmSteps As Func(Of List(Of String), Task(Of List(Of String))) = Nothing) As Task(Of (Result As ChatResult, Markdown As String, Sources As List(Of SourceRef)))
+        Dim userText = payload?.LastOrDefault(Function(m) m.Role = "user")?.Content
+        ' 🪜 several steps asked for: shown first, the user may skip some (Settings → AI tools)
+        Dim skipped As New HashSet(Of String)()
+        If confirmSteps IsNot Nothing AndAlso AppCore.Settings.ConfirmSteps Then
+            Dim plan = RequestedTools(userText, Tools(opts.Model, offerWebSearch))
+            If plan.Count >= 2 Then
+                Dim keep = Await confirmSteps(plan)
+                If keep Is Nothing Then Throw New OperationCanceledException()
+                For Each stp In plan.Where(Function(x) Not keep.Contains(x))
+                    skipped.Add(stp)
+                Next
+                If skipped.Count > 0 AndAlso payload IsNot Nothing AndAlso payload.Count > 0 Then
+                    payload.Insert(payload.Count - 1, New ChatMessage With {.Role = "system",
+                        .Content = $"In the user's next message, the user chose to skip these steps: {String.Join(", ", skipped)}. Do not do them; do only the other steps."})
+                End If
+            End If
+        End If
+        opts.Tools = Without(Tools(opts.Model, offerWebSearch), skipped)
         Dim allTools = opts.Tools
         ' A plain "make me a video / picture": make sure it happens (small models often answer "I can't")
         ' by offering only that tool and requiring the call; the model still writes the English prompt.
-        Dim userText = payload?.LastOrDefault(Function(m) m.Role = "user")?.Content
         Dim forced = RequestedTool(userText, opts.Tools)
         If forced IsNot Nothing Then
             ' (Enumerable.First: JArray's own "First" property would index the JSON with the lambda)
@@ -398,6 +444,7 @@ Public Module ChatAgent
         StepCount = Math.Max(1, Math.Max(wanted.Count, result.ToolCalls.Where(Function(t) t.Name <> "set_persona" AndAlso t.Name <> "web_search").Count()))
         StepIndex = 0
         Dim stepNo = 0
+        Dim stopAll = False
         Do
             Dim searched = False
             Dim stepsThisRound As New List(Of String)()
@@ -408,6 +455,8 @@ Public Module ChatAgent
                 Catch
                     args = New JObject()
                 End Try
+                ' (a step the user chose to skip)
+                If skipped.Contains(tc.Name) Then Continue For
                 ' the same step twice (small models repeat themselves) runs once
                 If Not seen.Add(tc.Name & "|" & args.ToString(Newtonsoft.Json.Formatting.None)) Then Continue For
                 Try
@@ -521,15 +570,24 @@ Public Module ChatAgent
                 Catch ex As OperationCanceledException
                     Throw
                 Catch ex As Exception
+                    ' ⏹ a step failed: nothing more runs (the next steps usually need this one), and it goes in the log
+                    FailureLog.Write(userText, StepLabel(tc.Name), ex)
                     Dim ls = ex.Message.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries)
                     md.AppendLine().AppendLine().Append("⚠ " & String.Join("  " & vbLf & "⚠ ", ls.Skip(Math.Max(0, ls.Length - 4))))
+                    Dim notRun = wanted.Where(Function(t) t <> tc.Name AndAlso Not doneTools.Contains(t)).Select(AddressOf StepLabel).ToList()
+                    md.AppendLine().AppendLine().Append("_⏹ " & Localizer.T("Stopped because this step failed.") &
+                        If(notRun.Count > 0, " " & String.Format(Localizer.T("Not run: {0}."), String.Join(", ", notRun)), "") &
+                        " " & Localizer.T("Details are in the failure log (Help → Copy diagnostics).") & "_")
                     stepsThisRound.Add(tc.Name & " failed")
+                    stopAll = True
                 End Try
                 stepNo += 1
                 doneTools.Add(tc.Name)
                 ' 🖼 show each result as soon as it is made (the next step can take minutes)
                 made?.Invoke(md.ToString())
+                If stopAll Then Exit For
             Next
+            If stopAll Then Exit Do
             doneSteps.AddRange(stepsThisRound)
             ' One step at a time: "picture, then a video of it" → the model is asked for the next step after each one.
             ' the steps asked for that haven't run yet (a picture done → the video next)
@@ -545,7 +603,7 @@ Public Module ChatAgent
             payload.Add(New ChatMessage With {.Role = "user", .Content =
                 "(LocalMind) Done so far: " & String.Join("; ", doneSteps) & ". If my request above has a next step that is not done yet, do it now by calling its tool " &
                 "(with the persona I named for that step, and use_last_picture=true if it should use the picture). If everything is done, reply with one short sentence and no tool call."})
-            opts.Tools = Tools(opts.Model, offerWebSearch)
+            opts.Tools = Without(Tools(opts.Model, offerWebSearch), skipped)
             opts.ToolChoice = Nothing
             ' a step that was asked for and not done yet: offer just its tool and require it (like the first step)
             Dim nextTool = pending.FirstOrDefault()

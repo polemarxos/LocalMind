@@ -1,4 +1,6 @@
 ﻿Imports System
+Imports System.Collections.Generic
+Imports System.Linq
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports System.Windows.Forms
@@ -26,6 +28,50 @@ Partial Class MainForm
                               End Function)
     End Sub
 
+    ''' <summary>
+    ''' 🔧 At every start: each installed engine still has its programs (llama-server, llama-tts, sd-cli, whisper-cli).
+    ''' A missing one is installed again before it is needed; if it is still missing, an antivirus program is the cause.
+    ''' </summary>
+    Private Sub CheckEnginesAtStartLater()
+        Dim unused = Task.Run(Async Function()
+                                  Try
+                                      Await Task.Delay(TimeSpan.FromSeconds(3))
+                                      Dim found As New List(Of String)()
+                                      Dim status As Action(Of String) = Sub(t) SetStatus(t)
+                                      If Settings.Backend = BackendKind.BuiltIn Then
+                                          Dim prog As New Progress(Of (Text As String, Percent As Integer))(Sub(p) SetStatus(p.Text))
+                                          Dim r = Await AppCore.Engine.RepairIfBrokenAsync(prog, CancellationToken.None)
+                                          If r IsNot Nothing Then found.Add(r)
+                                      End If
+                                      Dim sd = Await MediaStudio.RepairEngineAsync(status, CancellationToken.None)
+                                      If sd IsNot Nothing Then found.Add(sd)
+                                      found.AddRange(Await Voice.RepairWhisperAsync(status, CancellationToken.None))
+                                      If found.Count = 0 Then Return
+                                      Dim still = found.Where(Function(f) f.StartsWith("!")).Select(Function(f) f.Substring(1)).ToList()
+                                      Dim fixedOnes = found.Where(Function(f) Not f.StartsWith("!")).ToList()
+                                      If fixedOnes.Count > 0 Then SetStatus(String.Format(Localizer.T("Repaired the AI engine: {0} (a file was missing)."), String.Join(", ", fixedOnes)))
+                                      If still.Count > 0 Then
+                                          Dim ex As New Exception("Engine files still missing after installing again: " & String.Join(", ", still))
+                                          FailureLog.Write("(startup engine check)", "", ex)
+                                          Me.Post(Sub() Localizer.Box(Me, String.Format(Localizer.T("A program of the AI engine ({0}) keeps going missing. Windows Security or another antivirus program is probably removing it." &
+                                                                                                    vbCrLf & vbCrLf & "Open Windows Security → Virus & threat protection → Protection history, allow the LocalMind engine files, then restart LocalMind."),
+                                                                                    String.Join(", ", still)),
+                                                                      "LocalMind", MessageBoxButtons.OK, MessageBoxIcon.Warning))
+                                      End If
+                                  Catch
+                                  End Try
+                              End Function)
+    End Sub
+
+    Private Sub OnEngineRolledBack(message As String)
+        FailureLog.Write("(engine update)", "", New Exception(message))
+        SetStatus(message)
+        Try
+            _tray?.ShowBalloonTip(6000, "LocalMind", message, ToolTipIcon.Warning)
+        Catch
+        End Try
+    End Sub
+
     Private Async Function WaitUntilIdleAsync() As Task
         For i = 1 To 120
             If AppCore.Engine.ActiveRequests = 0 AndAlso Not _isGenerating AndAlso Not MediaStudio.IsBusy AndAlso Not AudioStudio.IsBusy Then Return
@@ -50,7 +96,8 @@ Partial Class MainForm
         End If
 
         ' 2. AI engines (only the ones that are installed)
-        If manual OrElse s.AutoUpdateEngines Then
+        ' ("Stay on the engine versions that work": only Help → Update everything now updates them)
+        If manual OrElse (s.AutoUpdateEngines AndAlso Not s.KeepWorkingEngines) Then
             Dim status As Action(Of String) = Sub(t) SetStatus(t)
             Try
                 If s.Backend = BackendKind.BuiltIn AndAlso AppCore.Engine.IsInstalled() Then

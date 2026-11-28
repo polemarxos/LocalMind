@@ -76,6 +76,12 @@ Public Class AppSettings
     ''' <summary>Let the chat model use tools by itself (draw, compose, search the web) when you ask for it.</summary>
     Public Property AgentTools As Boolean = True
     Public Property LastEngineCheck As DateTime = DateTime.MinValue
+    ''' <summary>Automatic updates leave the AI engines alone once they work (Help → Update everything now still updates them).</summary>
+    Public Property KeepWorkingEngines As Boolean = False
+    ''' <summary>Engine versions that failed on this PC and were swapped back ("sd/cuda13=tag"); not installed again.</summary>
+    Public Property BadEngineVersions As New System.Collections.Generic.List(Of String)()
+    ''' <summary>Show the steps before a request with several steps (picture → video → song) runs.</summary>
+    Public Property ConfirmSteps As Boolean = True
     ''' <summary>Civitai API key (optional; some downloads need a signed-in account).</summary>
     Public Property CivitaiApiKey As String = ""
     ''' <summary>Search civitai.red (full catalogue, 18+) instead of civitai.com.</summary>

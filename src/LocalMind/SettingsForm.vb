@@ -25,7 +25,7 @@ Public Class SettingsForm
     Private numCtx, numSlots, numIdle, numMinCtx As NumericUpDown
     Private cmbTheme As ComboBox
     Private chkSplash As CheckBox
-    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent, chkAutoInstall As CheckBox
+    Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent, chkAutoInstall, chkKeepEng, chkConfirmSteps As CheckBox
     Private cmbLang As ComboBox
     Private cmbContent As ComboBox
     Private txtHotkey As TextBox
@@ -326,8 +326,12 @@ Public Class SettingsForm
         Row(t, "", chkAutoInstall)
         chkEngUpd = New CheckBox() With {.Text = "Keep the AI engines and the model list up to date automatically", .Checked = _s.AutoUpdateEngines, .AutoSize = True}
         Row(t, "", chkEngUpd)
+        chkKeepEng = New CheckBox() With {.Text = "Stay on the engine versions that work on this PC (update them only with Help → Update everything now)", .Checked = _s.KeepWorkingEngines, .AutoSize = True}
+        Row(t, "", chkKeepEng)
         chkAgent = New CheckBox() With {.Text = "The AI may draw, make videos, compose and search the web by itself when you ask", .Checked = _s.AgentTools, .AutoSize = True}
         Row(t, "AI tools", chkAgent)
+        chkConfirmSteps = New CheckBox() With {.Text = "Show the steps first when a message asks for several things (picture → video → song)", .Checked = _s.ConfirmSteps, .AutoSize = True}
+        Row(t, "", chkConfirmSteps)
         cmbContent = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 360}
         cmbContent.Items.AddRange({Localizer.T("🛡 Standard — official models, no explicit content"), Localizer.T("🔞 Uncensored — also nudity and explicit content (18+)")})
         cmbContent.SelectedIndex = If(_s.UncensoredContent OrElse _s.ShowNsfw, 1, 0)
@@ -440,6 +444,8 @@ Public Class SettingsForm
         _s.MinAutoContext = CInt(numMinCtx.Value)
         _s.CheckForUpdates = chkUpdates.Checked
         _s.AutoUpdateEngines = chkEngUpd.Checked
+        _s.KeepWorkingEngines = chkKeepEng.Checked
+        _s.ConfirmSteps = chkConfirmSteps.Checked
         _s.AutoInstallUpdates = chkAutoInstall.Checked
         _s.ShowStartupScreen = chkSplash.Checked
         Dim newTheme = ThemePresets.All(Math.Max(0, cmbTheme.SelectedIndex)).Name

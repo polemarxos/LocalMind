@@ -26,35 +26,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      # Quick tests: real chat messages and the steps they must give (tests/prompts.json), and engine version rollback.
+      # A failure stops the build, so nothing is released.
+      - name: Quick tests
+        run: dotnet run --project tests/LocalMind.Harness -- prompts
+
       - name: Publish single-file exe
         run: dotnet publish src/LocalMind/LocalMind.vbproj -c Release -r win-x64 -p:PublishSingleFile=true -o publish
 
       - uses: actions/upload-artifact@v4
-        id: upload
         with:
           name: LocalMind-win-x64
-          path: publish/LocalMind.exe
-
-      # Code signing through SignPath Foundation (free for open source). Skipped until the
-      # repository variable SIGNPATH_ORGANIZATION_ID and the secret SIGNPATH_API_TOKEN exist.
-      # See docs/CODE-SIGNING.md.
-      - name: Sign exe (SignPath)
-        if: vars.SIGNPATH_ORGANIZATION_ID != ''
-        uses: signpath/github-action-submit-signing-request@v3
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'LocalMind' }}
-          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG || 'release-signing' }}
-          github-artifact-id: ${{ steps.upload.outputs.artifact-id }}
-          wait-for-completion: true
-          output-artifact-directory: publish
-
-      - name: Upload signed exe
-        if: vars.SIGNPATH_ORGANIZATION_ID != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: LocalMind-win-x64-signed
           path: publish/LocalMind.exe
 
       # Publish a GitHub Release with the exe attached, either by pushing a tag like v2.0.0

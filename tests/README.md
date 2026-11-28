@@ -5,6 +5,7 @@ services: Hugging Face, real downloads, and a real llama.cpp server. It runs on 
 
 ```bash
 cd tests/LocalMind.Harness
+dotnet run -- prompts    # tests/prompts.json: real chat messages and the steps they must give (runs on every build)
 dotnet run -- unit       # think-tag splitter, quant parsing, Markdown safety, catalog, best-fit list, prompt payload
 dotnet run -- live       # live Hugging Face catalog, search, and automatic quant choice for 0–24 GB VRAM
 dotnet run -- download   # real downloads into /tmp/oc-models: cancel, resume, SHA-256 check, library registration
@@ -19,3 +20,10 @@ dotnet run -- engine     # LlamaEngine end-to-end: start, model switching, think
   `llama-server -m Qwen3-0.6B-Q4_K_M.gguf --host 127.0.0.1 --port 18080 -c 8192 -np 2 --no-webui`
 - One concurrency check depends on timing: with a tiny model the first answer can occasionally finish
   before the second request arrives.
+
+## Adding a message to tests/prompts.json
+
+When LocalMind reads a chat message wrong (makes a picture you didn't ask for, skips the song), add that message to
+`tests/prompts.json` with the steps it should give, in order: `picture`, `video`, `longer-video`, `song`, `voice`, or
+an empty list for a normal answer. Every build runs `dotnet run -- prompts`, and a wrong result stops the build, so
+the same mistake can't come back in a release.

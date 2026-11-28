@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Concurrent
 Imports System.Collections.Generic
 Imports System.Diagnostics
@@ -595,6 +595,7 @@ Public Class LanServer
             errorText = "stopped"
         Catch ex As Exception
             errorText = ex.Message
+            FailureLog.Write("(phone / network) " & If(text, ""), "", ex)
         Finally
             Interlocked.Decrement(_activeClients)
         End Try

@@ -69,6 +69,17 @@ Public Module Voice
                                 {"^whisper-(blas-bin-x64|bin-x64)\.zip$"})}
     End Function
 
+    ''' <summary>Startup check: installed whisper.cpp builds still have their program (installed again if not).</summary>
+    Public Async Function RepairWhisperAsync(progress As Action(Of String), ct As CancellationToken) As Task(Of Collections.Generic.List(Of String))
+        Dim result As New Collections.Generic.List(Of String)()
+        If Not OperatingSystem.IsWindows() Then Return result
+        For Each flavor In {"cuda13", "cuda12", "cpu"}
+            Dim r = Await ExternalTools.RepairIfBrokenAsync(WhisperPackage(flavor), progress, ct)
+            If r IsNot Nothing Then result.Add(r)
+        Next
+        Return result
+    End Function
+
     ''' <summary>Updates whisper.cpp builds that are installed, when a newer one exists.</summary>
     Public Async Function UpdateWhisperAsync(progress As Action(Of String), ct As CancellationToken) As Task
         If Not OperatingSystem.IsWindows() Then Return

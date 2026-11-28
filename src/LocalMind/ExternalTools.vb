@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.IO.Compression
@@ -73,6 +73,8 @@ Public Module ExternalTools
         End Using
         If urls Is Nothing Then Throw New Exception($"No Windows build of {p.Name} ({p.Flavor}) found in the latest releases of {p.Repo}.")
         If onlyIfNewer AndAlso FindExe(p) IsNot Nothing AndAlso tag = InstalledTag(p) Then Return tag
+        ' (a version that failed on this PC before and was swapped back: wait for the next one)
+        If onlyIfNewer AndAlso FindExe(p) IsNot Nothing AndAlso EngineHistory.IsBad(p.Name & "/" & p.Flavor, tag) Then Return InstalledTag(p)
 
         Dim target = ToolDir(p)
         Dim staging = target & ".new"
@@ -90,8 +92,8 @@ Public Module ExternalTools
             before += u.Size
         Next
         File.WriteAllText(Path.Combine(staging, "version.txt"), tag)
-        If Directory.Exists(target) Then Directory.Delete(target, True)
-        Directory.Move(staging, target)
+        ' (a build that works here is kept as the previous one, to go back to if the new one fails)
+        EngineHistory.Replace(target, staging)
         ' the builds for another GPU backend (after switching CUDA ↔ Vulkan ↔ CPU) are no longer used
         Try
             For Each other In Directory.GetDirectories(Path.GetDirectoryName(target))
@@ -99,6 +101,7 @@ Public Module ExternalTools
                 ' (the CPU build stays: speech falls back to it when the GPU build can't start)
                 If Not String.Equals(other.TrimEnd(Path.DirectorySeparatorChar), target.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase) AndAlso
                    Not name.Equals("cpu", StringComparison.OrdinalIgnoreCase) AndAlso Not name.EndsWith(".new", StringComparison.OrdinalIgnoreCase) AndAlso
+                   Not String.Equals(other.TrimEnd(Path.DirectorySeparatorChar), EngineHistory.PrevDir(target), StringComparison.OrdinalIgnoreCase) AndAlso
                    (p.Flavor <> "cpu") Then
                     Try : Directory.Delete(other, True) : Catch : End Try
                 End If
@@ -109,6 +112,19 @@ Public Module ExternalTools
         Return tag
     End Function
 
+
+    ''' <summary>
+    ''' An installed build whose program file is gone (an antivirus program, an unfinished update) is installed again.
+    ''' Returns Nothing when all is well, the name when it was repaired, or "!" &amp; the name when it is still missing.
+    ''' </summary>
+    Public Async Function RepairIfBrokenAsync(p As ToolPackage, progress As Action(Of String), ct As CancellationToken) As Task(Of String)
+        If InstalledTag(p) Is Nothing OrElse FindExe(p) IsNot Nothing Then Return Nothing
+        Try
+            Await InstallAsync(p, progress, ct)
+        Catch ex As Exception When Not ct.IsCancellationRequested
+        End Try
+        Return If(FindExe(p) IsNot Nothing, p.Name, "!" & p.Name)
+    End Function
     ''' <summary>Copies CUDA runtime DLLs from the llama.cpp CUDA 12 build when a tool lacks them.</summary>
     Public Sub ShareCudaRuntime(toolDir As String)
         Try

@@ -31,6 +31,68 @@ Module HarnessMain
     Async Function RunAsync(args As String()) As Task
         Dim only = If(args.Length > 0, args(0), "all")
 
+        If only = "all" OrElse only = "unit" OrElse only = "prompts" Then
+            Console.WriteLine("== Engine versions: keep the one that works, go back when a new one fails")
+            Dim eroot = Path.Combine(Path.GetTempPath(), "lm-eh-" & Guid.NewGuid().ToString("N").Substring(0, 6))
+            Dim target = Path.Combine(eroot, "cuda13")
+            Dim mk = Function(tag As String) As String
+                         Dim st = Path.Combine(eroot, "staging-" & tag)
+                         Directory.CreateDirectory(st)
+                         File.WriteAllText(Path.Combine(st, "version.txt"), tag)
+                         Return st
+                     End Function
+            EngineHistory.Replace(target, mk("b1"))
+            Check(EngineHistory.Version(target) = "b1" AndAlso Not EngineHistory.CanRollBack(target), "first install: nothing to go back to")
+            EngineHistory.MarkWorks(target)
+            EngineHistory.Replace(target, mk("b2"))
+            Check(EngineHistory.Version(target) = "b2" AndAlso EngineHistory.Version(EngineHistory.PrevDir(target)) = "b1", "update keeps the working b1 as the previous one")
+            Check(EngineHistory.CanRollBack(target), "b2 never worked: b1 can come back")
+            Check(EngineHistory.RollBack(target, "test/cuda13", "test") AndAlso EngineHistory.Version(target) = "b1" AndAlso EngineHistory.IsBad("test/cuda13", "b2"),
+                  "rollback: b1 is back, b2 is skipped from now on")
+            EngineHistory.UndoRollBack(target, "test/cuda13")
+            Check(EngineHistory.Version(target) = "b2" AndAlso Not EngineHistory.IsBad("test/cuda13", "b2") AndAlso EngineHistory.Works(EngineHistory.PrevDir(target)),
+                  "b1 failed too: b2 goes back in and isn't counted as failed")
+            Check(EngineHistory.RollBack(target, "test/cuda13", "test"), "rollback again")
+            EngineHistory.MarkWorks(target)
+            Check(EngineHistory.Version(target) = "b1" AndAlso Not Directory.Exists(target & ".bad") AndAlso EngineHistory.IsBad("test/cuda13", "b2"),
+                  "b1 works: the rollback is kept, b2 is removed")
+            EngineHistory.Replace(target, mk("b3"))
+            EngineHistory.Replace(target, mk("b4"))
+            Check(EngineHistory.Version(target) = "b4" AndAlso EngineHistory.Version(EngineHistory.PrevDir(target)) = "b1",
+                  "b3 never worked: the previous one stays b1")
+            AppCore.Settings.BadEngineVersions.Remove("test/cuda13=b2")
+            Try : Directory.Delete(eroot, True) : Catch : End Try
+        End If
+
+        If only = "all" OrElse only = "unit" OrElse only = "prompts" Then
+            ' 🪜 tests/prompts.json: real messages and the steps they must give (checked by every build)
+            Console.WriteLine("== Reading the steps of real messages (tests/prompts.json)")
+            Dim names = New Dictionary(Of String, String) From {
+                {"picture", "generate_image"}, {"video", "generate_video"}, {"longer-video", "extend_video"},
+                {"song", "make_song"}, {"voice", "clone_voice"}}
+            Dim offeredAll As New JArray()
+            For Each n In names.Values
+                offeredAll.Add(New JObject From {{"function", New JObject From {{"name", n}}}})
+            Next
+            Dim pf = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "prompts.json"))
+            Dim cases = CType(JObject.Parse(File.ReadAllText(pf))("cases"), JArray)
+            For Each c In cases
+                Dim prompt = c.Value(Of String)("prompt")
+                Dim want = c("steps").Select(Function(x) names(x.ToString())).ToList()
+                Dim got = ChatAgent.RequestedTools(prompt, offeredAll)
+                Dim shortP = If(prompt.Length > 70, prompt.Substring(0, 70) & "…", prompt)
+                Check(String.Join(",", got) = String.Join(",", want), $"'{shortP}' → {If(want.Count = 0, "normal answer", String.Join(" → ", c("steps")))}",
+                      If(got.Count = 0, "(no steps)", String.Join(" → ", got.Select(Function(g) names.First(Function(kv) kv.Value = g).Key))))
+            Next
+            ' a picture size the AI made up by itself is ignored; one the user asked for is kept
+            Dim made = MediaSize.From(New JObject From {{"megapixels", 2}}, "generate me an image of two ultra marines")
+            Check(made.Megapixels = 0, "size the AI made up is ignored", made.Megapixels.ToString())
+            Dim asked = MediaSize.From(New JObject From {{"megapixels", 2}}, "a 2 megapixel picture of a castle")
+            Check(asked.Megapixels = 2, "size the user asked for is kept", asked.Megapixels.ToString())
+            Dim hd = MediaSize.From(New JObject From {{"megapixels", 2}}, "a high resolution wallpaper of a forest")
+            Check(hd.Megapixels = 2, "'high resolution' counts as asking for a size", hd.Megapixels.ToString())
+        End If
+
         If only = "all" OrElse only = "unit" Then
             Console.WriteLine("== ThinkTagSplitter")
             Dim th As New StringBuilder(), co As New StringBuilder()

@@ -539,6 +539,11 @@ Public Module MediaStudio
         Await ExternalTools.InstallAsync(pkg, progress, ct, onlyIfNewer:=True)
     End Function
 
+    ''' <summary>Startup check: the picture engine's program is there (installed again if it went missing).</summary>
+    Public Function RepairEngineAsync(progress As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Return ExternalTools.RepairIfBrokenAsync(EnginePackage(), progress, ct)
+    End Function
+
     Private Function EnginePackage(Optional allowCuda13 As Boolean = True) As ExternalTools.ToolPackage
         Dim v = AppCore.Engine.EffectiveVariant
         ' CUDA 13: stable-diffusion.cpp publishes CUDA 12 builds only, so LocalMind builds its own (engines-cuda13 release).
@@ -619,9 +624,34 @@ Public Module MediaStudio
     End Property
 
     ''' <summary>Runs sd-cli and returns the output file (PNG or WebM).</summary>
+    ' (the engine folder the last run used: marked as working, or swapped back when a new build fails)
+    Private _lastEngineDir As String
+
     Public Async Function GenerateAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
         Try
-            Dim made = Await GenerateCoreAsync(req, progress, ct)
+            Dim made As String = Nothing
+            Dim rolledBack = False
+            Try
+                made = Await GenerateCoreAsync(req, progress, ct)
+            Catch ex As Exception When Not ct.IsCancellationRequested AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
+                                       EngineHistory.CanRollBack(_lastEngineDir)
+                ' a new engine build that never worked here failed while running: the previous one that did comes back
+                rolledBack = EngineHistory.RollBack(_lastEngineDir, "sd/" & Path.GetFileName(_lastEngineDir), "stable-diffusion.cpp")
+                If Not rolledBack Then Throw
+            End Try
+            If rolledBack Then
+                req.SafeMemory = 0
+                progress?.Invoke(0, Localizer.T("Trying again with the engine version that worked…"))
+                Try
+                    made = Await GenerateCoreAsync(req, progress, ct)
+                Catch ex As Exception
+                    ' the previous build fails too: the problem is elsewhere (the model, memory), the new build goes back
+                    EngineHistory.UndoRollBack(_lastEngineDir, "sd/" & Path.GetFileName(_lastEngineDir))
+                    Throw
+                End Try
+            End If
+            ' this engine build works on this PC: kept as the one to go back to after the next update
+            EngineHistory.MarkWorks(_lastEngineDir)
             LastFailed = False
             Return made
         Catch ex As OperationCanceledException
@@ -770,6 +800,7 @@ Public Module MediaStudio
             End If
         End If
         Dim exe = ExternalTools.FindExe(pkg)
+        _lastEngineDir = ExternalTools.ToolDir(pkg)
         ' INT8 files that keep their quantization settings only in the metadata: add the per-layer settings
         Await Task.Run(Sub()
                            For Each f In FilesFor(r, v, True, True).Where(Function(x) x IsNot Nothing AndAlso x.Path.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase))

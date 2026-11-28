@@ -209,8 +209,43 @@ Public Class MainForm
         AddHandler miUpdate.Click, Async Sub() Await CheckUpdatesAsync(manual:=True)
         Dim miUpdateAll As New ToolStripMenuItem(Localizer.T("Update everything now (app, engines, model list)"))
         AddHandler miUpdateAll.Click, Sub() Task.Run(Function() UpdateEverythingAsync(manual:=True))
+        ' 📋 what is needed to understand a problem on this PC, ready to paste in a message
+        Dim miDiag As New ToolStripMenuItem(Localizer.T("📋 Copy diagnostics"))
+        AddHandler miDiag.Click, Sub()
+                                     Dim text As String
+                                     Try
+                                         text = DiagnosticsReport.Build()
+                                     Catch ex As Exception
+                                         text = "LocalMind diagnostics failed: " & ex.Message
+                                     End Try
+                                     Try
+                                         Clipboard.SetText(text)
+                                         Localizer.Box(Me, Localizer.T("The diagnostics are copied. Paste them (Ctrl+V) in your message.") & vbCrLf & vbCrLf &
+                                                           Localizer.T("They contain your PC, the engine versions and the last failures (with what you asked). No API keys or chats."),
+                                                       "LocalMind", MessageBoxButtons.OK, MessageBoxIcon.Information)
+                                     Catch ex As Exception
+                                         Localizer.Box(Me, ex.Message, "LocalMind")
+                                     End Try
+                                 End Sub
+        Dim miFailLog As New ToolStripMenuItem(Localizer.T("Open the failure log"))
+        AddHandler miFailLog.Click, Sub()
+                                        Try
+                                            If Not IO.File.Exists(FailureLog.FilePath) Then
+                                                Localizer.Box(Me, Localizer.T("Nothing has failed yet."), "LocalMind")
+                                                Return
+                                            End If
+                                            Process.Start(New ProcessStartInfo(FailureLog.FilePath) With {.UseShellExecute = True})
+                                        Catch ex As Exception
+                                            Localizer.Box(Me, ex.Message, "LocalMind")
+                                        End Try
+                                    End Sub
+        menuHelp.DropDownItems.Insert(0, New ToolStripSeparator())
+        menuHelp.DropDownItems.Insert(0, miFailLog)
+        menuHelp.DropDownItems.Insert(0, miDiag)
         menuHelp.DropDownItems.Insert(0, miUpdateAll)
         menuHelp.DropDownItems.Insert(0, miUpdate)
+        AddHandler EngineHistory.RolledBack, AddressOf OnEngineRolledBack
+        CheckEnginesAtStartLater()
         AutoUpdateEverythingLater()
         LoadDone.TrySetResult(True)
         ' "Set up myself" at the first start: straight to the Model Manager
@@ -926,7 +961,7 @@ Public Class MainForm
                                                      Sub(m)
                                                          _madeMarkdown = m
                                                          Me.Post(Sub() Js($"setMade('{madeId}', {JsonConvert.SerializeObject(MarkdownRenderer.ToHtml(m))});"))
-                                                     End Sub)
+                                                     End Sub, If(_inVoiceChat, Nothing, New Func(Of List(Of String), Task(Of List(Of String)))(AddressOf AskStepsAsync)))
             result = answer.Result
             If answer.Sources IsNot Nothing Then sources = answer.Sources
             assistantText = result.Content & answer.Markdown & AppCore.SourcesMarkdown(sources)
@@ -936,6 +971,7 @@ Public Class MainForm
             End SyncLock
             assistantText &= _madeMarkdown & vbCrLf & vbCrLf & "_[stopped]_"
         Catch ex As Exception
+            FailureLog.Write(payload?.LastOrDefault(Function(m) m.Role = "user")?.Content, "", ex)
             assistantText = If(_madeMarkdown = "", "", _madeMarkdown.Trim() & vbCrLf & vbCrLf) & "⚠ Error: " & ex.Message
         Finally
             sw.Stop()
@@ -982,6 +1018,26 @@ Public Class MainForm
         End If
         SetStatus("Done")
         If Settings.AutoReadAnswers AndAlso result IsNot Nothing AndAlso Not Voice.IsSpeaking AndAlso Not _inVoiceChat Then SpeakAnswer(assistantText)
+    End Function
+
+    ''' <summary>🪜 Shows the steps of a message that asks for several things; Nothing = cancelled.</summary>
+    Private Function AskStepsAsync(plan As List(Of String)) As Task(Of List(Of String))
+        Dim tcs As New TaskCompletionSource(Of List(Of String))(TaskCreationOptions.RunContinuationsAsynchronously)
+        Me.Post(Sub()
+                    Try
+                        Using f As New StepsForm(plan)
+                            Dim r = f.ShowDialog(Me)
+                            If f.DontAskAgain Then
+                                Settings.ConfirmSteps = False
+                                AppCore.SaveSettings()
+                            End If
+                            tcs.TrySetResult(If(r = DialogResult.OK, f.Chosen, Nothing))
+                        End Using
+                    Catch ex As Exception
+                        tcs.TrySetResult(plan)   ' (the window couldn't show: run everything, as before)
+                    End Try
+                End Sub)
+        Return tcs.Task
     End Function
 
     Private Sub FlushLiveRender(sender As Object, e As EventArgs)

@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.26.32
+
+### Added
+- **The steps are shown before they run.** When a message asks for several things (a picture, then a video, then a
+  song), a small window lists them first. Untick any you don't want, or press Cancel. It starts by itself after 8
+  seconds. Turn it off in Settings → AI tools.
+- **A failed step stops the whole request**, and the failure is written to `Data\Logs\failures.log`: what you asked,
+  the step, the error and the end of the engine's own output. The chat says which steps were not run.
+- **Help → Copy diagnostics** copies your PC, graphics driver, engine versions (with which of their programs exist)
+  and the last failures, ready to paste in a message. No API keys or chats. **Help → Open the failure log** opens
+  the log.
+- **The engines are checked at every start.** If llama-server, llama-tts, sd-cli or whisper-cli has gone missing,
+  that engine is installed again before you need it. If it keeps going missing, LocalMind says that an antivirus
+  program is removing it and where to allow it.
+- **Going back to an engine version that works.** After an update, the previous engine build is kept when it worked
+  on this PC. If the new build fails while running, LocalMind goes back to the previous one and tries again. That
+  version is skipped by automatic updates until a newer one comes out. If the previous build fails too, the problem
+  is something else (the model, memory), so nothing is swapped.
+- **Settings → Stay on the engine versions that work on this PC**: automatic updates leave the engines alone; Help
+  → Update everything now still updates them.
+- Every build now runs quick tests: a list of real chat messages and the steps each must give
+  (`tests/prompts.json`), and the engine rollback. A failure stops the release.
+
+### Fixed
+- "Make an image of a cat, then a video from that image" could start with the video. The order now follows where the
+  picture and the video are asked for.
+
+### Removed
+- The unused code-signing setup (SignPath) and its documentation.
+
 ## 2.26.31
 
 ### Fixed
@@ -1202,7 +1232,6 @@
   to always unload it or to keep it loaded (Tools → Image in chat → Graphics card memory).
 - INT8 ConvRot files that leave out the rotation group size are fixed automatically after download, so
   stable-diffusion.cpp can load them (ComfyUI's default, 256, is written in).
-- Release builds can be code-signed through SignPath (see docs/CODE-SIGNING.md).
 
 ## 2.3.0
 

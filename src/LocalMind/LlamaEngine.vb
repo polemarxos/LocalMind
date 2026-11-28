@@ -142,7 +142,7 @@ Public Class LlamaEngine
     ''' <summary>Deletes the engine builds of the other GPU backends (and unfinished downloads of them).</summary>
     Public Sub RemoveOtherVariants(keep As String)
         For Each o In AllVariants.Where(Function(x) Not String.Equals(x, keep, StringComparison.OrdinalIgnoreCase))
-            For Each d In {VariantDir(o), VariantDir(o) & ".new"}
+            For Each d In {VariantDir(o), VariantDir(o) & ".new", EngineHistory.PrevDir(VariantDir(o))}
                 Try
                     If Directory.Exists(d) Then Directory.Delete(d, True)
                 Catch
@@ -226,6 +226,23 @@ Public Class LlamaEngine
         Throw New Exception("No Windows build for '" & VariantLabel(v) & "' was found in the latest llama.cpp releases.")
     End Function
 
+    ''' <summary>
+    ''' Startup check: an installed build still has llama-server and llama-tts (voice and music). When one went missing
+    ''' (an antivirus program, an unfinished update), the engine is installed again. Nothing = fine, else the name, or
+    ''' "!" and the name when it is still missing afterwards.
+    ''' </summary>
+    Public Async Function RepairIfBrokenAsync(progress As IProgress(Of (Text As String, Percent As Integer)), ct As CancellationToken) As Task(Of String)
+        Dim v = EffectiveVariant
+        If InstalledVersion(v) Is Nothing Then Return Nothing
+        Dim ok = Function() IsInstalled(v) AndAlso File.Exists(Path.Combine(Path.GetDirectoryName(ServerExe(v)), If(OperatingSystem.IsWindows(), "llama-tts.exe", "llama-tts")))
+        If ok() Then Return Nothing
+        Try
+            Await InstallAsync(progress, ct, v, force:=True)
+        Catch ex As Exception When Not ct.IsCancellationRequested
+        End Try
+        Return If(ok(), "llama.cpp", "!llama.cpp")
+    End Function
+
     ''' <summary>Downloads and installs (or updates) the engine. Safe to call while a model is loaded.</summary>
     Public Async Function InstallAsync(progress As IProgress(Of (Text As String, Percent As Integer)),
                                        ct As CancellationToken,
@@ -236,7 +253,7 @@ Public Class LlamaEngine
         SetState(EngineState.Installing, "Checking llama.cpp releases…")
         Try
             Dim rel = Await FindLatestReleaseAsync(v, ct)
-            If Not force AndAlso InstalledVersion(v) = rel.Tag AndAlso IsInstalled(v) Then
+            If Not force AndAlso IsInstalled(v) AndAlso (InstalledVersion(v) = rel.Tag OrElse EngineHistory.IsBad("llama/" & v, rel.Tag)) Then
                 SetState(If(_proc IsNot Nothing, EngineState.Ready, EngineState.Stopped), "Engine up to date (" & rel.Tag & ")")
                 Return rel.Tag
             End If
@@ -274,8 +291,10 @@ Public Class LlamaEngine
             Dim wasModel = _CurrentModel
             If v = EffectiveVariant Then Await StopAsync()
             Dim target = VariantDir(v)
-            If Directory.Exists(target) Then Directory.Delete(target, True)
-            Directory.Move(staging, target)
+            ' (a build that works here is kept as the previous one, to go back to if the new one fails;
+            '  a repair puts the same version in again, so nothing is kept then)
+            If force AndAlso InstalledVersion(v) = rel.Tag AndAlso Directory.Exists(target) Then Directory.Delete(target, True)
+            EngineHistory.Replace(target, staging)
             ' Switched backend (e.g. CUDA 12 → CUDA 13): the other builds are removed, they are hundreds of MB each.
             If v = EffectiveVariant Then RemoveOtherVariants(v)
 
@@ -401,7 +420,25 @@ Public Class LlamaEngine
         End While
 
         Await StopAsync()
-        Await StartAsync(model, ct)
+        Dim rolledBack = False
+        Try
+            Await StartAsync(model, ct)
+        Catch ex As Exception When Not ct.IsCancellationRequested AndAlso Not TypeOf ex Is FileNotFoundException AndAlso
+                                   Not TypeOf ex Is TimeoutException AndAlso EngineHistory.CanRollBack(VariantDir())
+            ' a new engine build that never worked here failed to start: the previous one that did comes back
+            rolledBack = EngineHistory.RollBack(VariantDir(), "llama/" & EffectiveVariant, "llama.cpp")
+            If Not rolledBack Then Throw
+        End Try
+        If rolledBack Then
+            Try
+                Await StartAsync(model, ct)
+            Catch ex As Exception
+                ' the previous build fails too: the problem is elsewhere (the model, memory), the new build goes back
+                EngineHistory.UndoRollBack(VariantDir(), "llama/" & EffectiveVariant)
+                Throw
+            End Try
+        End If
+        EngineHistory.MarkWorks(VariantDir())
     End Function
 
     Private Shared Function SameModel(a As LocalModel, b As LocalModel) As Boolean

@@ -1,0 +1,30 @@
+{
+  "about": "Real chat messages and the steps LocalMind must read from them. Steps: picture, video, longer-video, song, voice. An empty list means a normal answer with no step. Add a line here whenever a message is read wrong; every build checks all of them.",
+  "cases": [
+    { "prompt": "generate me a video", "steps": ["video"] },
+    { "prompt": "Generate me an image", "steps": ["picture"] },
+    { "prompt": "draw me a dragon", "steps": ["picture"] },
+    { "prompt": "can you create a picture of a sunset over Santorini?", "steps": ["picture"] },
+    { "prompt": "animate this photo into a video", "steps": ["video"] },
+    { "prompt": "make a short video of a cat surfing", "steps": ["video"] },
+    { "prompt": "φτιάξε μου ένα βίντεο με μια γάτα", "steps": ["video"] },
+    { "prompt": "φτιάξε μου μια εικόνα με ένα σκύλο", "steps": ["picture"] },
+    { "prompt": "φτιάξε ένα τραγούδι για τη θάλασσα", "steps": ["song"] },
+
+    { "prompt": "generate video from that image.make them fight each other with their hands", "steps": ["video"] },
+    { "prompt": "make a video using the last picture", "steps": ["video"] },
+    { "prompt": "create a video of this photo", "steps": ["video"] },
+    { "prompt": "φτιάξε βίντεο από αυτή την εικόνα", "steps": ["video"] },
+    { "prompt": "make an image of a cat then a video from that image", "steps": ["picture", "video"] },
+
+    { "prompt": "generate me an image of two ultra marines from warhammer 40k universe to brutaly kill orks.then generate me a video using that image.make it gore and brutal.when all done make me a song about warhammer 40k space marines in Greek Lyrics but without changing names and factions that should be in English", "steps": ["picture", "video", "song"] },
+    { "prompt": "make me an image of two space marines from wh40k universe to brutaly kill orks. then generate me a 6sec video at 720p from that image.make it gore and brutal", "steps": ["picture", "video"] },
+    { "prompt": "generate music about Warhammer 40k Space marines with Greek Lyrics by cloning this voice", "steps": ["song"] },
+    { "prompt": "clone this voice and say: good morning", "steps": ["voice"] },
+
+    { "prompt": "how do I make a video in Premiere?", "steps": [] },
+    { "prompt": "πώς φτιάχνω βίντεο στο κινητό;", "steps": [] },
+    { "prompt": "what is a good video card for gaming?", "steps": [] },
+    { "prompt": "tell me a joke", "steps": [] }
+  ]
+}

@@ -67,6 +67,16 @@ the window, LocalMind exits and shows it again next time.
 
 LocalMind updates itself, its engines and the model list.
 
+## If something goes wrong
+
+When a step fails, LocalMind stops the rest of the request and writes what happened to `Data\Logs\failures.log`.
+**Help → Copy diagnostics** copies your PC details, the engine versions and the last few failures, ready to paste
+into a bug report. It leaves out API keys and chats.
+
+Engine files that go missing (antivirus software sometimes removes them) are reinstalled at the next start. If a
+new engine version fails on your PC, LocalMind goes back to the last version that worked. To avoid surprises
+altogether, tick *Stay on the engine versions that work on this PC* in Settings.
+
 ## Phone access
 
 Go to Tools → Share on network, tick the box and scan the code. Firewall notes and API examples are in
@@ -89,7 +99,7 @@ That gives you a single `publish\LocalMind.exe`. `LocalMind.slnx` opens in Visua
 | `setups/` | The recommended 8, 12 and 16 GB setups |
 | `tests/LocalMind.Harness/` | Console tests for the engine, catalog, downloads and LAN server ([how to run](tests/README.md)) |
 | `tools/build_catalog.py` | Rebuilds the model catalog from Hugging Face |
-| `docs/` | [Architecture](docs/ARCHITECTURE.md), [LAN sharing](docs/LAN-SHARING.md), [code signing](docs/CODE-SIGNING.md) |
+| `docs/` | [Architecture](docs/ARCHITECTURE.md), [LAN sharing](docs/LAN-SHARING.md) |
 
 ## Where files go
 
