@@ -147,13 +147,17 @@ Public Module Civitai
                                 .Fp = f("metadata")?.Value(Of String)("fp"), .DownloadUrl = f.Value(Of String)("downloadUrl"),
                                 .Sha256 = f("hashes")?.Value(Of String)("SHA256")})
                         Next
+                        ' pictures, and a still frame of each preview video (many video models only have videos)
                         For Each i In If(TryCast(v("images"), JArray), New JArray())
-                            If i.Value(Of String)("type") = "video" OrElse String.IsNullOrEmpty(i.Value(Of String)("url")) Then Continue For
-                            cv.Images.Add((i.Value(Of String)("url"), i.Value(Of Integer?)("nsfwLevel").GetValueOrDefault() > 1))
+                            Dim u = i.Value(Of String)("url")
+                            If String.IsNullOrEmpty(u) Then Continue For
+                            If i.Value(Of String)("type") = "video" Then u = StillUrl(u)
+                            cv.Images.Add((u, i.Value(Of Integer?)("nsfwLevel").GetValueOrDefault() > 1))
                         Next
-                        Dim img = TryCast(v("images"), JArray)?.FirstOrDefault(Function(i) i.Value(Of String)("type") <> "video")
-                        If img IsNot Nothing Then
-                            cv.ImageUrl = img.Value(Of String)("url")
+                        Dim imgs = If(TryCast(v("images"), JArray), New JArray())
+                        Dim img = If(imgs.FirstOrDefault(Function(i) i.Value(Of String)("type") <> "video"), imgs.FirstOrDefault())
+                        If img IsNot Nothing AndAlso Not String.IsNullOrEmpty(img.Value(Of String)("url")) Then
+                            cv.ImageUrl = If(img.Value(Of String)("type") = "video", StillUrl(img.Value(Of String)("url")), img.Value(Of String)("url"))
                             cv.ImageNsfw = img.Value(Of Integer?)("nsfwLevel").GetValueOrDefault() > 1
                         End If
                         If cv.Files.Count > 0 Then cm.Versions.Add(cv)
@@ -169,7 +173,15 @@ Public Module Civitai
     ''' <summary>A small preview picture (Civitai's image CDN can resize: width=…).</summary>
     Public Function ThumbUrl(url As String, width As Integer) As String
         If String.IsNullOrEmpty(url) Then Return Nothing
+        If url.Contains("anim=false") Then Return Regex.Replace(url, "width=\d+", $"width={width}")
         Return Regex.Replace(url, "/(original=true|width=\d+)/", $"/width={width}/")
+    End Function
+
+    ''' + "'''" + ''' <summary>A JPEG still frame of a Civitai preview video (their image CDN makes it: anim=false).</summary>
+    Public Function StillUrl(videoUrl As String) As String
+        Dim m = Regex.Match(videoUrl, "^(https://[^/]+/[^/]+/[^/]+)/[^/]+/([^/?]+?)(\.\w+)?$")
+        If Not m.Success Then Return videoUrl
+        Return $"{m.Groups(1).Value}/anim=false,transcode=true,width=450,optimized=true/{m.Groups(2).Value}.jpeg"
     End Function
 
     Private Function SafeFileName(name As String) As String

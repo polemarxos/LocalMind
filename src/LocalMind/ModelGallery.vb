@@ -686,7 +686,7 @@ Public Class ModelGallery
             Dim r = TryCast(tag, MediaRecipe)
             If r IsNot Nothing Then
                 Await MediaStudio.DownloadAsync(r, CType(ver, VariantChoice).V, prog, cts.Token, forEdit:=r.Can("edit"))
-                message = "✔ " & name & " " & Localizer.T("is ready in the studio.")
+                message = "✔ " & name & " " & Localizer.T("is ready to use.")
             Else
                 Dim m = CType(tag, Civitai.CivModel)
                 Dim v = CType(ver, Civitai.CivVersion)
@@ -695,12 +695,14 @@ Public Class ModelGallery
                     message = Localizer.T("✔ LoRA installed and turned on for") & " " & If(l?.Family, "")
                 Else
                     Dim um = Await Civitai.InstallCheckpointAsync(m, v, prog, cts.Token)
-                    message = Localizer.T("✔ Model installed. Find it in the studio as") & " ⭐ " & um.Name
+                    message = Localizer.T("✔ Model installed as") & " ⭐ " & um.Name
                 End If
             End If
             InstalledSomething = True
-            If item.ListView IsNot Nothing AndAlso TypeOf tag Is MediaRecipe AndAlso Not item.Text.StartsWith("✔") Then item.Text = "✔ " & item.Text
-            RaiseEvent Changed()
+            If Not IsDisposed Then
+                If item.ListView IsNot Nothing AndAlso TypeOf tag Is MediaRecipe AndAlso Not item.Text.StartsWith("✔") Then item.Text = "✔ " & item.Text
+                RaiseEvent Changed()
+            End If
         Catch ex As OperationCanceledException
             message = Localizer.T("Download cancelled (it resumes next time).")
         Catch ex As Exception
@@ -738,8 +740,6 @@ Public Class ModelGallery
     Public Sub Shutdown()
         _searchCts?.Cancel()
         _picCts?.Cancel()
-        For Each i In _installs.Values.ToList()
-            i.Cts.Cancel()
-        Next
+        ' (downloads keep going after the window closes: they are in the app-wide download list, where they can be cancelled)
     End Sub
 End Class

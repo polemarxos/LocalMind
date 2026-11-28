@@ -7,6 +7,7 @@ Imports System.Reflection
 Imports System.Threading
 Imports System.Threading.Tasks
 Imports Newtonsoft.Json
+Imports Newtonsoft.Json.Linq
 
 ''' <summary>One model (or LoRA) in a recommended setup.</summary>
 Public Class SetupItem
@@ -49,6 +50,10 @@ Public Class SetupFile
     Public Property Profiles As New List(Of MediaProfile)()
     ''' <summary>Profile id used by the chat for each kind (picture, edit, video, music, voice).</summary>
     Public Property Defaults As New Dictionary(Of String, String)()
+    ''' <summary>App settings to use (only the ones in SetupLibrary.SharedSettings; never keys, PINs or folders).</summary>
+    Public Property Settings As JObject
+    ''' <summary>Your own personas.</summary>
+    Public Property Personas As New List(Of Persona)()
 End Class
 
 Public Module SetupLibrary
@@ -153,8 +158,54 @@ Public Module SetupLibrary
         Next
     End Sub
 
+    ''' + "'''" + ''' <summary>
+    ''' + "'''" + ''' Settings a setup carries: how the chat, engine, pictures and voice behave. Personal things (API keys, PINs,
+    ''' + "'''" + ''' folders, language, theme, window and update choices, the GPU backend) stay on each PC.
+    ''' + "'''" + ''' </summary>
+    Public ReadOnly SharedSettings As String() = {
+        "ShowThinking", "HistoryMessages", "KeepImagesInLastMessages", "MaxTokens", "TopP", "DefaultTemperature",
+        "ContextSize", "AutoContext", "MinAutoContext", "GpuLayers", "ParallelSlots", "KvCacheType", "ExtraEngineArgs", "UnloadAfterIdleMinutes",
+        "ImageGpuSharing", "ImproveImagePrompt", "EnableImages", "EnableAudio", "MediaFast", "LowRamMode", "AgentTools",
+        "ShowNsfw", "OnlyFitGpu", "UseDocuments", "UseWeb", "WebSearchProvider", "WebPagesToRead", "VoiceModel", "VoiceLanguage",
+        "ReadAloudModel", "ReadAloudVoice", "AutoReadAnswers", "SpeedUpMode", "DownloadSpeedUpFiles", "CivitaiRed"}
+
+    Public Function ExportSettings() As JObject
+        Dim all = JObject.FromObject(AppCore.Settings)
+        Dim o As New JObject()
+        For Each k In SharedSettings
+            If all(k) IsNot Nothing Then o(k) = all(k)
+        Next
+        Return o
+    End Function
+
+    ''' + "'''" + ''' <summary>Applies a setup's settings and personas (personas with the same name are replaced).</summary>
+    Public Sub ApplySettings(s As SetupFile)
+        If s Is Nothing Then Return
+        If s.Settings IsNot Nothing Then
+            Dim o As New JObject()
+            For Each k In SharedSettings
+                If s.Settings(k) IsNot Nothing Then o(k) = s.Settings(k)
+            Next
+            JsonConvert.PopulateObject(o.ToString(), AppCore.Settings)
+            AppCore.SaveSettings()
+        End If
+        If s.Personas IsNot Nothing AndAlso s.Personas.Count > 0 Then
+            Dim list = AppCore.Personas.Load()
+            For Each p In s.Personas
+                list.RemoveAll(Function(x) String.Equals(x.Name, p.Name, StringComparison.OrdinalIgnoreCase))
+                list.Add(p)
+            Next
+            AppCore.Personas.Save(list)
+        End If
+    End Sub
+
     '──────────────── export ────────────────
     ''' <summary>Everything installed here (chat models, picture / video / music / voice models, LoRAs) and the profiles.</summary>
+    ''' + "'''" + ''' <summary>LoRAs that can't go in a setup: added from a file, so there is no link to download them from.</summary>
+    Public Function LorasWithoutLink() As List(Of String)
+        Return LoraLibrary.All().Where(Function(x) String.IsNullOrEmpty(x.Url)).Select(Function(x) x.Name).ToList()
+    End Function
+
     Public Function ExportInstalled(name As String, hw As HardwareInfo) As SetupFile
         Dim s As New SetupFile With {.Name = name, .Vram = CInt(Math.Round(If(hw?.VramGB, 0))), .Version = 1}
         Dim chat = AppCore.Settings.LastModel
@@ -175,6 +226,9 @@ Public Module SetupLibrary
                                             .Triggers = l.Triggers, .Name = l.Name})
         Next
         s.Profiles = ProfileLibrary.All()
+        s.Settings = ExportSettings()
+        Dim builtIn = PersonaService.BuiltIns().Select(Function(b) b.Id).ToHashSet()
+        s.Personas = AppCore.Personas.Load().Where(Function(p) Not builtIn.Contains(p.Id)).ToList()
         For Each k In {"picture", "edit", "video", "music", "voice"}
             Dim id = ProfileLibrary.DefaultIdFor(k)
             If Not String.IsNullOrEmpty(id) Then s.Defaults(k) = id

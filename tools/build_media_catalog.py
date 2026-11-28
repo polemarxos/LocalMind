@@ -732,19 +732,6 @@ audio("yue2-3b", "YuE2 3B (songs)", "music",
 audio("minimax-music3", "MiniMax Music 3 (songs)", "music",
       "High-quality songs with vocals from a description and lyrics, 44.1 kHz stereo. Needs 16 GB+ VRAM or lots of RAM.",
       "ggml-org/MiniMax-Music3-GGUF", r"^MiniMax-Music3-Q8_0\.gguf$", r"^mmproj-MiniMax-Music3-BF16\.gguf$")
-# smaller and larger editions of the two music models (same converter as ggml-org, so llama-tts runs them)
-audio("minimax-music3-q4", "MiniMax Music 3 · compact (songs)", "music",
-      "MiniMax Music 3 in a smaller edition (Q4_K_M) for 8–12 GB graphics cards: songs with vocals from a description and lyrics.",
-      "mradermacher/MiniMax-Music3-GGUF", r"^MiniMax-Music3\.Q4_K_M\.gguf$", r"^MiniMax-Music3\.mmproj-Q8_0\.gguf$")
-audio("minimax-music3-q6", "MiniMax Music 3 · balanced (songs)", "music",
-      "MiniMax Music 3 (Q6_K): almost full quality in less memory, for 12–16 GB graphics cards.",
-      "mradermacher/MiniMax-Music3-GGUF", r"^MiniMax-Music3\.Q6_K\.gguf$", r"^MiniMax-Music3\.mmproj-Q8_0\.gguf$")
-audio("minimax-music3-bf16", "MiniMax Music 3 · full quality (songs)", "music",
-      "MiniMax Music 3 unquantized (BF16): the best sound, for 24 GB+ graphics cards.",
-      "ggml-org/MiniMax-Music3-GGUF", r"^MiniMax-Music3-BF16\.gguf$", r"^mmproj-MiniMax-Music3-BF16\.gguf$")
-audio("yue2-3b-bf16", "YuE2 3B · full quality (songs)", "music",
-      "YuE2 3B unquantized (BF16): full songs with vocals, 48 kHz stereo, a little cleaner than the Q8 edition.",
-      "ggml-org/YuE2-3B-GGUF", r"^YuE2-3B-BF16\.gguf$", r"^mmproj-YuE2-3B-BF16\.gguf$")
 for a in A:     # popularity, for the "most popular" list
     try:
         a["dl"] = media_auto._get(f"https://huggingface.co/api/models/{a['model']['repo']}?expand[]=downloads")["data"].get("downloads", 0)

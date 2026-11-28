@@ -125,6 +125,10 @@ Public Class SetupForm
                     .Tag = it, .Checked = installed OrElse it.Recommended, .ForeColor = If(installed, Theme.CDim, Theme.CText)}
                 lst.Items.Add(li)
             Next
+            If (s.Settings IsNot Nothing AndAlso s.Settings.Count > 0) OrElse s.Personas.Count > 0 Then
+                lst.Items.Add(New ListViewItem({Localizer.T("Recommended settings") & If(s.Personas.Count > 0, " + " & String.Format(Localizer.T("{0} personas"), s.Personas.Count), ""),
+                                                Localizer.T("Settings"), "", Localizer.T("Context size, memory use, picture options…")}) With {.Tag = "settings", .Checked = True})
+            End If
             If s.Profiles.Count > 0 Then
                 Dim li As New ListViewItem({String.Format(Localizer.T("{0} ready-made profiles (models with their prompts and LoRAs)"), s.Profiles.Count),
                                             Localizer.T("Profiles"), "", Localizer.T("Added with the models")}) With {.Tag = "profiles", .Checked = True}
@@ -210,8 +214,10 @@ Public Class SetupForm
                 Safety.Log(ex, "setup download " & DisplayName(it))
             End Try
         Next
-        Dim withProfiles = lst.Items.Cast(Of ListViewItem)().Any(Function(x) TypeOf x.Tag Is String AndAlso x.Checked)
+        Dim withProfiles = lst.Items.Cast(Of ListViewItem)().Any(Function(x) CStr(TryCast(x.Tag, String)) = "profiles" AndAlso x.Checked)
         If withProfiles Then SetupLibrary.ApplyProfiles(_setup)
+        Dim withSettings = lst.Items.Cast(Of ListViewItem)().Any(Function(x) CStr(TryCast(x.Tag, String)) = "settings" AndAlso x.Checked)
+        If withSettings Then SetupLibrary.ApplySettings(_setup)
         AppCore.Settings.SetupTier = Tier
         AppCore.Settings.SetupVersion = Math.Max(AppCore.Settings.SetupVersion, _setup.Version)
         AppCore.SaveSettings()
@@ -242,11 +248,15 @@ Public Class SetupForm
     Public Shared Sub ExportSetup(owner As IWin32Window)
         Dim hw = HardwareInfo.Current()
         Dim tier = SetupLibrary.TierFor(hw)
-        Using d As New SaveFileDialog() With {.FileName = tier & ".json", .Filter = Localizer.T("LocalMind setup") & "|*.json"}
+        Using d As New SaveFileDialog() With {.FileName = "localmind-setup-" & tier & ".json", .Filter = Localizer.T("LocalMind setup") & "|*.json"}
             If d.ShowDialog(owner) <> DialogResult.OK Then Return
             Dim s = SetupLibrary.ExportInstalled(If(tier = "8gb", "8 GB graphics card", "16 GB graphics card"), hw)
             File.WriteAllText(d.FileName, SetupLibrary.ToJson(s))
-            Localizer.Box(owner, String.Format(Localizer.T("Saved {0} models and {1} profiles to {2}."), s.Items.Count, s.Profiles.Count, d.FileName), "Export my setup")
+            Dim noLink = SetupLibrary.LorasWithoutLink()
+            Localizer.Box(owner, String.Format(Localizer.T("Saved {0} models, {1} profiles, {2} personas and your settings to {3}."),
+                                               s.Items.Count, s.Profiles.Count, s.Personas.Count, d.FileName) &
+                                 If(noLink.Count = 0, "", vbCrLf & vbCrLf & Localizer.T("Not included (added from a file, so there is no download link):") & " " & String.Join(", ", noLink)) &
+                                 vbCrLf & vbCrLf & Localizer.T("API keys, PINs, folders and your theme are never saved in this file."), "Export my setup")
         End Using
     End Sub
 End Class

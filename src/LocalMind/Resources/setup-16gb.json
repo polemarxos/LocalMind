@@ -71,8 +71,8 @@
     },
     {
       "Kind": "audio",
-      "Id": "minimax-music3-q6",
-      "Name": "MiniMax Music 3 · balanced",
+      "Id": "minimax-music3",
+      "Name": "MiniMax Music 3",
       "About": "high-quality songs with vocals"
     }
   ],
@@ -120,7 +120,7 @@
       "Id": "rec16-music",
       "Name": "Music · MiniMax Music 3",
       "Kind": "music",
-      "Model": "minimax-music3-q6",
+      "Model": "minimax-music3",
       "Loras": [],
       "Triggers": "",
       "DefaultPrompt": "upbeat pop, catchy melody, female vocals",

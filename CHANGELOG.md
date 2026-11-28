@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.26.1
+
+### Added
+- **Export my setup now saves everything needed to set up another PC the same way:**
+  - chat, picture, video, music and voice models, and LoRAs downloaded from Civitai;
+  - profiles and which ones the chat uses;
+  - your own personas;
+  - the settings for chat, engine, memory, pictures and voice.
+
+  It never saves API keys, PINs, folders, the language or the theme. The recommended-models window can apply these
+  settings and personas too.
+
+### Changed
+- Music models: only MiniMax Music 3 and YuE2 again. The four extra editions added in 2.26.0 are removed.
+
+### Fixed
+- Civitai models that only have preview **videos** (many MiniMax H3 models) now show a still picture in the list
+  and on their page instead of an empty square.
+- Downloads started in the Model Manager keep going after you close it. You can still cancel them in the Downloads
+  list.
+
 ## 2.26.0
 
 ### Added

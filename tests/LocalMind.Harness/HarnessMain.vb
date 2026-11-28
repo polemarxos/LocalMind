@@ -717,6 +717,11 @@ Module HarnessMain
                 Dim back = SetupLibrary.Parse(SetupLibrary.ToJson(st))
                 Check(back.Items.Count = st.Items.Count AndAlso back.Profiles(0).Kind = st.Profiles(0).Kind, tier & " setup writes and reads back")
             Next
+            Dim exported = SetupLibrary.ExportSettings()
+            Check(exported("ContextSize") IsNot Nothing AndAlso exported("CivitaiApiKey") Is Nothing AndAlso exported("LanPin") Is Nothing AndAlso exported("ModelsFolder") Is Nothing,
+                  "settings export leaves keys, PINs and folders out")
+            Check(Civitai.StillUrl("https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/7c97a036-3dde/original=true/150160064.mp4") =
+                  "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/7c97a036-3dde/anim=false,transcode=true,width=450,optimized=true/150160064.jpeg", "video preview → still picture URL")
             ' WebP → PNG for pictures (needs ffmpeg; skipped where it is blocked)
             Try
                 Dim webp = Path.Combine(Path.GetTempPath(), "lm-pic.webp")

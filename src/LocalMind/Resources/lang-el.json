@@ -1250,5 +1250,13 @@
 "Delete this answer?": "Διαγραφή αυτής της απάντησης;",
 "Make a profile: a downloaded model with your LoRAs, trigger words and prompts (or, for music and voice, a default style or voice). One profile of each kind is used by the chat.": "Φτιάξτε ένα προφίλ: ένα κατεβασμένο μοντέλο με τα LoRA, τις λέξεις ενεργοποίησης και τα prompt σας (ή, για μουσική και φωνή, ένα προεπιλεγμένο ύφος ή φωνή). Η συνομιλία χρησιμοποιεί ένα προφίλ από κάθε είδος.",
 "Preparing the model file (once)…": "Προετοιμασία του αρχείου μοντέλου (μία φορά)…",
-"Open Models → Recommended models and press Download selected (or pick any model in Get models).": "Ανοίξτε Μοντέλα → Προτεινόμενα μοντέλα και πατήστε Λήψη επιλεγμένων (ή διαλέξτε όποιο μοντέλο θέλετε στη Λήψη μοντέλων)."
+"Open Models → Recommended models and press Download selected (or pick any model in Get models).": "Ανοίξτε Μοντέλα → Προτεινόμενα μοντέλα και πατήστε Λήψη επιλεγμένων (ή διαλέξτε όποιο μοντέλο θέλετε στη Λήψη μοντέλων).",
+"Recommended settings": "Προτεινόμενες ρυθμίσεις",
+"{0} personas": "{0} περσόνες",
+"Context size, memory use, picture options…": "Μέγεθος context, χρήση μνήμης, επιλογές εικόνων…",
+"Saved {0} models, {1} profiles, {2} personas and your settings to {3}.": "Αποθηκεύτηκαν {0} μοντέλα, {1} προφίλ, {2} περσόνες και οι ρυθμίσεις σας στο {3}.",
+"Not included (added from a file, so there is no download link):": "Δεν περιλαμβάνονται (προστέθηκαν από αρχείο, άρα δεν υπάρχει σύνδεσμος λήψης):",
+"API keys, PINs, folders and your theme are never saved in this file.": "Κλειδιά API, PIN, φάκελοι και το θέμα σας δεν αποθηκεύονται ποτέ σε αυτό το αρχείο.",
+"is ready to use.": "είναι έτοιμο για χρήση.",
+"✔ Model installed as": "✔ Το μοντέλο εγκαταστάθηκε ως"
 }
