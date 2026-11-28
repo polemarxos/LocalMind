@@ -1,7 +1,7 @@
 {
   "Name": "16 GB graphics card",
   "Vram": 16,
-  "Version": 4,
+  "Version": 5,
   "Items": [
     {
       "Kind": "llm",
@@ -16,7 +16,22 @@
       "Family": "",
       "Triggers": "",
       "MainChat": true,
-      "Recommended": true
+      "Recommended": true,
+      "Standard": {
+        "Kind": "llm",
+        "Id": "",
+        "Repo": "unsloth/Qwen3.8-27B-GGUF",
+        "Quant": "UD-IQ3_S",
+        "Variant": "",
+        "Name": "Qwen3.8-27B (official) · UD-IQ3_S",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true,
+        "MainChat": true
+      }
     },
     {
       "Kind": "media",
@@ -50,6 +65,20 @@
         "Id": "10eros-max-h3-turbo",
         "Variant": "Q4_K_M",
         "Name": "10Eros Max Turbo · MiniMax H3 (NSFW, 8 steps) · Q4_K_M — for AMD / Intel cards"
+      },
+      "Standard": {
+        "Kind": "media",
+        "Id": "hyperflow-h3-flash",
+        "Repo": "",
+        "Quant": "Auto",
+        "Variant": "Q6_K",
+        "Name": "HyperFlow H3 Flash 14B (fast, sound) · Q6_K",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true
       }
     },
     {
@@ -64,7 +93,35 @@
       "FileName": "",
       "Family": "",
       "Triggers": "",
-      "Recommended": true
+      "Recommended": true,
+      "Standard": {
+        "Kind": "media",
+        "Id": "qwen-image-2.1",
+        "Repo": "",
+        "Quant": "Auto",
+        "Variant": "INT8 ConvRot",
+        "Name": "Qwen-Image 2.1 · INT8",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true,
+        "NotNvidia": {
+          "Kind": "media",
+          "Id": "qwen-image-2.1",
+          "Repo": "",
+          "Quant": "Auto",
+          "Variant": "Q8_0",
+          "Name": "Qwen-Image 2.1 · Q8_0 — for AMD / Intel cards",
+          "About": "",
+          "Url": "",
+          "FileName": "",
+          "Family": "",
+          "Triggers": "",
+          "Recommended": true
+        }
+      }
     },
     {
       "Kind": "media",
@@ -92,6 +149,34 @@
         "Family": "",
         "Triggers": "",
         "Recommended": true
+      },
+      "Standard": {
+        "Kind": "media",
+        "Id": "krea2-turbo",
+        "Repo": "",
+        "Quant": "Auto",
+        "Variant": "INT8 ConvRot",
+        "Name": "Krea 2 Turbo · INT8",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true,
+        "NotNvidia": {
+          "Kind": "media",
+          "Id": "krea2-turbo",
+          "Repo": "",
+          "Quant": "Auto",
+          "Variant": "Q8_0",
+          "Name": "Krea 2 Turbo · Q8_0 — for AMD / Intel cards",
+          "About": "",
+          "Url": "",
+          "FileName": "",
+          "Family": "",
+          "Triggers": "",
+          "Recommended": true
+        }
       }
     },
     {

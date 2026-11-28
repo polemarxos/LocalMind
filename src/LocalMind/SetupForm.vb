@@ -42,7 +42,7 @@ Public Class SetupForm
         StartPosition = FormStartPosition.CenterParent
         Theme.ApplyForm(Me)
 
-        Dim head As New Panel() With {.Dock = DockStyle.Top, .Height = 132, .Padding = New Padding(14, 10, 14, 6), .BackColor = Theme.CPanel}
+        Dim head As New Panel() With {.Dock = DockStyle.Top, .Height = 172, .Padding = New Padding(14, 10, 14, 6), .BackColor = Theme.CPanel}
         Dim title = Theme.MakeLabel(If(intro, Localizer.T("Get everything you need in one step")), bold:=True)
         title.Dock = DockStyle.Top
         title.Font = New Font(Theme.BoldFont.FontFamily, 13.0!, FontStyle.Bold)
@@ -61,6 +61,7 @@ Public Class SetupForm
         head.Controls.Add(lblInfo)
         head.Controls.Add(title)
         head.Controls.Add(bar)
+        head.Controls.Add(MakeContentRow())
 
         lst.Dock = DockStyle.Fill
         lst.View = View.Details
@@ -98,6 +99,55 @@ Public Class SetupForm
                           End Sub
     End Sub
 
+    ' 🛡 Standard (official models, no explicit content) or 🔞 Uncensored (18+); Standard unless the user picked otherwise
+    Private _uncensored As Boolean = AppCore.Settings.UncensoredContent OrElse AppCore.Settings.ShowNsfw
+    Private _raw As SetupFile
+    Private optStd, optUnc As RadioButton
+
+    Private Function MakeContentRow() As Control
+        Dim row As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 40, .WrapContents = False, .BackColor = Theme.CPanel, .Padding = New Padding(0, 4, 0, 0)}
+        Dim lbl = Theme.MakeLabel(Localizer.T("Content:"), dim_:=True)
+        lbl.Margin = New Padding(0, 9, 8, 0)
+        optStd = MakeChoice(Localizer.T("🛡 Standard — official models, no explicit content"))
+        optUnc = MakeChoice(Localizer.T("🔞 Uncensored — also nudity and explicit content (18+)"))
+        optStd.Checked = Not _uncensored
+        optUnc.Checked = _uncensored
+        AddHandler optUnc.Click, Sub()
+                                     If _uncensored Then Return
+                                     If Localizer.Box(Me, Localizer.T("Uncensored models can make nudity and explicit content." & vbCrLf & vbCrLf & "Are you 18 or older?"),
+                                                      "Uncensored models", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+                                         optStd.Checked = True
+                                         Return
+                                     End If
+                                     _uncensored = True
+                                     ShowSetup(_raw)
+                                 End Sub
+        AddHandler optStd.Click, Sub()
+                                     If Not _uncensored Then Return
+                                     _uncensored = False
+                                     ShowSetup(_raw)
+                                 End Sub
+        row.Controls.AddRange({lbl, optStd, optUnc})
+        Return row
+    End Function
+
+    Private Function MakeChoice(text As String) As RadioButton
+        Dim rb As New RadioButton() With {.Appearance = Appearance.Button, .Text = text, .AutoSize = True, .UseMnemonic = False,
+                                          .FlatStyle = FlatStyle.Flat, .Padding = New Padding(10, 3, 10, 3), .Margin = New Padding(0, 0, 8, 0),
+                                          .TextAlign = ContentAlignment.MiddleCenter, .Cursor = Cursors.Hand, .MinimumSize = New Size(0, 30)}
+        rb.FlatAppearance.BorderColor = Theme.CBorder
+        rb.FlatAppearance.CheckedBackColor = Theme.CAccent
+        rb.FlatAppearance.MouseOverBackColor = Theme.CHover
+        rb.BackColor = Theme.CControl
+        Dim paint = Sub()
+                        rb.ForeColor = If(rb.Checked, Color.White, Theme.CText)
+                        rb.Font = If(rb.Checked, Theme.BoldFont, Theme.UiFont)
+                    End Sub
+        paint()
+        AddHandler rb.CheckedChanged, Sub() paint()
+        Return rb
+    End Function
+
     Private ReadOnly Property Tier As String
         Get
             Return If(cmbTier.SelectedIndex = 0, "8gb", "16gb")
@@ -113,8 +163,9 @@ Public Class SetupForm
     End Function
 
     Private Sub ShowSetup(s As SetupFile)
-        ' (AMD / Intel cards get the editions that run well on them)
-        s = SetupLibrary.ForThisPc(s, _hw)
+        _raw = s
+        ' (Standard or Uncensored editions; AMD / Intel cards get the editions that run well on them)
+        s = SetupLibrary.ForThisPc(s, _hw, _uncensored)
         _setup = s
         _shown = s
         _loading = True
@@ -208,6 +259,11 @@ Public Class SetupForm
         If withProfiles Then SetupLibrary.ApplyProfiles(_setup)
         Dim withSettings = lst.Items.Cast(Of ListViewItem)().Any(Function(x) CStr(TryCast(x.Tag, String)) = "settings" AndAlso x.Checked)
         If withSettings Then SetupLibrary.ApplySettings(_setup)
+        ' the content choice decides what Model Manager shows (and civitai.com or civitai.red), whatever the setup says
+        AppCore.Settings.UncensoredContent = _uncensored
+        AppCore.Settings.ShowNsfw = _uncensored
+        AppCore.Settings.CivitaiRed = _uncensored
+        If _uncensored Then AppCore.Settings.CivitaiRedConfirmed = True
         AppCore.Settings.SetupTier = Tier
         AppCore.Settings.SetupVersion = Math.Max(AppCore.Settings.SetupVersion, _setup.Version)
         AppCore.SaveSettings()

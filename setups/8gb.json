@@ -1,7 +1,7 @@
 {
   "Name": "8 GB graphics card",
   "Vram": 8,
-  "Version": 3,
+  "Version": 4,
   "Items": [
     {
       "Kind": "llm",
@@ -16,7 +16,22 @@
       "Family": "",
       "Triggers": "",
       "MainChat": true,
-      "Recommended": true
+      "Recommended": true,
+      "Standard": {
+        "Kind": "llm",
+        "Id": "",
+        "Repo": "unsloth/Qwen3.5-9B-GGUF",
+        "Quant": "Q4_K_M",
+        "Variant": "",
+        "Name": "Qwen3.5-9B (official) · Q4_K_M",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true,
+        "MainChat": true
+      }
     },
     {
       "Kind": "media",
@@ -44,7 +59,21 @@
       "FileName": "",
       "Family": "",
       "Triggers": "",
-      "Recommended": true
+      "Recommended": true,
+      "Standard": {
+        "Kind": "media",
+        "Id": "hyperflow-h3-flash",
+        "Repo": "",
+        "Quant": "Auto",
+        "Variant": "Q3_K_M",
+        "Name": "HyperFlow H3 Flash 14B (fast, sound) · Q3_K_M",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true
+      }
     },
     {
       "Kind": "media",
@@ -58,7 +87,21 @@
       "FileName": "",
       "Family": "",
       "Triggers": "",
-      "Recommended": true
+      "Recommended": true,
+      "Standard": {
+        "Kind": "media",
+        "Id": "krea2-turbo",
+        "Repo": "",
+        "Quant": "Auto",
+        "Variant": "Q4_K_M",
+        "Name": "Krea 2 Turbo · Q4_K_M",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true
+      }
     },
     {
       "Kind": "media",
@@ -72,7 +115,21 @@
       "FileName": "",
       "Family": "",
       "Triggers": "",
-      "Recommended": true
+      "Recommended": true,
+      "Standard": {
+        "Kind": "media",
+        "Id": "qwen-image-2.1",
+        "Repo": "",
+        "Quant": "Auto",
+        "Variant": "Q6_K",
+        "Name": "Qwen-Image 2.1 · Q6_K",
+        "About": "",
+        "Url": "",
+        "FileName": "",
+        "Family": "",
+        "Triggers": "",
+        "Recommended": true
+      }
     },
     {
       "Kind": "audio",

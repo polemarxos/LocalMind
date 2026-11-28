@@ -1367,5 +1367,12 @@
 "Stopping picture, video and sound jobs…": "Διακοπή εργασιών εικόνας, βίντεο και ήχου…",
 "Pausing downloads (they resume next time)…": "Παύση λήψεων (συνεχίζουν την επόμενη φορά)…",
 "Closing the phone connection…": "Κλείσιμο της σύνδεσης με το κινητό…",
-"Unloading the chat model…": "Αποφόρτωση του μοντέλου συνομιλίας…"
+"Unloading the chat model…": "Αποφόρτωση του μοντέλου συνομιλίας…",
+"Content:": "Περιεχόμενο:",
+"🛡 Standard — official models, no explicit content": "🛡 Κανονικό — επίσημα μοντέλα, χωρίς άσεμνο περιεχόμενο",
+"🔞 Uncensored — also nudity and explicit content (18+)": "🔞 Χωρίς λογοκρισία — και γυμνό ή άσεμνο περιεχόμενο (18+)",
+"Uncensored models can make nudity and explicit content.\r\n\r\nAre you 18 or older?": "Τα μοντέλα χωρίς λογοκρισία μπορούν να φτιάξουν γυμνό και άσεμνο περιεχόμενο.\r\n\r\nΕίστε 18 ετών ή μεγαλύτεροι;",
+"Uncensored models": "Μοντέλα χωρίς λογοκρισία",
+"Content": "Περιεχόμενο",
+"Which models are shown and recommended (Model Manager, Civitai, recommended setups)": "Ποια μοντέλα εμφανίζονται και προτείνονται (Διαχείριση μοντέλων, Civitai, προτεινόμενες ρυθμίσεις)"
 }

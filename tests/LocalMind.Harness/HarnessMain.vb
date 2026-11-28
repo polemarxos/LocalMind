@@ -734,6 +734,21 @@ Module HarnessMain
             Check(Not s16.Items.Any(Function(i) i.Kind = "civitai") AndAlso onAmd.Items.Any(Function(i) i.Id = "noct-q-v4"), "16 GB setup: nothing from Civitai, Noct Q from Hugging Face")
             Check(onAmd.Profiles.Any(Function(p) p.Kind = "picture" AndAlso p.Model.EndsWith("v15")) AndAlso onAmd.Items.Any(Function(i) i.Id.EndsWith("v15") AndAlso i.Variant = "Q6_K") AndAlso
                   onNv.Items.Any(Function(i) i.Id.EndsWith("v16") AndAlso i.Variant = "INT8 ConvRot"), "picture: SNOFS v16 INT8 on NVIDIA, v15 Q6_K on AMD")
+            ' 🛡 Standard content: official models, profiles follow; Uncensored: as made
+            For Each tierFile In {"16gb", "8gb"}
+                Dim stX = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", tierFile & ".json")))
+                For Each hwX In {nv, amd}
+                    Dim std = SetupLibrary.ForThisPc(stX, hwX, False)
+                    Dim unc = SetupLibrary.ForThisPc(stX, hwX, True)
+                    Dim stdOk = Not std.Items.Any(Function(i) i.Kind = "media" AndAlso MediaStudio.Recipes().FirstOrDefault(Function(r) r.Id = i.Id)?.Uncensored = True) AndAlso
+                                std.Items.All(Function(i) i.Kind <> "media" OrElse MediaStudio.Recipes().Any(Function(r) r.Id = i.Id)) AndAlso
+                                std.Profiles.All(Function(p) std.Items.Any(Function(i) i.Id = p.Model)) AndAlso
+                                std.Items.Any(Function(i) i.Kind = "llm" AndAlso i.MainChat AndAlso Not i.Repo.ToLowerInvariant().Contains("heretic") AndAlso Not i.Repo.ToLowerInvariant().Contains("abliterated"))
+                    Dim uncOk = unc.Profiles.All(Function(p) unc.Items.Any(Function(i) i.Id = p.Model))
+                    Check(stdOk AndAlso uncOk, $"{tierFile} {If(hwX Is nv, "NVIDIA", "AMD")}: Standard has only official models, profiles follow",
+                          String.Join(", ", std.Items.Select(Function(i) If(i.Id <> "", i.Id & " " & i.Variant, i.Repo))))
+                Next
+            Next
             Dim s8 = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", "8gb.json")))
             Check(s8.Items.All(Function(i) i.NotNvidia Is Nothing AndAlso (i.Kind <> "media" OrElse MediaStudio.Recipes().Any(Function(r) r.Id = i.Id))) AndAlso
                   s8.Profiles.All(Function(p) s8.Items.Any(Function(i) i.Id = p.Model)), "8 GB setup: GGUF only, every profile has its model")

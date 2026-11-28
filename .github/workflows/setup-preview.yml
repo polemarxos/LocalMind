@@ -32,17 +32,18 @@ jobs:
             $bmp.Save("shots/$name.png")
             $g.Dispose(); $bmp.Dispose()
           }
-          foreach ($pc in @('nvidia:16:32', 'amd:16:32', 'nvidia:8:32', 'amd:8:32')) {
+          foreach ($run in @('nvidia:16:32|std', 'nvidia:16:32|unc', 'amd:16:32|std', 'amd:16:32|unc', 'nvidia:8:32|std', 'nvidia:8:32|unc', 'amd:8:32|std', 'amd:8:32|unc')) {
+            $pc, $content = $run.Split('|')
             Remove-Item -Recurse -Force publish/Data, publish/Models -ErrorAction SilentlyContinue
             New-Item -ItemType Directory -Force publish/Data | Out-Null
             @{ FeaturesAsked = $true; FirstRunDone = $true; EnableImages = $true; EnableAudio = $true;
-               CheckForUpdates = $false; AutoUpdateEngines = $false; Language = 'en' } |
+               CheckForUpdates = $false; AutoUpdateEngines = $false; Language = 'en'; UncensoredContent = ($content -eq 'unc') } |
               ConvertTo-Json | Set-Content -Encoding utf8 publish/Data/settings.json
             $env:LOCALMIND_FAKE_GPU = $pc
             $env:LOCALMIND_PREVIEW = 'welcome'
             $p = Start-Process publish/LocalMind.exe -PassThru
             Start-Sleep -Seconds 35
-            Shot ("welcome-" + ($pc -replace ":", "-"))
+            Shot ("welcome-" + ($pc -replace ":", "-") + "-" + $content)
             Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue; Start-Sleep 2
           }
       - uses: actions/upload-artifact@v4

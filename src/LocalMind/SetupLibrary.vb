@@ -41,6 +41,9 @@ Public Class SetupItem
     ''' <summary>Used instead of this item on PCs without an NVIDIA graphics card (AMD, Intel): e.g. a GGUF edition
     ''' where this one is INT8 ConvRot, which only NVIDIA cards run fast. Profiles follow the swap.</summary>
     Public Property NotNvidia As SetupItem
+    ''' <summary>Used instead of this item when the user picks Standard content (an official model with no explicit
+    ''' content) — this item is the uncensored one. Can have its own NotNvidia edition.</summary>
+    Public Property Standard As SetupItem
 End Class
 
 ''' <summary>
@@ -135,28 +138,40 @@ Public Module SetupLibrary
     End Function
 
     ''' <summary>
-    ''' The setup as it fits this PC: on a PC without an NVIDIA card, items that have a NotNvidia edition use it, and
-    ''' the profiles that used the swapped model use the new one.
+    ''' The setup as it fits this PC and the content choice: with Standard, items that have a Standard edition (made by
+    ''' the official makers, no explicit content) use it; then, on a PC without an NVIDIA card, items that have a
+    ''' NotNvidia edition use it. The profiles that used a swapped model use the new one.
     ''' </summary>
-    Public Function ForThisPc(s As SetupFile, hw As HardwareInfo) As SetupFile
+    Public Function ForThisPc(s As SetupFile, hw As HardwareInfo, Optional uncensored As Boolean = True) As SetupFile
         If s Is Nothing Then Return Nothing
         Dim nvidia = hw IsNot Nothing AndAlso hw.Gpus.Any(Function(g) g.Vendor = GpuVendor.Nvidia)
-        If nvidia OrElse Not s.Items.Any(Function(i) i.NotNvidia IsNot Nothing) Then Return s
+        Dim needStd = Not uncensored AndAlso s.Items.Any(Function(i) i.Standard IsNot Nothing)
+        Dim needAlt = Not nvidia AndAlso s.Items.Any(Function(i) i.NotNvidia IsNot Nothing OrElse (i.Standard?.NotNvidia IsNot Nothing))
+        If Not needStd AndAlso Not needAlt Then Return s
         Dim c = Parse(ToJson(s))
-        Dim swap As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+        If needStd Then Swap(c, Function(i) i.Standard)
+        If Not nvidia Then Swap(c, Function(i) i.NotNvidia)
+        Return c
+    End Function
+
+    Private Sub Swap(c As SetupFile, pick As Func(Of SetupItem, SetupItem))
+        Dim swapped As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
         For i = 0 To c.Items.Count - 1
-            Dim alt = c.Items(i).NotNvidia
+            Dim alt = pick(c.Items(i))
             If alt Is Nothing Then Continue For
             alt.Recommended = c.Items(i).Recommended
-            If Not String.IsNullOrEmpty(c.Items(i).Id) AndAlso Not String.IsNullOrEmpty(alt.Id) AndAlso c.Items(i).Id <> alt.Id Then swap(c.Items(i).Id) = alt.Id
+            If c.Items(i).Kind = "llm" Then alt.MainChat = c.Items(i).MainChat
+            Dim oldKey = If(c.Items(i).Kind = "llm", c.Items(i).Repo, c.Items(i).Id)
+            Dim newKey = If(alt.Kind = "llm", alt.Repo, alt.Id)
+            If Not String.IsNullOrEmpty(oldKey) AndAlso Not String.IsNullOrEmpty(newKey) AndAlso oldKey <> newKey Then swapped(oldKey) = newKey
             c.Items(i) = alt
         Next
         For Each p In c.Profiles
             Dim n As String = Nothing
-            If p.Model IsNot Nothing AndAlso swap.TryGetValue(p.Model, n) Then p.Model = n
+            If p.Model IsNot Nothing AndAlso swapped.TryGetValue(p.Model, n) Then p.Model = n
         Next
-        Return c
-    End Function
+    End Sub
+
 
     ''' <summary>The edition of a picture/video model for this PC: the named one if it fits, else the largest that fits.</summary>
     Public Function VariantFor(r As MediaRecipe, preferred As String, hw As HardwareInfo) As MediaVariant

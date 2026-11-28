@@ -96,6 +96,8 @@ Public Class AppSettings
     Public Property FirstRunDone As Boolean = False
     Public Property CheckForUpdates As Boolean = True
     ''' <summary>Show uncensored / NSFW picture and video models (and their sample pictures unblurred).</summary>
+    ''' <summary>Content: False = Standard (official models), True = Uncensored (18+). Chosen in the first-start window.</summary>
+    Public Property UncensoredContent As Boolean = False
     Public Property ShowNsfw As Boolean = False
     ''' <summary>Model Manager: list only models that run fully on the graphics card.</summary>
     Public Property OnlyFitGpu As Boolean = False

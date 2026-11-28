@@ -27,6 +27,7 @@ Public Class SettingsForm
     Private chkSplash As CheckBox
     Private chkAutoCtx, chkUpdates, chkMinTray, chkCloseTray, chkImages, chkAudio, chkEngUpd, chkAgent, chkAutoInstall As CheckBox
     Private cmbLang As ComboBox
+    Private cmbContent As ComboBox
     Private txtHotkey As TextBox
     Private cmbNgl, cmbKv, cmbSpeed, cmbLowRam As ComboBox
     Private chkMtp As CheckBox
@@ -327,6 +328,17 @@ Public Class SettingsForm
         Row(t, "", chkEngUpd)
         chkAgent = New CheckBox() With {.Text = "The AI may draw, make videos, compose and search the web by itself when you ask", .Checked = _s.AgentTools, .AutoSize = True}
         Row(t, "AI tools", chkAgent)
+        cmbContent = New ComboBox() With {.DropDownStyle = ComboBoxStyle.DropDownList, .Width = 360}
+        cmbContent.Items.AddRange({Localizer.T("🛡 Standard — official models, no explicit content"), Localizer.T("🔞 Uncensored — also nudity and explicit content (18+)")})
+        cmbContent.SelectedIndex = If(_s.UncensoredContent OrElse _s.ShowNsfw, 1, 0)
+        AddHandler cmbContent.SelectionChangeCommitted, Sub()
+                                                            If cmbContent.SelectedIndex = 1 AndAlso Not (_s.UncensoredContent OrElse _s.ShowNsfw) AndAlso
+                                                               Localizer.Box(Me, Localizer.T("Uncensored models can make nudity and explicit content." & vbCrLf & vbCrLf & "Are you 18 or older?"),
+                                                                             "Uncensored models", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then
+                                                                cmbContent.SelectedIndex = 0
+                                                            End If
+                                                        End Sub
+        Row(t, "Content", cmbContent, "Which models are shown and recommended (Model Manager, Civitai, recommended setups)")
         chkMinTray = New CheckBox() With {.Text = "Minimize to the system tray", .Checked = _s.MinimizeToTray, .AutoSize = True}
         chkCloseTray = New CheckBox() With {.Text = "Close button keeps LocalMind running in the tray", .Checked = _s.CloseToTray, .AutoSize = True}
         Row(t, "Tray", chkMinTray)
@@ -436,6 +448,13 @@ Public Class SettingsForm
             _themeChanged = True
         End If
         _s.AgentTools = chkAgent.Checked
+        Dim unc = cmbContent.SelectedIndex = 1
+        If unc <> (_s.UncensoredContent OrElse _s.ShowNsfw) Then
+            _s.UncensoredContent = unc
+            _s.ShowNsfw = unc
+            _s.CivitaiRed = unc
+            If unc Then _s.CivitaiRedConfirmed = True
+        End If
         _s.EnableImages = chkImages.Checked
         _s.EnableAudio = chkAudio.Checked
         _s.FeaturesAsked = True

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.26.22
+
+### Added
+- **Choose Standard or Uncensored models.** The first-start window, and the recommended-models window, now start
+  with a choice:
+  - **🛡 Standard** (the default): official models that don't make explicit content.
+  - **🔞 Uncensored (18+):** asks "Are you 18 or older?" first.
+
+  The model list switches at once, and the profiles follow. Standard editions:
+
+  | | NVIDIA 16 GB | AMD 16 GB | 8 GB |
+  |---|---|---|---|
+  | Chat | Qwen3.8 27B (official) · UD-IQ3_S | same | Qwen3.5 9B (official) · Q4_K_M |
+  | Pictures | Krea 2 Turbo · INT8 | Krea 2 Turbo · Q8_0 | Krea 2 Turbo · Q4_K_M |
+  | Editing | Qwen-Image 2.1 · INT8 | Qwen-Image 2.1 · Q8_0 | Qwen-Image 2.1 · Q6_K |
+  | Video | HyperFlow H3 Flash · Q6_K | same | HyperFlow H3 Flash · Q3_K_M |
+
+  Music, voice and upscaling are the same in both.
+- **Settings → General → Content** switches between Standard and Uncensored at any time. It also decides whether
+  NSFW models are shown in Model Manager and whether Civitai browsing uses civitai.com or civitai.red.
+
 ## 2.26.21
 
 ### Changed
