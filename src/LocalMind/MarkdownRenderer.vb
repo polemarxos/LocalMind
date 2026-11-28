@@ -247,6 +247,8 @@ Public Module MarkdownRenderer
         sb.AppendLine("  .meta { font-size: 11px; color: #777; margin-top: 6px; display:flex; gap:10px; align-items:center; }")
         sb.AppendLine("  .meta button { background:#333; color:#ccc; border:1px solid #444; border-radius:4px; padding:1px 8px; font-size:11px; cursor:pointer; }")
         sb.AppendLine("  .meta button:hover { background:#444; }")
+        sb.AppendLine("  .meta button.readbtn[data-on] { background:#5a3b12; color:#ffd9a8; border-color:#a8682a; animation: pulse 1.4s ease-in-out infinite; }")
+        sb.AppendLine("  @keyframes pulse { 50% { opacity: .7; } }")
         sb.AppendLine("  .bubble p { margin: 0 0 12px 0; }")
         sb.AppendLine("  .bubble p:last-child { margin-bottom: 0; }")
         sb.AppendLine("  .bubble strong, .bubble b { color: #ffffff; font-weight: 700; }")
@@ -481,6 +483,10 @@ Public Module MarkdownRenderer
     b.style.display = 'block';
     b.firstChild.style.width = Math.max(0, Math.min(100, pct)) + '%';
   }
+  // reading aloud finished (or stopped): every Read button is back to 🔊 Read
+  function readingDone() {
+    document.querySelectorAll('.readbtn[data-on]').forEach(function (x) { x.removeAttribute('data-on'); x.textContent = tr('🔊 Read'); x.title = tr('Read aloud'); });
+  }
   function msgIndex(node) { return Array.prototype.indexOf.call(document.querySelectorAll('.msg.user, .msg.assistant'), node); }
   function deleteMsg(node) { try { window.chrome.webview.postMessage({ type: 'deletemsg', index: msgIndex(node) }); } catch (e) {} }
 
@@ -552,8 +558,17 @@ Public Module MarkdownRenderer
       var c = document.createElement('button'); c.textContent = tr('Copy answer');
       c.onclick = function () { copyToClipboard(b.innerText, c); };
       m.appendChild(c);
-      var r = document.createElement('button'); r.textContent = tr('🔊 Read'); r.title = tr('Read aloud (click again to stop)');
-      r.onclick = function () { try { window.chrome.webview.postMessage({ type: 'speak', text: b.innerText }); } catch (e) {} };
+      var r = document.createElement('button'); r.className = 'readbtn'; r.textContent = tr('🔊 Read'); r.title = tr('Read aloud');
+      r.onclick = function () {
+        // while reading, the button is ⏹ Stop reading; pressing Read on another answer reads that one instead
+        var on = r.getAttribute('data-on');
+        readingDone();
+        try {
+          if (on) { window.chrome.webview.postMessage({ type: 'stopspeak' }); return; }
+          r.setAttribute('data-on', '1'); r.textContent = tr('⏹ Stop reading'); r.title = tr('Stop reading aloud');
+          window.chrome.webview.postMessage({ type: 'readaloud', text: b.innerText });
+        } catch (e) {}
+      };
       m.appendChild(r);
       var ex = document.createElement('button'); ex.textContent = tr('💾 Export'); ex.title = tr('Save this answer as PDF, Word, Excel, LibreOffice…');
       ex.onclick = function () { try { window.chrome.webview.postMessage({ type: 'exportmsg', index: msgIndex(document.getElementById(id)) }); } catch (e) {} };

@@ -247,6 +247,44 @@ Partial Class MainForm
 
     Private _speakProblemShown As Boolean
 
+    Private _readWatch As System.Windows.Forms.Timer
+
+    ''' <summary>
+    ''' 🔊 Read on an answer: stops whatever is being read and reads this one. The button shows ⏹ Stop reading until
+    ''' the voice is done, then goes back to 🔊 Read by itself.
+    ''' </summary>
+    Private Sub ReadAnswerAloud(text As String)
+        Voice.StopSpeaking()
+        Try
+            If Not String.IsNullOrEmpty(Settings.ReadAloudModel) Then
+                SetStatus("Preparing the AI voice…")
+                Dim unused = Voice.SpeakAiAsync(StripSources(text), Sub(t) SetStatus(t))
+            Else
+                Voice.Speak(StripSources(text))
+            End If
+        Catch ex As Exception
+            Js("readingDone()")
+            SetStatus(ex.Message)
+            If Not _speakProblemShown Then
+                _speakProblemShown = True
+                Localizer.Box(Me, ex.Message, "Read aloud", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
+            Return
+        End Try
+        ' (watches for the end of the reading, to put the button back)
+        If _readWatch Is Nothing Then
+            _readWatch = New System.Windows.Forms.Timer() With {.Interval = 300}
+            AddHandler _readWatch.Tick, Sub()
+                                            If Voice.IsSpeaking Then Return
+                                            _readWatch.Stop()
+                                            Js("readingDone()")
+                                        End Sub
+        End If
+        _readWatch.Stop()
+        _readWatch.Start()
+    End Sub
+
+
     Private Sub SpeakAnswer(text As String)
         Try
             If Voice.IsSpeaking Then

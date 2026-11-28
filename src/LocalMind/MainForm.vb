@@ -777,6 +777,14 @@ Public Class MainForm
                 DeleteMessage(di)
                 Return
             End If
+            If obj("type")?.ToString() = "readaloud" Then
+                ReadAnswerAloud(obj("text")?.ToString())
+                Return
+            End If
+            If obj("type")?.ToString() = "stopspeak" Then
+                Voice.StopSpeaking()
+                Return
+            End If
             If obj("type")?.ToString() = "speak" Then
                 SpeakAnswer(obj("text")?.ToString())
                 Return

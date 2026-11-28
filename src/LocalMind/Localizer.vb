@@ -82,7 +82,8 @@ Public Module Localizer
                     "💭 Thinking…", "💭 Thinking (click to expand)",
                     "Edit", "Edit message", "Cancel", "Send", "Enter sends · Shift+Enter new line · Esc cancels",
                     "Wait for the answer to finish (or press Stop), then edit.", "Delete", "Delete this message and its answer", "Delete this answer",
-                    "💾 Export", "Save this answer as PDF, Word, Excel, LibreOffice…"}
+                    "💾 Export", "Save this answer as PDF, Word, Excel, LibreOffice…",
+                    "Read aloud", "⏹ Stop reading", "Stop reading aloud"}
         Return JsonConvert.SerializeObject(keys.ToDictionary(Function(k) k, Function(k) T(k)))
     End Function
 

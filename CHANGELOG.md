@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.26.38
+
+### Changed
+- **The Read button shows when it's reading.** It turns into a highlighted ⏹ Stop reading while the answer is read,
+  and back to 🔊 Read when it's done. Read on another answer reads that one instead.
+
 ## 2.26.37
 
 ### Fixed
