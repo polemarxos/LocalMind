@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.26.14
+
+### Changed — less RAM and graphics memory
+- **Chat model (llama.cpp):**
+  - The prompt cache it kept in system RAM between messages was up to 8 GB. It is now limited to 1 GB with
+    "Reduce system RAM usage", or 2 GB otherwise.
+  - A model that fits on the graphics card no longer keeps a memory-mapped copy in RAM after loading.
+  - With "Reduce system RAM usage" on NVIDIA cards, the conversation memory (KV cache) uses 8 bits instead of 16,
+    which is half the size. Your own KV-cache setting still wins.
+- **Pictures and videos (stable-diffusion.cpp):**
+  - Video VAE decoding, the biggest jump in graphics memory, now always works in tiles and a few frames at a time.
+    Pictures do this when the model is close to the card's size.
+  - A little graphics memory is kept free. When it runs out, Windows silently moves the overflow into system RAM,
+    which fills the RAM and makes everything crawl.
+  - Encoded prompts are no longer cached in memory.
+  - An older engine that doesn't know one of these options gets the run again without it.
+- **Before a picture, video or sound job,** the document-search helper is closed too. It starts again by itself
+  when needed.
+
 ## 2.26.13
 
 ### Changed

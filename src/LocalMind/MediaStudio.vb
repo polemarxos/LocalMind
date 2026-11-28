@@ -616,7 +616,7 @@ Public Module MediaStudio
         Dim made As String = Nothing
         Dim failedLoras As List(Of String) = Nothing
         Dim ramRetry = False
-        For attempt = 0 To 3
+        For attempt = 0 To 5
             Try
                 If ramRetry Then
                     ramRetry = False
@@ -631,6 +631,11 @@ Public Module MediaStudio
             Catch ex As Exception When attempt < 3 AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        ShapeFix.TryFixFromLog(CStr(ex.Data("engineLog")))
                 progress?.Invoke(0, "Fixed the model file's tensor shapes — trying again…")
+            Catch ex As Exception When attempt < 5 AndAlso UnknownArg(ex) IsNot Nothing
+                ' an older engine build: the option it doesn't know is left out from now on
+                SyncLock _unsupportedArgs
+                    _unsupportedArgs.Add(UnknownArg(ex))
+                End SyncLock
             Catch ex As Exception When attempt < 2 AndAlso
                                        (ex.Message & CStr(If(TypeOf ex.Data("engineLog") Is String, ex.Data("engineLog"), ""))).Contains("RAM weight capacity exceeded")
                 ' system RAM was still held by the model before (or another program): free what we hold, wait, try again
@@ -665,9 +670,28 @@ Public Module MediaStudio
         Return made
     End Function
 
+    ''' <summary>The option an older engine refused ("unknown argument: --x"), if it is one LocalMind adds by itself.</summary>
+    Private Function UnknownArg(ex As Exception) As String
+        Dim t = ex.Message & CStr(If(TypeOf ex.Data("engineLog") Is String, ex.Data("engineLog"), ""))
+        Dim m = Regex.Match(t, "unknown argument:?\s*(--[\w-]+)")
+        If Not m.Success Then Return Nothing
+        Dim f = m.Groups(1).Value
+        Return If({"--temporal-tiling", "--max-vram", "--conditioning-cache-size"}.Contains(f), f, Nothing)
+    End Function
+
     Private Function AfterFirstLine(t As String) As String
         Dim i = t.IndexOf(ControlChars.Lf)
         Return If(i < 0, "", t.Substring(i + 1))
+    End Function
+
+    ' Newer engine options; an engine build that doesn't know one says "unknown argument" and the run is repeated without it.
+    Private ReadOnly _unsupportedArgs As New HashSet(Of String)(StringComparer.Ordinal)
+
+    Private Function Opt(flag As String, Optional value As String = Nothing) As String
+        SyncLock _unsupportedArgs
+            If _unsupportedArgs.Contains(flag) Then Return ""
+        End SyncLock
+        Return flag & If(value Is Nothing, "", " " & value) & " "
     End Function
 
     ''' <summary>LoRAs left out of the last run because the engine can't use them (shown in the chat).</summary>
@@ -887,8 +911,18 @@ Public Module MediaStudio
             End If
             ' (parts larger than the free RAM are read from the disk as needed instead of failing to load)
             If lowRam OrElse (hw.RamBytes > 0 AndAlso modelBytes > hw.RamBytes * 0.6) Then a.Append("--mmap ")
-            If hw.VramGB < 12 Then a.Append("--vae-tiling ")
-            If pkg.Flavor.StartsWith("cuda", StringComparison.Ordinal) Then a.Append("--diffusion-fa ")
+            ' The VAE decode at the end is the biggest jump in graphics memory, for videos most of all: decoded in tiles
+            ' (and, for videos, a few frames at a time) it needs a fraction of it.
+            If hw.VramGB < 12 OrElse r.IsVideo OrElse modelBytes > hw.VramBytes * 0.7 Then a.Append("--vae-tiling ")
+            If r.IsVideo Then a.Append(Opt("--temporal-tiling"))
+            If pkg.Flavor.StartsWith("cuda", StringComparison.Ordinal) Then
+                a.Append("--diffusion-fa ")
+                ' Keep a little graphics memory free: when it runs out, Windows silently moves the overflow into system RAM
+                ' ("sysmem fallback"), which fills the RAM and makes everything crawl.
+                a.Append(Opt("--max-vram", "-0.75"))
+            End If
+            ' one prompt per run: no cache of encoded prompts kept in memory
+            a.Append(Opt("--conditioning-cache-size", "0"))
         End If
         a.Append($"-o {Q(out)} -v")
 

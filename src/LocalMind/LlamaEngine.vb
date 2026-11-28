@@ -337,6 +337,8 @@ Public Class LlamaEngine
                     Await StopAsync()
                 End If
             End If
+            ' the document-search helper holds memory too (it starts again by itself when needed)
+            Knowledge.StopEmbedder()
             ' the chat model (or the last picture / video / sound job) may have just closed: wait until the card
             ' has really given its memory back, so the next model sees all of it
             status?.Invoke("Freeing memory…")
@@ -454,6 +456,24 @@ Public Class LlamaEngine
             .StandardOutputEncoding = Encoding.UTF8,
             .StandardErrorEncoding = Encoding.UTF8
         }
+        ' 🧠 Less system RAM (set through the environment, so engine builds that don't know a setting just ignore it):
+        '  - the prompt cache kept in RAM between messages: 8 GB by default → 1–2 GB;
+        '  - a model that fits on the graphics card is read into it without memory-mapping the file, so its copy in
+        '    RAM is released after loading instead of staying mapped;
+        '  - "Reduce system RAM usage": the conversation memory (KV cache) at 8 bits instead of 16 (half the size).
+        Dim hwi = HardwareInfo.Current()
+        Dim lowRam = s.LowRamActive(hwi.VramGB)
+        psi.Environment("LLAMA_ARG_CACHE_RAM") = If(lowRam, "1024", "2048")
+        Dim modelBytes = model.SizeBytes
+        If EffectiveVariant <> "cpu" AndAlso hwi.VramBytes > 0 AndAlso modelBytes > 0 AndAlso modelBytes < hwi.VramBytes * 0.8 Then
+            psi.Environment("LLAMA_ARG_LOAD_MODE") = "none"
+            psi.Environment("LLAMA_ARG_NO_MMAP") = "1"
+        End If
+        If lowRam AndAlso EffectiveVariant.StartsWith("cuda", StringComparison.Ordinal) AndAlso
+           (String.IsNullOrWhiteSpace(s.KvCacheType) OrElse s.KvCacheType = "f16") Then
+            psi.Environment("LLAMA_ARG_CACHE_TYPE_K") = "q8_0"
+            psi.Environment("LLAMA_ARG_CACHE_TYPE_V") = "q8_0"
+        End If
         Dim p As New Process() With {.StartInfo = psi, .EnableRaisingEvents = True}
         AddHandler p.OutputDataReceived, Sub(o, e) If e.Data IsNot Nothing Then AppendLog(e.Data)
         AddHandler p.ErrorDataReceived, Sub(o, e) If e.Data IsNot Nothing Then AppendLog(e.Data)
