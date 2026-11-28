@@ -1044,9 +1044,9 @@ Public Module ChatAgent
                Localizer.T("the music models can't sing in a copied voice, so the copied voice performs the lyrics over music made for them") & "_"
     End Function
 
-    ''' <summary>The 💾 Export… button under a song or voice clip (MP3, MP4 or WAV).</summary>
+    ''' <summary>(The ⬇ MP3 / MP4 / WAV and 💾 Save as… buttons are drawn under every player now.)</summary>
     Public Function ExportLink(file As String) As String
-        Return vbCrLf & vbCrLf & $"[💾 {Localizer.T("Export (MP3 / MP4)…")}](https://action.localmind/export?f={Uri.EscapeDataString(Path.GetFileName(file))})"
+        Return ""
     End Function
 
     ''' <summary>The lyrics split at their [verse] / [chorus] tags, without the tags (or in pieces of a few lines).</summary>

@@ -762,6 +762,12 @@ Public Class MainForm
                 StartEdit(idx, txt)
                 Return
             End If
+            If obj("type")?.ToString() = "exportmsg" Then
+                Dim ei As Integer = -1
+                Integer.TryParse(If(obj("index")?.ToString(), ""), ei)
+                ExportAnswer(ei)
+                Return
+            End If
             If obj("type")?.ToString() = "deletemsg" Then
                 Dim di As Integer = -1
                 Integer.TryParse(If(obj("index")?.ToString(), ""), di)

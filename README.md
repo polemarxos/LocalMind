@@ -26,6 +26,12 @@ recording. A song can be sung in a cloned voice. Songs export to MP3 or MP4.
 AI runs each step and unloads the chat model in between so the GPU has room. Every result shows up in the chat as
 soon as it's ready, along with the total time it took.
 
+**Saving results.** Under every picture, video and song there are buttons to save it straight to your Downloads
+folder (songs as MP3, MP4 or WAV) or somewhere else. Any answer can be exported too: ask it to summarize a document
+you attached, then press Export and save the summary as PDF, Word, LibreOffice Writer or RTF. Tables in an answer
+go to Excel, LibreOffice Calc or CSV. Word, Writer and RTF use [pandoc](https://pandoc.org), which is downloaded the
+first time you need it.
+
 **Characters and the Library.** Save a character with a look and a voice, then call it in the chat with
 `@name`. Everything you generate goes to the Library, together with the prompt that made it.
 

@@ -31,6 +31,52 @@ Module HarnessMain
     Async Function RunAsync(args As String()) As Task
         Dim only = If(args.Length > 0, args(0), "all")
 
+        If only = "all" OrElse only = "unit" OrElse only = "prompts" OrElse only = "export" Then
+            Console.WriteLine("== Saving an answer as a document (Excel, Calc, CSV, text, Word / Writer)")
+            Dim answer = "# Sales summary" & vbLf & vbLf & "The report covers **three** regions." & vbLf & vbLf &
+                         "| Region | Q1 | Q2 | Note |" & vbLf & "|---|---|---|---|" & vbLf &
+                         "| North | 120 | 135.5 | best, ""strong"" |" & vbLf & "| South | 80 | 95 | Ελλάδα |" & vbLf & vbLf &
+                         "- point one" & vbLf & "- point two" & vbLf & vbLf & "[🎵 a song](https://outputs.localmind/s.wav)" & vbLf & vbLf &
+                         "[💾 Export…](https://action.localmind/export?f=s.wav)"
+            Dim tabs = DocExport.Tables(answer)
+            Check(tabs.Count = 1 AndAlso tabs(0).Count = 3 AndAlso tabs(0)(0)(0) = "Region" AndAlso tabs(0)(1)(2) = "135.5" AndAlso tabs(0)(2)(3) = "Ελλάδα",
+                  "the table is read (header + 2 rows, plain text)", String.Join(" | ", tabs.SelectMany(Function(t) t).Select(Function(r) String.Join(",", r))))
+            Dim outDir = Path.Combine(Path.GetTempPath(), "lm-export")
+            Directory.CreateDirectory(outDir)
+            DocExport.WriteXlsx(answer, Path.Combine(outDir, "a.xlsx"))
+            DocExport.WriteOds(answer, Path.Combine(outDir, "a.ods"))
+            DocExport.WriteCsv(answer, Path.Combine(outDir, "a.csv"))
+            DocExport.WriteXlsx("Just words, no table." & vbLf & vbLf & "Second line.", Path.Combine(outDir, "notable.xlsx"))
+            Check(File.Exists(Path.Combine(outDir, "a.xlsx")) AndAlso File.Exists(Path.Combine(outDir, "a.ods")), "Excel and Calc files written")
+            Dim csv = File.ReadAllText(Path.Combine(outDir, "a.csv"))
+            Check(csv.Contains("North,120,135.5,""best, """"strong""""""") AndAlso csv.Contains("Ελλάδα"), "CSV quotes commas and quotes", csv.Split({vbCrLf, vbLf}, StringSplitOptions.None)(1))
+            Dim txt = DocExport.PlainText(answer)
+            Check(txt.Contains("three regions") AndAlso Not txt.Contains("**") AndAlso txt.Contains("a song") AndAlso Not txt.Contains("action.localmind"), "plain text: no Markdown marks, no buttons")
+            Dim pandoc = If(OperatingSystem.IsWindows(), Nothing, If(File.Exists("/usr/bin/pandoc"), "/usr/bin/pandoc", Nothing))
+            If pandoc IsNot Nothing Then
+                For Each fmt In {"docx", "odt", "rtf"}
+                    Dim target = Path.Combine(outDir, "a." & fmt)
+                    Try
+                        DocExport.PandocAsync(answer, "Summarize the sales report", target, fmt, Nothing, CancellationToken.None, pandoc).GetAwaiter().GetResult()
+                        Check(File.Exists(target) AndAlso New FileInfo(target).Length > 1000, $"{fmt} made by pandoc", New FileInfo(target).Length & " bytes")
+                    Catch ex As Exception
+                        Check(False, $"{fmt} made by pandoc", ex.Message)
+                    End Try
+                Next
+            Else
+                Console.WriteLine("  SKIP Word / Writer / RTF: no pandoc here")
+            End If
+            Dim html = DocExport.StandaloneHtml(answer, "Summarize the sales report")
+            Check(html.Contains("<table") AndAlso html.Contains("Summarize the sales report") AndAlso Not html.Contains("<audio") AndAlso Not html.Contains("media-bar"),
+                  "PDF / web page: the table and title, no player or buttons")
+            File.WriteAllText(Path.Combine(outDir, "a.html"), html)
+            ' (a look at the chat with the buttons under a song, a picture and a video)
+            Dim sample = MarkdownRenderer.ToHtml("Here is your song and picture." & vbLf & vbLf & "[🎵 Warhammer anthem](https://outputs.localmind/song.wav)" & vbLf & vbLf &
+                                                 "![two space marines](https://outputs.localmind/pic.png)" & vbLf & vbLf & "[🎬 battle clip](https://outputs.localmind/clip.mp4)")
+            File.WriteAllText(Path.Combine(outDir, "chat.html"), MarkdownRenderer.ShellHtml().Replace("</body>",
+                "<script>loadAll([{role:'user',text:'make a song and a picture',imgs:[]},{role:'assistant',html:" & Newtonsoft.Json.JsonConvert.SerializeObject(sample) & ",meta:'12.3 s'}]);toast('✔ Saved to Downloads: song.mp3');</script></body>"))
+        End If
+
         If only = "all" OrElse only = "unit" OrElse only = "prompts" Then
             Console.WriteLine("== Engine versions: keep the one that works, go back when a new one fails")
             Dim eroot = Path.Combine(Path.GetTempPath(), "lm-eh-" & Guid.NewGuid().ToString("N").Substring(0, 6))
@@ -84,6 +130,16 @@ Module HarnessMain
                 Check(String.Join(",", got) = String.Join(",", want), $"'{shortP}' → {If(want.Count = 0, "normal answer", String.Join(" → ", c("steps")))}",
                       If(got.Count = 0, "(no steps)", String.Join(" → ", got.Select(Function(g) names.First(Function(kv) kv.Value = g).Key))))
             Next
+            ' ⬇ the buttons under every result in the chat
+            Dim songHtml = MarkdownRenderer.ToHtml("[🎵 epic](https://outputs.localmind/song%201.wav)" & vbCrLf & vbCrLf & "[💾 Export (MP3 / MP4)…](https://action.localmind/export?f=song%201.wav)")
+            Check(songHtml.Contains("<audio") AndAlso songHtml.Contains("download?f=song%201.wav&as=mp3") AndAlso songHtml.Contains("&as=mp4") AndAlso
+                  songHtml.Contains("&as=wav") AndAlso songHtml.Contains("export?f=song%201.wav"), "song: ⬇ MP3 / MP4 / WAV and Save as… under the player")
+            Check(System.Text.RegularExpressions.Regex.Matches(songHtml, "export\?f=").Count = 1, "the old separate Export link is gone (one Save as… only)")
+            Dim picHtml = MarkdownRenderer.ToHtml("![a castle](https://outputs.localmind/pic.png)")
+            Check(picHtml.Contains("download?f=pic.png""") AndAlso picHtml.Contains("export?f=pic.png"), "picture: ⬇ Download and Save as…")
+            Dim vidHtml = MarkdownRenderer.ToHtml("[🎬 clip](https://outputs.localmind/clip.mp4)")
+            Check(vidHtml.Contains("<video") AndAlso vidHtml.Contains("download?f=clip.mp4""") AndAlso Not vidHtml.Contains("as=mp3"), "video: ⬇ Download and Save as…")
+            Check(Not MarkdownRenderer.ToHtml("![x](https://example.com/a.png)").Contains("media-bar"), "pictures from the web get no buttons")
             ' a picture size the AI made up by itself is ignored; one the user asked for is kept
             Dim made = MediaSize.From(New JObject From {{"megapixels", 2}}, "generate me an image of two ultra marines")
             Check(made.Megapixels = 0, "size the AI made up is ignored", made.Megapixels.ToString())

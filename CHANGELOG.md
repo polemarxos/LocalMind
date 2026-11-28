@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.26.33
+
+### Added
+- **Buttons under every picture, video and song in the chat.** ⬇ saves straight to your Downloads folder (pictures
+  and videos as they are, songs and voice clips as MP3, MP4 with a waveform, or WAV); 💾 Save as… lets you pick the
+  folder and format. A short note says where the file went. On the phone, ⬇ Download saves the file to the phone.
+- **💾 Export on every answer.** Save an answer (a summary of a document you attached, a plan, a table…) as:
+  - PDF, laid out as a clean, light page with its pictures and formulas;
+  - Word (.docx), LibreOffice / OpenOffice Writer (.odt) or Rich Text (.rtf), through pandoc, which is downloaded
+    the first time (about 40 MB);
+  - Excel (.xlsx), LibreOffice / OpenOffice Calc (.ods) or CSV: the tables of the answer, one sheet each, with
+    numbers as numbers and a bold header row (an answer without a table goes one line per row);
+  - a web page (pictures included), Markdown or plain text.
+
+  The file is named after your question. Answers that are mostly a table start on Excel in the save window.
+
+### Changed
+- The separate "💾 Export (MP3 / MP4)…" link under songs is replaced by the new buttons (in older chats too).
+
 ## 2.26.32
 
 ### Added

@@ -22,6 +22,8 @@ Partial Class MainForm
                 Dim unused = MergeVideosAsync(q("a"), q("b"))
             Case "export"
                 ExportOutput(q("f"))
+            Case "download"
+                DownloadOutput(q("f"), q("as"))
         End Select
         Return True
     End Function
@@ -77,6 +79,95 @@ Partial Class MainForm
             _merging = False
         End Try
     End Function
+
+    ''' <summary>
+    ''' ⬇ Saves a result straight into the Downloads folder: a picture or video as it is, a sound as MP3, MP4
+    ''' (with a waveform) or WAV. A short note in the chat says where it went.
+    ''' </summary>
+    Private Async Sub DownloadOutput(name As String, asFormat As String)
+        Dim f = OutputFile(name)
+        If f Is Nothing Then
+            Await Js($"toast({Newtonsoft.Json.JsonConvert.SerializeObject(Localizer.T("That file is no longer there (deleted or moved)."))}, true);")
+            Return
+        End If
+        Dim failed As String = Nothing
+        Try
+            Dim ext = Path.GetExtension(f).ToLowerInvariant()
+            Dim fmt = If(asFormat, "").Trim().ToLowerInvariant()
+            Dim wanted = If(MediaExport.IsAudio(f) AndAlso (fmt = "mp3" OrElse fmt = "mp4" OrElse fmt = "wav"), "." & fmt, ext)
+            Dim target = UniquePath(Path.Combine(DownloadsFolder(), Path.GetFileNameWithoutExtension(f) & wanted))
+            If wanted = ext Then
+                IO.File.Copy(f, target, False)
+            Else
+                Await Js($"toast({Newtonsoft.Json.JsonConvert.SerializeObject(If(wanted = ".mp4", Localizer.T("Making the MP4…"), Localizer.T("Making the MP3…")))});")
+                Await MediaExport.ConvertAsync(f, target, Sub(t) SetStatus(t), CancellationToken.None)
+            End If
+            Await Js($"toast({Newtonsoft.Json.JsonConvert.SerializeObject("✔ " & Localizer.T("Saved to Downloads:") & " " & Path.GetFileName(target))});")
+            Return
+        Catch ex As Exception
+            failed = ex.Message
+        End Try
+        Await Js($"toast({Newtonsoft.Json.JsonConvert.SerializeObject("⚠ " & failed)}, true);")
+    End Sub
+
+    ''' <summary>The user's Downloads folder (where Windows has it, even when moved to another drive).</summary>
+    Private Shared Function DownloadsFolder() As String
+        Try
+            Dim p As IntPtr
+            If SHGetKnownFolderPath(New Guid("374DE290-123F-4565-9164-39C4925E467B"), 0, IntPtr.Zero, p) = 0 Then
+                Dim d = Runtime.InteropServices.Marshal.PtrToStringUni(p)
+                Runtime.InteropServices.Marshal.FreeCoTaskMem(p)
+                If Not String.IsNullOrEmpty(d) AndAlso Directory.Exists(d) Then Return d
+            End If
+        Catch
+        End Try
+        Dim fallback = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
+        Directory.CreateDirectory(fallback)
+        Return fallback
+    End Function
+
+    <Runtime.InteropServices.DllImport("shell32.dll", CharSet:=Runtime.InteropServices.CharSet.Unicode)>
+    Private Shared Function SHGetKnownFolderPath(<Runtime.InteropServices.MarshalAs(Runtime.InteropServices.UnmanagedType.LPStruct)> rfid As Guid,
+                                                 flags As UInteger, token As IntPtr, ByRef path As IntPtr) As Integer
+    End Function
+
+    ''' <summary>"song.mp3", else "song (2).mp3", "song (3).mp3"…</summary>
+    Private Shared Function UniquePath(p As String) As String
+        If Not IO.File.Exists(p) Then Return p
+        Dim d = Path.GetDirectoryName(p), n = Path.GetFileNameWithoutExtension(p), e = Path.GetExtension(p)
+        For i = 2 To 999
+            Dim c = Path.Combine(d, $"{n} ({i}){e}")
+            If Not IO.File.Exists(c) Then Return c
+        Next
+        Return Path.Combine(d, $"{n} ({DateTime.Now:HHmmss}){e}")
+    End Function
+
+    ''' <summary>
+    ''' 💾 An answer saved as PDF, Word, LibreOffice, Excel… <paramref name="displayIndex"/> counts the messages as shown
+    ''' (yours and answers, in order). The file is named after the question.
+    ''' </summary>
+    Private Async Sub ExportAnswer(displayIndex As Integer)
+        If _session Is Nothing OrElse displayIndex < 0 Then Return
+        Dim n = -1, pos = -1
+        For k = 0 To _session.Messages.Count - 1
+            Dim role = _session.Messages(k).Role
+            If role = "user" OrElse role = "assistant" Then
+                n += 1
+                If n = displayIndex Then pos = k : Exit For
+            End If
+        Next
+        If pos < 0 OrElse _session.Messages(pos).Role <> "assistant" Then Return
+        Dim question = _session.Messages.Take(pos).LastOrDefault(Function(m) m.Role = "user")?.Content
+        Dim title = If(question, "").Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim()
+        If title IsNot Nothing AndAlso title.Length > 80 Then title = title.Substring(0, 80).Trim() & "…"
+        Try
+            Dim saved = Await PdfExport.SaveAnswerAsync(Me, _session.Messages(pos).Content, title, Sub(t) SetStatus(t))
+            If saved IsNot Nothing Then Await Js($"toast({Newtonsoft.Json.JsonConvert.SerializeObject("✔ " & Localizer.T("Saved:") & " " & IO.Path.GetFileName(saved))});")
+        Catch ex As Exception
+            FailureLog.Write("(export an answer)", "", ex)
+            Localizer.Box(Me, ex.Message, Localizer.T("Export"), MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
+    End Sub
 
     ''' <summary>💾 Saves a copy of a result where the user chooses.</summary>
     Private Async Sub ExportOutput(name As String)

@@ -102,6 +102,8 @@
   #sGrid .star { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.55); border: 0; border-radius: 12px; width: 28px; height: 28px; color: #fc3; }
   #sGrid .vid { position: absolute; left: 4px; bottom: 4px; font-size: 14px; }
   #toast { position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%); background: #0e639c; color: #fff; padding: 10px 16px; border-radius: 10px; z-index: 30; display: none; max-width: 86vw; }
+  .media-bar { display:flex; gap:6px; margin:4px 0 10px; font-size:13px; }
+  .media-bar a { padding:4px 12px; border:1px solid #3a3d48; border-radius:12px; color:#cfd3dc; text-decoration:none; }
 </style>
 </head>
 <body>
@@ -303,6 +305,14 @@
   function fixMedia(root) {
     root.querySelectorAll('[src^="https://outputs.localmind/"]').forEach(function (el) {
       el.setAttribute('src', '/api/outputs/' + el.getAttribute('src').substring(26) + '?pin=' + encodeURIComponent(state.pin));
+    });
+    // ⬇ on the phone: Download saves the file itself; the PC-only buttons (other formats, Save as…) are left out
+    root.querySelectorAll('.media-bar a').forEach(function (a) {
+      var m = /^https:\/\/action\.localmind\/download\?f=([^&]+)(&as=(\w+))?$/.exec(a.getAttribute('href') || '');
+      if (!m || (m[3] && m[3] !== 'wav')) { a.remove(); return; }
+      a.setAttribute('href', '/api/outputs/' + m[1] + '?pin=' + encodeURIComponent(state.pin));
+      a.setAttribute('download', decodeURIComponent(m[1]));
+      a.textContent = '⬇ Download';
     });
     root.querySelectorAll('img[src^="/api/outputs/"]').forEach(function (img) {
       img.style.maxWidth = '100%'; img.style.borderRadius = '10px';

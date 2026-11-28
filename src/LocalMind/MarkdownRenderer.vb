@@ -24,16 +24,92 @@ Public Module MarkdownRenderer
     End Function
 
     ' Links to LocalMind's own outputs (songs, speech, videos) become players.
-    Private ReadOnly MediaLink As New Regex("<a href=""(https://outputs\.localmind/[^""]+?\.(wav|mp3|mp4|webm))""[^>]*>([^<]*)</a>", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
+    Private ReadOnly MediaLink As New Regex("<a href=""(https://outputs\.localmind/([^""]+?\.(wav|mp3|mp4|webm)))""[^>]*>([^<]*)</a>", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
+    ' Pictures made by LocalMind
+    Private ReadOnly OutputPicture As New Regex("<img src=""https://outputs\.localmind/([^""]+)""[^>]*>", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
+    ' (older answers have a separate "💾 Export…" link: the buttons under the result replace it)
+    Private ReadOnly OldExportLink As New Regex("<p>\s*<a href=""https://action\.localmind/export\?f=[^""]+""[^>]*>[^<]*</a>\s*</p>\s*", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
 
     Private Function MediaLinks(html As String) As String
-        Return MediaLink.Replace(html, Function(m)
-                                           Dim ext = m.Groups(2).Value.ToLowerInvariant()
+        html = OldExportLink.Replace(html, "")
+        html = MediaLink.Replace(html, Function(m)
+                                           Dim ext = m.Groups(3).Value.ToLowerInvariant()
                                            Dim isVideo = ext = "mp4" OrElse ext = "webm"
-                                           Return $"<span class=""media""><span class=""media-title"">{m.Groups(3).Value}</span><br>" &
+                                           Return $"<span class=""media""><span class=""media-title"">{m.Groups(4).Value}</span><br>" &
                                                   If(isVideo, $"<video src=""{m.Groups(1).Value}"" controls preload=""metadata"" style=""max-width:100%""></video>",
-                                                              $"<audio src=""{m.Groups(1).Value}"" controls preload=""metadata"" style=""width:100%""></audio>") & "</span>"
+                                                              $"<audio src=""{m.Groups(1).Value}"" controls preload=""metadata"" style=""width:100%""></audio>") &
+                                                  SaveBar(m.Groups(2).Value, Not isVideo) & "</span>"
                                        End Function)
+        Return OutputPicture.Replace(html, Function(m) m.Value & SaveBar(m.Groups(1).Value, False))
+    End Function
+
+    ''' <summary>⬇ The buttons under a result: straight to Downloads (sound as MP3, MP4 or WAV), or 💾 Save as….</summary>
+    Private Function SaveBar(escapedName As String, isSound As Boolean) As String
+        Dim f = escapedName   ' (already escaped in the link)
+        Dim a = Function(path As String, label As String, tip As String) _
+                    $"<a href=""https://action.localmind/{path}"" title=""{Net.WebUtility.HtmlEncode(tip)}"">{Net.WebUtility.HtmlEncode(label)}</a>"
+        Dim sb As New StringBuilder("<span class=""media-bar"">")
+        If isSound Then
+            sb.Append(a($"download?f={f}&as=mp3", "⬇ MP3", Localizer.T("Save as MP3 in your Downloads folder")))
+            sb.Append(a($"download?f={f}&as=mp4", "⬇ MP4", Localizer.T("Save as an MP4 video (with a waveform) in your Downloads folder")))
+            sb.Append(a($"download?f={f}&as=wav", "⬇ WAV", Localizer.T("Save the original WAV in your Downloads folder")))
+        Else
+            sb.Append(a($"download?f={f}", "⬇ " & Localizer.T("Download"), Localizer.T("Save in your Downloads folder")))
+        End If
+        sb.Append(a($"export?f={f}", "💾 " & Localizer.T("Save as…"), Localizer.T("Choose the folder, name and format")))
+        sb.Append("</span>")
+        Return sb.ToString()
+    End Function
+
+    ' (for a PDF: players and the buttons under them don't print)
+    Private ReadOnly PrintBar As New Regex("<span class=""media-bar"">(?:(?!</span>).)*</span>", RegexOptions.Compiled Or RegexOptions.Singleline)
+    Private ReadOnly PrintPlayer As New Regex("<(audio|video) src=""https://outputs\.localmind/([^""]+)""[^>]*></\1>", RegexOptions.Compiled Or RegexOptions.IgnoreCase)
+
+    ''' <summary>
+    ''' 📄 An answer as a page to print to PDF: light, plain and readable on paper, with its pictures and formulas.
+    ''' Songs and videos are named (a PDF can't play them).
+    ''' </summary>
+    Public Function PrintHtml(md As String, title As String) As String
+        Dim body = ToHtml(md)
+        body = PrintBar.Replace(body, "")
+        body = PrintPlayer.Replace(body, "")   ' (the song or video keeps its title line)
+        Dim sb As New StringBuilder()
+        sb.AppendLine("<!DOCTYPE html><html><head><meta charset=""utf-8"">")
+        sb.AppendLine("<title>" & Net.WebUtility.HtmlEncode(If(title, "LocalMind")) & "</title>")
+        sb.AppendLine("<style>" & ReadResource("katex.min.css") & "</style>")
+        sb.AppendLine("<style>
+  @page { margin: 18mm 16mm; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #111; background: #fff; margin: 0; }
+  h1.doc-title { font-size: 17pt; margin: 0 0 4px; }
+  .doc-date { color: #666; font-size: 9pt; margin-bottom: 16px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+  h1 { font-size: 16pt; } h2 { font-size: 14pt; } h3 { font-size: 12pt; }
+  h1, h2, h3 { page-break-after: avoid; margin: 16px 0 6px; }
+  p, li { orphans: 3; widows: 3; }
+  img { max-width: 100%; page-break-inside: avoid; border-radius: 4px; margin: 6px 0; }
+  pre { background: #f5f5f7; border: 1px solid #e2e2e6; padding: 8px 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 9.5pt; page-break-inside: avoid; }
+  code { font-family: Consolas, monospace; background: #f2f2f4; padding: 0 3px; border-radius: 3px; font-size: 9.5pt; }
+  pre code { background: none; padding: 0; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 10pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #ccc; padding: 5px 8px; text-align: left; }
+  th { background: #f0f0f2; }
+  blockquote { border-left: 3px solid #ccc; margin: 8px 0; padding: 2px 12px; color: #444; }
+  a { color: #1a56db; text-decoration: none; }
+  .media-title { font-weight: 600; } .file { color: #555; font-style: italic; }
+</style>")
+        sb.AppendLine("<script>" & ReadResource("katex.min.js") & "</script>")
+        sb.AppendLine("</head><body>")
+        If Not String.IsNullOrWhiteSpace(title) Then sb.AppendLine("<h1 class=""doc-title"">" & Net.WebUtility.HtmlEncode(title) & "</h1>")
+        sb.AppendLine("<div class=""doc-date"">" & Net.WebUtility.HtmlEncode(DateTime.Now.ToString("d MMMM yyyy, HH:mm")) & " · LocalMind</div>")
+        sb.AppendLine(body)
+        sb.AppendLine("<script>
+  document.querySelectorAll('.math').forEach(function (el) {
+    var tex = el.textContent.trim(), display = el.tagName === 'DIV';
+    tex = tex.replace(/^\\\(|\\\)$/g, '').replace(/^\\\[|\\\]$/g, '').trim();
+    try { katex.render(tex, el, { displayMode: display, throwOnError: false, output: 'html' }); } catch (e) {}
+  });
+</script>")
+        sb.AppendLine("</body></html>")
+        Return sb.ToString()
     End Function
 
     Private ReadOnly CodeSplit As New Regex("(```[\s\S]*?(?:```|$)|`[^`\n]+`)", RegexOptions.Compiled)
@@ -221,6 +297,12 @@ Public Module MarkdownRenderer
         sb.AppendLine("  tr:nth-child(even) td { background: #232324; }")
         sb.AppendLine("  hr { border: none; border-top: 1px solid #3a3a3a; margin: 20px 0; }")
         sb.AppendLine("  img { max-width: 100%; border-radius: 6px; margin: 8px 0; }")
+        sb.AppendLine("  .media-bar { display:flex; flex-wrap:wrap; gap:6px; margin:2px 0 12px; font-size:12px; }")
+        sb.AppendLine("  .media-bar a { padding:3px 10px; border:1px solid #3a3d48; border-radius:12px; color:#cfd3dc; background:#24262d; text-decoration:none; }")
+        sb.AppendLine("  .media-bar a:hover { background:#2f3240; border-color:#4ea1ff; color:#fff; }")
+        sb.AppendLine("  .media .media-bar { margin-top:6px; }")
+        sb.AppendLine("  #toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:#1f3a2a; color:#d1fae5; border:1px solid #2f6b47; padding:8px 14px; border-radius:10px; font-size:13px; display:none; z-index:10; max-width:80%; }")
+        sb.AppendLine("  #toast.warn { background:#3a2a1f; color:#fde7d1; border-color:#6b4a2f; }")
         sb.AppendLine("  .cursor-inline::after { content: '\25CA'; animation: blink 1s steps(2) infinite; color: #4ea1ff; margin-left: 2px; }")
         sb.AppendLine("  @keyframes blink { 50% { opacity: 0; } }")
         sb.AppendLine("  .waiting { color:#888; font-style:italic; }
@@ -247,6 +329,7 @@ Public Module MarkdownRenderer
         sb.AppendLine("<body>")
         sb.AppendLine("<div id='chatBody'></div>")
         sb.AppendLine("<div id='lightbox' onclick='this.style.display=""none""'><img id='lightboxImg'></div>")
+        sb.AppendLine("<div id='toast'></div>")
         sb.AppendLine("<script>")
         sb.AppendLine(Js)
         sb.AppendLine("</script>")
@@ -272,6 +355,13 @@ Public Module MarkdownRenderer
   function usePrompt(el) { try { window.chrome.webview.postMessage({ type: 'prompt', text: el.getAttribute('data-p') }); } catch (e) {} }
   function removeEmpty() { var e = document.getElementById('empty'); if (e) e.remove(); }
   function zoom(src) { document.getElementById('lightboxImg').src = src; document.getElementById('lightbox').style.display = 'flex'; }
+  // ⬇ a short note (saved to Downloads…) for a few seconds
+  var toastTimer = null;
+  function toast(text, warn) {
+    var t = document.getElementById('toast');
+    t.textContent = text; t.className = warn ? 'warn' : ''; t.style.display = 'block';
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.style.display = 'none'; }, warn ? 7000 : 4000);
+  }
 
   function userNode(text, imgs, ui) {
     var d = document.createElement('div');
@@ -465,6 +555,9 @@ Public Module MarkdownRenderer
       var r = document.createElement('button'); r.textContent = tr('🔊 Read'); r.title = tr('Read aloud (click again to stop)');
       r.onclick = function () { try { window.chrome.webview.postMessage({ type: 'speak', text: b.innerText }); } catch (e) {} };
       m.appendChild(r);
+      var ex = document.createElement('button'); ex.textContent = tr('💾 Export'); ex.title = tr('Save this answer as PDF, Word, Excel, LibreOffice…');
+      ex.onclick = function () { try { window.chrome.webview.postMessage({ type: 'exportmsg', index: msgIndex(document.getElementById(id)) }); } catch (e) {} };
+      m.appendChild(ex);
       var del = document.createElement('button'); del.textContent = '🗑 ' + tr('Delete'); del.className = 'mdel'; del.title = tr('Delete this answer');
       del.onclick = function () { deleteMsg(document.getElementById(id)); };
       m.appendChild(del);
