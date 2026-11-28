@@ -549,22 +549,34 @@ Public Class MainForm
         End If
     End Sub
 
-    ''' <summary>⬇ Downloads that keep going after the Model Manager is closed, in the status bar (click: open the list).</summary>
+    Private _dlBar As ToolStripProgressBar
+
+    ''' <summary>⬇ Downloads that keep going after the Model Manager is closed: a small progress bar in the status bar
+    ''' (the details are in its tooltip; click it for the download list).</summary>
     Private Sub ShowDownloadProgress()
         Dim active = AppCore.Downloads.Jobs().Where(Function(j) j.Status = DownloadStatus.Downloading OrElse j.Status = DownloadStatus.Resolving OrElse
                                                                 j.Status = DownloadStatus.Verifying OrElse j.Status = DownloadStatus.Queued).ToList()
+        If _dlBar Is Nothing Then
+            _dlBar = New ToolStripProgressBar() With {.Size = New Size(110, 14), .Minimum = 0, .Maximum = 100, .Visible = False, .Margin = New Padding(6, 4, 2, 2)}
+            AddHandler _dlBar.Click, Sub() OpenModelManagerAt("downloads")
+            statusStrip.Items.Insert(statusStrip.Items.IndexOf(lblDownloads), _dlBar)
+        End If
         If active.Count = 0 Then
+            If _dlBar.Visible Then _dlBar.Visible = False
             If lblDownloads.Visible Then lblDownloads.Visible = False
             Return
         End If
         Dim cur = If(active.FirstOrDefault(Function(j) j.Status = DownloadStatus.Downloading), active(0))
-        Dim t = "⬇ " & cur.ModelName & "  " & If(cur.Status = DownloadStatus.Downloading, cur.StatusText.Replace("  ·  ", " · "), Localizer.T(cur.StatusText))
-        If active.Count > 1 Then t &= "  " & String.Format(Localizer.T("(+{0} more)"), active.Count - 1)
+        Dim pct = Math.Max(0, Math.Min(100, cur.Percent))
+        If _dlBar.Value <> pct Then _dlBar.Value = pct
+        Dim t = $"{pct}%" & If(active.Count > 1, $" (+{active.Count - 1})", "")
         If lblDownloads.Text <> t Then lblDownloads.Text = t
-        lblDownloads.ToolTipText = String.Join(vbCrLf, active.Select(Function(j) j.ModelName & " — " & j.StatusText)) & vbCrLf & Localizer.T("Click to see the downloads")
+        Dim tip = String.Join(vbCrLf, active.Select(Function(j) j.ModelName & " — " & j.StatusText)) & vbCrLf & Localizer.T("Click to see the downloads")
+        _dlBar.ToolTipText = tip
+        lblDownloads.ToolTipText = tip
+        If Not _dlBar.Visible Then _dlBar.Visible = True
         If Not lblDownloads.Visible Then
             lblDownloads.Visible = True
-            lblDownloads.IsLink = False
             lblDownloads.ForeColor = Color.White
         End If
     End Sub

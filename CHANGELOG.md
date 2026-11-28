@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.26.7
+
+### Changed
+- Downloads in the status bar are now a small progress bar with the percent. The name, speed and time left are in its
+  tooltip. Click it to open the download list.
+
 ## 2.26.6
 
 ### Added
