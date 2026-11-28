@@ -702,6 +702,25 @@ Module HarnessMain
 
         If only = "v2262" Then
             Console.WriteLine("== v2.26.2: full backup and restore")
+            Try
+                Dim rd = Await Civitai.ResolveDownloadAsync("https://civitai.com/api/download/models/3372040?type=Model&format=SafeTensor&fp=int8", CancellationToken.None)
+                Console.WriteLine("  (Civitai without a key: " & If(rd.Url, "") & " / " & rd.Answers & ")")
+                Dim rdFree = Await Civitai.ResolveDownloadAsync("https://civitai.com/api/download/models/2745215", CancellationToken.None)
+                Console.WriteLine("  (Civitai free LoRA without a key: " & If(rdFree.Url, rdFree.Answers) & ")")
+            Catch ex As Exception
+                Console.WriteLine("  SKIP Civitai download: " & ex.Message)
+            End Try
+            ' 🪜 "a picture, then a 6 s video at 720p from it": both steps, size for the video
+            Dim stepsAsk = "make me an image of two space marines from wh40k universe to brutaly kill orks. then generate me a 6sec video at 720p from that image.make it gore and brutal"
+            Dim offered2 As New JArray(
+                New JObject From {{"function", New JObject From {{"name", "generate_image"}}}},
+                New JObject From {{"function", New JObject From {{"name", "generate_video"}}}},
+                New JObject From {{"function", New JObject From {{"name", "make_song"}}}})
+            Dim stepsWanted = ChatAgent.RequestedTools(stepsAsk, offered2)
+            Check(String.Join(",", stepsWanted) = "generate_image,generate_video", "picture then video: both steps, in order", String.Join(",", stepsWanted))
+            Dim sz720 = MediaSize.From(Nothing, stepsAsk)
+            Dim d720 = sz720.Dims(832, 480)
+            Check(Math.Abs(sz720.Seconds - 6) < 0.01 AndAlso Math.Abs(d720.H - 720) <= 16 AndAlso Math.Abs(d720.W - 1248) <= 32, "6 s at 720p", $"{sz720.Seconds}s {d720.W}x{d720.H}")
             ' 🖥 the 16 GB setup on NVIDIA and on AMD
             Dim s16 = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", "16gb.json")))
             Dim nv As New HardwareInfo()

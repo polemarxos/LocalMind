@@ -190,18 +190,69 @@ Public Module Civitai
     End Function
 
     ''' <summary>True when the file can only be downloaded with a signed-in account (checked without downloading it).</summary>
-    Public Async Function NeedsLoginAsync(f As CivFile, ct As CancellationToken) As Task(Of Boolean)
+    ''' <summary>
+    ''' The address to download a Civitai file from. Civitai answers a download link with redirects: on civitai.com
+    ''' an NSFW model is sent on to civitai.red, and only then to the file. Windows drops the sign-in header when it
+    ''' follows a redirect by itself, so the redirects are followed here, signing in on every Civitai address (as a
+    ''' header and, if that fails, as a "token" parameter). Returns the file's own address (no key needed) — or, when
+    ''' Civitai streams the file itself, its address and that the key must be sent — or Nothing with what Civitai said.
+    ''' </summary>
+    Public Async Function ResolveDownloadAsync(url As String, ct As CancellationToken) As Task(Of (Url As String, NeedsKey As Boolean, Answers As String))
+        Dim key = If(AppCore.Settings.CivitaiApiKey, "").Trim()
+        Dim starts As New List(Of String) From {url}
+        Dim other = If(url.Contains("://civitai.red/"), url.Replace("://civitai.red/", "://civitai.com/"), url.Replace("://civitai.com/", "://civitai.red/"))
+        If other <> url Then starts.Add(other)
+        Dim answers As New List(Of String)()
+        Dim isCivitai = Function(u As Uri) u.Host.EndsWith("civitai.com", StringComparison.OrdinalIgnoreCase) OrElse u.Host.EndsWith("civitai.red", StringComparison.OrdinalIgnoreCase)
+        Dim withToken = Function(u As String) If(key = "" OrElse u.Contains("token="), u, u & If(u.Contains("?"), "&", "?") & "token=" & Uri.EscapeDataString(key))
         Dim h As New HttpClientHandler() With {.AllowAutoRedirect = False}
-        Using c As New HttpClient(h) With {.Timeout = TimeSpan.FromSeconds(15)}
-            Using req As New HttpRequestMessage(HttpMethod.Get, f.DownloadUrl)
-                req.Headers.UserAgent.ParseAdd("LocalMind/" & Updater.CurrentVersion.ToString())
-                Dim key = AppCore.Settings.CivitaiApiKey
-                If Not String.IsNullOrWhiteSpace(key) Then req.Headers.Authorization = New Headers.AuthenticationHeaderValue("Bearer", key.Trim())
-                Using resp = Await c.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
-                    Return resp.StatusCode = Net.HttpStatusCode.Unauthorized OrElse resp.StatusCode = Net.HttpStatusCode.Forbidden
-                End Using
-            End Using
+        Using c As New HttpClient(h) With {.Timeout = TimeSpan.FromSeconds(30)}
+            For Each start In starts
+                For Each asParam In If(key = "", {False}, {False, True})
+                    Dim cur = If(asParam, withToken(start), start)
+                    Try
+                        For hop = 1 To 6
+                            Dim cu As New Uri(cur)
+                            Using req As New HttpRequestMessage(HttpMethod.Get, cu)
+                                req.Headers.UserAgent.ParseAdd("LocalMind/" & Updater.CurrentVersion.ToString())
+                                If key <> "" AndAlso Not asParam AndAlso isCivitai(cu) Then req.Headers.Authorization = New Headers.AuthenticationHeaderValue("Bearer", key)
+                                Using resp = Await c.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct)
+                                    Dim code = CInt(resp.StatusCode)
+                                    If code >= 300 AndAlso code < 400 AndAlso resp.Headers.Location IsNot Nothing Then
+                                        Dim loc = If(resp.Headers.Location.IsAbsoluteUri, resp.Headers.Location, New Uri(cu, resp.Headers.Location))
+                                        If isCivitai(loc) Then
+                                            If loc.AbsolutePath.Contains("login", StringComparison.OrdinalIgnoreCase) Then
+                                                answers.Add($"{cu.Host}{If(asParam, " (token)", "")}: sign-in page")
+                                                Exit For
+                                            End If
+                                            ' (another Civitai address, e.g. civitai.com → civitai.red: sign in there too)
+                                            cur = If(asParam, withToken(loc.ToString()), loc.ToString())
+                                            Continue For
+                                        End If
+                                        Return (loc.ToString(), False, Nothing)          ' the file host
+                                    End If
+                                    If resp.IsSuccessStatusCode AndAlso Not If(resp.Content.Headers.ContentType?.MediaType, "").Contains("html") Then
+                                        Return (cur, Not asParam AndAlso key <> "", Nothing)
+                                    End If
+                                    answers.Add($"{cu.Host}{If(asParam, " (token)", "")}: {code}")
+                                    Exit For
+                                End Using
+                            End Using
+                        Next
+                    Catch ex As OperationCanceledException When ct.IsCancellationRequested
+                        Throw
+                    Catch ex As Exception
+                        answers.Add($"{New Uri(start).Host}: {ex.Message}")
+                    End Try
+                Next
+            Next
         End Using
+        Return (Nothing, False, String.Join(", ", answers))
+    End Function
+
+    Public Async Function NeedsLoginAsync(f As CivFile, ct As CancellationToken) As Task(Of Boolean)
+        Dim r = Await ResolveDownloadAsync(f.DownloadUrl, ct)
+        Return r.Url Is Nothing AndAlso r.Answers IsNot Nothing AndAlso (r.Answers.Contains("401") OrElse r.Answers.Contains("403") OrElse r.Answers.Contains("sign-in"))
     End Function
 
     ''' <summary>
@@ -389,9 +440,17 @@ Public Module Civitai
     End Function
 
     Private Async Function DownloadAsync(f As CivFile, dest As String, progress As Action(Of Integer, String), ct As CancellationToken) As Task
-        Dim key = AppCore.Settings.CivitaiApiKey
+        progress?.Invoke(0, Localizer.T("Asking Civitai for the file…"))
+        Dim resolved = Await ResolveDownloadAsync(f.DownloadUrl, ct)
+        If resolved.Url Is Nothing Then
+            Dim noKey = String.IsNullOrWhiteSpace(AppCore.Settings.CivitaiApiKey)
+            Throw New Exception(If(noKey, Localizer.T("Civitai asks you to sign in for this download. Paste your Civitai API key (civitai.com → Account settings → API keys) in the box at the top and try again."),
+                                         Localizer.T("Civitai refused the download even with your API key. On civitai.com, open the model page once while signed in (some models ask you to accept their terms or allow mature content in your settings), then try again.")) &
+                                vbCrLf & Localizer.T("Civitai answered:") & " " & resolved.Answers)
+        End If
         Try
-            Await Downloader.DownloadFileAsync(f.DownloadUrl, dest, If(String.IsNullOrWhiteSpace(key), Nothing, key.Trim()),
+            ' (the address Civitai sent is the file itself: no key needed, and the key is not sent to the file host)
+            Await Downloader.DownloadFileAsync(resolved.Url, dest, If(resolved.NeedsKey, AppCore.Settings.CivitaiApiKey.Trim(), Nothing),
                 Sub(done, size, speed) progress?.Invoke(CInt(done * 100 \ Math.Max(1L, If(size > 0, size, f.SizeBytes))),
                     $"{f.Name}  {Downloader.FormatBytes(done)} / {Downloader.FormatBytes(If(size > 0, size, f.SizeBytes))}  ·  {Downloader.FormatBytes(CLng(speed))}/s"), ct)
         Catch ex As HttpRequestException When ex.StatusCode = Net.HttpStatusCode.Unauthorized OrElse ex.StatusCode = Net.HttpStatusCode.Forbidden

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.26.17
+
+### Fixed
+- **Civitai downloads failed with a working API key.** Civitai's download links pass through several addresses,
+  e.g. civitai.com on to civitai.red for NSFW models, and Windows dropped the key on the way. LocalMind now
+  follows those addresses itself and signs in on each one, as a header or as a token. If Civitai still refuses, the
+  message says what Civitai answered.
+- **"Make a picture, then a video of it" stopped after the picture.** Only the picture tool was offered for the first
+  step, so the model said it "can only make images". Now:
+  - The model is told that the next step comes right after.
+  - Each step asked for that hasn't run yet is required next: picture, then video, song or voice.
+  - If the model still answers in words, the step runs anyway, with the video made from the picture.
+  - What the model said in between, such as "I can't make videos", is no longer shown.
+- **"720p", "1080p", "4k"** in a message now set the video or picture size. In "a picture, then a 6 s video at
+  720p", the length and size go to the video, not the picture.
+
 ## 2.26.16
 
 ### Changed

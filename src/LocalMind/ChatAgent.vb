@@ -49,6 +49,25 @@ Public Module ChatAgent
                                                  "(άλλαξε|επεξεργάσου|διόρθωσε|αφαίρεσε|πρόσθεσε)[^.?!;\n]{0,50}(εικόνα|φωτογραφία)", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
     Private ReadOnly HowTo As New Regex("\bhow (do|to|can|should|would)\b|\bπώς\b|\bπως\b|\btutorial\b", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
 
+    ''' <summary>Every tool the message asks for, in the order asked ("a picture … then a video of it" → image, video).</summary>
+    Public Function RequestedTools(text As String, tools As JArray) As List(Of String)
+        Dim result As New List(Of String)()
+        If tools Is Nothing OrElse String.IsNullOrWhiteSpace(text) OrElse HowTo.IsMatch(text) Then Return result
+        Dim offered = tools.Select(Function(t) t("function")?.Value(Of String)("name")).ToList()
+        Dim found As New List(Of (Name As String, At As Integer))()
+        For Each c In {("clone_voice", AskClone), ("extend_video", AskExtend), ("generate_video", AskVideo), ("generate_image", AskEditPicture),
+                       ("generate_image", AskPicture), ("make_song", AskSong)}
+            Dim m = c.Item2.Match(text)
+            If m.Success AndAlso offered.Contains(c.Item1) Then found.Add((c.Item1, m.Index))
+        Next
+        ' (a song "by cloning this voice" is one step, not two)
+        If found.Any(Function(f) f.Name = "make_song") Then found.RemoveAll(Function(f) f.Name = "clone_voice")
+        For Each f In found.OrderBy(Function(x) x.At)
+            If Not result.Contains(f.Name) Then result.Add(f.Name)
+        Next
+        Return result
+    End Function
+
     ''' <summary>The tool the user plainly asked for in their latest message ("generate me a video"), if offered.</summary>
     Public Function RequestedTool(text As String, tools As JArray) As String
         If tools Is Nothing OrElse String.IsNullOrWhiteSpace(text) OrElse HowTo.IsMatch(text) Then Return Nothing
@@ -275,6 +294,7 @@ Public Module ChatAgent
                                       opts As ChatRequestOptions, offerWebSearch As Boolean, status As Action(Of String), beforeFollowup As Action,
                                       ct As CancellationToken, Optional made As Action(Of String) = Nothing) As Task(Of (Result As ChatResult, Markdown As String, Sources As List(Of SourceRef)))
         opts.Tools = Tools(opts.Model, offerWebSearch)
+        Dim allTools = opts.Tools
         ' A plain "make me a video / picture": make sure it happens (small models often answer "I can't")
         ' by offering only that tool and requiring the call; the model still writes the English prompt.
         Dim userText = payload?.LastOrDefault(Function(m) m.Role = "user")?.Content
@@ -286,9 +306,13 @@ Public Module ChatAgent
             ' reasoning off halfway. With thinking on, the model may think to the end and then calls the tool (the only
             ' one offered); if it still answers in words, the tool runs anyway below.
             opts.ToolChoice = If(opts.EnableThinking, "auto", "required")
-            If opts.EnableThinking AndAlso payload IsNot Nothing AndAlso payload.Count > 0 Then
+            Dim laterSteps = RequestedTools(userText, allTools).Where(Function(t) t <> forced).ToList()
+            If (opts.EnableThinking OrElse laterSteps.Count > 0) AndAlso payload IsNot Nothing AndAlso payload.Count > 0 Then
+                ' (several steps: only the first step's tool is offered now, so say that the others come next,
+                '  or the model tells the user it "can't make videos")
                 payload.Insert(payload.Count - 1, New ChatMessage With {.Role = "system",
-                    .Content = $"The user's next message asks for something the {forced} tool makes. Think it through as long as you need, then call {forced} (do not answer in words instead)."})
+                    .Content = $"The user's next message asks for something the {forced} tool makes. Think it through as long as you need, then call {forced} (do not answer in words instead)." &
+                               If(laterSteps.Count = 0, "", $" The message has more steps ({String.Join(", ", laterSteps)}): do ONLY the first step now. Right after it you will be asked for the next step and get the tool for it. Never say you can't do the later steps.")})
             End If
         End If
         Dim result As ChatResult = Nothing
@@ -324,6 +348,8 @@ Public Module ChatAgent
         Dim asked = payload.ToList()   ' (the photo / recording the user attached stay with their message as more steps follow)
         Dim seen As New HashSet(Of String)()
         Dim songWithVoice = False
+        Dim doneTools As New HashSet(Of String)()
+        Dim wanted = RequestedTools(userText, allTools)
         Dim stepNo = 0
         Do
             Dim searched = False
@@ -355,6 +381,8 @@ Public Module ChatAgent
                             End If
                             If byLine <> "" Then md.AppendLine().AppendLine().Append(byLine)
                             Dim size = MediaSize.From(args, userText)
+                            ' ("a picture, then a 6 s video at 720p": the size is the video's)
+                            If tc.Name = "generate_image" AndAlso wanted.Contains("generate_video") Then size = MediaSize.From(args, "")
                             If tc.Name = "generate_image" Then
                                 ' ✏ change a picture: the attached one, or the last one made in the chat when asked
                                 Dim toEdit = LastPhoto(asked)
@@ -444,15 +472,19 @@ Public Module ChatAgent
                     stepsThisRound.Add(tc.Name & " failed")
                 End Try
                 stepNo += 1
+                doneTools.Add(tc.Name)
                 ' 🖼 show each result as soon as it is made (the next step can take minutes)
                 made?.Invoke(md.ToString())
             Next
             doneSteps.AddRange(stepsThisRound)
             ' One step at a time: "picture, then a video of it" → the model is asked for the next step after each one.
-            Dim more = (multi OrElse result.ToolCalls.Any(Function(t) t.Name = "set_persona")) AndAlso Not searched AndAlso
+            ' the steps asked for that haven't run yet (a picture done → the video next)
+            Dim pending = wanted.Where(Function(t) Not doneTools.Contains(t) AndAlso Not (t = "clone_voice" AndAlso songWithVoice)).ToList()
+            Dim more = (multi OrElse pending.Count > 0 OrElse result.ToolCalls.Any(Function(t) t.Name = "set_persona")) AndAlso Not searched AndAlso
                        stepsThisRound.Count > 0 AndAlso stepNo < 6
             If Not more Then Exit Do
-            If Not String.IsNullOrWhiteSpace(result.Content) Then said.AppendLine(result.Content.Trim()).AppendLine()
+            ' (what the model said before the next step is dropped: often "I can only make pictures", written when only
+            '  the first step's tool was offered)
             ' the "call this tool" note was for the first step only
             payload.RemoveAll(Function(m) m.Role = "system" AndAlso m.Content.StartsWith("The user's next message asks for something the ", StringComparison.Ordinal))
             payload.Add(New ChatMessage With {.Role = "assistant", .Content = If(result.Content, "").Trim() & If(String.IsNullOrWhiteSpace(result.Content), "", vbLf) & "[Done: " & String.Join("; ", stepsThisRound) & "]"})
@@ -461,8 +493,23 @@ Public Module ChatAgent
                 "(with the persona I named for that step, and use_last_picture=true if it should use the picture). If everything is done, reply with one short sentence and no tool call."})
             opts.Tools = Tools(opts.Model, offerWebSearch)
             opts.ToolChoice = Nothing
+            ' a step that was asked for and not done yet: offer just its tool and require it (like the first step)
+            Dim nextTool = pending.FirstOrDefault()
+            If nextTool IsNot Nothing AndAlso opts.Tools IsNot Nothing AndAlso opts.Tools.Any(Function(t) t("function")?.Value(Of String)("name") = nextTool) Then
+                opts.Tools = New JArray(Enumerable.First(opts.Tools, Function(t As JToken) t("function")?.Value(Of String)("name") = nextTool))
+                opts.ToolChoice = If(opts.EnableThinking, "auto", "required")
+                status?.Invoke(Localizer.T("Next step…"))
+            End If
             beforeFollowup?.Invoke()
             result = Await streamOnce(opts)
+            opts.ToolChoice = Nothing
+            If result.ToolCalls.Count = 0 AndAlso nextTool IsNot Nothing Then
+                ' the model still answered in words: run the step with the user's own words
+                Dim a As New JObject From {{"prompt", userText}}
+                If nextTool = "generate_video" Then a("use_last_picture") = True
+                If nextTool = "generate_image" AndAlso doneTools.Contains("generate_image") Then a("edit_last_picture") = True
+                result.ToolCalls.Add(New ToolCall With {.Name = nextTool, .Arguments = a.ToString()})
+            End If
             If result.ToolCalls.Count = 0 Then Exit Do
         Loop
         If said.Length > 0 Then result.Content = said.ToString() & If(result.Content, "")

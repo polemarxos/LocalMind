@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Globalization
 Imports System.Text.RegularExpressions
 Imports Newtonsoft.Json.Linq
@@ -10,8 +10,11 @@ Imports Newtonsoft.Json.Linq
 Public Class MediaSize
     Public Property Seconds As Double
     Public Property Megapixels As Double
+    ''' <summary>"720p", "1080p", "4k": the short side in pixels (0 = not asked).</summary>
+    Public Property Lines As Integer
 
     Private Shared ReadOnly SecondsRx As New Regex("(\d+(?:[.,]\d+)?)\s*(?:-\s*)?(?:seconds?|secons?|secs?|sec\b|s\b|δευτερόλεπτ\w*|δευτ\w*)", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    Private Shared ReadOnly LinesRx As New Regex("\b(240|360|480|540|576|720|1080|1440|2160)\s*p\b|\b([248])k\b", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
     Private Shared ReadOnly MpRx As New Regex("(\d+(?:[.,]\d+)?)\s*(?:mp\b|megapixels?|mpx\b|μεγαπίξελ)", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
 
     ''' <summary>From the tool call (seconds / megapixels), else from the user's own words.</summary>
@@ -25,6 +28,10 @@ Public Class MediaSize
         Dim t = If(userText, "")
         If m.Seconds <= 0 Then m.Seconds = Number(SecondsRx.Match(t))
         If m.Megapixels <= 0 Then m.Megapixels = Number(MpRx.Match(t))
+        If m.Megapixels <= 0 Then
+            Dim lm = LinesRx.Match(t)
+            If lm.Success Then m.Lines = If(lm.Groups(1).Success, CInt(lm.Groups(1).Value), If(lm.Groups(2).Value = "2", 1440, If(lm.Groups(2).Value = "4", 2160, 4320)))
+        End If
         m.Seconds = Math.Min(Math.Max(0, m.Seconds), 20)
         m.Megapixels = Math.Min(Math.Max(0, m.Megapixels), 4)
         Return m
@@ -38,6 +45,11 @@ Public Class MediaSize
 
     ''' <summary>Width and height: the model's own size, or the asked megapixels with the same shape (multiples of 32).</summary>
     Public Function Dims(defaultW As Integer, defaultH As Integer) As (W As Integer, H As Integer)
+        If Lines > 0 AndAlso Megapixels <= 0 AndAlso defaultW > 0 AndAlso defaultH > 0 Then
+            ' the short side is the "p" number, the shape stays the model's
+            Dim aspectL = defaultW / CDbl(defaultH)
+            Return If(aspectL >= 1, (Snap(Lines * aspectL), Snap(Lines)), (Snap(Lines), Snap(Lines / aspectL)))
+        End If
         If Megapixels <= 0 OrElse defaultW <= 0 OrElse defaultH <= 0 Then Return (defaultW, defaultH)
         Dim aspect = defaultW / CDbl(defaultH)
         Dim h = Math.Sqrt(Megapixels * 1_000_000 / aspect)

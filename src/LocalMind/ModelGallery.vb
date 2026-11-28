@@ -707,7 +707,7 @@ Public Class ModelGallery
             message = Localizer.T("Download cancelled (it resumes next time).")
         Catch ex As Exception
             message = "⚠ " & name & ": " & ex.Message
-            needsKey = TypeOf tag Is Civitai.CivModel AndAlso ex.Message.Contains("API key")
+            needsKey = TypeOf tag Is Civitai.CivModel AndAlso ex.Message.Contains("API key") AndAlso String.IsNullOrWhiteSpace(AppCore.Settings.CivitaiApiKey)
         Finally
             _installs.Remove(k)
             cts.Dispose()
