@@ -26,6 +26,9 @@ Public Class MediaSize
         Catch
         End Try
         Dim t = If(userText, "")
+        ' a size the AI made up by itself (the user's words say nothing about it) is ignored: bigger pictures need
+        ' much more graphics memory, and the model's own size is the one it was made for
+        If m.Megapixels > 0 AndAlso Not SizeAsked(t) Then m.Megapixels = 0
         If m.Seconds <= 0 Then m.Seconds = Number(SecondsRx.Match(t))
         If m.Megapixels <= 0 Then m.Megapixels = Number(MpRx.Match(t))
         If m.Megapixels <= 0 Then
@@ -35,6 +38,16 @@ Public Class MediaSize
         m.Seconds = Math.Min(Math.Max(0, m.Seconds), 20)
         m.Megapixels = Math.Min(Math.Max(0, m.Megapixels), 4)
         Return m
+    End Function
+
+    Private Shared ReadOnly SizeWordsRx As New Regex("megapix|\bmp\b|\bhd\b|\b[248]k\b|\d{3,4}\s*[x×]\s*\d{3,4}|\d{3,4}\s*p\b|resolution|hi-?res|high[- ]res|" &
+                                                     "\b(large|larger|big|bigger|small|smaller|tiny)\s+(image|picture|photo|pic|size)|wallpaper|" &
+                                                     "ανάλυση|αναλυση|(μεγάλ|μεγαλ|μικρ)\w*\s+(εικόνα|εικονα|φωτογραφ|μέγεθος|μεγεθος)|ταπετσαρ",
+                                                     RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+
+    ''' <summary>The user's words ask for a picture size of some kind.</summary>
+    Public Shared Function SizeAsked(userText As String) As Boolean
+        Return Not String.IsNullOrEmpty(userText) AndAlso SizeWordsRx.IsMatch(userText)
     End Function
 
     Private Shared Function Number(mm As Match) As Double

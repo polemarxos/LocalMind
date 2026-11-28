@@ -574,6 +574,9 @@ Public Module MediaStudio
         Public Property Strength As Double = 0.75
         ''' <summary>Use the model's Turbo / Lightning LoRA (its steps and CFG must already be in Steps / Cfg).</summary>
         Public Property Fast As Boolean
+        ''' <summary>Set after the engine ran out of graphics memory: 1 = no VRAM budget, weights kept outside the GPU,
+        ''' tiled decode; 2 = also the model's own picture size.</summary>
+        Public Property SafeMemory As Integer
         ''' <summary>How many pictures to make at once (variations with consecutive seeds).</summary>
         Public Property Count As Integer = 1
         ''' <summary>All files made (filled in by GenerateAsync).</summary>
@@ -637,9 +640,14 @@ Public Module MediaStudio
         Dim clock = Diagnostics.Stopwatch.StartNew()
         Dim made As String = Nothing
         Dim failedLoras As List(Of String) = Nothing
-        Dim ramRetry = False
+        Dim ramRetry = False, vramRetry = False
         For attempt = 0 To 5
             Try
+                If vramRetry Then
+                    vramRetry = False
+                    GC.Collect()
+                    Await HardwareInfo.WaitForVramReleaseAsync(ct, 10)
+                End If
                 If ramRetry Then
                     ramRetry = False
                     progress?.Invoke(0, Localizer.T("Not enough free RAM — freeing memory and trying again…"))
@@ -669,6 +677,19 @@ Public Module MediaStudio
                 req.Loras = New List(Of UserLora)()
                 progress?.Invoke(0, Localizer.T("A LoRA doesn't fit this model — trying again without your LoRAs…"))
                 failedLoras = names
+            Catch ex As Exception When attempt < 5 AndAlso req.SafeMemory < 2 AndAlso IsGpuMemoryFailure(ex)
+                ' the engine's memory plan didn't fit the graphics card ("workspace capacity check", an empty result):
+                ' first without the VRAM budget and with the weights outside the GPU, then also at the model's own size
+                req.SafeMemory += 1
+                If req.SafeMemory >= 2 Then
+                    Dim r0 = req.Recipe
+                    If r0.Width > 0 AndAlso r0.Height > 0 AndAlso req.Width * CLng(req.Height) > r0.Width * CLng(r0.Height) Then
+                        req.Width = r0.Width
+                        req.Height = r0.Height
+                    End If
+                End If
+                progress?.Invoke(0, Localizer.T("Not enough graphics memory — trying again with less…"))
+                vramRetry = True
             Catch ex As Exception When attempt < 3 AndAlso Not _diskParamsFailed AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        CStr(ex.Data("engineLog")).Contains("--params-backend disk") AndAlso
                                        Regex.IsMatch(AfterFirstLine(CStr(ex.Data("engineLog"))), "(params[_ ]backend|disk)[^\n]*(unknown|unsupported|not supported|invalid|failed)|unknown argument", RegexOptions.IgnoreCase)
@@ -690,6 +711,14 @@ Public Module MediaStudio
         Catch
         End Try
         Return made
+    End Function
+
+    ''' <summary>The engine stopped because its graphics memory plan didn't fit.</summary>
+    Private Function IsGpuMemoryFailure(ex As Exception) As Boolean
+        Dim t = ex.Message & CStr(If(TypeOf ex.Data("engineLog") Is String, ex.Data("engineLog"), ""))
+        Return Regex.IsMatch(t, "failed during (workspace|allocated capacity|weight preparation|output cache)|" &
+                                "diffusion compute failed|diffusion output shape \[\]|out of memory|ErrorOutOfDeviceMemory|" &
+                                "cudaMalloc failed|failed to allocate", RegexOptions.IgnoreCase)
     End Function
 
     ''' <summary>The option an older engine refused ("unknown argument: --x"), if it is one LocalMind adds by itself.</summary>
@@ -928,20 +957,20 @@ Public Module MediaStudio
             '    (--params-backend disk). Windows keeps recently read parts in its file cache, which it frees by itself.
             Dim lowRam = AppCore.Settings.LowRamActive(hw.VramGB)
             Dim modelBytes = FilesFor(r, v).Sum(Function(f) f.Size)
-            If modelBytes > hw.VramBytes * 0.85 OrElse r.IsVideo Then
+            If modelBytes > hw.VramBytes * 0.85 OrElse r.IsVideo OrElse req.SafeMemory > 0 Then
                 a.Append(If(lowRam AndAlso Not _diskParamsFailed, "--params-backend disk ", "--offload-to-cpu "))
             End If
             ' (parts larger than the free RAM are read from the disk as needed instead of failing to load)
             If lowRam OrElse (hw.RamBytes > 0 AndAlso modelBytes > hw.RamBytes * 0.6) Then a.Append("--mmap ")
             ' The VAE decode at the end is the biggest jump in graphics memory, for videos most of all: decoded in tiles
             ' (and, for videos, a few frames at a time) it needs a fraction of it.
-            If hw.VramGB < 12 OrElse r.IsVideo OrElse modelBytes > hw.VramBytes * 0.7 Then a.Append("--vae-tiling ")
+            If hw.VramGB < 12 OrElse r.IsVideo OrElse modelBytes > hw.VramBytes * 0.7 OrElse req.SafeMemory > 0 Then a.Append("--vae-tiling ")
             If r.IsVideo Then a.Append(Opt("--temporal-tiling"))
             If pkg.Flavor.StartsWith("cuda", StringComparison.Ordinal) Then
                 a.Append("--diffusion-fa ")
                 ' Keep a little graphics memory free: when it runs out, Windows silently moves the overflow into system RAM
                 ' ("sysmem fallback"), which fills the RAM and makes everything crawl.
-                a.Append(Opt("--max-vram", "-0.75"))
+                If req.SafeMemory = 0 Then a.Append(Opt("--max-vram", "-0.75"))
             End If
             ' one prompt per run: no cache of encoded prompts kept in memory
             a.Append(Opt("--conditioning-cache-size", "0"))

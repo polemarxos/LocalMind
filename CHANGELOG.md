@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.26.29
+
+### Fixed
+- **Pictures failed with "workspace capacity check" / "diffusion output shape [] does not match input"** (seen with
+  Krea 2). When the engine runs out of graphics memory, LocalMind now tries again with less: first without the VRAM
+  budget, with the model weights kept outside the GPU and a tiled decode, then also at the model's own picture size.
+- **The chat made pictures far bigger than asked.** The AI sometimes asked for 2 megapixels on its own (1408×1408),
+  which needs much more graphics memory. A size is now only used when your own words ask for one (megapixels, HD,
+  4K, 1920×1080, "high resolution", "bigger picture" and so on); otherwise the model's own size is used.
+
 ## 2.26.28
 
 ### Changed

@@ -1379,5 +1379,6 @@
 "🛠 Set up myself": "🛠 Θα το ρυθμίσω μόνος μου",
 "Choose \"Download selected\" for the recommended models, or \"Set up myself\" to pick models yourself.": "Επιλέξτε «Λήψη επιλεγμένων» για τα προτεινόμενα μοντέλα ή «Θα το ρυθμίσω μόνος μου» για να διαλέξετε μοντέλα μόνοι σας.",
 "Close LocalMind now? This window shows again the next time you open it.": "Κλείσιμο του LocalMind τώρα; Αυτό το παράθυρο θα εμφανιστεί ξανά την επόμενη φορά που θα το ανοίξετε.",
-"First setup": "Πρώτη ρύθμιση"
+"First setup": "Πρώτη ρύθμιση",
+"Not enough graphics memory — trying again with less…": "Δεν φτάνει η μνήμη της κάρτας γραφικών — νέα προσπάθεια με λιγότερη…"
 }
