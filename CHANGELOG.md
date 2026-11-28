@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.26.13
+
+### Changed
+- **Download** in the menu of a song, video or voice player in the chat now opens the export window. **Save image
+  as…** on a picture does too. For sound, you choose MP3, MP4 (with a waveform) or the original WAV.
+
 ## 2.26.12
 
 ### Added

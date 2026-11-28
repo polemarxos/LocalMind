@@ -642,6 +642,16 @@ Public Class MainForm
                                                                       CoreWebView2HostResourceAccessKind.Allow)
             Catch
             End Try
+            ' ⬇ "Download" in a player's menu (or a picture's "Save image as…"): our save window instead, which also
+            ' offers the other formats (MP3 / MP4 / WAV for sound)
+            AddHandler webChat.CoreWebView2.DownloadStarting, Sub(s, a)
+                                                                  Dim u As Uri = Nothing
+                                                                  If Not Uri.TryCreate(a.DownloadOperation.Uri, UriKind.Absolute, u) OrElse
+                                                                     Not u.Host.Equals("outputs.localmind", StringComparison.OrdinalIgnoreCase) Then Return
+                                                                  a.Cancel = True
+                                                                  Dim name = Uri.UnescapeDataString(u.AbsolutePath.TrimStart("/"c))
+                                                                  Me.Post(Sub() ExportOutput(name))
+                                                              End Sub
             ' Links in answers open in the real browser, not inside the chat view.
             AddHandler webChat.CoreWebView2.NewWindowRequested, Sub(s, a)
                                                                     a.Handled = True
