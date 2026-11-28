@@ -223,6 +223,9 @@ Public Class SetupForm
             Case "media"
                 Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = it.Id)
                 If r Is Nothing Then Return "🖼 Picture"
+                ' (the setup's editing profile uses it)
+                If _shown IsNot Nothing AndAlso _shown.Profiles.Any(Function(p) p.Model = it.Id AndAlso p.Kind = "edit") AndAlso
+                   Not _shown.Profiles.Any(Function(p) p.Model = it.Id AndAlso p.Kind = "picture") Then Return "✏ Editing"
                 If r.IsVideo Then Return "🎬 Video"
                 If r.IsUpscaler OrElse r.Kind = "tool" Then Return "🛠 Tool"
                 If Not r.Can("create") Then Return "✏ Picture editing"

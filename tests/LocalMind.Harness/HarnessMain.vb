@@ -744,7 +744,9 @@ Module HarnessMain
                                 std.Items.All(Function(i) i.Kind <> "media" OrElse MediaStudio.Recipes().Any(Function(r) r.Id = i.Id)) AndAlso
                                 std.Profiles.All(Function(p) std.Items.Any(Function(i) i.Id = p.Model)) AndAlso
                                 std.Items.Any(Function(i) i.Kind = "llm" AndAlso i.MainChat AndAlso Not i.Repo.ToLowerInvariant().Contains("heretic") AndAlso Not i.Repo.ToLowerInvariant().Contains("abliterated"))
-                    Dim uncOk = unc.Profiles.All(Function(p) unc.Items.Any(Function(i) i.Id = p.Model))
+                    Dim uncOk = unc.Profiles.All(Function(p) unc.Items.Any(Function(i) i.Id = p.Model)) AndAlso
+                                std.Profiles.All(Function(p) p.Id.StartsWith("std-")) AndAlso Not unc.Profiles.Any(Function(p) p.Id.StartsWith("std-")) AndAlso
+                                std.Defaults.Values.All(Function(v) v.StartsWith("std-"))
                     Check(stdOk AndAlso uncOk, $"{tierFile} {If(hwX Is nv, "NVIDIA", "AMD")}: Standard has only official models, profiles follow",
                           String.Join(", ", std.Items.Select(Function(i) If(i.Id <> "", i.Id & " " & i.Variant, i.Repo))))
                 Next

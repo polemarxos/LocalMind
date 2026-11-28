@@ -65,6 +65,9 @@ Public Class SetupFile
     Public Property Settings As JObject
     ''' <summary>Your own personas.</summary>
     Public Property Personas As New List(Of Persona)()
+    ''' <summary>The profiles and chat defaults used instead when the user picks Standard content (empty = the same ones).</summary>
+    Public Property StandardProfiles As New List(Of MediaProfile)()
+    Public Property StandardDefaults As New Dictionary(Of String, String)()
 End Class
 
 Public Module SetupLibrary
@@ -145,11 +148,18 @@ Public Module SetupLibrary
     Public Function ForThisPc(s As SetupFile, hw As HardwareInfo, Optional uncensored As Boolean = True) As SetupFile
         If s Is Nothing Then Return Nothing
         Dim nvidia = hw IsNot Nothing AndAlso hw.Gpus.Any(Function(g) g.Vendor = GpuVendor.Nvidia)
-        Dim needStd = Not uncensored AndAlso s.Items.Any(Function(i) i.Standard IsNot Nothing)
+        Dim needStd = Not uncensored AndAlso (s.Items.Any(Function(i) i.Standard IsNot Nothing) OrElse s.StandardProfiles.Count > 0)
         Dim needAlt = Not nvidia AndAlso s.Items.Any(Function(i) i.NotNvidia IsNot Nothing OrElse (i.Standard?.NotNvidia IsNot Nothing))
         If Not needStd AndAlso Not needAlt Then Return s
         Dim c = Parse(ToJson(s))
-        If needStd Then Swap(c, Function(i) i.Standard)
+        If needStd Then
+            Swap(c, Function(i) i.Standard)
+            ' Standard has profiles of its own
+            If c.StandardProfiles.Count > 0 Then
+                c.Profiles = c.StandardProfiles
+                If c.StandardDefaults.Count > 0 Then c.Defaults = c.StandardDefaults
+            End If
+        End If
         If Not nvidia Then Swap(c, Function(i) i.NotNvidia)
         Return c
     End Function

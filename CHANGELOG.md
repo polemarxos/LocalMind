@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.26.23
+
+### Added
+- **Standard content has its own profiles**, separate from the uncensored ones:
+  - Krea 2 Turbo (pictures)
+  - Qwen-Image 2.1 edit (editing)
+  - HyperFlow H3 Flash (video)
+  - YuE2 songs (music)
+  - Fish Audio voice (voice)
+
+  They become the chat's defaults when Standard is chosen. The uncensored profiles are only added with Uncensored.
+
+### Fixed
+- In the recommended-models window, the editing model is listed as **Editing** instead of Picture.
+
 ## 2.26.22
 
 ### Added

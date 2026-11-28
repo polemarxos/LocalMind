@@ -1,7 +1,7 @@
 {
   "Name": "8 GB graphics card",
   "Vram": 8,
-  "Version": 4,
+  "Version": 5,
   "Items": [
     {
       "Kind": "llm",
@@ -271,5 +271,79 @@
     "DownloadSpeedUpFiles": true,
     "CivitaiRed": true
   },
-  "Personas": []
+  "Personas": [],
+  "StandardProfiles": [
+    {
+      "Id": "std-picture",
+      "Name": "Krea 2 Turbo",
+      "Kind": "picture",
+      "Model": "krea2-turbo",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "std-edit",
+      "Name": "Qwen-Image 2.1 edit",
+      "Kind": "edit",
+      "Model": "qwen-image-2.1",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "std-video",
+      "Name": "HyperFlow H3 Flash",
+      "Kind": "video",
+      "Model": "hyperflow-h3-flash",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "std-music",
+      "Name": "YuE2 songs",
+      "Kind": "music",
+      "Model": "yue2-3b",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "std-voice",
+      "Name": "Fish Audio voice",
+      "Kind": "voice",
+      "Model": "s2-pro",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    }
+  ],
+  "StandardDefaults": {
+    "picture": "std-picture",
+    "edit": "std-edit",
+    "video": "std-video",
+    "music": "std-music",
+    "voice": "std-voice"
+  }
 }
