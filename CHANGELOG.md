@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.26.20
+
+### Added
+- **Overall progress bar** in the chat: a thin bar above the work text, such as "Decoding video… (97%)". It shows
+  how much of the whole request is done across all its steps, e.g. the picture and then the video.
+- **Closing window.** Closing LocalMind used to freeze the window while models and jobs stopped. Now the window
+  hides at once, and a small "Closing LocalMind…" window shows each step with a bar:
+  1. saving the chat;
+  2. stopping jobs;
+  3. pausing downloads;
+  4. closing the phone connection;
+  5. unloading the chat model.
+- **A persona always writes the prompt** for pictures, videos and songs. If you name one, it's used. Otherwise the
+  chat model picks one, and if it doesn't, LocalMind does: a saved prompt-writer persona for that kind (e.g. your
+  "Cinematic Scene Prompt Writer" for videos), or an expert prompt-writer role.
+
+### Changed
+- The recommended setups no longer add personas.
+
 ## 2.26.19
 
 ### Added

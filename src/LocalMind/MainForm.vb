@@ -1721,6 +1721,12 @@ Public Class MainForm
                 Return
             End If
         End If
+        ' the slow part of closing runs with a small progress window (the app looked frozen before)
+        If Not _closingDone AndAlso e.CloseReason = CloseReason.UserClosing Then
+            e.Cancel = True
+            CloseWithProgress()
+            Return
+        End If
         Try
             If _session IsNot Nothing AndAlso _session.Messages.Count > 0 Then AppCore.History.Save(_session)
             _cts?.Cancel()
@@ -1730,6 +1736,68 @@ Public Class MainForm
         Catch
         End Try
         MyBase.OnFormClosing(e)
+    End Sub
+
+    Private _closingDone As Boolean
+    Private _closing As Boolean
+
+    ''' <summary>
+    ''' Closing used to freeze the window while models and jobs stopped. Now the window hides, a small "Closing…" window
+    ''' shows each step, the slow parts run in the background, and the app closes when they are done.
+    ''' </summary>
+    Private Async Sub CloseWithProgress()
+        If _closing Then Return
+        _closing = True
+        Dim f As New ClosingForm()
+        f.Show()
+        Hide()
+        Dim stepAt = 0
+        Dim total = 7
+        Dim say = Sub(t As String)
+                      stepAt += 1
+                      f.Step(t, stepAt * 100 \ (total + 1))
+                  End Sub
+        Try
+            say("Saving the chat…")
+            Try
+                If _session IsNot Nothing AndAlso _session.Messages.Count > 0 Then AppCore.History.Save(_session)
+                AppCore.SaveSettings()
+            Catch
+            End Try
+            say("Stopping the answer in progress…")
+            _cts?.Cancel()
+            _flushTimer?.Stop() : _connTimer?.Stop() : _statusTimer?.Stop()
+            say("Stopping picture, video and sound jobs…")
+            Await Task.Run(Sub()
+                               Try : MediaStudio.Cancel() : Catch : End Try
+                               Try : AudioStudio.Cancel() : Catch : End Try
+                               Try : Voice.StopSpeaking() : Catch : End Try
+                           End Sub)
+            say("Pausing downloads (they resume next time)…")
+            Await Task.Run(Sub()
+                               Try
+                                   For Each j In AppCore.Downloads.Jobs()
+                                       j.Cts?.Cancel()
+                                   Next
+                               Catch
+                               End Try
+                           End Sub)
+            say("Closing the phone connection…")
+            Await Task.Run(Sub()
+                               Try : AppCore.Lan?.StopAsync().Wait(3000) : Catch : End Try
+                           End Sub)
+            say("Unloading the chat model…")
+            Await Task.Run(Sub()
+                               Try : AppCore.Engine.StopAsync().Wait(5000) : Catch : End Try
+                               Try : Knowledge.StopEmbedder() : Catch : End Try
+                           End Sub)
+            say("Done")
+        Catch
+        End Try
+        _closingDone = True
+        _reallyExit = True
+        Close()
+        f.Close()
     End Sub
 
     Protected Overrides Sub OnFormClosed(e As FormClosedEventArgs)

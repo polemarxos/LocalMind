@@ -148,6 +148,8 @@ Public Module MarkdownRenderer
         sb.AppendLine("  .msg .role { font-size: 11px; color: #888; margin-bottom: 6px; letter-spacing: .3px; text-transform: uppercase; }")
         sb.AppendLine("  .msg.user .role { text-align: right; }")
         sb.AppendLine("  .work { display:none; align-items:center; gap:8px; margin:8px 2px 0; color:#a1a1aa; font-size:12.5px; }")
+        sb.AppendLine("  .wbar { display:none; height:3px; margin:8px 2px 0; max-width:260px; background:#2a2b30; border-radius:2px; overflow:hidden; }")
+        sb.AppendLine("  .wbar i { display:block; height:100%; width:0; background:#3b82f6; border-radius:2px; transition:width .4s ease; }")
         sb.AppendLine("  .work .spin { width:12px; height:12px; border:2px solid #3f3f46; border-top-color:#3b82f6; border-radius:50%; animation: lmspin .8s linear infinite; flex:none; }")
         sb.AppendLine("  @keyframes lmspin { to { transform: rotate(360deg); } }")
         sb.AppendLine("  body.busy .meta .mdel { display:none; }")
@@ -327,7 +329,7 @@ Public Module MarkdownRenderer
   function assistantNode(id) {
     var d = document.createElement('div');
     d.className = 'msg assistant'; d.id = id;
-    d.innerHTML = '<div><div class=""role"">' + tr('Assistant') + '</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""bubble made"" id=""' + id + '-made"" style=""display:none""></div><div class=""work"" id=""' + id + '-work""><span class=""spin""></span><span class=""wt""></span></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
+    d.innerHTML = '<div><div class=""role"">' + tr('Assistant') + '</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""bubble made"" id=""' + id + '-made"" style=""display:none""></div><div class=""wbar"" id=""' + id + '-bar""><i></i></div><div class=""work"" id=""' + id + '-work""><span class=""spin""></span><span class=""wt""></span></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
     return d;
   }
   function appendAssistantStart(id) {
@@ -380,6 +382,14 @@ Public Module MarkdownRenderer
     w.querySelector('.wt').textContent = text;
     w.style.display = 'flex';
     scroll();
+  }
+  // the thin bar above the work text: how much of the whole request is done (all its steps)
+  function setProgress(id, pct) {
+    var b = document.getElementById(id + '-bar');
+    if (!b || b.getAttribute('data-done')) return;
+    if (pct < 0) { b.style.display = 'none'; return; }
+    b.style.display = 'block';
+    b.firstChild.style.width = Math.max(0, Math.min(100, pct)) + '%';
   }
   function msgIndex(node) { return Array.prototype.indexOf.call(document.querySelectorAll('.msg.user, .msg.assistant'), node); }
   function deleteMsg(node) { try { window.chrome.webview.postMessage({ type: 'deletemsg', index: msgIndex(node) }); } catch (e) {} }
@@ -434,6 +444,7 @@ Public Module MarkdownRenderer
     var b = document.getElementById(id + '-bubble');
     if (!b) return;
     var mm = document.getElementById(id + '-made'); if (mm) mm.remove();
+    var bb = document.getElementById(id + '-bar'); if (bb) { bb.style.display = 'none'; bb.setAttribute('data-done', '1'); }
     var wk = document.getElementById(id + '-work'); if (wk) { wk.style.display = 'none'; wk.setAttribute('data-done', '1'); }
     b.innerHTML = html;
     decorate(b);

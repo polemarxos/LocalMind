@@ -1360,5 +1360,12 @@
 "Asking Civitai for the file…": "Ζητείται το αρχείο από το Civitai…",
 "Civitai refused the download even with your API key. On civitai.com, open the model page once while signed in (some models ask you to accept their terms or allow mature content in your settings), then try again.": "Το Civitai αρνήθηκε τη λήψη ακόμη και με το κλειδί API σας. Στο civitai.com ανοίξτε μία φορά τη σελίδα του μοντέλου συνδεδεμένοι (κάποια μοντέλα ζητούν αποδοχή όρων ή ενεργοποίηση περιεχομένου για ενήλικες στις ρυθμίσεις) και δοκιμάστε ξανά.",
 "Civitai answered:": "Απάντηση Civitai:",
-"Next step…": "Επόμενο βήμα…"
+"Next step…": "Επόμενο βήμα…",
+"Closing LocalMind…": "Κλείσιμο του LocalMind…",
+"Saving the chat…": "Αποθήκευση της συνομιλίας…",
+"Stopping the answer in progress…": "Διακοπή της απάντησης σε εξέλιξη…",
+"Stopping picture, video and sound jobs…": "Διακοπή εργασιών εικόνας, βίντεο και ήχου…",
+"Pausing downloads (they resume next time)…": "Παύση λήψεων (συνεχίζουν την επόμενη φορά)…",
+"Closing the phone connection…": "Κλείσιμο της σύνδεσης με το κινητό…",
+"Unloading the chat model…": "Αποφόρτωση του μοντέλου συνομιλίας…"
 }

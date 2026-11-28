@@ -49,6 +49,10 @@ Public Module ChatAgent
                                                  "(άλλαξε|επεξεργάσου|διόρθωσε|αφαίρεσε|πρόσθεσε)[^.?!;\n]{0,50}(εικόνα|φωτογραφία)", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
     Private ReadOnly HowTo As New Regex("\bhow (do|to|can|should|would)\b|\bπώς\b|\bπως\b|\btutorial\b", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
 
+    ''' <summary>The request's steps (for the overall progress bar): how many, and which one is running (0-based).</summary>
+    Public Property StepCount As Integer = 1
+    Public Property StepIndex As Integer
+
     ''' <summary>Every tool the message asks for, in the order asked ("a picture … then a video of it" → image, video).</summary>
     Public Function RequestedTools(text As String, tools As JArray) As List(Of String)
         Dim result As New List(Of String)()
@@ -145,10 +149,27 @@ Public Module ChatAgent
         Return If(list.Count > 0, list, Nothing)
     End Function
 
+    ''' <summary>
+    ''' The persona that writes a step's prompt when neither the user nor the model chose one: a saved persona made for
+    ''' that kind of prompt (e.g. "Cinematic Scene Prompt Writer" for videos), else an expert role for it.
+    ''' </summary>
+    Private Function AutoPersona(toolName As String) As String
+        Dim words As String(), role As String
+        Select Case toolName
+            Case "generate_video", "extend_video" : words = {"video", "cinematic", "scene", "film"} : role = "cinematic video prompt writer"
+            Case "make_song" : words = {"music", "song", "lyric"} : role = "music prompt writer"
+            Case Else : words = {"image", "picture", "photo", "visual"} : role = "image prompt writer"
+        End Select
+        Dim saved = AppCore.Personas.Load().FirstOrDefault(Function(p) words.Any(Function(w) If(p.Name, "").IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0) AndAlso
+                                                                     If(p.Name, "").IndexOf("prompt", StringComparison.OrdinalIgnoreCase) >= 0)
+        Return If(saved?.Name, role)
+    End Function
+
     Private Function PersonaArg() As JObject
         Dim names = String.Join(", ", AppCore.Personas.Load().Select(Function(p) p.Name).Take(20))
         Return New JObject From {{"type", "string"}, {"description",
-            "The persona (role) the user asked to write this step's prompt, e.g. 'image prompt writer' or 'video prompt writer'. Leave empty when the user named none." &
+            "The persona (role) that writes this step's prompt: the one the user named; if the user named none, choose the best fitting one yourself " &
+            "(a saved persona made for this kind of prompt, or a role such as 'image prompt writer', 'cinematic video prompt writer', 'music prompt writer'). Never leave it empty." &
             If(names <> "", " Saved personas: " & names, "")}}
     End Function
 
@@ -350,6 +371,8 @@ Public Module ChatAgent
         Dim songWithVoice = False
         Dim doneTools As New HashSet(Of String)()
         Dim wanted = RequestedTools(userText, allTools)
+        StepCount = Math.Max(1, Math.Max(wanted.Count, result.ToolCalls.Where(Function(t) t.Name <> "set_persona" AndAlso t.Name <> "web_search").Count()))
+        StepIndex = 0
         Dim stepNo = 0
         Do
             Dim searched = False
@@ -369,7 +392,14 @@ Public Module ChatAgent
                     If String.IsNullOrWhiteSpace(pname) AndAlso named.Count > 0 AndAlso tc.Name <> "set_persona" AndAlso tc.Name <> "web_search" Then
                         pname = named(Math.Min(stepNo, named.Count - 1))
                     End If
+                    ' 🎭 none named and none chosen: the best fitting persona writes the prompt anyway
+                    If String.IsNullOrWhiteSpace(pname) AndAlso (tc.Name = "generate_image" OrElse tc.Name = "generate_video" OrElse tc.Name = "make_song") Then
+                        pname = AutoPersona(tc.Name)
+                    End If
                     Dim byLine = ""
+                    If tc.Name <> "set_persona" AndAlso tc.Name <> "web_search" Then
+                        StepIndex = Math.Min(doneTools.Where(Function(t) t <> "set_persona" AndAlso t <> "web_search").Count(), Math.Max(0, StepCount - 1))
+                    End If
                     Select Case tc.Name
                         Case "generate_image", "generate_video"
                             Dim prompt = If(args.Value(Of String)("prompt"), "")
