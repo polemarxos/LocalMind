@@ -375,8 +375,8 @@ Public Module MarkdownRenderer
     var b = document.getElementById(id + '-bubble');
     if (b && b.querySelector('.waiting')) { b.querySelector('.waiting').textContent = text; return; }
     var w = document.getElementById(id + '-work');
-    if (!w) return;
-    if (!text) { w.style.display = 'none'; return; }
+    if (!w || w.getAttribute('data-done')) return;   // (late updates after the answer is finished are ignored)
+    if (!text || /^(Done|Έγινε|Έτοιμο)(\s|\(|$)/.test(text)) { w.style.display = 'none'; return; }
     w.querySelector('.wt').textContent = text;
     w.style.display = 'flex';
     scroll();
@@ -426,7 +426,7 @@ Public Module MarkdownRenderer
   function finalizeAssistant(id, html, thinkingHtml, meta) {
     var b = document.getElementById(id + '-bubble');
     if (!b) return;
-    var wk = document.getElementById(id + '-work'); if (wk) wk.style.display = 'none';
+    var wk = document.getElementById(id + '-work'); if (wk) { wk.style.display = 'none'; wk.setAttribute('data-done', '1'); }
     b.innerHTML = html;
     decorate(b);
     if (thinkingHtml) {

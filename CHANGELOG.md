@@ -22,6 +22,7 @@
 ### Fixed
 - While music, pictures or video were being made, the status bar said "Engine idle (no model loaded)". It now says
   the chat model was unloaded to make room and that your request is still running.
+- The spinner under a finished answer no longer keeps turning at "Done (100%)".
 - Music and voice progress now shows the time spent. Some models print no progress for minutes, which made the
   work look stuck at 2%.
 
