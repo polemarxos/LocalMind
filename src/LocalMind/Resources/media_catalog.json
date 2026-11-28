@@ -2234,6 +2234,80 @@
   "repo": "lokCX/4x-Ultrasharp"
  },
  {
+  "id": "upscale-remacri",
+  "name": "4x Remacri (photos, natural detail)",
+  "kind": "upscale",
+  "family": "ESRGAN",
+  "about": "4× enlargement that keeps skin, hair and fabric natural instead of over-sharpened. A favourite for photos and realistic renders.",
+  "steps": 1,
+  "cfg": 0,
+  "width": 0,
+  "height": 0,
+  "input": "required",
+  "tasks": [
+   "upscale"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "4×",
+    "format": "esrgan",
+    "repo": "FacehugmanIII/4x_foolhardy_Remacri",
+    "path": "4x_foolhardy_Remacri.pth",
+    "size": 67025055
+   }
+  ],
+  "parts": [],
+  "dl": 0,
+  "repo": "FacehugmanIII/4x_foolhardy_Remacri"
+ },
+ {
+  "id": "upscale-siax",
+  "name": "4x NMKD Siax (photos, clean)",
+  "kind": "upscale",
+  "family": "ESRGAN",
+  "about": "4× enlargement that removes JPEG blocks and noise while it enlarges: good for old, compressed or downloaded pictures.",
+  "steps": 1,
+  "cfg": 0,
+  "width": 0,
+  "height": 0,
+  "input": "required",
+  "tasks": [
+   "upscale"
+  ],
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "refs": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": false,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "4×",
+    "format": "esrgan",
+    "repo": "gemasai/4x_NMKD-Siax_200k",
+    "path": "4x_NMKD-Siax_200k.pth",
+    "size": 66957746
+   }
+  ],
+  "parts": [],
+  "dl": 0,
+  "repo": "gemasai/4x_NMKD-Siax_200k"
+ },
+ {
   "id": "upscale-anime",
   "name": "Real-ESRGAN 4× (anime)",
   "kind": "upscale",

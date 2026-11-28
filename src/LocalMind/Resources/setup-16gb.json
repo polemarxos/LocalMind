@@ -72,8 +72,12 @@
         "VersionId": 3351925,
         "FileName": "NoctQ_V1_Q6_K.gguf",
         "Url": "https://civitai.com/models/2958896?modelVersionId=3351925",
-        "Name": "⭐ Noct Q - Uncensored Realism (Qwen Image 2.1) · v1.0 Q6_K — for AMD / Intel cards"
-      }
+        "Name": "⭐ Noct Q - Uncensored Realism (Qwen Image 2.1) · v1.0 Q6_K — for AMD / Intel cards",
+        "Size": 5876562976,
+        "BaseModel": "Qwen 2.1"
+      },
+      "Size": 7256784368,
+      "BaseModel": "Qwen 2.1"
     },
     {
       "Kind": "civitai",
@@ -94,7 +98,9 @@
         "Id": "hf-fronyax-krea2-edit-snofs-merge-krea2editsnofsmerge-v16",
         "Variant": "Q4_K_M",
         "Name": "krea2EditSNOFSMerge v16 · KREA2 Edit SNOFS Merge · Q4_K_M — for AMD / Intel cards"
-      }
+      },
+      "Size": 12829186847,
+      "BaseModel": "Krea 2 Turbo"
     },
     {
       "Kind": "audio",

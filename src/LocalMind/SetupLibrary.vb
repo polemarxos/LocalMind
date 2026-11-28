@@ -35,6 +35,9 @@ Public Class SetupItem
     Public Property Recommended As Boolean = True
     ''' <summary>civitai: the Civitai model version to download (a checkpoint; FileName picks the file).</summary>
     Public Property VersionId As Long
+    ''' <summary>civitai: the file's size and Civitai's base model (for the size shown before downloading).</summary>
+    Public Property Size As Long
+    Public Property BaseModel As String = ""
     ''' <summary>Used instead of this item on PCs without an NVIDIA graphics card (AMD, Intel): e.g. a GGUF edition
     ''' where this one is INT8 ConvRot, which only NVIDIA cards run fast. Profiles follow the swap.</summary>
     Public Property NotNvidia As SetupItem
@@ -159,7 +162,8 @@ Public Module SetupLibrary
     Public Function VariantFor(r As MediaRecipe, preferred As String, hw As HardwareInfo) As MediaVariant
         If r Is Nothing OrElse r.Variants.Count = 0 Then Return Nothing
         Dim named = r.Variants.FirstOrDefault(Function(v) String.Equals(v.Label, preferred, StringComparison.OrdinalIgnoreCase))
-        If named IsNot Nothing AndAlso MediaStudio.Fit(r, named, hw) = FitLevel.Fits Then Return named
+        ' (the edition the setup names, unless this PC can't run it at all)
+        If named IsNot Nothing AndAlso MediaStudio.Fit(r, named, hw) <> FitLevel.TooBig Then Return named
         Dim fits = r.Variants.Where(Function(v) MediaStudio.Fit(r, v, hw) = FitLevel.Fits).OrderByDescending(Function(v) v.Total).FirstOrDefault()
         If fits IsNot Nothing Then Return fits
         ' nothing fits on the card: the smallest (it runs with part of it in RAM)
@@ -176,6 +180,12 @@ Public Module SetupLibrary
             Case "audio"
                 Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = it.Id)
                 Return If(m Is Nothing, 0, m.Size)
+            Case "civitai"
+                ' the file, plus what its family needs (VAE, text encoder) when not downloaded yet
+                Dim g = Civitai.GroupFor(If(it.BaseModel, ""))
+                Dim t = If(g.Template Is Nothing, Nothing, MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = g.Template))
+                Dim parts = If(t Is Nothing, 0L, t.Parts.Where(Function(p) Not p.Control AndAlso Not MediaStudio.IsPresent(p)).Sum(Function(p) p.Size))
+                Return it.Size + parts
         End Select
         Return 0
     End Function
@@ -256,7 +266,8 @@ Public Module SetupLibrary
             ' your own checkpoints (from Civitai): downloaded again from their version
             Dim um = users.FirstOrDefault(Function(u) u.Id = r.Id)
             If um IsNot Nothing AndAlso um.VersionId > 0 Then
-                s.Items.Add(New SetupItem With {.Kind = "civitai", .Id = r.Id, .VersionId = um.VersionId, .FileName = um.File, .Name = r.Name})
+                s.Items.Add(New SetupItem With {.Kind = "civitai", .Id = r.Id, .VersionId = um.VersionId, .FileName = um.File, .Name = r.Name,
+                                                .Size = um.Size, .BaseModel = um.BaseModel})
                 Continue For
             End If
             s.Items.Add(New SetupItem With {.Kind = "media", .Id = r.Id, .Variant = v.Label, .Name = r.Name})

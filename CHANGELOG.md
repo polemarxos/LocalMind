@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.26.19
+
+### Added
+- Two more picture upscalers:
+  - **4x Remacri:** natural skin, hair and fabric for photos.
+  - **4x NMKD Siax:** cleans JPEG blocks and noise from old or compressed pictures.
+
+### Fixed
+- In the recommended-models window:
+  - Models from Civitai now show their size and count in the total.
+  - Noct Q is listed as **Editing**.
+  - The edition a setup names, such as Q4_K_M, is the one downloaded, unless the PC can't run it at all. Before, a
+    smaller edition could be chosen instead.
+
 ## 2.26.18
 
 ### Changed

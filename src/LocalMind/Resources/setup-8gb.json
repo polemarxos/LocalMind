@@ -73,7 +73,9 @@
       "Family": "",
       "Triggers": "",
       "Recommended": true,
-      "VersionId": 3351925
+      "VersionId": 3351925,
+      "Size": 4050916384,
+      "BaseModel": "Qwen 2.1"
     },
     {
       "Kind": "audio",

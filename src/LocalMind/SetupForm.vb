@@ -116,6 +116,7 @@ Public Class SetupForm
         ' (AMD / Intel cards get the editions that run well on them)
         s = SetupLibrary.ForThisPc(s, _hw)
         _setup = s
+        _shown = s
         _loading = True
         lst.BeginUpdate()
         lst.Items.Clear()
@@ -158,6 +159,8 @@ Public Class SetupForm
         End Select
     End Function
 
+    Private Shared _shown As SetupFile
+
     Private Shared Function KindText(it As SetupItem) As String
         Select Case it.Kind
             Case "llm" : Return If(it.MainChat, "💬 Chat (main)", "💬 Chat")
@@ -165,7 +168,7 @@ Public Class SetupForm
                 Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = it.Id)
                 Return If(m IsNot Nothing AndAlso m.IsMusic, "🎵 Music", "🗣 Voice")
             Case "lora" : Return "🧩 LoRA"
-            Case "civitai" : Return "🖼 Picture"
+            Case "civitai" : Return If(_shown IsNot Nothing AndAlso _shown.Profiles.Any(Function(p) p.Model = it.Id AndAlso p.Kind = "edit"), "✏ Editing", "🖼 Picture")
             Case "media"
                 Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = it.Id)
                 If r Is Nothing Then Return "🖼 Picture"
