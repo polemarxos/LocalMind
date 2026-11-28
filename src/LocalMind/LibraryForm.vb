@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
@@ -92,6 +92,16 @@ Public Class LibraryForm
         btnEnhance = Theme.MakeButton(Localizer.T("✨ Sharper & smoother"))
         Dim btnShow = Theme.MakeButton(Localizer.T("📁 Show file"))
         Dim btnDel = Theme.MakeButton(Localizer.T("🗑 Delete"))
+        Dim btnExport = Theme.MakeButton(Localizer.T("💾 Export…"))
+        AddHandler btnExport.Click, Async Sub()
+                                        Dim f = SelectedFile()
+                                        If f Is Nothing Then Return
+                                        Try
+                                            Await MediaExport.ExportAsync(Me, f, Sub(t) lblStatus.Text = t)
+                                        Catch ex As Exception
+                                            Localizer.Box(Me, ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+                                        End Try
+                                    End Sub
         AddHandler btnOpen.Click, Sub() OpenSelected()
         AddHandler btnCopy.Click, Sub() CopyPrompt()
         AddHandler btnReuse.Click, Sub() Reuse(False)
@@ -104,7 +114,7 @@ Public Class LibraryForm
                                       If f IsNot Nothing Then Diagnostics.Process.Start("explorer.exe", $"/select,""{f}""")
                                   End Sub
         AddHandler btnDel.Click, Sub() DeleteSelected()
-        actions.Controls.AddRange({btnOpen, btnCopy, btnReuse, btnAttach, btnUpscale, btnCutout, btnEnhance, btnShow, btnDel})
+        actions.Controls.AddRange({btnOpen, btnCopy, btnReuse, btnAttach, btnUpscale, btnCutout, btnEnhance, btnExport, btnShow, btnDel})
         side.Controls.Add(txtPrompt)
         side.Controls.Add(lblInfo)
         side.Controls.Add(preview)

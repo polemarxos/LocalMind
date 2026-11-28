@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.26.3
+
+### Added
+- **Export songs and voice clips as MP3 or MP4.** Each song and voice clip in the chat now has an
+  **Export (MP3 / MP4)…** button, and the Library has a new **Export…** button. Pick one of these formats in the
+  save window:
+  - MP3;
+  - MP4 video with a moving waveform, ready for YouTube or social media;
+  - the original WAV.
+
 ## 2.26.2
 
 ### Added

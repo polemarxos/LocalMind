@@ -79,23 +79,17 @@ Partial Class MainForm
     End Function
 
     ''' <summary>💾 Saves a copy of a result where the user chooses.</summary>
-    Private Sub ExportOutput(name As String)
+    Private Async Sub ExportOutput(name As String)
         Dim f = OutputFile(name)
         If f Is Nothing Then
             SetStatus("That file is no longer there (deleted or moved).")
             Return
         End If
-        Dim ext = Path.GetExtension(f)
-        Using d As New SaveFileDialog() With {.FileName = Path.GetFileName(f), .Filter = $"*{ext}|*{ext}|*.*|*.*",
-                                              .InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)}
-            If d.ShowDialog(Me) <> DialogResult.OK Then Return
-            Try
-                File.Copy(f, d.FileName, True)
-                SetStatus("Saved to " & d.FileName)
-            Catch ex As Exception
-                Localizer.Box(Me, ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Warning)
-            End Try
-        End Using
+        Try
+            Await MediaExport.ExportAsync(Me, f, Sub(t) SetStatus(t))
+        Catch ex As Exception
+            Localizer.Box(Me, ex.Message, "Export", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+        End Try
     End Sub
 
     ''' <summary>

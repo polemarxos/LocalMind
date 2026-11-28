@@ -728,7 +728,7 @@ Public Module ChatAgent
         Dim wav = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = m, .Text = style, .Lyrics = lyrics},
                                                   Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
         MediaStudio.SaveInfo(wav, "music", m.Name, style, lyrics)
-        Return $"[🎵 {EscapeAlt(style)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})"
+        Return $"[🎵 {EscapeAlt(style)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})" & ExportLink(wav)
     End Function
 
     '──────────────── voice cloning in the chat ────────────────
@@ -871,9 +871,14 @@ Public Module ChatAgent
         Next
         If Not File.Exists(out) Then Throw New Exception(Localizer.T("Could not mix the song."))
         MediaStudio.SaveInfo(out, "music", mm.Name & " + " & If(vm?.Name, "") & " · " & prepared.Name, style, lyrics)
-        Return $"[🎵 {EscapeAlt(style)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf &
+        Return $"[🎵 {EscapeAlt(style)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & ExportLink(out) & vbCrLf & vbCrLf &
                $"_{Localizer.T("Voice")}: {prepared.Name} · {If(vm?.Name, "")} — " &
                Localizer.T("the music models can't sing in a copied voice, so the copied voice performs the lyrics over music made for them") & "_"
+    End Function
+
+    ''' <summary>The 💾 Export… button under a song or voice clip (MP3, MP4 or WAV).</summary>
+    Public Function ExportLink(file As String) As String
+        Return vbCrLf & vbCrLf & $"[💾 {Localizer.T("Export (MP3 / MP4)…")}](https://action.localmind/export?f={Uri.EscapeDataString(Path.GetFileName(file))})"
     End Function
 
     ''' <summary>The lyrics split at their [verse] / [chorus] tags, without the tags (or in pieces of a few lines).</summary>
@@ -973,6 +978,6 @@ Public Module ChatAgent
         MediaStudio.SaveInfo(wav, "voice", m.Name & " · " & name, words, Nothing)
         Dim note = $"_{Localizer.T("Voice")}: {name} · {m.Name}_"
         If Not String.IsNullOrWhiteSpace(saveAs) Then note &= "  " & String.Format(Localizer.T("(saved — say ""with {0}'s voice"" next time)"), name)
-        Return $"[🗣 {EscapeAlt(words)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})" & vbCrLf & vbCrLf & note
+        Return $"[🗣 {EscapeAlt(words)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(wav))})" & ExportLink(wav) & vbCrLf & vbCrLf & note
     End Function
 End Module
