@@ -225,6 +225,48 @@ Public Class HardwareInfo
         End While
     End Function
 
+    <Runtime.InteropServices.StructLayout(Runtime.InteropServices.LayoutKind.Sequential)>
+    Private Structure MEMORYSTATUSEX
+        Public dwLength As UInteger
+        Public dwMemoryLoad As UInteger
+        Public ullTotalPhys As ULong
+        Public ullAvailPhys As ULong
+        Public ullTotalPageFile As ULong
+        Public ullAvailPageFile As ULong
+        Public ullTotalVirtual As ULong
+        Public ullAvailVirtual As ULong
+        Public ullAvailExtendedVirtual As ULong
+    End Structure
+
+    <Runtime.InteropServices.DllImport("kernel32.dll", SetLastError:=True)>
+    Private Shared Function GlobalMemoryStatusEx(ByRef buffer As MEMORYSTATUSEX) As Boolean
+    End Function
+
+    ''' <summary>Free system RAM right now (bytes), or -1 when it can't be read.</summary>
+    Public Shared Function FreeRamBytes() As Long
+        If Not OperatingSystem.IsWindows() Then Return -1
+        Try
+            Dim m As New MEMORYSTATUSEX With {.dwLength = CUInt(Runtime.InteropServices.Marshal.SizeOf(GetType(MEMORYSTATUSEX)))}
+            If GlobalMemoryStatusEx(m) Then Return CLng(m.ullAvailPhys)
+        Catch
+        End Try
+        Return -1
+    End Function
+
+    ''' <summary>Waits (up to <paramref name="maxSeconds"/>) until free RAM stops rising after a model was closed.</summary>
+    Public Shared Async Function WaitForRamReleaseAsync(ct As Threading.CancellationToken, Optional maxSeconds As Integer = 10) As Threading.Tasks.Task
+        Dim last = FreeRamBytes()
+        If last < 0 Then Return
+        Dim sw = Stopwatch.StartNew()
+        Const Settled = 128L * 1024 * 1024
+        While sw.Elapsed.TotalSeconds < maxSeconds
+            Await Threading.Tasks.Task.Delay(500, ct)
+            Dim now = FreeRamBytes()
+            If now < 0 OrElse now - last < Settled Then Exit While    ' stopped going up
+            last = now
+        End While
+    End Function
+
     Friend Shared Function RunTool(exe As String, args As String, Optional timeoutMs As Integer = 6000) As String
         Try
             Dim psi As New ProcessStartInfo(exe, args) With {

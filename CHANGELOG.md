@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.26.11
+
+### Changed
+- The bottom-left corner of the window now shows only what is loaded: **LLM**, **Picture model**,
+  **Video model**, **Music model**, **Voice model** or **No model loaded**. Progress messages stay under the answer
+  in the chat, and the last one is in the corner's tooltip.
+
+### Fixed
+- **"RAM weight capacity exceeded" in "make a picture, then a video".** The chat model could stay in system RAM
+  while the picture or video model loaded, and big video models then ran out of RAM.
+  - The chat model is now always unloaded before a picture, video, music or voice job, unless you chose "keep
+    loaded". It loads again by itself for your next message.
+  - LocalMind waits until Windows has really freed the RAM and graphics memory before the next model starts.
+  - If the engine still reports too little RAM, LocalMind frees memory, waits and tries once more.
+
 ## 2.26.10
 
 ### Fixed

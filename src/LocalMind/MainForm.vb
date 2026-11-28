@@ -536,6 +536,7 @@ Public Class MainForm
     ''' <summary>UI-thread housekeeping: download progress, refreshes requested by background threads.</summary>
     Private Async Sub StatusTick(sender As Object, e As EventArgs)
         ShowDownloadProgress()
+        ShowLoadedMode()
         Dim lanText = LanButtonText()
         If btnLan.Text <> lanText Then btnLan.Text = lanText
 
@@ -1617,7 +1618,28 @@ Public Class MainForm
             End Try
             Return
         End If
-        lblStatus.Text = Localizer.T(text)
+        ' (the bottom-left corner shows only what is loaded; the last message stays in its tooltip)
+        lblStatus.ToolTipText = Localizer.T(text)
+    End Sub
+
+    ''' <summary>The bottom-left corner: which kind of model is loaded right now.</summary>
+    Private Sub ShowLoadedMode()
+        Dim t As String
+        If MediaStudio.IsBusy Then
+            t = If(MediaStudio.CurrentIsVideo, "● Video model", "● Picture model")
+        ElseIf AudioStudio.IsBusy Then
+            t = If(AudioStudio.CurrentIsMusic, "● Music model", "● Voice model")
+        ElseIf Settings.Backend <> BackendKind.BuiltIn Then
+            t = "● LLM (server)"
+        Else
+            Select Case AppCore.Engine.State
+                Case EngineState.Ready : t = "● LLM"
+                Case EngineState.Loading : t = "◌ LLM loading"
+                Case Else : t = "○ No model loaded"
+            End Select
+        End If
+        t = Localizer.T(t)
+        If lblStatus.Text <> t Then lblStatus.Text = t
     End Sub
 
     Private Shared Function FirstLine(s As String) As String

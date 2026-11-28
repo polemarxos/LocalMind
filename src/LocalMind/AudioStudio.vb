@@ -222,6 +222,9 @@ Public Module AudioStudio
 
     Private _proc As Process
 
+    ''' <summary>What the running job makes (for the status bar): a song, else speech.</summary>
+    Public Property CurrentIsMusic As Boolean
+
     Public ReadOnly Property IsBusy As Boolean
         Get
             Dim p = _proc
@@ -302,6 +305,7 @@ Public Module AudioStudio
                                  report(96, "Making the audio…")
                              End If
                          End Sub
+            CurrentIsMusic = m.IsMusic
             _proc = New Process() With {.StartInfo = psi}
             AddHandler _proc.OutputDataReceived, Sub(s, e) onLine(e.Data)
             AddHandler _proc.ErrorDataReceived, Sub(s, e) onLine(e.Data)

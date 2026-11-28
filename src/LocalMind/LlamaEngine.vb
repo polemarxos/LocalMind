@@ -328,7 +328,9 @@ Public Class LlamaEngine
                 Dim mode = _settings().ImageGpuSharing   ' 0 auto, 1 always unload, 2 keep loaded
                 Dim vram = HardwareInfo.Current().VramBytes
                 Dim chatBytes = CLng(m.SizeBytes * 1.15 + 600L * 1024 * 1024)
-                Dim unload = mode = 1 OrElse (mode = 0 AndAlso (vram <= 0 OrElse chatBytes + needBytes > vram * 0.92))
+                ' (auto: always — a chat model left loaded also holds system RAM, which big video models need;
+                '  it loads again by itself for the next message)
+                Dim unload = mode <> 2
                 If unload Then
                     status?.Invoke("Unloading the chat model to free the GPU…")
                     AppendLog($"Unloading {m.DisplayName} to make room for image generation")
@@ -337,8 +339,9 @@ Public Class LlamaEngine
             End If
             ' the chat model (or the last picture / video / sound job) may have just closed: wait until the card
             ' has really given its memory back, so the next model sees all of it
-            status?.Invoke("Freeing graphics memory…")
+            status?.Invoke("Freeing memory…")
             Await HardwareInfo.WaitForVramReleaseAsync(ct)
+            Await HardwareInfo.WaitForRamReleaseAsync(ct)
         Catch
             _switchLock.Release()
             Throw

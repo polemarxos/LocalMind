@@ -599,6 +599,9 @@ Public Module MediaStudio
 
     Private _proc As Process
 
+    ''' <summary>What the running job makes (for the status bar): a video, else a picture.</summary>
+    Public Property CurrentIsVideo As Boolean
+
     Public ReadOnly Property IsBusy As Boolean
         Get
             Dim p = _proc
@@ -612,13 +615,26 @@ Public Module MediaStudio
         Dim clock = Diagnostics.Stopwatch.StartNew()
         Dim made As String = Nothing
         Dim failedLoras As List(Of String) = Nothing
+        Dim ramRetry = False
         For attempt = 0 To 3
             Try
+                If ramRetry Then
+                    ramRetry = False
+                    progress?.Invoke(0, Localizer.T("Not enough free RAM — freeing memory and trying again…"))
+                    If AppCore.Settings.Backend = BackendKind.BuiltIn Then Await AppCore.Engine.StopAsync()
+                    GC.Collect()
+                    GC.WaitForPendingFinalizers()
+                    Await HardwareInfo.WaitForRamReleaseAsync(ct, 20)
+                End If
                 made = Await GenerateOnceAsync(req, progress, ct)
                 Exit For
             Catch ex As Exception When attempt < 3 AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        ShapeFix.TryFixFromLog(CStr(ex.Data("engineLog")))
                 progress?.Invoke(0, "Fixed the model file's tensor shapes — trying again…")
+            Catch ex As Exception When attempt < 2 AndAlso
+                                       (ex.Message & CStr(If(TypeOf ex.Data("engineLog") Is String, ex.Data("engineLog"), ""))).Contains("RAM weight capacity exceeded")
+                ' system RAM was still held by the model before (or another program): free what we hold, wait, try again
+                ramRetry = True
             Catch ex As Exception When attempt < 3 AndAlso req.Loras.Count > 0 AndAlso
                                        (ex.Message & CStr(If(TypeOf ex.Data("engineLog") Is String, ex.Data("engineLog"), ""))).Contains("no diffusion or text-encoder targets")
                 ' a LoRA the check let through still can't be used: once more without the user's LoRAs
@@ -916,6 +932,7 @@ Public Module MediaStudio
                                  progress?.Invoke(0, "Loading model…")
                              End If
                          End Sub
+            CurrentIsVideo = r.IsVideo
             _proc = New Process() With {.StartInfo = psi}
             AddHandler _proc.OutputDataReceived, Sub(s, e) onLine(e.Data)
             AddHandler _proc.ErrorDataReceived, Sub(s, e) onLine(e.Data)

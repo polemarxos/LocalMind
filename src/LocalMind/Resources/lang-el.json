@@ -1335,5 +1335,15 @@
 "Preparing a LoRA for the engine (once)…": "Προετοιμασία ενός LoRA για τη μηχανή (μία φορά)…",
 "LoRA {0} left out: it has nothing this model can use": "Το LoRA {0} παραλείφθηκε: δεν έχει τίποτα που να μπορεί να χρησιμοποιήσει αυτό το μοντέλο",
 "A LoRA doesn't fit this model — trying again without your LoRAs…": "Ένα LoRA δεν ταιριάζει σε αυτό το μοντέλο — νέα προσπάθεια χωρίς τα LoRA σας…",
-"Left out (not made for this model): {0}": "Παραλείφθηκαν (δεν είναι για αυτό το μοντέλο): {0}"
+"Left out (not made for this model): {0}": "Παραλείφθηκαν (δεν είναι για αυτό το μοντέλο): {0}",
+"● Video model": "● Μοντέλο βίντεο",
+"● Picture model": "● Μοντέλο εικόνας",
+"● Music model": "● Μοντέλο μουσικής",
+"● Voice model": "● Μοντέλο φωνής",
+"● LLM (server)": "● LLM (διακομιστής)",
+"● LLM": "● LLM",
+"◌ LLM loading": "◌ Φόρτωση LLM",
+"○ No model loaded": "○ Κανένα μοντέλο φορτωμένο",
+"Freeing memory…": "Απελευθέρωση μνήμης…",
+"Not enough free RAM — freeing memory and trying again…": "Δεν υπάρχει αρκετή ελεύθερη RAM — απελευθέρωση μνήμης και νέα προσπάθεια…"
 }
