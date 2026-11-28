@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.26.5
+
+### Changed
+- **Back up everything** never copies model or LoRA files. It keeps their download links instead.
+  - Before saving, it looks up LoRAs added from a file on Civitai to get their links.
+  - It lists any LoRA that still has no link, so you know to keep that file yourself.
+- **Restore from backup** downloads the missing models and LoRAs **automatically** from their links. You no longer
+  have to pick them in a list. You can follow the downloads in Get models → Downloads.
+
 ## 2.26.4
 
 ### Added

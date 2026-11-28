@@ -191,35 +191,8 @@ Public Class SetupForm
     ''' <summary>Queues every ticked model in the download list (Models → Downloads) and adds the profiles.</summary>
     Private Sub StartDownloads()
         If _setup Is Nothing Then Return
-        Dim queued = 0
-        For Each li As ListViewItem In lst.Items
-            Dim it = TryCast(li.Tag, SetupItem)
-            If it Is Nothing OrElse Not li.Checked OrElse SetupLibrary.IsInstalled(it) Then Continue For
-            Try
-                Select Case it.Kind
-                    Case "llm"
-                        ' the catalog entry (size, vision…) so "Auto" picks the right file for this graphics card
-                        Dim age As String = Nothing
-                        Dim e = ModelCatalog.LoadCachedOrEmbedded(age).FirstOrDefault(Function(x) String.Equals(x.Repo, it.Repo, StringComparison.OrdinalIgnoreCase))
-                        If e Is Nothing Then e = New CatalogEntry With {.Repo = it.Repo, .Name = If(String.IsNullOrEmpty(it.Name), it.Repo, it.Name)}
-                        AppCore.Downloads.Enqueue(e, If(String.IsNullOrEmpty(it.Quant), "Auto", it.Quant))
-                    Case "media"
-                        Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = it.Id)
-                        Dim v = SetupLibrary.VariantFor(r, it.Variant, _hw)
-                        If r Is Nothing OrElse v Is Nothing Then Continue For
-                        Fire(MediaStudio.DownloadAsync(r, v, Nothing, CancellationToken.None, forEdit:=r.Can("edit") OrElse r.Can("reference"), withSpeed:=True))
-                    Case "audio"
-                        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = it.Id)
-                        If m Is Nothing Then Continue For
-                        Fire(AudioStudio.DownloadAsync(m, Nothing, CancellationToken.None))
-                    Case "lora"
-                        Fire(Civitai.InstallLoraFromUrlAsync(it.Url, it.FileName, it.Family, it.Triggers, CancellationToken.None))
-                End Select
-                queued += 1
-            Catch ex As Exception
-                Safety.Log(ex, "setup download " & DisplayName(it))
-            End Try
-        Next
+        Dim picked = lst.Items.Cast(Of ListViewItem)().Where(Function(li) li.Checked).Select(Function(li) TryCast(li.Tag, SetupItem)).Where(Function(x) x IsNot Nothing).ToList()
+        Dim queued = QueueDownloads(picked, _hw)
         Dim withProfiles = lst.Items.Cast(Of ListViewItem)().Any(Function(x) CStr(TryCast(x.Tag, String)) = "profiles" AndAlso x.Checked)
         If withProfiles Then SetupLibrary.ApplyProfiles(_setup)
         Dim withSettings = lst.Items.Cast(Of ListViewItem)().Any(Function(x) CStr(TryCast(x.Tag, String)) = "settings" AndAlso x.Checked)
@@ -232,6 +205,42 @@ Public Class SetupForm
                                          Localizer.T("Everything is already installed.")), "Recommended models")
         Close()
     End Sub
+
+    ''' <summary>Starts the downloads of the items not installed yet (in the background). Returns how many started.</summary>
+    Public Shared Function QueueDownloads(items As IEnumerable(Of SetupItem), hw As HardwareInfo) As Integer
+        Dim queued = 0
+        For Each it In items
+            If it Is Nothing OrElse SetupLibrary.IsInstalled(it) Then Continue For
+            Try
+                Select Case it.Kind
+                    Case "llm"
+                        ' the catalog entry (size, vision…) so "Auto" picks the right file for this graphics card
+                        Dim age As String = Nothing
+                        Dim e = ModelCatalog.LoadCachedOrEmbedded(age).FirstOrDefault(Function(x) String.Equals(x.Repo, it.Repo, StringComparison.OrdinalIgnoreCase))
+                        If e Is Nothing Then e = New CatalogEntry With {.Repo = it.Repo, .Name = If(String.IsNullOrEmpty(it.Name), it.Repo, it.Name)}
+                        AppCore.Downloads.Enqueue(e, If(String.IsNullOrEmpty(it.Quant), "Auto", it.Quant))
+                    Case "media"
+                        Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = it.Id)
+                        Dim v = SetupLibrary.VariantFor(r, it.Variant, hw)
+                        If r Is Nothing OrElse v Is Nothing Then Continue For
+                        Fire(MediaStudio.DownloadAsync(r, v, Nothing, CancellationToken.None, forEdit:=r.Can("edit") OrElse r.Can("reference"), withSpeed:=True))
+                    Case "audio"
+                        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = it.Id)
+                        If m Is Nothing Then Continue For
+                        Fire(AudioStudio.DownloadAsync(m, Nothing, CancellationToken.None))
+                    Case "lora"
+                        If String.IsNullOrEmpty(it.Url) Then Continue For
+                        Fire(Civitai.InstallLoraFromUrlAsync(it.Url, it.FileName, it.Family, it.Triggers, CancellationToken.None))
+                    Case Else
+                        Continue For
+                End Select
+                queued += 1
+            Catch ex As Exception
+                Safety.Log(ex, "setup download " & DisplayName(it))
+            End Try
+        Next
+        Return queued
+    End Function
 
     ''' <summary>Runs a download in the background; errors show in the download list and the error log.</summary>
     Private Shared Sub Fire(t As Task)

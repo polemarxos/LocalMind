@@ -731,6 +731,7 @@ Module HarnessMain
             File.WriteAllText(Path.Combine(root, "Voices", "bk-test.txt"), "voice")
             Directory.CreateDirectory(Path.Combine(root, "LibraryThumbs"))
             File.WriteAllText(Path.Combine(root, "LibraryThumbs", "skip.jpg"), "x")
+            File.WriteAllText(Path.Combine(root, "Voices", "model.safetensors"), "big")
             Dim zip = Path.Combine(Path.GetTempPath(), "lm-test" & BackupService.Extension)
             Dim st As New SetupFile With {.Name = "test"}
             Dim n = BackupService.Export(zip, st)
@@ -739,7 +740,7 @@ Module HarnessMain
                 names = z.Entries.Select(Function(e) e.FullName).ToList()
             End Using
             Check(n > 0 AndAlso names.Contains("settings.json") AndAlso names.Contains("Voices/bk-test.txt") AndAlso names.Contains("_setup/setup.json") AndAlso
-                  Not names.Any(Function(x) x.StartsWith("LibraryThumbs")), "backup has settings, voices and the model list, no thumbnails", String.Join(",", names.Take(12)))
+                  Not names.Any(Function(x) x.StartsWith("LibraryThumbs") OrElse x.EndsWith(".safetensors")), "backup has settings, voices and the model list, no thumbnails or model files", String.Join(",", names.Take(12)))
             Check(BackupService.Inspect(zip).Value(Of String)("app") = "LocalMind", "backup is recognised")
             ' change things, then restore
             File.WriteAllText(Path.Combine(root, "Voices", "bk-test.txt"), "changed")

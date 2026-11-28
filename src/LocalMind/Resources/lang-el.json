@@ -1291,5 +1291,10 @@
 "Export (MP3 / MP4)…": "Εξαγωγή (MP3 / MP4)…",
 "💾 Export…": "💾 Εξαγωγή…",
 "(not on Civitai)": "(δεν υπάρχει στο Civitai)",
-"looking up on Civitai…": "αναζήτηση στο Civitai…"
+"looking up on Civitai…": "αναζήτηση στο Civitai…",
+"{0} models and LoRAs are downloading from their links. You can follow them in Get models → Downloads, and keep using LocalMind meanwhile.": "{0} μοντέλα και LoRA κατεβαίνουν από τους συνδέσμους τους. Μπορείτε να τα παρακολουθείτε στο Λήψη μοντέλων → Λήψεις και να συνεχίσετε να χρησιμοποιείτε το LocalMind.",
+"Finding the download links of your LoRAs…": "Εύρεση των συνδέσμων λήψης των LoRA σας…",
+"Saved {0} files and the download links of {1} models and LoRAs to {2}.": "Αποθηκεύτηκαν {0} αρχεία και οι σύνδεσμοι λήψης {1} μοντέλων και LoRA στο {2}.",
+"These LoRAs have no download link (not found on Civitai), so they can't be downloaded again; keep their files yourself:": "Αυτά τα LoRA δεν έχουν σύνδεσμο λήψης (δεν βρέθηκαν στο Civitai), οπότε δεν μπορούν να κατέβουν ξανά· κρατήστε μόνοι σας τα αρχεία τους:",
+"Model and LoRA files are not copied. The backup keeps their download links, and they download again automatically when you restore it.": "Τα αρχεία μοντέλων και LoRA δεν αντιγράφονται. Το αντίγραφο κρατά τους συνδέσμους λήψης τους και κατεβαίνουν ξανά αυτόματα κατά την επαναφορά."
 }

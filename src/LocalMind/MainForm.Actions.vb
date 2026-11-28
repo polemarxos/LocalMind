@@ -160,9 +160,9 @@ Partial Class MainForm
     ' ---------- full backup / restore ----------
 
     ''' <summary>💾 Saves every setting (API keys included), profiles, personas, characters, voices and chats in one file.</summary>
-    Private Sub BackupEverything()
+    Private Async Sub BackupEverything()
         If Localizer.Box(Me, Localizer.T("The backup contains your API keys, PINs and chats. Keep it private and don't send it to anyone.") & vbCrLf & vbCrLf &
-                             Localizer.T("Models are not copied (they are too big); the backup lists them so they can be downloaded again after a restore."),
+                             Localizer.T("Model and LoRA files are not copied. The backup keeps their download links, and they download again automatically when you restore it."),
                          "Back up everything", MessageBoxButtons.OKCancel, MessageBoxIcon.Information) <> DialogResult.OK Then Return
         Using d As New SaveFileDialog() With {.FileName = "localmind-backup-" & DateTime.Now.ToString("yyyy-MM-dd") & BackupService.Extension,
                                               .Filter = Localizer.T("LocalMind backup") & "|*" & BackupService.Extension}
@@ -170,10 +170,20 @@ Partial Class MainForm
             Try
                 If _session IsNot Nothing AndAlso _session.Messages.Count > 0 Then AppCore.History.Save(_session)
                 Cursor = Cursors.WaitCursor
+                ' LoRAs added from a file get their Civitai link first, so they can be downloaded again
+                SetStatus(Localizer.T("Finding the download links of your LoRAs…"))
+                Try
+                    Await Civitai.IdentifyLorasAsync(CancellationToken.None)
+                Catch ex As Exception
+                    Safety.Log(ex, "identify LoRAs")
+                End Try
                 Dim setup = SetupLibrary.ExportInstalled(Localizer.T("My models"), HardwareInfo.Current())
                 Dim n = BackupService.Export(d.FileName, setup)
                 Cursor = Cursors.Default
-                Localizer.Box(Me, String.Format(Localizer.T("Saved {0} files and a list of {1} models to {2}."), n, setup.Items.Count, d.FileName), "Back up everything")
+                Dim noLink = SetupLibrary.LorasWithoutLink()
+                Localizer.Box(Me, String.Format(Localizer.T("Saved {0} files and the download links of {1} models and LoRAs to {2}."), n, setup.Items.Count, d.FileName) &
+                                  If(noLink.Count = 0, "", vbCrLf & vbCrLf & Localizer.T("These LoRAs have no download link (not found on Civitai), so they can't be downloaded again; keep their files yourself:") & " " & String.Join(", ", noLink)),
+                              "Back up everything")
             Catch ex As Exception
                 Cursor = Cursors.Default
                 Localizer.Box(Me, ex.Message, "Back up everything", MessageBoxButtons.OK, MessageBoxIcon.Warning)
@@ -202,19 +212,17 @@ Partial Class MainForm
         End Using
     End Sub
 
-    ''' <summary>After a restore: offers the models in the backup that aren't on this PC. True when it showed something.</summary>
+    ''' <summary>After a restore: downloads the models and LoRAs in the backup that aren't on this PC. True when it ran.</summary>
     Private Function OfferRestoredModels() As Boolean
         If Environment.GetEnvironmentVariable("LOCALMIND_RESTORED") <> "1" Then Return False
         Environment.SetEnvironmentVariable("LOCALMIND_RESTORED", Nothing)
         Dim setup = BackupService.TakePendingSetup()
-        If setup Is Nothing OrElse setup.Items.All(Function(it) SetupLibrary.IsInstalled(it)) Then
-            Localizer.Box(Me, Localizer.T("The backup was restored."), "Restore from backup")
-            Return True
-        End If
-        Using f As New SetupForm(Localizer.T("The backup was restored. Download the models it uses?"), setup)
-            f.ShowDialog(Me)
-        End Using
+        Dim missing = If(setup?.Items, New List(Of SetupItem)()).Where(Function(it) Not SetupLibrary.IsInstalled(it)).ToList()
+        Dim queued = SetupForm.QueueDownloads(missing, HardwareInfo.Current())
         _modelsDirty = True
+        Dim msg = Localizer.T("The backup was restored.")
+        If queued > 0 Then msg &= vbCrLf & vbCrLf & String.Format(Localizer.T("{0} models and LoRAs are downloading from their links. You can follow them in Get models → Downloads, and keep using LocalMind meanwhile."), queued)
+        Localizer.Box(Me, msg, "Restore from backup")
         Return True
     End Function
 End Class

@@ -22,6 +22,7 @@ Public Module BackupService
 
     ' caches and logs are left out (they are made again)
     Private ReadOnly SkipFolders As String() = {"LibraryThumbs", "EBWebView", "WebView", "WebView2", "webview", "Logs"}
+    Private ReadOnly ModelExtensions As String() = {".gguf", ".safetensors", ".ckpt", ".pt", ".pth", ".bin", ".onnx", ".sft"}
     Private ReadOnly SkipFiles As String() = {"errors.log", "engine-last.log", "catalog-cache.json", PendingName, PendingSetupName}
 
     Private Function Included(relative As String) As Boolean
@@ -30,6 +31,8 @@ Public Module BackupService
         Dim name = parts.Last()
         If SkipFiles.Contains(name, StringComparer.OrdinalIgnoreCase) Then Return False
         If name.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase) OrElse name.EndsWith(".lock", StringComparison.OrdinalIgnoreCase) Then Return False
+        ' model and LoRA files never go in (they download again from their links)
+        If ModelExtensions.Contains(Path.GetExtension(name), StringComparer.OrdinalIgnoreCase) Then Return False
         Return True
     End Function
 
