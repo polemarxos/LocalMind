@@ -464,6 +464,9 @@ Public Class LlamaEngine
         Dim hwi = HardwareInfo.Current()
         Dim lowRam = s.LowRamActive(hwi.VramGB)
         psi.Environment("LLAMA_ARG_CACHE_RAM") = If(lowRam, "1024", "2048")
+        ' the automatic fit leaves this much graphics memory free (1 GB by default): a little more keeps Windows from
+        ' spilling into system RAM when the chat window, pictures or videos need some too
+        If lowRam Then psi.Environment("LLAMA_ARG_FIT_TARGET") = "1536"
         Dim modelBytes = model.SizeBytes
         If EffectiveVariant <> "cpu" AndAlso hwi.VramBytes > 0 AndAlso modelBytes > 0 AndAlso modelBytes < hwi.VramBytes * 0.8 Then
             psi.Environment("LLAMA_ARG_LOAD_MODE") = "none"

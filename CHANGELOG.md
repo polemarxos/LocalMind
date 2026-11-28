@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.26.15
+
+### Changed
+- The bottom-left corner shows a coloured dot before what is loaded:
+  - **green** when it is loaded;
+  - **green and grey blinking** while it loads;
+  - **red** when loading or the last picture, video or sound job failed;
+  - **grey** when nothing is loaded.
+- Less memory:
+  - The chat view gives memory back while a picture, video or song is made, and while the window is minimized.
+  - Songs and videos in a chat no longer load in full until you play them, which matters in long chats.
+  - Music and voice models that fit on the graphics card don't keep a memory-mapped copy in RAM.
+  - With "Reduce system RAM usage", the chat model leaves 1.5 GB of graphics memory free instead of 1 GB, so
+    Windows doesn't spill into system RAM.
+  - LocalMind itself returns unused memory sooner.
+
 ## 2.26.14
 
 ### Changed — less RAM and graphics memory

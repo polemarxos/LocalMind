@@ -1345,5 +1345,14 @@
 "◌ LLM loading": "◌ Φόρτωση LLM",
 "○ No model loaded": "○ Κανένα μοντέλο φορτωμένο",
 "Freeing memory…": "Απελευθέρωση μνήμης…",
-"Not enough free RAM — freeing memory and trying again…": "Δεν υπάρχει αρκετή ελεύθερη RAM — απελευθέρωση μνήμης και νέα προσπάθεια…"
+"Not enough free RAM — freeing memory and trying again…": "Δεν υπάρχει αρκετή ελεύθερη RAM — απελευθέρωση μνήμης και νέα προσπάθεια…",
+"Video model": "Μοντέλο βίντεο",
+"Picture model": "Μοντέλο εικόνας",
+"Music model": "Μοντέλο μουσικής",
+"Voice model": "Μοντέλο φωνής",
+"Failed": "Απέτυχε",
+"LLM (server)": "LLM (διακομιστής)",
+"LLM": "LLM",
+"LLM failed to load": "Το LLM δεν φόρτωσε",
+"No model loaded": "Κανένα μοντέλο φορτωμένο"
 }

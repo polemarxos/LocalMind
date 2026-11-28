@@ -599,6 +599,10 @@ Public Module MediaStudio
 
     Private _proc As Process
 
+    ' (status bar: still loading the model; the last job failed)
+    Public Property IsLoading As Boolean
+    Public Property LastFailed As Boolean
+
     ''' <summary>What the running job makes (for the status bar): a video, else a picture.</summary>
     Public Property CurrentIsVideo As Boolean
 
@@ -611,6 +615,22 @@ Public Module MediaStudio
 
     ''' <summary>Runs sd-cli and returns the output file (PNG or WebM).</summary>
     Public Async Function GenerateAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
+        Try
+            Dim made = Await GenerateCoreAsync(req, progress, ct)
+            LastFailed = False
+            Return made
+        Catch ex As OperationCanceledException
+            LastFailed = False
+            Throw
+        Catch
+            LastFailed = True
+            Throw
+        Finally
+            IsLoading = False
+        End Try
+    End Function
+
+    Private Async Function GenerateCoreAsync(req As GenerateRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
         ' A checkpoint whose tensor shapes the engine rejects (int8 scales stored as [N, 1]) is fixed and tried again.
         Dim clock = Diagnostics.Stopwatch.StartNew()
         Dim made As String = Nothing
@@ -954,6 +974,7 @@ Public Module MediaStudio
                              End SyncLock
                              Dim m = stepRx.Match(line)
                              If m.Success Then
+                                 IsLoading = False
                                  Dim i = CInt(m.Groups(1).Value), n = CInt(m.Groups(2).Value)
                                  If i < lastI Then stage += 1   ' second expert (Wan A14B)
                                  lastI = i
@@ -967,6 +988,7 @@ Public Module MediaStudio
                              End If
                          End Sub
             CurrentIsVideo = r.IsVideo
+            IsLoading = True
             _proc = New Process() With {.StartInfo = psi}
             AddHandler _proc.OutputDataReceived, Sub(s, e) onLine(e.Data)
             AddHandler _proc.ErrorDataReceived, Sub(s, e) onLine(e.Data)

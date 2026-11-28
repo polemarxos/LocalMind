@@ -841,6 +841,7 @@ Public Class MainForm
         lblTokens.Text = "0 tok/s"
 
         _madeMarkdown = ""
+        MediaStudio.LastFailed = False : AudioStudio.LastFailed = False     ' (the red dot is for the last message only)
         _streamMsgId = "msg-" & Guid.NewGuid().ToString("N").Substring(0, 8)
         Await Js($"appendAssistantStart('{_streamMsgId}')")
         SetStatus("Thinking…")
@@ -1633,24 +1634,57 @@ Public Class MainForm
         lblStatus.ToolTipText = Localizer.T(text)
     End Sub
 
-    ''' <summary>The bottom-left corner: which kind of model is loaded right now.</summary>
+    Private _dot As ToolStripStatusLabel
+    Private _blink As Boolean
+
+    ''' <summary>
+    ''' The bottom-left corner: which kind of model is loaded right now, with a dot: green when loaded, red when the
+    ''' last load or job failed, green and grey blinking while loading, grey when nothing is loaded.
+    ''' </summary>
     Private Sub ShowLoadedMode()
+        If _dot Is Nothing Then
+            _dot = New ToolStripStatusLabel("●") With {.Margin = New Padding(6, 3, 0, 2), .Font = New Font(statusStrip.Font.FontFamily, 11.0!, FontStyle.Bold)}
+            statusStrip.Items.Insert(statusStrip.Items.IndexOf(lblStatus), _dot)
+            lblStatus.TextAlign = ContentAlignment.MiddleLeft
+        End If
         Dim t As String
+        Dim kind As Integer        ' 0 nothing, 1 loaded, 2 loading, 3 failed
         If MediaStudio.IsBusy Then
-            t = If(MediaStudio.CurrentIsVideo, "● Video model", "● Picture model")
+            t = If(MediaStudio.CurrentIsVideo, "Video model", "Picture model")
+            kind = If(MediaStudio.IsLoading, 2, 1)
         ElseIf AudioStudio.IsBusy Then
-            t = If(AudioStudio.CurrentIsMusic, "● Music model", "● Voice model")
+            t = If(AudioStudio.CurrentIsMusic, "Music model", "Voice model")
+            kind = If(AudioStudio.IsLoading, 2, 1)
+        ElseIf MediaStudio.LastFailed OrElse AudioStudio.LastFailed Then
+            t = "Failed" : kind = 3
         ElseIf Settings.Backend <> BackendKind.BuiltIn Then
-            t = "● LLM (server)"
+            t = "LLM (server)" : kind = If(_lastOnlineState, 1, 3)
         Else
             Select Case AppCore.Engine.State
-                Case EngineState.Ready : t = "● LLM"
-                Case EngineState.Loading : t = "◌ LLM loading"
-                Case Else : t = "○ No model loaded"
+                Case EngineState.Ready : t = "LLM" : kind = 1
+                Case EngineState.Loading, EngineState.Installing : t = "LLM" : kind = 2
+                Case EngineState.Error : t = "LLM failed to load" : kind = 3
+                Case Else : t = "No model loaded" : kind = 0
             End Select
         End If
+        _blink = Not _blink
+        Dim c As Color
+        Select Case kind
+            Case 1 : c = Color.FromArgb(34, 197, 94)
+            Case 2 : c = If(_blink, Color.FromArgb(34, 197, 94), Color.Gray)
+            Case 3 : c = Color.FromArgb(239, 68, 68)
+            Case Else : c = Color.Gray
+        End Select
+        If _dot.ForeColor <> c Then _dot.ForeColor = c
         t = Localizer.T(t)
         If lblStatus.Text <> t Then lblStatus.Text = t
+        ' 🧠 the chat view gives memory back while a picture, video or song is made, and while the window is minimized
+        Try
+            Dim low = MediaStudio.IsBusy OrElse AudioStudio.IsBusy OrElse WindowState = FormWindowState.Minimized
+            Dim want = If(low, Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Low, Microsoft.Web.WebView2.Core.CoreWebView2MemoryUsageTargetLevel.Normal)
+            If webChat.CoreWebView2 IsNot Nothing AndAlso webChat.CoreWebView2.MemoryUsageTargetLevel <> want Then webChat.CoreWebView2.MemoryUsageTargetLevel = want
+        Catch
+        End Try
     End Sub
 
     Private Shared Function FirstLine(s As String) As String

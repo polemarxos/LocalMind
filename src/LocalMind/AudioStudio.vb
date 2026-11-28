@@ -222,6 +222,10 @@ Public Module AudioStudio
 
     Private _proc As Process
 
+    ' (status bar: still loading the model; the last job failed)
+    Public Property IsLoading As Boolean
+    Public Property LastFailed As Boolean
+
     ''' <summary>What the running job makes (for the status bar): a song, else speech.</summary>
     Public Property CurrentIsMusic As Boolean
 
@@ -234,6 +238,22 @@ Public Module AudioStudio
 
     ''' <summary>Runs llama-tts and returns the WAV file.</summary>
     Public Async Function GenerateAsync(req As AudioRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
+        Try
+            Dim made = Await GenerateCoreAsync(req, progress, ct)
+            LastFailed = False
+            Return made
+        Catch ex As OperationCanceledException
+            LastFailed = False
+            Throw
+        Catch
+            LastFailed = True
+            Throw
+        Finally
+            IsLoading = False
+        End Try
+    End Function
+
+    Private Async Function GenerateCoreAsync(req As AudioRequest, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of String)
         Dim m = req.Model
         Dim total = Stopwatch.StartNew()
         If Not AppCore.Engine.IsInstalled() Then
@@ -299,13 +319,20 @@ Public Module AudioStudio
                              End SyncLock
                              Dim mm = frameRx.Match(line)
                              If mm.Success Then
+                                 IsLoading = False
                                  Dim i = CDbl(mm.Groups(1).Value), n = Math.Max(1.0, CDbl(mm.Groups(2).Value))
                                  report(CInt(Math.Min(95, i * 95 / n)), $"{If(m.IsMusic, "Composing", "Speaking")}… {mm.Value}")
                              ElseIf line.Contains("decod", StringComparison.OrdinalIgnoreCase) OrElse line.Contains("vocoder", StringComparison.OrdinalIgnoreCase) Then
                                  report(96, "Making the audio…")
                              End If
                          End Sub
+            ' a model that fits on the graphics card: no memory-mapped copy kept in RAM after loading
+            If hw.VramBytes > 0 AndAlso m.Size < hw.VramBytes * 0.8 Then
+                psi.Environment("LLAMA_ARG_LOAD_MODE") = "none"
+                psi.Environment("LLAMA_ARG_NO_MMAP") = "1"
+            End If
             CurrentIsMusic = m.IsMusic
+            IsLoading = True
             _proc = New Process() With {.StartInfo = psi}
             AddHandler _proc.OutputDataReceived, Sub(s, e) onLine(e.Data)
             AddHandler _proc.ErrorDataReceived, Sub(s, e) onLine(e.Data)

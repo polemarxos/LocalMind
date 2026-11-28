@@ -31,8 +31,8 @@ Public Module MarkdownRenderer
                                            Dim ext = m.Groups(2).Value.ToLowerInvariant()
                                            Dim isVideo = ext = "mp4" OrElse ext = "webm"
                                            Return $"<span class=""media""><span class=""media-title"">{m.Groups(3).Value}</span><br>" &
-                                                  If(isVideo, $"<video src=""{m.Groups(1).Value}"" controls style=""max-width:100%""></video>",
-                                                              $"<audio src=""{m.Groups(1).Value}"" controls style=""width:100%""></audio>") & "</span>"
+                                                  If(isVideo, $"<video src=""{m.Groups(1).Value}"" controls preload=""metadata"" style=""max-width:100%""></video>",
+                                                              $"<audio src=""{m.Groups(1).Value}"" controls preload=""metadata"" style=""width:100%""></audio>") & "</span>"
                                        End Function)
     End Function
 
