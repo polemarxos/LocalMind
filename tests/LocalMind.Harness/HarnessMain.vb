@@ -702,6 +702,27 @@ Module HarnessMain
 
         If only = "v2262" Then
             Console.WriteLine("== v2.26.2: full backup and restore")
+            ' 🖥 the 16 GB setup on NVIDIA and on AMD
+            Dim s16 = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", "16gb.json")))
+            Dim nv As New HardwareInfo()
+            nv.Gpus.Add(New GpuDevice With {.Name = "RTX 5070 Ti", .Vendor = GpuVendor.Nvidia, .VramBytes = 16L << 30, .ComputeCap = 12})
+            Dim amd As New HardwareInfo()
+            amd.Gpus.Add(New GpuDevice With {.Name = "RX 9070 XT", .Vendor = GpuVendor.Amd, .VramBytes = 16L << 30})
+            Dim onNv = SetupLibrary.ForThisPc(s16, nv), onAmd = SetupLibrary.ForThisPc(s16, amd)
+            Check(onNv.Items.Any(Function(i) i.Id = "singularity-10eros-turbo") AndAlso onNv.Profiles.Any(Function(p) p.Model = "singularity-10eros-turbo"), "NVIDIA: INT8 video model kept")
+            Check(onAmd.Items.Any(Function(i) i.Id = "10eros-max-h3-turbo" AndAlso i.Variant = "Q4_K_M") AndAlso Not onAmd.Items.Any(Function(i) i.Id = "singularity-10eros-turbo") AndAlso
+                  onAmd.Profiles.Any(Function(p) p.Kind = "video" AndAlso p.Model = "10eros-max-h3-turbo"), "AMD: GGUF video model, profile follows")
+            Dim noct = onAmd.Items.First(Function(i) i.Kind = "civitai")
+            Check(noct.Id = "user-60582d14" AndAlso noct.VersionId = 3351925 AndAlso noct.FileName.EndsWith(".gguf"), "AMD: Noct Q as GGUF, same profile id")
+            Check(MediaStudio.Recipes().Any(Function(r) r.Id = "10eros-max-h3-turbo") AndAlso MediaStudio.Recipes().Any(Function(r) r.Id = "hf-fronyax-krea2-edit-snofs-merge-krea2editsnofsmerge-v15") AndAlso
+                  AudioStudio.Models().Any(Function(m) m.Id = "yue2-3b-bf16"), "16 GB setup models are all in the lists")
+            Try
+                Dim found = Await Civitai.GetVersionAsync(3372040, CancellationToken.None)
+                Check(found.Version IsNot Nothing AndAlso found.Version.Files.Any(Function(f) f.Name = "NoctQ_V4_int8_convrot.safetensors") AndAlso Civitai.GroupFor(found.Version.BaseModel).Template IsNot Nothing,
+                      "Noct Q V4 found on Civitai, file and family known", found.Version?.BaseModel)
+            Catch ex As Exception
+                Console.WriteLine("  SKIP Civitai: " & ex.Message)
+            End Try
             ' 🧩 LoRAs the engine can't map: renamed when they are transformer layers, else left out
             Dim mkSt = Function(name As String, keys As String()) As String
                            Dim f = Path.Combine(Path.GetTempPath(), name & ".safetensors")

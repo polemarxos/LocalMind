@@ -288,11 +288,56 @@ Public Module Civitai
         Return l
     End Function
 
+    ''' <summary>One model version by its id (with its model's name and type), or Nothing when Civitai doesn't have it.</summary>
+    Public Async Function GetVersionAsync(versionId As Long, ct As CancellationToken) As Task(Of (Model As CivModel, Version As CivVersion))
+        For Each red In {AppCore.Settings.CivitaiRed, Not AppCore.Settings.CivitaiRed}
+            Try
+                Using req As New HttpRequestMessage(HttpMethod.Get, ApiBase(red) & "/model-versions/" & versionId)
+                    req.Headers.UserAgent.ParseAdd("LocalMind/" & Updater.CurrentVersion.ToString())
+                    Dim key = AppCore.Settings.CivitaiApiKey
+                    If Not String.IsNullOrWhiteSpace(key) Then req.Headers.Authorization = New Headers.AuthenticationHeaderValue("Bearer", key.Trim())
+                    Using resp = Await Downloader.Http.SendAsync(req, ct)
+                        If Not resp.IsSuccessStatusCode Then Continue For
+                        Dim v = JObject.Parse(Await resp.Content.ReadAsStringAsync(ct))
+                        Dim cm As New CivModel With {.Id = v.Value(Of Long)("modelId"), .Name = If(v("model")?.Value(Of String)("name"), ""),
+                                                     .Type = v("model")?.Value(Of String)("type"), .Nsfw = If(v("model")?.Value(Of Boolean?)("nsfw"), False)}
+                        Dim cv As New CivVersion With {.Id = v.Value(Of Long)("id"), .Name = v.Value(Of String)("name"), .BaseModel = v.Value(Of String)("baseModel")}
+                        If v("trainedWords") IsNot Nothing Then cv.TrainedWords = v("trainedWords").Select(Function(t) t.ToString().Trim()).Where(Function(t) t <> "").ToList()
+                        For Each f In If(TryCast(v("files"), JArray), New JArray())
+                            If f.Value(Of String)("type") <> "Model" Then Continue For
+                            cv.Files.Add(New CivFile With {
+                                .Name = f.Value(Of String)("name"), .SizeBytes = CLng(If(f.Value(Of Double?)("sizeKB"), 0) * 1024),
+                                .Primary = If(f.Value(Of Boolean?)("primary"), False), .Format = f("metadata")?.Value(Of String)("format"),
+                                .Fp = f("metadata")?.Value(Of String)("fp"), .DownloadUrl = f.Value(Of String)("downloadUrl"),
+                                .Sha256 = f("hashes")?.Value(Of String)("SHA256")})
+                        Next
+                        cm.Versions.Add(cv)
+                        Return (cm, cv)
+                    End Using
+                End Using
+            Catch ex As OperationCanceledException
+                Throw
+            Catch
+            End Try
+        Next
+        Return (Nothing, Nothing)
+    End Function
+
+    ''' <summary>A checkpoint from a setup: that Civitai version and file, installed under the setup's model id (its profiles use it).</summary>
+    Public Async Function InstallVersionAsync(versionId As Long, fileName As String, modelId As String, ct As CancellationToken) As Task(Of MediaStudio.UserModel)
+        Dim found = Await GetVersionAsync(versionId, ct)
+        If found.Version Is Nothing Then Throw New Exception(String.Format(Localizer.T("Civitai model version {0} was not found."), versionId))
+        Return Await InstallCheckpointAsync(found.Model, found.Version, Nothing, ct, fileName, modelId)
+    End Function
+
     ''' <summary>Downloads a checkpoint into Models\Images\civitai and adds it as a model in the studio.</summary>
-    Public Async Function InstallCheckpointAsync(m As CivModel, v As CivVersion, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of MediaStudio.UserModel)
+    Public Async Function InstallCheckpointAsync(m As CivModel, v As CivVersion, progress As Action(Of Integer, String), ct As CancellationToken,
+                                                 Optional preferredFile As String = Nothing, Optional modelId As String = Nothing) As Task(Of MediaStudio.UserModel)
         Dim g = GroupFor(v.BaseModel)
         If g.Template Is Nothing Then Throw New Exception(Localizer.T("LocalMind can't run checkpoints of this type yet:") & " " & v.BaseModel)
-        Dim f = v.BestFile()
+        Dim f = If(String.IsNullOrEmpty(preferredFile), Nothing,
+                   v.Files.FirstOrDefault(Function(x) String.Equals(x.Name, preferredFile, StringComparison.OrdinalIgnoreCase)))
+        If f Is Nothing Then f = v.BestFile()
         If f Is Nothing Then Throw New Exception(Localizer.T("This version has no file LocalMind can run (only formats like NVFP4, INT4 or W4A8). Try another version."))
         Dim fileName = SafeFileName(f.Name)
         Dim dest = Path.Combine(MediaStudio.UserModelFolder, fileName)
@@ -301,7 +346,7 @@ Public Module Civitai
         Dim um As New MediaStudio.UserModel With {
             .Name = m.Name & If(m.Versions.Count > 1, " · " & v.Name, ""), .Template = g.Template, .File = fileName,
             .Size = New FileInfo(dest).Length, .Format = If(allInOne, "checkpoint", If(fileName.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase), "gguf", "safetensors")),
-            .BaseModel = v.BaseModel, .Source = $"Civitai #{m.Id}"}
+            .BaseModel = v.BaseModel, .Source = $"Civitai #{m.Id}", .VersionId = v.Id, .Id = modelId}
         ' INT8 (ConvRot) files get the same small repair as the built-in ones.
         If um.Format = "safetensors" AndAlso Regex.IsMatch(fileName, "int8|convrot", RegexOptions.IgnoreCase) Then um.Format = "convrot"
         Dim what = (m.Name & " " & v.Name & " " & fileName).ToLowerInvariant()

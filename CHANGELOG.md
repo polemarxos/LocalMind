@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.26.16
+
+### Changed
+- **New recommended setup for 16 GB graphics cards (with 32 GB RAM).** It is the setup you made and offers to
+  download:
+  - Chat: Huihui Qwen3.8 27B abliterated (UD-IQ3_S).
+  - Pictures: KREA2 Edit SNOFS Merge v15 (Q6_K).
+  - Editing: Noct Q V4 (Qwen Image 2.1, from Civitai).
+  - Video: Singularity V2 × 10Eros Max Turbo (INT8 HQ beta 7).
+  - Music: YuE2 BF16.
+  - Voice: Fish Audio S2 Pro.
+  - Also Real-ESRGAN 4×.
+
+  It also brings your five profiles, which become the chat's defaults, your two personas and your settings. Users
+  of the old 16 GB setup are offered the new one.
+- **AMD and Intel graphics cards** get editions that run well on them, because the INT8 ConvRot files are only fast
+  on NVIDIA:
+  - Video: 10Eros Max Turbo Q4_K_M instead.
+  - Editing: Noct Q v1.0 Q6_K (GGUF) instead.
+
+  The profiles follow automatically, and the engine (CUDA for NVIDIA, Vulkan for AMD/Intel) is picked as before.
+- PCs with a 12 GB+ card but less than 24 GB of RAM get the 8 GB setup, because the 16 GB setup's video model needs
+  the RAM.
+- Civitai models can now be part of a setup. They are downloaded from their Civitai version, so **Export my setup**
+  and backups include them. When a setup has one and no Civitai API key is saved, LocalMind asks for the key first.
+
 ## 2.26.15
 
 ### Changed

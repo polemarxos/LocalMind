@@ -169,6 +169,8 @@ Public Module MediaStudio
         Public Property Cfg As Double
         Public Property Extra As String
         Public Property Source As String
+        ''' <summary>Civitai model version it came from (so a setup or backup can download it again).</summary>
+        Public Property VersionId As Long
     End Class
 
     Private ReadOnly Property UserModelsFile As String

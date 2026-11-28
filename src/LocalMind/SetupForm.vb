@@ -113,6 +113,8 @@ Public Class SetupForm
     End Function
 
     Private Sub ShowSetup(s As SetupFile)
+        ' (AMD / Intel cards get the editions that run well on them)
+        s = SetupLibrary.ForThisPc(s, _hw)
         _setup = s
         _loading = True
         lst.BeginUpdate()
@@ -163,6 +165,7 @@ Public Class SetupForm
                 Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = it.Id)
                 Return If(m IsNot Nothing AndAlso m.IsMusic, "🎵 Music", "🗣 Voice")
             Case "lora" : Return "🧩 LoRA"
+            Case "civitai" : Return "🖼 Picture"
             Case "media"
                 Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = it.Id)
                 If r Is Nothing Then Return "🖼 Picture"
@@ -192,6 +195,11 @@ Public Class SetupForm
     Private Sub StartDownloads()
         If _setup Is Nothing Then Return
         Dim picked = lst.Items.Cast(Of ListViewItem)().Where(Function(li) li.Checked).Select(Function(li) TryCast(li.Tag, SetupItem)).Where(Function(x) x IsNot Nothing).ToList()
+        ' Civitai only lets signed-in users download some models: ask for the free API key first
+        If picked.Any(Function(x) x.Kind = "civitai" AndAlso Not SetupLibrary.IsInstalled(x)) AndAlso String.IsNullOrWhiteSpace(AppCore.Settings.CivitaiApiKey) Then
+            CivitaiKeyForm.Edit(Me, Localizer.T("Some of these models come from Civitai, which needs your free Civitai API key to download them. Paste it here, or skip and those models are left out."))
+            If String.IsNullOrWhiteSpace(AppCore.Settings.CivitaiApiKey) Then picked.RemoveAll(Function(x) x.Kind = "civitai")
+        End If
         Dim queued = QueueDownloads(picked, _hw)
         Dim withProfiles = lst.Items.Cast(Of ListViewItem)().Any(Function(x) CStr(TryCast(x.Tag, String)) = "profiles" AndAlso x.Checked)
         If withProfiles Then SetupLibrary.ApplyProfiles(_setup)
@@ -228,6 +236,9 @@ Public Class SetupForm
                         Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = it.Id)
                         If m Is Nothing Then Continue For
                         Fire(AudioStudio.DownloadAsync(m, Nothing, CancellationToken.None))
+                    Case "civitai"
+                        If it.VersionId <= 0 Then Continue For
+                        Fire(Civitai.InstallVersionAsync(it.VersionId, it.FileName, it.Id, CancellationToken.None))
                     Case "lora"
                         If String.IsNullOrEmpty(it.Url) Then Continue For
                         Fire(Civitai.InstallLoraFromUrlAsync(it.Url, it.FileName, it.Family, it.Triggers, CancellationToken.None))

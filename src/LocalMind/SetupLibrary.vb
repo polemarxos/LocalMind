@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -11,7 +11,7 @@ Imports Newtonsoft.Json.Linq
 
 ''' <summary>One model (or LoRA) in a recommended setup.</summary>
 Public Class SetupItem
-    ''' <summary>llm | media | audio | lora</summary>
+    ''' <summary>llm | media | audio | lora | civitai</summary>
     Public Property Kind As String = ""
     ''' <summary>media / audio: the recipe or audio model id.</summary>
     Public Property Id As String = ""
@@ -33,6 +33,11 @@ Public Class SetupItem
     Public Property MainChat As Boolean
     ''' <summary>Ticked in the list by default.</summary>
     Public Property Recommended As Boolean = True
+    ''' <summary>civitai: the Civitai model version to download (a checkpoint; FileName picks the file).</summary>
+    Public Property VersionId As Long
+    ''' <summary>Used instead of this item on PCs without an NVIDIA graphics card (AMD, Intel): e.g. a GGUF edition
+    ''' where this one is INT8 ConvRot, which only NVIDIA cards run fast. Profiles follow the swap.</summary>
+    Public Property NotNvidia As SetupItem
 End Class
 
 ''' <summary>
@@ -61,7 +66,8 @@ Public Module SetupLibrary
 
     ''' <summary>"8gb" for graphics cards under 12 GB (and PCs without one), else "16gb".</summary>
     Public Function TierFor(hw As HardwareInfo) As String
-        Return If(hw Is Nothing OrElse hw.VramGB < 12, "8gb", "16gb")
+        ' (the 16 GB setup's video model also needs about 32 GB of RAM)
+        Return If(hw Is Nothing OrElse hw.VramGB < 12 OrElse (hw.RamBytes > 0 AndAlso hw.RamBytes < 24L * 1024 * 1024 * 1024), "8gb", "16gb")
     End Function
 
     ''' <summary>The setup for a tier: the published one when it can be read, else the one built into LocalMind.</summary>
@@ -115,8 +121,38 @@ Public Module SetupLibrary
                 Return m IsNot Nothing AndAlso AudioStudio.IsInstalled(m)
             Case "lora"
                 Return LoraLibrary.All().Any(Function(l) String.Equals(l.Name, Path.GetFileNameWithoutExtension(it.FileName), StringComparison.OrdinalIgnoreCase))
+            Case "civitai"
+                Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = it.Id)
+                If r IsNot Nothing AndAlso MediaStudio.InstalledVariant(r) IsNot Nothing Then Return True
+                ' (the same file installed under another id)
+                Return Not String.IsNullOrEmpty(it.FileName) AndAlso MediaStudio.LoadUserModels().Any(Function(u) String.Equals(u.File, it.FileName, StringComparison.OrdinalIgnoreCase) AndAlso
+                                                                                                       File.Exists(Path.Combine(MediaStudio.UserModelFolder, u.File)))
         End Select
         Return False
+    End Function
+
+    ''' <summary>
+    ''' The setup as it fits this PC: on a PC without an NVIDIA card, items that have a NotNvidia edition use it, and
+    ''' the profiles that used the swapped model use the new one.
+    ''' </summary>
+    Public Function ForThisPc(s As SetupFile, hw As HardwareInfo) As SetupFile
+        If s Is Nothing Then Return Nothing
+        Dim nvidia = hw IsNot Nothing AndAlso hw.Gpus.Any(Function(g) g.Vendor = GpuVendor.Nvidia)
+        If nvidia OrElse Not s.Items.Any(Function(i) i.NotNvidia IsNot Nothing) Then Return s
+        Dim c = Parse(ToJson(s))
+        Dim swap As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+        For i = 0 To c.Items.Count - 1
+            Dim alt = c.Items(i).NotNvidia
+            If alt Is Nothing Then Continue For
+            alt.Recommended = c.Items(i).Recommended
+            If Not String.IsNullOrEmpty(c.Items(i).Id) AndAlso Not String.IsNullOrEmpty(alt.Id) AndAlso c.Items(i).Id <> alt.Id Then swap(c.Items(i).Id) = alt.Id
+            c.Items(i) = alt
+        Next
+        For Each p In c.Profiles
+            Dim n As String = Nothing
+            If p.Model IsNot Nothing AndAlso swap.TryGetValue(p.Model, n) Then p.Model = n
+        Next
+        Return c
     End Function
 
     ''' <summary>The edition of a picture/video model for this PC: the named one if it fits, else the largest that fits.</summary>
@@ -213,9 +249,16 @@ Public Module SetupLibrary
             s.Items.Add(New SetupItem With {.Kind = "llm", .Repo = m.Repo, .Quant = "Auto",
                                             .Name = m.DisplayName, .MainChat = String.Equals(m.DisplayName, chat, StringComparison.OrdinalIgnoreCase)})
         Next
+        Dim users = MediaStudio.LoadUserModels()
         For Each r In MediaStudio.Recipes()
             Dim v = MediaStudio.InstalledVariant(r)
             If v Is Nothing Then Continue For
+            ' your own checkpoints (from Civitai): downloaded again from their version
+            Dim um = users.FirstOrDefault(Function(u) u.Id = r.Id)
+            If um IsNot Nothing AndAlso um.VersionId > 0 Then
+                s.Items.Add(New SetupItem With {.Kind = "civitai", .Id = r.Id, .VersionId = um.VersionId, .FileName = um.File, .Name = r.Name})
+                Continue For
+            End If
             s.Items.Add(New SetupItem With {.Kind = "media", .Id = r.Id, .Variant = v.Label, .Name = r.Name})
         Next
         For Each m In AudioStudio.Models().Where(AddressOf AudioStudio.IsInstalled)

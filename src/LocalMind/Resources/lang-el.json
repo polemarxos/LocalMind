@@ -1354,5 +1354,7 @@
 "LLM (server)": "LLM (διακομιστής)",
 "LLM": "LLM",
 "LLM failed to load": "Το LLM δεν φόρτωσε",
-"No model loaded": "Κανένα μοντέλο φορτωμένο"
+"No model loaded": "Κανένα μοντέλο φορτωμένο",
+"Some of these models come from Civitai, which needs your free Civitai API key to download them. Paste it here, or skip and those models are left out.": "Μερικά από αυτά τα μοντέλα είναι από το Civitai, που χρειάζεται το δωρεάν κλειδί API σας για τη λήψη τους. Επικολλήστε το εδώ ή παραλείψτε το και αυτά τα μοντέλα δεν θα κατέβουν.",
+"Civitai model version {0} was not found.": "Η έκδοση μοντέλου Civitai {0} δεν βρέθηκε."
 }
