@@ -34,8 +34,20 @@ Public Class SetupForm
     Private ReadOnly _preset As SetupFile
 
     ''' <summary>With <paramref name="preset"/>, shows that list (e.g. from a restored backup) instead of the recommended one.</summary>
-    Public Sub New(Optional intro As String = Nothing, Optional preset As SetupFile = Nothing)
+    ''' <summary>The first start: the app opens only after the user picks the recommended models or "Set up myself".</summary>
+    Private ReadOnly _welcome As Boolean
+
+    ''' <summary>What the user chose: "download" (recommended models), "manual" (set up myself) or "" (closed).</summary>
+    Public ReadOnly Property Choice As String
+        Get
+            Return _choice
+        End Get
+    End Property
+    Private _choice As String = ""
+
+    Public Sub New(Optional intro As String = Nothing, Optional preset As SetupFile = Nothing, Optional welcome As Boolean = False)
         _preset = preset
+        _welcome = welcome
         Text = Localizer.T("Recommended models")
         Size = New Size(960, 640)
         MinimumSize = New Size(760, 480)
@@ -80,11 +92,25 @@ Public Class SetupForm
 
         Dim bottom As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 52, .FlowDirection = FlowDirection.RightToLeft, .Padding = New Padding(8), .BackColor = Theme.CPanel}
         btnGo = Theme.MakeButton(Localizer.T("⬇ Download selected"), primary:=True)
-        Dim btnLater = Theme.MakeButton(Localizer.T("Not now"))
+        Dim btnLater = Theme.MakeButton(Localizer.T(If(welcome, "🛠 Set up myself", "Not now")))
         lblTotal = Theme.MakeLabel("", dim_:=True)
         lblTotal.Margin = New Padding(10, 10, 10, 3)
         AddHandler btnGo.Click, Sub() StartDownloads()
-        AddHandler btnLater.Click, Sub() Close()
+        AddHandler btnLater.Click, Sub()
+                                       If _welcome Then _choice = "manual"
+                                       Close()
+                                   End Sub
+        If welcome Then
+            StartPosition = FormStartPosition.CenterScreen
+            ShowInTaskbar = True
+            ' (closing without a choice: LocalMind closes, and this window shows again at the next start)
+            AddHandler FormClosing, Sub(sender, e)
+                                        If _choice <> "" OrElse e.CloseReason <> CloseReason.UserClosing Then Return
+                                        If Localizer.Box(Me, Localizer.T("Choose ""Download selected"" for the recommended models, or ""Set up myself"" to pick models yourself.") & vbCrLf & vbCrLf &
+                                                             Localizer.T("Close LocalMind now? This window shows again the next time you open it."),
+                                                         "First setup", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then e.Cancel = True
+                                    End Sub
+        End If
         bottom.Controls.AddRange({btnGo, btnLater, lblTotal})
 
         Controls.Add(lst)
@@ -273,6 +299,7 @@ Public Class SetupForm
         AppCore.Settings.SetupVersion = Math.Max(AppCore.Settings.SetupVersion, _setup.Version)
         AppCore.SaveSettings()
         _started = queued > 0
+        _choice = "download"
         Localizer.Box(Me, If(queued > 0, String.Format(Localizer.T("{0} downloads started. You can follow them in Get models → Downloads, and keep using LocalMind meanwhile."), queued),
                                          Localizer.T("Everything is already installed.")), "Recommended models")
         Close()

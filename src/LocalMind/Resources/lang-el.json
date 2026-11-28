@@ -1375,5 +1375,9 @@
 "Uncensored models": "Μοντέλα χωρίς λογοκρισία",
 "Content": "Περιεχόμενο",
 "Which models are shown and recommended (Model Manager, Civitai, recommended setups)": "Ποια μοντέλα εμφανίζονται και προτείνονται (Διαχείριση μοντέλων, Civitai, προτεινόμενες ρυθμίσεις)",
-"12 GB graphics card": "Κάρτα γραφικών 12 GB"
+"12 GB graphics card": "Κάρτα γραφικών 12 GB",
+"🛠 Set up myself": "🛠 Θα το ρυθμίσω μόνος μου",
+"Choose \"Download selected\" for the recommended models, or \"Set up myself\" to pick models yourself.": "Επιλέξτε «Λήψη επιλεγμένων» για τα προτεινόμενα μοντέλα ή «Θα το ρυθμίσω μόνος μου» για να διαλέξετε μοντέλα μόνοι σας.",
+"Close LocalMind now? This window shows again the next time you open it.": "Κλείσιμο του LocalMind τώρα; Αυτό το παράθυρο θα εμφανιστεί ξανά την επόμενη φορά που θα το ανοίξετε.",
+"First setup": "Πρώτη ρύθμιση"
 }

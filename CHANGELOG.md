@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.26.25
+
+### Changed
+- **The first setup comes before the app.** At the first start only the recommended-models window shows. LocalMind
+  opens after one of two choices:
+  - **Download selected:** the recommended models.
+  - **🛠 Set up myself:** opens the Model Manager to pick models yourself.
+
+  Closing the window with X asks whether to close LocalMind. The window then shows again at the next start, so the
+  recommended setup is never lost.
+
 ## 2.26.24
 
 ### Added

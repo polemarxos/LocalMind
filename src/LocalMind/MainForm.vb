@@ -275,15 +275,31 @@ Public Class MainForm
 
         If OfferRestoredModels() Then Return
         If Not Settings.FirstRunDone Then
+            If Settings.Backend = BackendKind.BuiltIn AndAlso AppCore.Library.All().Count = 0 Then
+                ' the first setup comes before the app: the recommended models for this PC, or "set up myself";
+                ' closing it closes LocalMind, and it shows again at the next start
+                Dim choice As String
+                Hide()
+                Using f As New SetupForm(Localizer.T("Welcome! Download the recommended models for your PC?"), welcome:=True)
+                    f.ShowDialog()
+                    choice = f.Choice
+                End Using
+                If choice = "" Then
+                    _closingDone = True
+                    _reallyExit = True
+                    Me.Post(Sub() Close())
+                    Return
+                End If
+                Show()
+                Activate()
+                _modelsDirty = True
+                Settings.FirstRunDone = True
+                AppCore.SaveSettings()
+                If choice = "manual" Then Me.Post(Sub() OpenModelManagerAt(Nothing))
+                Return
+            End If
             Settings.FirstRunDone = True
             AppCore.SaveSettings()
-            If Settings.Backend = BackendKind.BuiltIn AndAlso AppCore.Library.All().Count = 0 Then
-                ' the recommended models for this PC's graphics card, ticked, ready to download
-                Using f As New SetupForm(Localizer.T("Welcome! Download the recommended models for your PC?"))
-                    f.ShowDialog(Me)
-                End Using
-                _modelsDirty = True
-            End If
         ElseIf Settings.Backend = BackendKind.BuiltIn Then
             Dim unused = OfferSetupUpdateAsync()
         End If
