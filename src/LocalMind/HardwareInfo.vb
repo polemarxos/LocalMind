@@ -32,6 +32,7 @@ Public Class HardwareInfo
     Public Property Gpus As New List(Of GpuDevice)()
     Public Property RamBytes As Long
     Public Property CudaDriverVersion As Double     ' highest CUDA version the driver supports
+    Public Property DriverVersion As Double          ' NVIDIA driver (e.g. 581.57; 0 = unknown)
     Public Property CpuThreads As Integer = Environment.ProcessorCount
 
     Private Shared _cached As HardwareInfo
@@ -130,9 +131,12 @@ Public Class HardwareInfo
     End Function
 
     Private Shared Sub DetectNvidia(hw As HardwareInfo)
-        Dim csv = RunTool("nvidia-smi", "--query-gpu=name,memory.total,compute_cap --format=csv,noheader,nounits")
+        Dim csv = RunTool("nvidia-smi", "--query-gpu=name,memory.total,compute_cap,driver_version --format=csv,noheader,nounits")
+        ' (an older nvidia-smi without one of the fields answers with an error: ask without the driver version)
+        If String.IsNullOrWhiteSpace(csv) OrElse csv.Contains("Field") Then csv = RunTool("nvidia-smi", "--query-gpu=name,memory.total,compute_cap --format=csv,noheader,nounits")
         If String.IsNullOrWhiteSpace(csv) Then Return
 
+        Dim driver As Double = 0
         For Each line In csv.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries)
             Dim parts = line.Split(","c).Select(Function(p) p.Trim()).ToArray()
             If parts.Length < 2 Then Continue For
@@ -140,20 +144,38 @@ Public Class HardwareInfo
             Double.TryParse(parts(1), NumberStyles.Float, CultureInfo.InvariantCulture, mib)
             Dim cc As Double
             If parts.Length >= 3 Then Double.TryParse(parts(2), NumberStyles.Float, CultureInfo.InvariantCulture, cc)
+            If parts.Length >= 4 Then
+                Dim dv As Double
+                If Double.TryParse(parts(3).Split("."c).Take(2).Aggregate(Function(a, b) a & "." & b), NumberStyles.Float, CultureInfo.InvariantCulture, dv) Then driver = Math.Max(driver, dv)
+            End If
             hw.Gpus.Add(New GpuDevice With {
                 .Name = parts(0), .Vendor = GpuVendor.Nvidia,
                 .VramBytes = CLng(mib * 1024 * 1024), .ComputeCap = cc})
         Next
+        hw.DriverVersion = driver
 
-        Dim header = RunTool("nvidia-smi", "")
-        Dim m = Regex.Match(If(header, ""), "CUDA Version:\s*(\d+\.\d+)")
-        If m.Success Then
-            Dim v As Double
-            If Double.TryParse(m.Groups(1).Value, NumberStyles.Float, CultureInfo.InvariantCulture, v) Then
-                hw.CudaDriverVersion = v
+        ' The CUDA version the driver supports: from the driver version (quick), else from nvidia-smi's own header,
+        ' which some PCs take several seconds to print.
+        hw.CudaDriverVersion = CudaForDriver(driver)
+        If hw.CudaDriverVersion = 0 Then
+            Dim header = RunTool("nvidia-smi", "", 15000)
+            Dim m = Regex.Match(If(header, ""), "CUDA Version:\s*(\d+\.\d+)")
+            If m.Success Then
+                Dim v As Double
+                If Double.TryParse(m.Groups(1).Value, NumberStyles.Float, CultureInfo.InvariantCulture, v) Then hw.CudaDriverVersion = v
             End If
         End If
     End Sub
+
+    ''' <summary>The newest CUDA a Windows driver supports (NVIDIA's minimum driver for each CUDA version); 0 = unknown.</summary>
+    Public Shared Function CudaForDriver(driver As Double) As Double
+        If driver <= 0 Then Return 0
+        For Each pair In {(580.0, 13.0), (576.02, 12.9), (570.0, 12.8), (560.76, 12.6), (555.85, 12.5), (551.61, 12.4),
+                          (545.84, 12.3), (536.25, 12.2), (531.14, 12.1), (527.41, 12.0), (452.39, 11.0)}
+            If driver >= pair.Item1 Then Return pair.Item2
+        Next
+        Return 0
+    End Function
 
     Private Shared Sub DetectFromRegistry(hw As HardwareInfo)
         Const ClassKey = "SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"

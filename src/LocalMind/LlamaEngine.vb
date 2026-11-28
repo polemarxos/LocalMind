@@ -420,23 +420,35 @@ Public Class LlamaEngine
         End While
 
         Await StopAsync()
-        Dim rolledBack = False
+        Dim firstError As Exception = Nothing
         Try
             Await StartAsync(model, ct)
         Catch ex As Exception When Not ct.IsCancellationRequested AndAlso Not TypeOf ex Is FileNotFoundException AndAlso
                                    Not TypeOf ex Is TimeoutException AndAlso EngineHistory.CanRollBack(VariantDir())
-            ' a new engine build that never worked here failed to start: the previous one that did comes back
-            rolledBack = EngineHistory.RollBack(VariantDir(), "llama/" & EffectiveVariant, "llama.cpp")
-            If Not rolledBack Then Throw
+            firstError = ex
         End Try
-        If rolledBack Then
+        If firstError IsNot Nothing Then
+            ' A new engine build that never worked here failed to start. First once more with the same build: right after
+            ' another job (graphics memory not free yet) or while an antivirus program scans the new files, a start can
+            ' fail and work a moment later. Only a second failure brings back the previous build.
+            SetState(EngineState.Loading, "Trying again…")
+            Await HardwareInfo.WaitForVramReleaseAsync(ct, 15)
+            Dim secondError As Exception = Nothing
             Try
                 Await StartAsync(model, ct)
-            Catch ex As Exception
-                ' the previous build fails too: the problem is elsewhere (the model, memory), the new build goes back
-                EngineHistory.UndoRollBack(VariantDir(), "llama/" & EffectiveVariant)
-                Throw
+            Catch ex As Exception When Not ct.IsCancellationRequested
+                secondError = ex
             End Try
+            If secondError IsNot Nothing Then
+                If Not EngineHistory.RollBack(VariantDir(), "llama/" & EffectiveVariant, "llama.cpp", secondError.Message) Then Throw secondError
+                Try
+                    Await StartAsync(model, ct)
+                Catch ex As Exception
+                    ' the previous build fails too: the problem is elsewhere (the model, memory), the new build goes back
+                    EngineHistory.UndoRollBack(VariantDir(), "llama/" & EffectiveVariant)
+                    Throw
+                End Try
+            End If
         End If
         EngineHistory.MarkWorks(VariantDir())
     End Function

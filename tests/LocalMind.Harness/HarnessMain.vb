@@ -106,6 +106,8 @@ Module HarnessMain
             EngineHistory.Replace(target, mk("b4"))
             Check(EngineHistory.Version(target) = "b4" AndAlso EngineHistory.Version(EngineHistory.PrevDir(target)) = "b1",
                   "b3 never worked: the previous one stays b1")
+            Check(HardwareInfo.CudaForDriver(581.57) = 13.0 AndAlso HardwareInfo.CudaForDriver(572.16) = 12.8 AndAlso HardwareInfo.CudaForDriver(552.22) = 12.4 AndAlso
+                  HardwareInfo.CudaForDriver(0) = 0, "driver version → CUDA version (581 → 13.0, 572 → 12.8, 552 → 12.4)")
             AppCore.Settings.BadEngineVersions.Remove("test/cuda13=b2")
             Try : Directory.Delete(eroot, True) : Catch : End Try
         End If

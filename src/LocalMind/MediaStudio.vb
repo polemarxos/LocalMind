@@ -636,7 +636,8 @@ Public Module MediaStudio
             Catch ex As Exception When Not ct.IsCancellationRequested AndAlso TypeOf ex.Data("engineLog") Is String AndAlso
                                        EngineHistory.CanRollBack(_lastEngineDir)
                 ' a new engine build that never worked here failed while running: the previous one that did comes back
-                rolledBack = EngineHistory.RollBack(_lastEngineDir, "sd/" & Path.GetFileName(_lastEngineDir), "stable-diffusion.cpp")
+                rolledBack = EngineHistory.RollBack(_lastEngineDir, "sd/" & Path.GetFileName(_lastEngineDir), "stable-diffusion.cpp",
+                                                    ex.Message & If(TypeOf ex.Data("engineLog") Is String, vbLf & CStr(ex.Data("engineLog")), ""))
                 If Not rolledBack Then Throw
             End Try
             If rolledBack Then

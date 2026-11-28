@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.IO
 Imports System.Linq
 Imports System.Text
@@ -29,7 +29,8 @@ Public NotInheritable Class DiagnosticsReport
             For Each g In hw.Gpus
                 Line(sb, "GPU", $"{g.Name} · {g.Vendor} · {g.VramBytes / (1024.0 ^ 3):0.0} GB" & If(g.ComputeCap > 0, $" · compute {g.ComputeCap:0.0}", ""))
             Next
-            Line(sb, "CUDA (driver)", If(hw.CudaDriverVersion > 0, hw.CudaDriverVersion.ToString("0.0"), "—"))
+            Line(sb, "CUDA (driver)", If(hw.CudaDriverVersion > 0, hw.CudaDriverVersion.ToString("0.0", Globalization.CultureInfo.InvariantCulture), "—") &
+                                      If(hw.DriverVersion > 0, " · driver " & hw.DriverVersion.ToString("0.##", Globalization.CultureInfo.InvariantCulture), ""))
             Line(sb, "Free RAM", $"{HardwareInfo.FreeRamBytes() / (1024.0 ^ 3):0.0} GB")
             Line(sb, "Low-RAM mode", If(s.LowRamActive(hw.VramGB), "on", "off"))
         Catch ex As Exception

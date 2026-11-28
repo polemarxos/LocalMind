@@ -82,6 +82,8 @@ Public Class AppSettings
     Public Property BadEngineVersions As New System.Collections.Generic.List(Of String)()
     ''' <summary>Show the steps before a request with several steps (picture → video → song) runs.</summary>
     Public Property ConfirmSteps As Boolean = True
+    ''' <summary>(2.26.34: versions skipped by the first rollback rule, which didn't try twice, get another chance once)</summary>
+    Public Property BadEnginesRetried As Boolean = False
     ''' <summary>Civitai API key (optional; some downloads need a signed-in account).</summary>
     Public Property CivitaiApiKey As String = ""
     ''' <summary>Search civitai.red (full catalogue, 18+) instead of civitai.com.</summary>

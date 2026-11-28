@@ -14,7 +14,7 @@ Public NotInheritable Class EngineHistory
     Private Const WorksFile As String = "works.txt"
 
     ''' <summary>Raised after a rollback, with a message for the status bar.</summary>
-    Public Shared Event RolledBack(message As String)
+    Public Shared Event RolledBack(message As String, reason As String)
 
     Public Shared Function PrevDir(dir As String) As String
         Return dir.TrimEnd(Path.DirectorySeparatorChar) & ".prev"
@@ -39,13 +39,14 @@ Public NotInheritable Class EngineHistory
             If String.IsNullOrEmpty(dir) OrElse Not Directory.Exists(dir) Then Return
             If Not Works(dir) Then File.WriteAllText(Path.Combine(dir, WorksFile), DateTime.Now.ToString("s"))
             ' a rollback is confirmed: the failed build goes, and the user is told
-            Dim msg As String = Nothing
+            Dim msg As String = Nothing, why As String = Nothing
             SyncLock _pending
                 If _pending.TryGetValue(dir, msg) Then _pending.Remove(dir)
+                If _reasons.TryGetValue(dir, why) Then _reasons.Remove(dir)
             End SyncLock
             If msg IsNot Nothing Then
                 Try : Directory.Delete(BadDir(dir), True) : Catch : End Try
-                RaiseEvent RolledBack(msg)
+                RaiseEvent RolledBack(msg, If(why, ""))
             End If
         Catch
         End Try
@@ -88,13 +89,21 @@ Public NotInheritable Class EngineHistory
 
     ' (rollbacks not yet confirmed: the message is shown once the previous build has really worked)
     Private Shared ReadOnly _pending As New Collections.Generic.Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+    Private Shared ReadOnly _reasons As New Collections.Generic.Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase)
+
+    ' (the end of the engine's error: what the failure log keeps about why the new build failed)
+    Private Shared Function ShortReason(reason As String) As String
+        If String.IsNullOrWhiteSpace(reason) Then Return ""
+        Dim lines = reason.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).Select(Function(l) l.TrimEnd()).Where(Function(l) l.Trim() <> "").ToList()
+        Return String.Join(vbLf, lines.Skip(Math.Max(0, lines.Count - 25)))
+    End Function
 
     ''' <summary>
     ''' Swaps the previous, working build back in (the engine must not be running). It is only kept when that build
     ''' then works (<see cref="MarkWorks"/>); if it fails too, the problem isn't the new build, and
     ''' <see cref="UndoRollBack"/> puts the new one back.
     ''' </summary>
-    Public Shared Function RollBack(dir As String, name As String, label As String) As Boolean
+    Public Shared Function RollBack(dir As String, name As String, label As String, Optional reason As String = Nothing) As Boolean
         If Not CanRollBack(dir) Then Return False
         Try
             Dim badTag = Version(dir)
@@ -115,6 +124,7 @@ Public NotInheritable Class EngineHistory
                 AppCore.SaveSettings()
             End If
             SyncLock _pending
+                _reasons(dir) = ShortReason(reason)
                 _pending(dir) = String.Format(Localizer.T("The new {0} engine ({1}) failed on this PC — went back to the version that worked ({2})."),
                                               label, If(badTag, "?"), If(Version(dir), "?"))
             End SyncLock
@@ -140,6 +150,7 @@ Public NotInheritable Class EngineHistory
             End If
             SyncLock _pending
                 _pending.Remove(dir)
+                _reasons.Remove(dir)
             End SyncLock
         Catch
         End Try

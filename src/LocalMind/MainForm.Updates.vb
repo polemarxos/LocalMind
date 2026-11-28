@@ -36,6 +36,11 @@ Partial Class MainForm
         Dim unused = Task.Run(Async Function()
                                   Try
                                       Await Task.Delay(TimeSpan.FromSeconds(3))
+                                      If Not Settings.BadEnginesRetried Then
+                                          Settings.BadEngineVersions?.Clear()
+                                          Settings.BadEnginesRetried = True
+                                          AppCore.SaveSettings()
+                                      End If
                                       Dim found As New List(Of String)()
                                       Dim status As Action(Of String) = Sub(t) SetStatus(t)
                                       If Settings.Backend = BackendKind.BuiltIn Then
@@ -63,8 +68,9 @@ Partial Class MainForm
                               End Function)
     End Sub
 
-    Private Sub OnEngineRolledBack(message As String)
-        FailureLog.Write("(engine update)", "", New Exception(message))
+    Private Sub OnEngineRolledBack(message As String, reason As String)
+        ' (the log keeps why the new build failed: the end of its own error output)
+        FailureLog.Write("(engine update)", "", New Exception(message & If(reason = "", "", vbLf & "Why the new version failed:" & vbLf & reason)))
         SetStatus(message)
         Try
             _tray?.ShowBalloonTip(6000, "LocalMind", message, ToolTipIcon.Warning)

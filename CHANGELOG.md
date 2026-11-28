@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.26.34
+
+### Fixed
+- **A new llama.cpp version was blamed for a failure that wasn't its fault.** The first start right after an engine
+  update can fail for a moment (graphics memory not yet free after a picture or video, or Windows Security scanning
+  the new files). LocalMind now tries the new version once more, after the graphics memory is free, and goes back to
+  the previous version only if it fails twice. Versions skipped by the old rule get another chance.
+- **The failure log now says why a new engine version failed** (the end of its own error output), not only that it
+  did.
+- **"CUDA (driver)" showed "—" on some PCs.** The CUDA version is now worked out from the driver version, which
+  nvidia-smi gives quickly. The slow full nvidia-smi output is only used as a fallback, with more time. Copy
+  diagnostics shows the driver version too.
+
 ## 2.26.33
 
 ### Added
