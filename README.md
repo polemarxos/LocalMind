@@ -2,105 +2,112 @@
 
 # LocalMind
 
-**Private AI chat for Windows that runs entirely on your own PC.** No cloud, no account, nothing else to install.
-Pick a model that fits your graphics card, chat with it, and use it from your phone or other PCs on your network.
+LocalMind is a Windows app for running AI on your own PC. It does chat, pictures, short videos, songs and voice,
+and it works without internet once the models are downloaded. You don't need an account or a cloud service, and
+you don't have to install Python or anything else.
 
-## Features
+You download one exe, pick a setup that suits your graphics card, and that's it.
 
-- **Built-in AI engine.** LocalMind downloads and runs the official [llama.cpp](https://github.com/ggml-org/llama.cpp)
-  build that matches your hardware: NVIDIA (CUDA 12 / 13), AMD and Intel (Vulkan), or CPU only. It loads as much
-  of the model onto the GPU as fits.
-- **Model Manager with models matched to your GPU.** About 700 GGUF models from trusted publishers (unsloth, bartowski,
-  lmstudio-community, ggml-org), refreshed from Hugging Face every day.
-  - By default it shows only the **best models that fit entirely in your VRAM**. Switch the *Show* box to see everything.
-  - The quantization is picked automatically for your VRAM, using the real file sizes.
-  - Tick the models you want and press **Download**. Downloads resume after a restart, are verified with SHA-256,
-    and split files and vision files are handled automatically.
-  - Use **★ Recommend for my PC** for a ready-made starter set.
-- **Use it from your phone and other PCs.** Turn on *Share on network* and scan the QR code to get a mobile chat page.
-  It supports photos, a PIN, and chat history shared with the PC. An OpenAI-compatible `/v1` API lets other apps
-  use your GPU too.
-- **Chat features:** personas, thinking/reasoning view, images (vision models), PDF and text attachments,
-  paste and drag-and-drop, chat search and folders, a prompt library, Markdown export and import,
-  code highlighting with copy buttons, and math formulas.
-- **Chat with your documents:** point LocalMind at your folders, and answers cite the file and page.
-- **Web search** with sources, **voice input** (Whisper, offline) and **read aloud**.
-- **Quick ask from anywhere:** press **Ctrl+Alt+Space** to ask a question without opening the main window.
-  LocalMind waits in the system tray.
-- **Speed test:** see how fast each model runs on your PC.
-- **Auto context:** each model uses the largest conversation memory that fits your GPU.
-- **Image & video studio:** make pictures and short videos offline with Z-Image, FLUX.2 klein, Qwen-Image, Krea 2,
-  Anima, SDXL and Wan 2.x, plus a **🔓 Uncensored** list and about 1,150 picture & video models in all (community GGUF, INT8 ConvRot and SDXL / SD 1.5 checkpoints).
-  You get GGUF and **INT8 ConvRot** versions, picked to fit your VRAM.
-  Or switch on **🖼 Image** in the chat: the chat model unloads to free the GPU, and the picture appears in the conversation.
-- **Edit pictures and videos:** describe a change, paint an area, combine pictures, enlarge 4×, restyle your own videos.
-  ⚡ Lightning/Turbo LoRAs make most models 4–8 step fast.
-- **LoRAs and Civitai:** use your own LoRAs (trigger words added automatically) or search Civitai and install
-  LoRAs and checkpoints with one click.
-- **Music & voice:** songs with vocals, speech in 23 languages (Greek too), and voice cloning from a short recording.
-- **Only what you want:** on first start choose chat only, or add pictures & video and/or music & voice.
-- **Hands-free:** talk to the AI and hear the answer (in your own cloned voice if you like). The AI can also draw,
-  make videos, compose and search the web by itself when you ask ("generate me a video of…").
-- **Updates itself:** LocalMind, its AI engines and the model list stay up to date automatically.
-- **Other servers:** you can also connect to any OpenAI-compatible server (LM Studio, vLLM,
-  or another PC running LocalMind).
+## What it does
+
+**Chat.** Runs GGUF models with [llama.cpp](https://github.com/ggml-org/llama.cpp). The Model Manager lists
+thousands of models from Hugging Face and by default shows only the ones that fit in your VRAM. Chat supports
+attachments (images, PDFs, text), documents with page citations, web search, thinking models, personas, folders
+and search. You can also press Ctrl+Alt+Space from anywhere for a quick question.
+
+**Pictures and video.** These use [stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp), with
+models like Z-Image, FLUX.2 klein, Qwen-Image, Krea 2 and Wan 2.x. You can edit pictures, upscale them, use LoRAs,
+and turn a picture into a video. Longer videos are made by extending and merging clips.
+
+**Music and voice.** Songs with vocals, speech in many languages (Greek included) and voice cloning from a short
+recording. A song can be sung in a cloned voice. Songs export to MP3 or MP4.
+
+**From the chat.** You can ask for something like "make a picture of a lighthouse, then a video from it". The
+AI runs each step and unloads the chat model in between so the GPU has room. Every result shows up in the chat as
+soon as it's ready, along with the total time it took.
+
+**Characters and the Library.** Save a character with a look and a voice, then call it in the chat with
+`@name`. Everything you generate goes to the Library, together with the prompt that made it.
+
+**Phone and other PCs.** Turn on Share on network and scan the QR code to use the chat from your phone. There's
+also an OpenAI-compatible `/v1` API, so other apps on your network can use your GPU.
+
+**Backup.** File → Backup saves your chats, settings, characters and API keys into one file. Models and LoRAs
+are not included, only their download links. When you restore the backup on another PC, they download again
+by themselves.
+
+## First start
+
+The first time you run it, LocalMind suggests a set of models for your PC before the main window opens:
+
+- It picks 8, 12 or 16 GB setups based on your VRAM and RAM.
+- On AMD and Intel cards it uses Vulkan builds and models that run well there. NVIDIA cards get CUDA 12, or CUDA 13
+  on RTX 50 cards.
+- You choose **Standard** (the default) or **Uncensored**. Uncensored asks you to confirm you're 18 or older.
+- All of it downloads from Hugging Face, so you don't need a Civitai account.
+
+If you want to pick models yourself, press **Set up myself** to go straight to the Model Manager. If you close
+the window, LocalMind exits and shows it again next time.
 
 ## Requirements
 
-- Windows 10/11 x64
-- [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (included with Windows 11)
-- For GPU speed: an NVIDIA, AMD or Intel GPU with 6 GB of VRAM or more is recommended. CPU-only works with small models.
-- Disk space for models: 2–30 GB each
+- Windows 10 or 11, 64-bit
+- [WebView2 Runtime](https://developer.microsoft.com/microsoft-edge/webview2/) (already part of Windows 11)
+- A GPU with 8 GB of VRAM or more for pictures and video. Chat works on smaller cards, and on the CPU if you
+  stick to small models.
+- Plenty of disk space. One model is usually somewhere between 2 and 30 GB.
 
-## Quick start
+## Getting started
 
-1. Download `LocalMind.exe` from [Releases](https://github.com/polemarxos/LocalMind/releases), or build it yourself (see below).
-2. Put it in its own folder (for example `D:\LocalMind`) and run it. On first start the Model Manager opens. Press **★ Recommend for my PC**, then **Download**.
-3. When the download finishes, pick the model in the toolbar and start chatting. Press **Ctrl+Enter** to send.
+1. Download `LocalMind.exe` from [Releases](https://github.com/polemarxos/LocalMind/releases).
+2. Put it in its own folder, for example `D:\LocalMind`, and run it.
+3. Choose a setup and wait for the downloads. A small progress bar at the bottom of the window shows how far
+   along they are.
+4. Pick a model from the toolbar and type. Ctrl+Enter sends.
 
-## Use it from your phone
+LocalMind updates itself, its engines and the model list.
 
-**Tools → Share on network**, then tick *Share this PC's AI on my network* and scan the QR code.
-See [docs/LAN-SHARING.md](docs/LAN-SHARING.md) for firewall tips and how to use the `/v1` API from other apps.
+## Phone access
 
-## Build from source
+Go to Tools → Share on network, tick the box and scan the code. Firewall notes and API examples are in
+[docs/LAN-SHARING.md](docs/LAN-SHARING.md).
 
-You need the [.NET 10 SDK](https://dotnet.microsoft.com/download).
+## Building
+
+You need the [.NET 10 SDK](https://dotnet.microsoft.com/download). Then run:
 
 ```bat
 build.bat
 ```
 
-This produces a single self-contained `publish\LocalMind.exe`. You can also open `LocalMind.slnx` in Visual Studio 2026.
+That gives you a single `publish\LocalMind.exe`. `LocalMind.slnx` opens in Visual Studio 2026 as well.
 
-## Project layout
-
-| Path | What it is |
+| Path | Contents |
 |---|---|
-| `src/LocalMind/` | The Windows app (VB.NET, WinForms, .NET 10) |
-| `src/LocalMind/Resources/` | Embedded offline assets: model catalog, phone web UI, highlight.js |
-| `tests/LocalMind.Harness/` | Console test harness for the engine, catalog, downloads and LAN server ([how to run](tests/README.md)) |
-| `tools/build_catalog.py` | Regenerates the built-in model catalog from Hugging Face |
-| `docs/` | [Architecture](docs/ARCHITECTURE.md) and [LAN sharing](docs/LAN-SHARING.md) |
+| `src/LocalMind/` | The app (VB.NET, WinForms, .NET 10) |
+| `src/LocalMind/Resources/` | Model catalogs, setups, translations, phone web page |
+| `setups/` | The recommended 8, 12 and 16 GB setups |
+| `tests/LocalMind.Harness/` | Console tests for the engine, catalog, downloads and LAN server ([how to run](tests/README.md)) |
+| `tools/build_catalog.py` | Rebuilds the model catalog from Hugging Face |
+| `docs/` | [Architecture](docs/ARCHITECTURE.md), [LAN sharing](docs/LAN-SHARING.md), [code signing](docs/CODE-SIGNING.md) |
 
-## Where LocalMind keeps its data
+## Where files go
 
-LocalMind is fully portable. Everything lives next to the exe, so you can copy the folder to another PC or a USB drive:
+Everything is stored next to the exe, so you can move the folder to another PC or a USB stick:
 
 ```
 LocalMind\
 ├─ LocalMind.exe
-├─ Engine\    llama.cpp engine (downloaded automatically, 50–700 MB)
-├─ Models\    downloaded AI models (can be changed in Settings)
-└─ Data\      settings, chats, personas, prompts, speed-test results
+├─ Engine\    llama.cpp and stable-diffusion.cpp, downloaded automatically
+├─ Models\    your models (you can move this in Settings)
+├─ Outputs\   pictures, videos and songs
+└─ Data\      settings, chats, characters, profiles
 ```
 
-If the exe is in a folder Windows doesn't allow writing to (such as `C:\Program Files`), LocalMind uses
-`%AppData%\LocalMind` and `%LocalAppData%\LocalMind` instead. Put LocalMind in a normal folder, such as `D:\LocalMind`, on a drive
-with plenty of free space.
+If the folder isn't writable (for example under `C:\Program Files`), LocalMind uses `%AppData%\LocalMind` and
+`%LocalAppData%\LocalMind` instead. A normal folder on a drive with lots of free space is the better choice.
 
-## Releasing
+## Releases
 
-On GitHub open **Actions → Build → Run workflow** and enter a version such as `v2.1.0`, or push a tag with that name.
-GitHub Actions builds `LocalMind.exe` and attaches it to a new Release.
-Once SignPath is set up, the exe is signed automatically (see [docs/CODE-SIGNING.md](docs/CODE-SIGNING.md)).
+Releases are built by GitHub Actions. Run **Actions → Build → Run workflow** with a version like `v2.27.0`, or
+push a tag with that name. Changes are listed in [CHANGELOG.md](CHANGELOG.md).

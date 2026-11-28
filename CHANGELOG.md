@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.26.28
+
+### Changed
+- Rewrote the README to cover the current features: first-start setups, Standard/Uncensored, backup, characters,
+  Library and song export.
+
 ## 2.26.27
 
 ### Changed
