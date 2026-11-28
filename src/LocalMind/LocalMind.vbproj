@@ -18,7 +18,7 @@
     <OptionExplicit>On</OptionExplicit>
     <OptionInfer>On</OptionInfer>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>2.25.0</Version>
+    <Version>2.26.0</Version>
 
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -53,6 +53,8 @@
     <EmbeddedResource Include="Resources\audio_catalog.json" LogicalName="audio_catalog.json" />
     <EmbeddedResource Include="Resources\webui.html" LogicalName="webui.html" />
     <EmbeddedResource Include="Resources\catalog.json" LogicalName="catalog.json" />
+    <EmbeddedResource Include="Resources\setup-8gb.json" LogicalName="setup-8gb.json" />
+    <EmbeddedResource Include="Resources\setup-16gb.json" LogicalName="setup-16gb.json" />
   </ItemGroup>
 
   <!-- Kestrel web server for LAN access (no admin rights / URL ACL needed, unlike HttpListener). -->

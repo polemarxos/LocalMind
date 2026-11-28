@@ -157,6 +157,7 @@ Public Class MainForm
             Case "library" : OpenLibrary()
             Case "cast", "characters" : OpenCharacters()
             Case "profiles" : Me.Post(Sub() OpenModelManagerAt("profiles"))
+            Case "setup" : Me.Post(Sub() OpenRecommended())
             Case "box"
                 Me.Post(Sub() Localizer.Box(Me, "Delete Qwen3-8B (Q4_K_M) from disk? The file is 4.7 GB.", "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning))
             Case "settings-look"
@@ -266,13 +267,14 @@ Public Class MainForm
             Settings.FirstRunDone = True
             AppCore.SaveSettings()
             If Settings.Backend = BackendKind.BuiltIn AndAlso AppCore.Library.All().Count = 0 Then
-                Localizer.Box(Me,
-                    "Welcome! This app runs AI models directly on your PC." & vbCrLf & vbCrLf &
-                    "Next, the Model Manager opens: press '★ Recommend for my PC' (or tick any model), " &
-                    "then 'Download'. Everything else is set up automatically.",
-                    "Welcome", MessageBoxButtons.OK, MessageBoxIcon.Information)
-                OpenModelManager()
+                ' the recommended models for this PC's graphics card, ticked, ready to download
+                Using f As New SetupForm(Localizer.T("Welcome! Download the recommended models for your PC?"))
+                    f.ShowDialog(Me)
+                End Using
+                _modelsDirty = True
             End If
+        ElseIf Settings.Backend = BackendKind.BuiltIn Then
+            Dim unused = OfferSetupUpdateAsync()
         End If
     End Sub
 
@@ -433,6 +435,19 @@ Public Class MainForm
     End Sub
 
     Private Sub ShowEngineState(state As EngineState, message As String)
+        ' The chat model is often unloaded while pictures, video or music are made: say what is working instead of "idle".
+        If state <> EngineState.Loading AndAlso state <> EngineState.Installing AndAlso state <> EngineState.Error Then
+            If MediaStudio.IsBusy Then
+                SetConnLabel("◌ Making a picture or video…", Color.Gold)
+                lblConnection.ToolTipText = ""
+                Return
+            End If
+            If AudioStudio.IsBusy Then
+                SetConnLabel("◌ Making sound…", Color.Gold)
+                lblConnection.ToolTipText = ""
+                Return
+            End If
+        End If
         Select Case state
             Case EngineState.Ready
                 SetConnLabel("● Ready", Color.LimeGreen)
@@ -447,7 +462,8 @@ Public Class MainForm
                 SetConnLabel("● Engine error", Color.IndianRed)
                 lblConnection.ToolTipText = message
             Case Else
-                SetConnLabel("○ Engine idle", Color.Silver)
+                SetConnLabel("○ Ready (no chat model loaded)", Color.Silver)
+                lblConnection.ToolTipText = Localizer.T("The chat model loads with your next message")
         End Select
     End Sub
 
@@ -626,7 +642,7 @@ Public Class MainForm
                 StartEdit(idx, txt)
                 Return
             End If
-            If obj("type")?.ToString() = "delete" Then
+            If obj("type")?.ToString() = "deletemsg" Then
                 Dim di As Integer = -1
                 Integer.TryParse(If(obj("index")?.ToString(), ""), di)
                 DeleteMessage(di)
@@ -1339,7 +1355,7 @@ Public Class MainForm
 
     Private Sub btnAttachImage_Click(sender As Object, e As EventArgs) Handles btnAttachImage.Click
         Using dlg As New OpenFileDialog()
-            dlg.Filter = "Images|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp"
+            dlg.Filter = ImageTools.DialogFilter("Images")
             dlg.Multiselect = True
             If dlg.ShowDialog() <> DialogResult.OK Then Return
             AttachFiles(dlg.FileNames)

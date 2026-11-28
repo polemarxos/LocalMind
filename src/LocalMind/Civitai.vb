@@ -206,6 +206,7 @@ Public Module Civitai
             l.Enabled = True
             l.Source = $"Civitai #{m.Id} · {m.Name} · {v.Name}"
             l.BaseModel = v.BaseModel
+            l.Url = f.DownloadUrl
             LoraLibrary.Save()
         End If
         Return l
@@ -246,6 +247,24 @@ Public Module Civitai
         End If
         MediaStudio.AddUserModel(um)
         Return um
+    End Function
+
+    ''' <summary>A LoRA from a saved download link (recommended setups): file, family and trigger words.</summary>
+    Public Async Function InstallLoraFromUrlAsync(url As String, fileName As String, family As String, triggers As String,
+                                                  ct As CancellationToken) As Task(Of UserLora)
+        Dim dest = Path.Combine(LoraLibrary.Folder, SafeFileName(fileName))
+        If Not File.Exists(dest) Then
+            Dim f As New CivFile With {.Name = fileName, .DownloadUrl = url}
+            Await AppCore.Downloads.RunAsync(Path.GetFileNameWithoutExtension(fileName), "LoRA", "lora-url:" & url, Function(p, c) DownloadAsync(f, dest, p, c), ct)
+        End If
+        Dim l = LoraLibrary.All().FirstOrDefault(Function(x) x.Name.Equals(Path.GetFileNameWithoutExtension(dest), StringComparison.OrdinalIgnoreCase))
+        If l IsNot Nothing Then
+            If Not String.IsNullOrEmpty(family) Then l.Family = family
+            If Not String.IsNullOrEmpty(triggers) Then l.Triggers = triggers
+            l.Url = url
+            LoraLibrary.Save()
+        End If
+        Return l
     End Function
 
     Private Async Function DownloadAsync(f As CivFile, dest As String, progress As Action(Of Integer, String), ct As CancellationToken) As Task

@@ -46,6 +46,12 @@ Public Class AppSettings
     Public Property ChatImageProfile As String = ""
     Public Property ChatVideoProfile As String = ""
     Public Property ChatEditProfile As String = ""
+    Public Property ChatMusicProfile As String = ""
+    ''' <summary>Recommended setup installed ("8gb" / "16gb"), its version, and the newest version already offered.</summary>
+    Public Property SetupTier As String = ""
+    Public Property SetupVersion As Integer
+    Public Property SetupOfferedVersion As Integer
+    Public Property ChatVoiceProfile As String = ""
     Public Property ImproveImagePrompt As Boolean = True
     ''' <summary>Optional abilities. When off, their buttons are hidden and nothing for them is ever downloaded.</summary>
     Public Property EnableImages As Boolean = False

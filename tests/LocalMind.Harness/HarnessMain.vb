@@ -700,6 +700,35 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "v226" Then
+            Console.WriteLine("== v2.26: recommended setups, pictures of every type")
+            For Each tier In {"8gb", "16gb"}
+                Dim f = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", tier & ".json")
+                Dim st = SetupLibrary.Parse(File.ReadAllText(f))
+                Dim missing = st.Items.Where(Function(i) (i.Kind = "media" AndAlso Not MediaStudio.Recipes().Any(Function(r) r.Id = i.Id)) OrElse
+                                                         (i.Kind = "audio" AndAlso Not AudioStudio.Models().Any(Function(m) m.Id = i.Id))).Select(Function(i) i.Id).ToList()
+                Check(missing.Count = 0 AndAlso st.Profiles.Count = 5 AndAlso st.Defaults.Count = 5 AndAlso st.Items.Any(Function(i) i.Kind = "llm" AndAlso i.MainChat),
+                      tier & " setup: every model is in the lists, 5 profiles with defaults", String.Join(",", missing))
+                Dim hw8 As New HardwareInfo()
+                For Each it In st.Items.Where(Function(i) i.Kind = "media")
+                    Dim r = MediaStudio.Recipes().First(Function(x) x.Id = it.Id)
+                    Check(SetupLibrary.VariantFor(r, it.Variant, hw8) IsNot Nothing, "  edition chosen for " & it.Id)
+                Next
+                Dim back = SetupLibrary.Parse(SetupLibrary.ToJson(st))
+                Check(back.Items.Count = st.Items.Count AndAlso back.Profiles(0).Kind = st.Profiles(0).Kind, tier & " setup writes and reads back")
+            Next
+            ' WebP → PNG for pictures (needs ffmpeg; skipped where it is blocked)
+            Try
+                Dim webp = Path.Combine(Path.GetTempPath(), "lm-pic.webp")
+                Await VideoTools.FfmpegAsync($"-hide_banner -loglevel error -y -f lavfi -i color=c=red:size=64x48 -frames:v 1 ""{webp}""", CancellationToken.None)
+                Dim png = ImageTools.AsPng(webp)
+                Check(png.EndsWith(".png") AndAlso File.Exists(png) AndAlso ImageTools.IsPicture(webp) AndAlso ImageTools.IsPictureOrClip("a.webm"), "WebP turned into PNG", png)
+            Catch ex As Exception
+                Console.WriteLine("  SKIP WebP (ffmpeg not available here): " & ex.Message)
+            End Try
+            Return
+        End If
+
         If only = "v224" Then
             Console.WriteLine("== v2.24: sizes from the chat, profiles")
             Dim sz = MediaSize.From(Nothing, "generate me a video of 3 secons at 0.2 mp of a bird flying")
@@ -724,6 +753,38 @@ Module HarnessMain
             prof.Negative = ""
             Check(ProfileLibrary.Compose(prof, "x", "low quality").Negative = "low quality", "model's negative when the profile has none")
             Check(ProfileLibrary.Compose(Nothing, "x", "n").Prompt = "x", "no profile: unchanged")
+            ' INT8 settings only in the file's metadata → per-layer .comfy_quant tensors (in place and by copy)
+            For Each roomy In {True, False}
+                Dim qf = Path.Combine(Path.GetTempPath(), $"lm-quant-{roomy}.safetensors")
+                Dim layersJson = "{""format_version"": ""1.0"", ""layers"": {""blocks.0.fc"": {""format"": ""int8_tensorwise"", ""convrot"": true, ""convrot_groupsize"": 256}, ""blocks.1.fc"": {""format"": ""int8_tensorwise"", ""convrot"": true, ""convrot_groupsize"": 256}}}"
+                Dim hdrObj As New JObject From {
+                    {"__metadata__", New JObject From {{"format", "pt"}, {"_quantization_metadata", If(roomy, layersJson, "{""layers"": {""blocks.0.fc"": {""format"": ""int8_tensorwise""}}}")}}},
+                    {"blocks.0.fc.weight", New JObject From {{"dtype", "I8"}, {"shape", New JArray(2, 4)}, {"data_offsets", New JArray(0, 8)}}},
+                    {"blocks.0.fc.weight_scale", New JObject From {{"dtype", "F32"}, {"shape", New JArray(2, 1)}, {"data_offsets", New JArray(8, 16)}}},
+                    {"blocks.1.fc.weight", New JObject From {{"dtype", "I8"}, {"shape", New JArray(2, 4)}, {"data_offsets", New JArray(16, 24)}}}}
+                Dim hb = Text.Encoding.UTF8.GetBytes(hdrObj.ToString(If(roomy, Newtonsoft.Json.Formatting.Indented, Newtonsoft.Json.Formatting.None)))
+                Using fsw As New FileStream(qf, FileMode.Create)
+                    fsw.Write(BitConverter.GetBytes(CLng(hb.Length)), 0, 8)
+                    fsw.Write(hb, 0, hb.Length)
+                    For i = 0 To 23
+                        fsw.WriteByte(CByte(i))
+                    Next
+                End Using
+                Dim origLen = New FileInfo(qf).Length
+                Check(QuantMetaFix.EnsureComfyQuantTensors(qf), "metadata settings turned into tensors (" & If(roomy, "in place", "copy") & ")")
+                Dim bytes = File.ReadAllBytes(qf)
+                Dim hl = BitConverter.ToInt64(bytes, 0)
+                Dim nh = JObject.Parse(Text.Encoding.UTF8.GetString(bytes, 8, CInt(hl)))
+                Dim cq = nh("blocks.0.fc.comfy_quant")
+                Dim ds = 8 + hl
+                Dim cfgText = If(cq Is Nothing, "", Text.Encoding.UTF8.GetString(bytes, CInt(ds + cq("data_offsets")(0).Value(Of Long)()), CInt(cq("data_offsets")(1).Value(Of Long)() - cq("data_offsets")(0).Value(Of Long)())))
+                Check(cq IsNot Nothing AndAlso JObject.Parse(cfgText).Value(Of String)("format") = "int8_tensorwise" AndAlso
+                      bytes(CInt(ds + 9)) = 9 AndAlso ConvRotFix.OriginalLength(qf) = origLen AndAlso nh("__metadata__")?("_quantization_metadata") Is Nothing,
+                      "tensor reads back, data unchanged, original size kept", cfgText)
+                Check(Not QuantMetaFix.EnsureComfyQuantTensors(qf), "second time: nothing to do")
+                File.Delete(qf)
+                File.Delete(ConvRotFix.MarkerPath(qf))
+            Next
             Dim tl2 As New JArray()
             For Each n In {"generate_image", "generate_video", "extend_video"}
                 tl2.Add(New JObject From {{"type", "function"}, {"function", New JObject From {{"name", n}}}})

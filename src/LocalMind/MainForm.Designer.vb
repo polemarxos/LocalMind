@@ -107,10 +107,10 @@ Partial Class MainForm
             Me.miNewChat, Me.miSave, Me.miExport, Me.miImport,
             Me.miSepFile, Me.miExit})
         Me.menuFile.Text = "&File"
-        Me.miNewChat.Text = "New Chat"
-        Me.miSave.Text = "Save Chat"
-        Me.miExport.Text = "Export Chat…"
-        Me.miImport.Text = "Import Chat…"
+        Me.miNewChat.Text = "New chat"
+        Me.miSave.Text = "Save chat"
+        Me.miExport.Text = "Export chat…"
+        Me.miImport.Text = "Import chat…"
         Me.miExit.Text = "Exit"
         '
         ' menuHelp
@@ -127,7 +127,7 @@ Partial Class MainForm
         Me.miModelManager.Text = "Model Manager…"
         Me.miModelManager.ShortcutKeys = System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.M
         Me.miOpenModels.Text = "Open models folder"
-        Me.miUnload.Text = "Unload model (free VRAM)"
+        Me.miUnload.Text = "Unload chat model"
         '
         ' menuTools
         '
@@ -136,7 +136,7 @@ Partial Class MainForm
         Me.miSettings.Text = "Settings…"
         Me.miSettings.ShortcutKeys = System.Windows.Forms.Keys.Control Or System.Windows.Forms.Keys.Oemcomma
         Me.miSettings.ShortcutKeyDisplayString = "Ctrl+,"
-        Me.miLan.Text = "Share on network (phones, other PCs)…"
+        Me.miLan.Text = "Share on network…"
         Me.miEngineLog.Text = "Engine log"
         '
         ' toolTop

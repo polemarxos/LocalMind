@@ -1,0 +1,153 @@
+{
+  "Name": "16 GB graphics card",
+  "Vram": 16,
+  "Version": 1,
+  "Items": [
+    {
+      "Kind": "llm",
+      "Repo": "unsloth/gemma-4-12b-it-GGUF",
+      "Quant": "Auto",
+      "Name": "Gemma 4 12B",
+      "MainChat": true,
+      "About": "strong chat that also reads pictures"
+    },
+    {
+      "Kind": "llm",
+      "Repo": "unsloth/gemma-4-26B-A4B-it-GGUF",
+      "Quant": "Auto",
+      "Name": "Gemma 4 26B A4B (MoE)",
+      "Recommended": false,
+      "About": "smarter, still fast (part in RAM)"
+    },
+    {
+      "Kind": "media",
+      "Id": "krea2-turbo",
+      "Name": "Krea 2 Turbo",
+      "About": "pictures in a few steps"
+    },
+    {
+      "Kind": "media",
+      "Id": "qwen-image-edit-2511",
+      "Name": "Qwen-Image-Edit 2511",
+      "About": "changes pictures you attach or made"
+    },
+    {
+      "Kind": "media",
+      "Id": "hyperflow-h3-flash",
+      "Name": "HyperFlow H3 Flash",
+      "About": "fast videos with sound (MiniMax H3)"
+    },
+    {
+      "Kind": "media",
+      "Id": "hyperflow-h3-flash-ref2va",
+      "Name": "HyperFlow H3 Flash Ref2VA",
+      "Recommended": false,
+      "About": "videos with your @characters and their voices"
+    },
+    {
+      "Kind": "media",
+      "Id": "upscale-realesrgan",
+      "Name": "Real-ESRGAN 4×",
+      "About": "enlarges pictures (Library)"
+    },
+    {
+      "Kind": "media",
+      "Id": "remove-bg",
+      "Name": "Background remover",
+      "About": "cut-outs (Library)"
+    },
+    {
+      "Kind": "audio",
+      "Id": "chatterbox-ml",
+      "Name": "Chatterbox Multilingual",
+      "About": "speech and cloned voices, 23 languages"
+    },
+    {
+      "Kind": "audio",
+      "Id": "qwen3-tts",
+      "Name": "Qwen3-TTS 1.7B",
+      "Recommended": false,
+      "About": "very close voice cloning"
+    },
+    {
+      "Kind": "audio",
+      "Id": "minimax-music3-q6",
+      "Name": "MiniMax Music 3 · balanced",
+      "About": "high-quality songs with vocals"
+    }
+  ],
+  "Profiles": [
+    {
+      "Id": "rec16-pic",
+      "Name": "Pictures · Krea 2 Turbo",
+      "Kind": "picture",
+      "Model": "krea2-turbo",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "highly detailed, sharp focus, natural light",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec16-edit",
+      "Name": "Editing · Qwen-Image-Edit",
+      "Kind": "edit",
+      "Model": "qwen-image-edit-2511",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec16-vid",
+      "Name": "Videos · H3 Flash",
+      "Kind": "video",
+      "Model": "hyperflow-h3-flash",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "smooth natural motion, cinematic lighting",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec16-music",
+      "Name": "Music · MiniMax Music 3",
+      "Kind": "music",
+      "Model": "minimax-music3-q6",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "upbeat pop, catchy melody, female vocals",
+      "Positive": "studio quality mix",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec16-voice",
+      "Name": "Voice · Chatterbox",
+      "Kind": "voice",
+      "Model": "chatterbox-ml",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    }
+  ],
+  "Defaults": {
+    "picture": "rec16-pic",
+    "edit": "rec16-edit",
+    "video": "rec16-vid",
+    "music": "rec16-music",
+    "voice": "rec16-voice"
+  }
+}

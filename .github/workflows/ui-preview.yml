@@ -102,7 +102,7 @@ jobs:
               '{"Kind":"picture","Model":"FLUX.1 Krea · Q5_K_M","Prompt":"a red fox in the snow at sunrise, ohwx style, cinematic, 35mm","Negative":"blurry","Width":1024,"Height":1024,"Seed":42}' | Set-Content -Encoding utf8 publish/Outputs/20261125-101010-flux.png.json
               Set-Content publish/Outputs/20261125-101111-song.wav 'x'
               '{"Kind":"music","Model":"ACE-Step","Prompt":"upbeat synth-pop, female vocals, 120 bpm","Lyrics":"[verse] city lights"}' | Set-Content -Encoding utf8 publish/Outputs/20261125-101111-song.wav.json
-              foreach ($pv in @('library', 'characters', 'profiles', 'box', 'settings-look', 'form:LoraForm', 'form:PersonaEditorForm', 'form:KnowledgeForm', 'form:LanForm', 'form:CivitaiForm', 'form:VoiceChatForm', 'form:CompareForm', 'form:QuickAskForm', 'form:FeaturesForm', 'form:CivitaiKeyForm')) {
+              foreach ($pv in @('library', 'characters', 'profiles', 'setup', 'box', 'settings-look', 'form:LoraForm', 'form:PersonaEditorForm', 'form:KnowledgeForm', 'form:LanForm', 'form:CivitaiForm', 'form:VoiceChatForm', 'form:CompareForm', 'form:QuickAskForm', 'form:FeaturesForm', 'form:CivitaiKeyForm')) {
                 $env:LOCALMIND_PREVIEW = $pv
                 $p = Start-Process publish/LocalMind.exe -PassThru
                 Start-Sleep -Seconds 25

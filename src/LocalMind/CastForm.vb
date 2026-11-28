@@ -206,7 +206,7 @@ Public Class CastForm
                                           btnDescribe.Enabled = False
                                           btnDescribe.Text = Localizer.T("Looking…")
                                           Try
-                                              txtDesc.Text = Await CastLibrary.DescribeAsync(CastLibrary.ImagePaths(_current)(0), _current.IsLocation, CancellationToken.None)
+                                              txtDesc.Text = Await CastLibrary.DescribeAsync(CastLibrary.UsablePaths(_current)(0), _current.IsLocation, CancellationToken.None)
                                           Catch ex As Exception
                                               Localizer.Box(Me, ex.Message, "Characters")
                                           Finally
@@ -310,7 +310,7 @@ Public Class CastForm
 
     Private Sub AddPictures()
         If _current Is Nothing Then Return
-        Using d As New OpenFileDialog() With {.Multiselect = True, .Filter = "Pictures|*.png;*.jpg;*.jpeg;*.webp;*.bmp"}
+        Using d As New OpenFileDialog() With {.Multiselect = True, .Filter = ImageTools.DialogFilter(Localizer.T("Pictures"), withClips:=True)}
             If d.ShowDialog(Me) <> DialogResult.OK Then Return
             For Each f In d.FileNames
                 CastLibrary.AddImage(_current, f)

@@ -653,6 +653,15 @@ Public Module MediaStudio
             End If
         End If
         Dim exe = ExternalTools.FindExe(pkg)
+        ' INT8 files that keep their quantization settings only in the metadata: add the per-layer settings
+        Await Task.Run(Sub()
+                           For Each f In FilesFor(r, v, True, True).Where(Function(x) x IsNot Nothing AndAlso x.Path.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase))
+                               Try
+                                   QuantMetaFix.EnsureComfyQuantTensors(LocalPath(f), Sub(t) progress?.Invoke(0, t))
+                               Catch ex As IOException
+                               End Try
+                           Next
+                       End Sub, ct)
         If v.Format = "convrot" Then
             Await Task.Run(Sub()
                                ConvRotFix.EnsurePatched(LocalPath(v))

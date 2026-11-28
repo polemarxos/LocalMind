@@ -1,5 +1,41 @@
 # Changelog
 
+## 2.26.0
+
+### Added
+- **Recommended models.** At the first start LocalMind shows a ready-made set of models for your graphics card (8 GB
+  or 16 GB), all ticked, with their sizes. Untick what you don't want and press **Download selected**.
+  - Chat models get the size that fits your card; picture and video models get the largest edition that fits.
+  - The set also brings ready-made profiles: pictures, editing, video, music and voice.
+  - The lists live in the repository (setups/8gb.json, setups/16gb.json). When a newer version is published,
+    LocalMind offers the new models once.
+  - **Models → Recommended models…** opens the list at any time.
+- **Models → Export my setup…** saves everything installed here (chat, picture, video, music and voice models,
+  LoRAs) and your profiles in the same format, ready to become a recommended set.
+- **Music and voice profiles.** A music profile has a model, a default style and words always added to the style;
+  a voice profile has a voice model and a saved voice to speak with. Choose them in Profiles or Models → Select
+  models for chat.
+- **More music models:** MiniMax Music 3 compact (for 8–12 GB cards), balanced (12–16 GB) and full quality, and
+  YuE2 3B full quality.
+- **Delete any message**, answers included (🗑 under each answer).
+- **Progress in the chat:** loading, drawing, composing and their percentage now show right under the answer being
+  made, not only in the corner of the window.
+- **Every picture type:** Characters and the chat accept WebP, AVIF, HEIC, TIFF, JPEG XL and more (they are turned
+  into PNG), and the first frame of a short video (WebM, MP4…). Character pictures added before as WebP now show.
+
+### Changed
+- Menus: **Select models for chat** (formerly Pictures & video in chat) is in the Models menu, next to
+  **Recommended models** and **Export my setup**. "Get picture & video models" is gone; **Get models** does that.
+  Shorter, plainer names throughout.
+- The status at the top no longer says "Engine idle" while a picture, video or song is being made. It says what is
+  working, and "Ready (no chat model loaded)" when nothing is.
+
+### Fixed
+- **Coloured-noise videos from some INT8 models** (for example Singularity × 10Eros Max INT8). These files keep their
+  quantization settings in the file's metadata, which the engine doesn't read, so their rotated (ConvRot) weights
+  were taken as plain INT8. LocalMind now adds the settings in the form the engine reads, once, without
+  downloading the file again.
+
 ## 2.25.0
 
 ### Added

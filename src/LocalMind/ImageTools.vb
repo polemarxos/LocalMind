@@ -8,13 +8,66 @@ Imports System.Runtime.InteropServices
 ''' <summary>Fast pixel work on pictures (Windows, System.Drawing): masks, blending, alpha.</summary>
 Public Module ImageTools
 
-    ''' <summary>Loads a picture without keeping the file locked.</summary>
+    ''' <summary>Loads a picture without keeping the file locked. WebP, AVIF, HEIC, JPEG XL… (and the first frame of a
+    ''' video) are converted to PNG first.</summary>
     Public Function Load(path As String) As Bitmap
-        Using fs As New FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+        Dim src = AsPng(path)
+        Using fs As New FileStream(src, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
             Using img = Image.FromStream(fs)
                 Return New Bitmap(img)
             End Using
         End Using
+    End Function
+
+    ''' <summary>Every picture type LocalMind accepts (plus short videos, whose first frame is used).</summary>
+    Public ReadOnly PictureExtensions As String() = {".png", ".jpg", ".jpeg", ".jfif", ".pjpeg", ".gif", ".bmp", ".dib", ".tif", ".tiff", ".ico",
+                                                       ".webp", ".avif", ".heic", ".heif", ".jxl", ".tga", ".psd", ".jp2", ".svg"}
+    Public ReadOnly MotionExtensions As String() = {".webm", ".mp4", ".mov", ".mkv", ".avi", ".m4v", ".apng"}
+
+    Public Function IsPicture(path As String) As Boolean
+        Return PictureExtensions.Contains(IO.Path.GetExtension(If(path, "")).ToLowerInvariant())
+    End Function
+
+    Public Function IsPictureOrClip(path As String) As Boolean
+        Dim e = IO.Path.GetExtension(If(path, "")).ToLowerInvariant()
+        Return PictureExtensions.Contains(e) OrElse MotionExtensions.Contains(e)
+    End Function
+
+    ''' <summary>File dialog filter for pictures (all types).</summary>
+    Public Function DialogFilter(label As String, Optional withClips As Boolean = False) As String
+        Dim exts = PictureExtensions.Concat(If(withClips, MotionExtensions, Array.Empty(Of String)())).Select(Function(x) "*" & x)
+        Return label & "|" & String.Join(";", exts) & "|*.*|*.*"
+    End Function
+
+    ''' <summary>
+    ''' The file itself when Windows can read it (PNG, JPEG, BMP, GIF, TIFF, ICO), otherwise a PNG copy made with
+    ''' ffmpeg (kept in a cache folder, made again when the original changes). Video files give their first frame.
+    ''' </summary>
+    Public Function AsPng(path As String) As String
+        If String.IsNullOrEmpty(path) OrElse Not File.Exists(path) Then Return path
+        Dim ext = IO.Path.GetExtension(path).ToLowerInvariant()
+        If {".png", ".jpg", ".jpeg", ".jfif", ".bmp", ".gif", ".tif", ".tiff", ".ico", ".dib"}.Contains(ext) Then
+            ' (a wrong extension, e.g. a WebP saved as .jpg, is checked below)
+            Try
+                Using fs As New FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+                    Using img = Image.FromStream(fs, False, False)
+                    End Using
+                End Using
+                Return path
+            Catch
+            End Try
+        End If
+        Dim dir = IO.Path.Combine(IO.Path.GetTempPath(), "LocalMind-pictures")
+        Directory.CreateDirectory(dir)
+        Dim key = (path.ToLowerInvariant() & "|" & File.GetLastWriteTimeUtc(path).Ticks.ToString()).GetHashCode().ToString("x8")
+        Dim outPng = IO.Path.Combine(dir, IO.Path.GetFileNameWithoutExtension(path) & "-" & key & ".png")
+        If File.Exists(outPng) Then Return outPng
+        Dim work = Threading.Tasks.Task.Run(Async Function()
+                                                Await VideoTools.FfmpegAsync($"-hide_banner -loglevel error -y -i ""{path}"" -frames:v 1 ""{outPng}""", Threading.CancellationToken.None)
+                                            End Function)
+        work.GetAwaiter().GetResult()
+        If Not File.Exists(outPng) Then Throw New IOException("Could not read the picture " & IO.Path.GetFileName(path))
+        Return outPng
     End Function
 
     ''' <summary>ARGB pixels of a 32-bit copy of the bitmap.</summary>

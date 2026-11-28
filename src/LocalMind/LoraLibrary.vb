@@ -20,6 +20,8 @@ Public Class UserLora
     ''' <summary>Where it came from (e.g. "Civitai #12345") and the exact base model it was trained on.</summary>
     Public Property Source As String
     Public Property BaseModel As String
+    ''' <summary>Where the file was downloaded from (so a setup can download it again on another PC).</summary>
+    Public Property Url As String
 
     <JsonIgnore> Public ReadOnly Property FullPath As String
         Get

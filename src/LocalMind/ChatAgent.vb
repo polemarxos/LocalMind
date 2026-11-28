@@ -686,9 +686,13 @@ Public Module ChatAgent
     End Function
 
     Public Async Function MakeSongAsync(style As String, lyrics As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)
-        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.IsMusic AndAlso AudioStudio.IsInstalled(x))
+        ' 🎵 the chat's music profile: its model, default style and the words always added
+        Dim prof = ProfileLibrary.ForChatAudio("music")
+        Dim m = If(prof IsNot Nothing, AudioStudio.Models().FirstOrDefault(Function(x) x.Id = prof.Model), Nothing)
+        If m Is Nothing Then m = AudioStudio.Models().FirstOrDefault(Function(x) x.IsMusic AndAlso AudioStudio.IsInstalled(x))
         If m Is Nothing Then Return Localizer.T("(No music model is downloaded yet — open ⬇ Get models → Music to get one.)")
-        status?.Invoke("Composing…")
+        If prof IsNot Nothing Then style = ProfileLibrary.Compose(prof, style, "").Prompt
+        status?.Invoke("Composing…" & If(prof IsNot Nothing, " 🧩 " & prof.Name, ""))
         Dim wav = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = m, .Text = style, .Lyrics = lyrics},
                                                   Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
         MediaStudio.SaveInfo(wav, "music", m.Name, style, lyrics)
@@ -757,8 +761,14 @@ Public Module ChatAgent
     ''' </summary>
     Public Async Function CloneVoiceAsync(words As String, recording As String, voiceName As String, saveAs As String,
                                           status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        ' 🗣 the chat's voice profile: its model, and its saved voice when no recording is attached
+        Dim vprof = ProfileLibrary.ForChatAudio("voice")
         Dim m = AudioStudio.Models().Where(Function(x) Not x.IsMusic AndAlso x.Clone AndAlso AudioStudio.IsInstalled(x)).
-                    OrderBy(Function(x) If(x.Id = AppCore.Settings.ReadAloudModel, 0, 1)).FirstOrDefault()
+                    OrderBy(Function(x) If(vprof IsNot Nothing AndAlso x.Id = vprof.Model, 0, If(x.Id = AppCore.Settings.ReadAloudModel, 1, 2))).FirstOrDefault()
+        If vprof IsNot Nothing Then
+            If String.IsNullOrEmpty(recording) AndAlso String.IsNullOrWhiteSpace(voiceName) AndAlso String.IsNullOrWhiteSpace(saveAs) Then voiceName = vprof.Voice
+            If String.IsNullOrWhiteSpace(words) Then words = vprof.DefaultPrompt
+        End If
         If m Is Nothing Then Return Localizer.T("(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in ⬇ Get models → Voice.)")
         If String.IsNullOrWhiteSpace(words) Then Return Localizer.T("(Tell me what the voice should say, e.g. clone this voice and say: Good morning!)")
 

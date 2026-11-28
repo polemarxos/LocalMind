@@ -98,30 +98,68 @@ Partial Class MainForm
         End Using
     End Sub
 
-    ''' <summary>🗑 Deletes one of your messages and the answer to it.</summary>
-    Private Async Sub DeleteMessage(userIndex As Integer)
+    ''' <summary>
+    ''' 🗑 Deletes a message: one of yours (with the answer to it) or one answer. <paramref name="displayIndex"/> counts
+    ''' the messages as shown (yours and answers, in order).
+    ''' </summary>
+    Private Async Sub DeleteMessage(displayIndex As Integer)
         If _isGenerating Then
             SetStatus("Wait for the answer to finish (or press Stop), then delete.")
             Return
         End If
-        If _session Is Nothing Then Return
+        If _session Is Nothing OrElse displayIndex < 0 Then Return
         Dim n = -1, pos = -1
         For k = 0 To _session.Messages.Count - 1
-            If _session.Messages(k).Role = "user" Then
+            Dim role = _session.Messages(k).Role
+            If role = "user" OrElse role = "assistant" Then
                 n += 1
-                If n = userIndex Then pos = k : Exit For
+                If n = displayIndex Then pos = k : Exit For
             End If
         Next
         If pos < 0 Then Return
-        If Localizer.Box(Me, "Delete this message and its answer?", "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
+        Dim isUser = _session.Messages(pos).Role = "user"
+        If Localizer.Box(Me, If(isUser, "Delete this message and its answer?", "Delete this answer?"), "Delete",
+                         MessageBoxButtons.YesNo, MessageBoxIcon.Question) <> DialogResult.Yes Then Return
         Dim upTo = pos + 1
-        While upTo < _session.Messages.Count AndAlso _session.Messages(upTo).Role <> "user"
-            upTo += 1
-        End While
+        If isUser Then
+            While upTo < _session.Messages.Count AndAlso _session.Messages(upTo).Role <> "user"
+                upTo += 1
+            End While
+        End If
         _session.Messages.RemoveRange(pos, upTo - pos)
         _session.UpdatedAt = DateTime.Now
         AppCore.History.Save(_session)
         Await RebuildChatDisplayAsync()
         SetStatus("Message deleted")
+    End Sub
+    ''' <summary>
+    ''' A newer recommended setup was published (new or better models for this kind of PC): offer it once. Only for
+    ''' people who installed a setup before, and only when something in it is not installed yet.
+    ''' </summary>
+    Private Async Function OfferSetupUpdateAsync() As Task
+        Try
+            If String.IsNullOrEmpty(Settings.SetupTier) Then Return
+            Await Task.Delay(8000)
+            Dim s = Await SetupLibrary.LoadAsync(Settings.SetupTier, CancellationToken.None)
+            If s Is Nothing OrElse s.Version <= Math.Max(Settings.SetupVersion, Settings.SetupOfferedVersion) Then Return
+            If Not s.Items.Any(Function(i) Not SetupLibrary.IsInstalled(i)) Then Return
+            Settings.SetupOfferedVersion = s.Version
+            AppCore.SaveSettings()
+            Me.Post(Sub()
+                        Using f As New SetupForm(Localizer.T("New recommended models are available for your PC"))
+                            f.ShowDialog(Me)
+                        End Using
+                        _modelsDirty = True
+                    End Sub)
+        Catch ex As Exception
+            Safety.Log(ex, "setup update check")
+        End Try
+    End Function
+
+    Private Sub OpenRecommended()
+        Using f As New SetupForm()
+            f.ShowDialog(Me)
+        End Using
+        _modelsDirty = True
     End Sub
 End Class

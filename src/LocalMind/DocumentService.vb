@@ -47,8 +47,8 @@ Public Module DocumentService
         Dim ext = Path.GetExtension(filePath).ToLowerInvariant()
 
         ' 1. Images → base64 for vision models
-        Select Case ext
-            Case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"
+        Select Case True
+            Case ImageTools.IsPicture(filePath) AndAlso ext <> ".svg"
                 Dim fi As New FileInfo(filePath)
                 If fi.Length > MaxImageBytes Then
                     result.Kind = ContentKind.Binary
@@ -57,7 +57,8 @@ Public Module DocumentService
                     Return result
                 End If
                 result.Kind = ContentKind.Image
-                result.Base64 = PrepareImageFile(filePath)
+                ' WebP, AVIF, HEIC, TIFF… become PNG: vision models and the picture engine read PNG / JPEG
+                result.Base64 = PrepareImageFile(If(ext = ".gif", filePath, ImageTools.AsPng(filePath)))
                 Return result
         End Select
 
@@ -101,7 +102,7 @@ Public Module DocumentService
         Dim ext = Path.GetExtension(filePath).ToLowerInvariant()
         Dim raw = File.ReadAllBytes(filePath)
         ' GDI+ can't decode WebP; GIFs may be animated — send those untouched.
-        If ext = ".webp" OrElse ext = ".gif" Then Return Convert.ToBase64String(raw)
+        If ext = ".gif" Then Return Convert.ToBase64String(raw)
         Try
             Using ms As New MemoryStream(raw)
                 Using img = Drawing.Image.FromStream(ms)

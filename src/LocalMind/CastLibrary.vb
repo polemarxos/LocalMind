@@ -75,10 +75,24 @@ Public Module CastLibrary
         Return m.Images.Select(Function(i) Path.Combine(MemberFolder(m), i)).Where(AddressOf File.Exists).ToList()
     End Function
 
+    ''' + "'''" + ''' <summary>The member's pictures as files every engine can read (pictures added before as WebP etc. are converted).</summary>
+    Public Function UsablePaths(m As CastMember) As List(Of String)
+        Dim list As New List(Of String)()
+        For Each f In ImagePaths(m)
+            Try
+                list.Add(ImageTools.AsPng(f))
+            Catch
+            End Try
+        Next
+        Return list
+    End Function
+
     ''' <summary>Copies a picture into the member's folder (so it stays even if the original moves).</summary>
     Public Function AddImage(m As CastMember, source As String) As String
-        Dim name = $"{m.Images.Count + 1:00}-{Guid.NewGuid().ToString("N").Substring(0, 6)}{Path.GetExtension(source).ToLowerInvariant()}"
-        File.Copy(source, Path.Combine(MemberFolder(m), name), True)
+        ' WebP, AVIF, HEIC… (or a short clip's first frame) are stored as PNG, which every part of LocalMind can read
+        Dim usable = ImageTools.AsPng(source)
+        Dim name = $"{m.Images.Count + 1:00}-{Guid.NewGuid().ToString("N").Substring(0, 6)}{Path.GetExtension(usable).ToLowerInvariant()}"
+        File.Copy(usable, Path.Combine(MemberFolder(m), name), True)
         m.Images.Add(name)
         Return name
     End Function
@@ -138,7 +152,7 @@ Public Module CastLibrary
     ''' </summary>
     Public Function ReferenceSheet(members As IEnumerable(Of CastMember), width As Integer, height As Integer) As String
         Dim pics = members.OrderBy(Function(m) If(m.IsLocation, 1, 0)).
-                           Select(Function(m) ImagePaths(m).FirstOrDefault()).Where(Function(f) f IsNot Nothing).ToList()
+                           Select(Function(m) UsablePaths(m).FirstOrDefault()).Where(Function(f) f IsNot Nothing).ToList()
         If pics.Count = 0 Then Return Nothing
         Dim outPath = Path.Combine(Path.GetTempPath(), $"localmind-cast-{Guid.NewGuid():N}.png")
         Using sheet As New Bitmap(width, height)
@@ -162,7 +176,7 @@ Public Module CastLibrary
     ''' <summary>The members' pictures (up to max), characters first: for models that take several reference pictures.</summary>
     Public Function ReferencePictures(members As IEnumerable(Of CastMember), max As Integer) As List(Of String)
         Return members.OrderBy(Function(m) If(m.IsLocation, 1, 0)).
-                       Select(Function(m) ImagePaths(m).FirstOrDefault()).Where(Function(f) f IsNot Nothing).Take(max).ToList()
+                       Select(Function(m) UsablePaths(m).FirstOrDefault()).Where(Function(f) f IsNot Nothing).Take(max).ToList()
     End Function
 
     ''' <summary>Writes a short description of a cast picture with a chat model that can see (if one is installed).</summary>
@@ -237,7 +251,7 @@ Public Module CastLibrary
     ''' pictures as references): a richer set for consistent results, or for training a LoRA. Returns the new files.
     ''' </summary>
     Public Async Function MakeMorePicturesAsync(m As CastMember, count As Integer, progress As Action(Of Integer, String), ct As CancellationToken) As Task(Of List(Of String))
-        Dim refs = ImagePaths(m)
+        Dim refs = UsablePaths(m)
         If refs.Count = 0 Then Throw New Exception(Localizer.T("Add a picture first."))
         Dim maker = VideoMaker.CastSceneRecipe()
         If maker Is Nothing Then Throw New Exception(Localizer.T("This needs a picture model that combines pictures (Qwen-Image Edit, FLUX.2 klein or Qwen-Image 2.1)."))

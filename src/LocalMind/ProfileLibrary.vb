@@ -32,6 +32,15 @@ Public Class MediaProfile
     Public Property Negative As String = ""
     ''' <summary>Use the model's speed LoRA (fewer steps) when it has one.</summary>
     Public Property Fast As Boolean = True
+    ''' <summary>Voice profiles: the saved voice to speak with when no recording is attached.</summary>
+    Public Property Voice As String = ""
+
+    ''' <summary>Picture, edit and video profiles (they have LoRAs and prompts).</summary>
+    <JsonIgnore> Public ReadOnly Property IsVisual As Boolean
+        Get
+            Return Kind = "picture" OrElse Kind = "edit" OrElse Kind = "video"
+        End Get
+    End Property
 
     <JsonIgnore> Public ReadOnly Property IsEdit As Boolean
         Get
@@ -108,6 +117,8 @@ Public Module ProfileLibrary
         Select Case kind
             Case "video" : Return AppCore.Settings.ChatVideoProfile
             Case "edit" : Return AppCore.Settings.ChatEditProfile
+            Case "music" : Return AppCore.Settings.ChatMusicProfile
+            Case "voice" : Return AppCore.Settings.ChatVoiceProfile
             Case Else : Return AppCore.Settings.ChatImageProfile
         End Select
     End Function
@@ -116,10 +127,21 @@ Public Module ProfileLibrary
         Select Case kind
             Case "video" : AppCore.Settings.ChatVideoProfile = id
             Case "edit" : AppCore.Settings.ChatEditProfile = id
+            Case "music" : AppCore.Settings.ChatMusicProfile = id
+            Case "voice" : AppCore.Settings.ChatVoiceProfile = id
             Case Else : AppCore.Settings.ChatImageProfile = id
         End Select
         AppCore.SaveSettings()
     End Sub
+
+    ''' + "'''" + ''' <summary>The chat's music or voice profile, when its model is downloaded.</summary>
+    Public Function ForChatAudio(kind As String) As MediaProfile
+        Dim p = Find(DefaultIdFor(kind))
+        If p Is Nothing OrElse p.Kind <> kind Then Return Nothing
+        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = p.Model)
+        If m Is Nothing OrElse Not AudioStudio.IsInstalled(m) Then Return Nothing
+        Return p
+    End Function
 
     Public Function RecipeOf(p As MediaProfile) As MediaRecipe
         If p Is Nothing Then Return Nothing

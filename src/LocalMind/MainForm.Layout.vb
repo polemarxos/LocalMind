@@ -56,11 +56,11 @@ Partial Class MainForm
         btnLan.ToolTipText = Localizer.T("Use this AI from your phone or other PCs on your network")
         If _btnStudio IsNot Nothing Then
             _btnStudio.Text = ItemText("🖼 Library")
-            _btnStudio.ToolTipText = Localizer.T("Every picture, video, song and voice clip you made, with its prompt")
+            _btnStudio.ToolTipText = Localizer.T("Everything you made, with its prompt")
         End If
         If _btnAudio IsNot Nothing Then
             _btnAudio.Text = ItemText("🎭 Characters")
-            _btnAudio.ToolTipText = Localizer.T("People, places and voices you use as @Name in the chat")
+            _btnAudio.ToolTipText = Localizer.T("People, places and voices for @Name in the chat")
         End If
 
         ' rebuild the bar in a fixed order

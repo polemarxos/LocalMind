@@ -28,29 +28,52 @@ Partial Class MainForm
                                                  SetStatus(If(_btnImage.Checked, "Image mode: your message will be turned into a picture", "Chat mode"))
                                              End Sub
 
-        Dim miImage As New ToolStripMenuItem(Localizer.T("Pictures & video in chat"))
+        Dim miImage As New ToolStripMenuItem(Localizer.T("Select models for chat"))
         _miImageChat = miImage
         AddHandler miImage.DropDownOpening, Sub() FillImageMenu(miImage)
         miImage.DropDownItems.Add("-")   ' placeholder so the arrow shows
-        menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 2, miImage)
+        ' (in the Models menu, right under the Model Manager)
+        menuModels.DropDownItems.Insert(menuModels.DropDownItems.IndexOf(miModelManager) + 1, miImage)
+        Dim miRec As New ToolStripMenuItem(Localizer.T("Recommended models…"))
+        AddHandler miRec.Click, Sub() OpenRecommended()
+        menuModels.DropDownItems.Insert(menuModels.DropDownItems.IndexOf(miImage) + 1, miRec)
+        Dim miExportSetup As New ToolStripMenuItem(Localizer.T("Export my setup…"))
+        AddHandler miExportSetup.Click, Sub() SetupForm.ExportSetup(Me)
+        menuModels.DropDownItems.Insert(menuModels.DropDownItems.IndexOf(miRec) + 1, miExportSetup)
     End Sub
+
+    Private Shared Function ChatKindTitle(k As String) As String
+        Select Case k
+            Case "video" : Return "Videos"
+            Case "edit" : Return "Picture editing"
+            Case "music" : Return "Music"
+            Case "voice" : Return "Voice cloning"
+            Case Else : Return "Pictures"
+        End Select
+    End Function
 
     Private Sub FillImageMenu(mi As ToolStripMenuItem)
         mi.DropDownItems.Clear()
         ' 🧩 the default picture and video profiles (a model with its LoRAs and prompts)
-        For Each kind In {"picture", "edit", "video"}
+        For Each kind In {"picture", "edit", "video", "music", "voice"}
             Dim k = kind
             Dim profiles = ProfileLibrary.All().Where(Function(p) p.Kind = k).ToList()
             Dim current = ProfileLibrary.DefaultIdFor(k)
-            Dim head As New ToolStripMenuItem(Localizer.T(If(k = "video", "Video profile for the chat", If(k = "edit", "Edit profile for the chat (changing pictures)", "Picture profile for the chat"))))
+            Dim head As New ToolStripMenuItem(Localizer.T(ChatKindTitle(k)))
             Dim auto As New ToolStripMenuItem(Localizer.T("Automatic (best downloaded model, no profile)")) With {
                 .Checked = Not profiles.Any(Function(x) x.Id = current)}
             AddHandler auto.Click, Sub() ProfileLibrary.SetDefault(k, "")
             head.DropDownItems.Add(auto)
             For Each p In profiles
                 Dim pp = p
-                Dim r = ProfileLibrary.RecipeOf(p)
-                Dim usable = r IsNot Nothing AndAlso MediaStudio.UsableVariant(r) IsNot Nothing
+                Dim usable As Boolean
+                If p.IsVisual Then
+                    Dim r = ProfileLibrary.RecipeOf(p)
+                    usable = r IsNot Nothing AndAlso MediaStudio.UsableVariant(r) IsNot Nothing
+                Else
+                    Dim am = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = p.Model)
+                    usable = am IsNot Nothing AndAlso AudioStudio.IsInstalled(am)
+                End If
                 Dim it As New ToolStripMenuItem(p.Name & If(usable, "", "  " & Localizer.T("(model not downloaded)"))) With {
                     .Checked = p.Id = current, .Enabled = usable}
                 AddHandler it.Click, Sub() ProfileLibrary.SetDefault(k, pp.Id)
@@ -58,12 +81,9 @@ Partial Class MainForm
             Next
             mi.DropDownItems.Add(head)
         Next
-        Dim edit As New ToolStripMenuItem(Localizer.T("Edit profiles (models, LoRAs, prompts)…"))
+        Dim edit As New ToolStripMenuItem(Localizer.T("Edit profiles…"))
         AddHandler edit.Click, Sub() OpenModelManagerAt("profiles")
         mi.DropDownItems.Add(edit)
-        Dim getMore As New ToolStripMenuItem(Localizer.T("Get picture & video models…"))
-        AddHandler getMore.Click, Sub() OpenModelManagerAt("picture")
-        mi.DropDownItems.Add(getMore)
         mi.DropDownItems.Add(New ToolStripSeparator())
 
         Dim improve As New ToolStripMenuItem(Localizer.T("Improve my prompt with the chat model first")) With {.Checked = Settings.ImproveImagePrompt,

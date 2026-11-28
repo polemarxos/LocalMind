@@ -147,6 +147,10 @@ Public Module MarkdownRenderer
         sb.AppendLine("  }")
         sb.AppendLine("  .msg .role { font-size: 11px; color: #888; margin-bottom: 6px; letter-spacing: .3px; text-transform: uppercase; }")
         sb.AppendLine("  .msg.user .role { text-align: right; }")
+        sb.AppendLine("  .work { display:none; align-items:center; gap:8px; margin:8px 2px 0; color:#a1a1aa; font-size:12.5px; }")
+        sb.AppendLine("  .work .spin { width:12px; height:12px; border:2px solid #3f3f46; border-top-color:#3b82f6; border-radius:50%; animation: lmspin .8s linear infinite; flex:none; }")
+        sb.AppendLine("  @keyframes lmspin { to { transform: rotate(360deg); } }")
+        sb.AppendLine("  body.busy .meta .mdel { display:none; }")
         sb.AppendLine("  .uactions { display:flex; gap:4px; justify-content:flex-end; margin-top:4px; opacity:0; transition:opacity .15s; }")
         sb.AppendLine("  .msg.user:hover .uactions { opacity:1; }")
         sb.AppendLine("  body.busy .uactions .ua:first-child, body.busy .uactions .ua:last-child { display:none; }")
@@ -281,7 +285,7 @@ Public Module MarkdownRenderer
     var bs = d.querySelectorAll('.ua');
     bs[0].onclick = function () { startEdit(d); };
     bs[1].onclick = function () { copyToClipboard(d.getAttribute('data-text'), bs[1]); };
-    bs[2].onclick = function () { try { window.chrome.webview.postMessage({ type: 'delete', index: parseInt(d.getAttribute('data-u'), 10) }); } catch (e) {} };
+    bs[2].onclick = function () { deleteMsg(d); };
     return d;
   }
   function appendUser(text, imgs) { removeEmpty(); body().appendChild(userNode(text, imgs, document.querySelectorAll('.msg.user').length)); scroll(true); }
@@ -323,7 +327,7 @@ Public Module MarkdownRenderer
   function assistantNode(id) {
     var d = document.createElement('div');
     d.className = 'msg assistant'; d.id = id;
-    d.innerHTML = '<div><div class=""role"">' + tr('Assistant') + '</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
+    d.innerHTML = '<div><div class=""role"">' + tr('Assistant') + '</div><div class=""bubble"" id=""' + id + '-bubble""></div><div class=""work"" id=""' + id + '-work""><span class=""spin""></span><span class=""wt""></span></div><div class=""meta"" id=""' + id + '-meta""></div></div>';
     return d;
   }
   function appendAssistantStart(id) {
@@ -366,10 +370,19 @@ Public Module MarkdownRenderer
     if (last && /^(P|LI|H1|H2|H3|H4|H5|H6|TD|TH)$/.test(last.tagName)) last.appendChild(caret); else b.appendChild(caret);
     scroll();
   }
+  // Progress of the work (loading a model, drawing 40%…) shown right under the answer, not only in the status bar.
   function setStatusText(id, text) {
     var b = document.getElementById(id + '-bubble');
-    if (b && b.querySelector('.waiting')) b.querySelector('.waiting').textContent = text;
+    if (b && b.querySelector('.waiting')) { b.querySelector('.waiting').textContent = text; return; }
+    var w = document.getElementById(id + '-work');
+    if (!w) return;
+    if (!text) { w.style.display = 'none'; return; }
+    w.querySelector('.wt').textContent = text;
+    w.style.display = 'flex';
+    scroll();
   }
+  function msgIndex(node) { return Array.prototype.indexOf.call(document.querySelectorAll('.msg.user, .msg.assistant'), node); }
+  function deleteMsg(node) { try { window.chrome.webview.postMessage({ type: 'deletemsg', index: msgIndex(node) }); } catch (e) {} }
 
   function copyToClipboard(text, btn) {
     function flash() { if (!btn) return; var old = btn.textContent; btn.textContent = tr('Copied!'); setTimeout(function () { btn.textContent = old; }, 1200); }
@@ -413,6 +426,7 @@ Public Module MarkdownRenderer
   function finalizeAssistant(id, html, thinkingHtml, meta) {
     var b = document.getElementById(id + '-bubble');
     if (!b) return;
+    var wk = document.getElementById(id + '-work'); if (wk) wk.style.display = 'none';
     b.innerHTML = html;
     decorate(b);
     if (thinkingHtml) {
@@ -432,6 +446,9 @@ Public Module MarkdownRenderer
       var r = document.createElement('button'); r.textContent = tr('🔊 Read'); r.title = tr('Read aloud (click again to stop)');
       r.onclick = function () { try { window.chrome.webview.postMessage({ type: 'speak', text: b.innerText }); } catch (e) {} };
       m.appendChild(r);
+      var del = document.createElement('button'); del.textContent = '🗑 ' + tr('Delete'); del.className = 'mdel'; del.title = tr('Delete this answer');
+      del.onclick = function () { deleteMsg(document.getElementById(id)); };
+      m.appendChild(del);
       if (meta) { var sp = document.createElement('span'); sp.textContent = meta; m.appendChild(sp); }
     }
     scroll();

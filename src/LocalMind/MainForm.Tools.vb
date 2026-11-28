@@ -52,19 +52,19 @@ Partial Class MainForm
                                                    AppCore.SaveSettings()
                                                    If Not _miAutoRead.Checked Then Voice.StopSpeaking()
                                                End Sub
-        Dim miStudio As New ToolStripMenuItem("Library (everything you made)…")
+        Dim miStudio As New ToolStripMenuItem("Library…")
         AddHandler miStudio.Click, Sub() OpenLibrary()
         menuTools.DropDownItems.Insert(0, miStudio)
-        Dim btnStudio As New ToolStripButton("🖼 Library") With {.ToolTipText = "Every picture, video, song and voice clip you made, with its prompt"}
+        Dim btnStudio As New ToolStripButton("🖼 Library") With {.ToolTipText = "Everything you made, with its prompt"}
         AddHandler btnStudio.Click, Sub() OpenLibrary()
         toolTop.Items.Insert(toolTop.Items.IndexOf(_btnWeb) + 1, btnStudio)
         _btnStudio = btnStudio
         _miStudio = miStudio
         BuildImageUi(btnStudio, miStudio)
-        _miAudio = New ToolStripMenuItem("Characters & voices…")
+        _miAudio = New ToolStripMenuItem("Characters…")
         AddHandler _miAudio.Click, Sub() OpenCharacters()
         menuTools.DropDownItems.Insert(menuTools.DropDownItems.IndexOf(miStudio) + 1, _miAudio)
-        _btnAudio = New ToolStripButton("🎭 Characters") With {.ToolTipText = "People, places and voices you use as @Name in the chat"}
+        _btnAudio = New ToolStripButton("🎭 Characters") With {.ToolTipText = "People, places and voices for @Name in the chat"}
         AddHandler _btnAudio.Click, Sub() OpenCharacters()
         toolTop.Items.Insert(toolTop.Items.IndexOf(btnStudio) + 1, _btnAudio)
         ApplyFeatures()
@@ -88,7 +88,7 @@ Partial Class MainForm
         _btnStudio.Visible = img OrElse aud
         _miStudio.Visible = img OrElse aud
         _btnImage.Visible = img
-        _miImageChat.Visible = img
+        _miImageChat.Visible = img OrElse aud
         If Not img Then _btnImage.Checked = False
         _btnAudio.Visible = img OrElse aud
         _miAudio.Visible = img OrElse aud
@@ -115,6 +115,7 @@ Partial Class MainForm
         AddHandler _memTimer.Tick, Sub()
                                        Try
                                            _lblMem.Text = MemoryMonitor.Summary(hw)
+                                           If Settings.Backend = BackendKind.BuiltIn Then ShowEngineState(AppCore.Engine.State, AppCore.Engine.StateMessage)
                                        Catch
                                        End Try
                                    End Sub

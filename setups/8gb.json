@@ -1,0 +1,131 @@
+{
+  "Name": "8 GB graphics card",
+  "Vram": 8,
+  "Version": 1,
+  "Items": [
+    {
+      "Kind": "llm",
+      "Repo": "unsloth/gemma-4-E4B-it-GGUF",
+      "Quant": "Auto",
+      "Name": "Gemma 4 E4B",
+      "MainChat": true,
+      "About": "fast chat that also reads pictures"
+    },
+    {
+      "Kind": "media",
+      "Id": "krea2-turbo",
+      "Name": "Krea 2 Turbo",
+      "About": "pictures in a few steps"
+    },
+    {
+      "Kind": "media",
+      "Id": "flux2-klein-4b",
+      "Name": "FLUX.2 Klein 4B",
+      "About": "changes pictures you attach or made"
+    },
+    {
+      "Kind": "media",
+      "Id": "ltx-2.5-distilled",
+      "Name": "LTX-2.5 distilled",
+      "About": "short videos, also from a picture"
+    },
+    {
+      "Kind": "media",
+      "Id": "upscale-realesrgan",
+      "Name": "Real-ESRGAN 4×",
+      "About": "enlarges pictures (Library)"
+    },
+    {
+      "Kind": "media",
+      "Id": "remove-bg",
+      "Name": "Background remover",
+      "About": "cut-outs (Library)"
+    },
+    {
+      "Kind": "audio",
+      "Id": "chatterbox-ml",
+      "Name": "Chatterbox Multilingual",
+      "About": "speech and cloned voices, 23 languages"
+    },
+    {
+      "Kind": "audio",
+      "Id": "yue2-3b",
+      "Name": "YuE2 3B",
+      "About": "songs with vocals"
+    }
+  ],
+  "Profiles": [
+    {
+      "Id": "rec8-pic",
+      "Name": "Pictures · Krea 2 Turbo",
+      "Kind": "picture",
+      "Model": "krea2-turbo",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "highly detailed, sharp focus, natural light",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec8-edit",
+      "Name": "Editing · FLUX.2 Klein 4B",
+      "Kind": "edit",
+      "Model": "flux2-klein-4b",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec8-vid",
+      "Name": "Videos · LTX-2.5",
+      "Kind": "video",
+      "Model": "ltx-2.5-distilled",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "smooth natural motion, cinematic lighting",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec8-music",
+      "Name": "Music · YuE2",
+      "Kind": "music",
+      "Model": "yue2-3b",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "upbeat pop, catchy melody, female vocals",
+      "Positive": "studio quality mix",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "rec8-voice",
+      "Name": "Voice · Chatterbox",
+      "Kind": "voice",
+      "Model": "chatterbox-ml",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    }
+  ],
+  "Defaults": {
+    "picture": "rec8-pic",
+    "edit": "rec8-edit",
+    "video": "rec8-vid",
+    "music": "rec8-music",
+    "voice": "rec8-voice"
+  }
+}
