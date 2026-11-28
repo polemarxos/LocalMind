@@ -100,6 +100,17 @@ Public Class HardwareInfo
     '────────────────────────────────────────────────────────────
     Private Shared Function Detect() As HardwareInfo
         Dim hw As New HardwareInfo()
+        ' (screenshot checks: a pretend PC, e.g. LOCALMIND_FAKE_GPU=amd:16:32 = AMD card, 16 GB VRAM, 32 GB RAM)
+        Dim fake = Environment.GetEnvironmentVariable("LOCALMIND_FAKE_GPU")
+        If Not String.IsNullOrEmpty(fake) Then
+            Dim f = fake.Split(":"c)
+            Dim vram = If(f.Length > 1, CDbl(f(1)), 8), ram = If(f.Length > 2, CDbl(f(2)), 32)
+            Dim isNv = f(0).Equals("nvidia", StringComparison.OrdinalIgnoreCase)
+            hw.RamBytes = CLng(ram * 1024 * 1024 * 1024)
+            hw.Gpus.Add(New GpuDevice With {.Name = If(isNv, $"NVIDIA GeForce RTX ({vram:0} GB)", $"AMD Radeon RX ({vram:0} GB)"),
+                                            .Vendor = If(isNv, GpuVendor.Nvidia, GpuVendor.Amd), .VramBytes = CLng(vram * 1024 * 1024 * 1024), .ComputeCap = If(isNv, 12, 0)})
+            Return hw
+        End If
         Try
             hw.RamBytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes
         Catch

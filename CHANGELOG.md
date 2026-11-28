@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.26.18
+
+### Changed
+- **16 GB setup updated.** The picture model is now SNOFS Merged · Krea 2 Turbo v1.6 (INT8, from Civitai). On
+  AMD / Intel cards, its GGUF edition (KREA2 Edit SNOFS Merge v16 · Q4_K_M) is used instead.
+- **New 8 GB setup (for 32 GB RAM).** Same profiles, personas and settings as the 16 GB one, with smaller editions
+  that also run well on AMD / Intel:
+  - Chat: Qwen3.8 9B heretic uncensored · Q4_K_M.
+  - Pictures: KREA2 Edit SNOFS Merge v16 · Q4_K_M.
+  - Editing: Noct Q v1.0 · Q4_K_M.
+  - Video: 10Eros Max Turbo · Q3_K_M.
+  - Music: YuE2 · Q8.
+  - Voice: Fish Audio S2 Pro.
+  - Also Real-ESRGAN 4×.
+
 ## 2.26.17
 
 ### Fixed

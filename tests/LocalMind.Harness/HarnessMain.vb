@@ -733,6 +733,11 @@ Module HarnessMain
                   onAmd.Profiles.Any(Function(p) p.Kind = "video" AndAlso p.Model = "10eros-max-h3-turbo"), "AMD: GGUF video model, profile follows")
             Dim noct = onAmd.Items.First(Function(i) i.Kind = "civitai")
             Check(noct.Id = "user-60582d14" AndAlso noct.VersionId = 3351925 AndAlso noct.FileName.EndsWith(".gguf"), "AMD: Noct Q as GGUF, same profile id")
+            Check(onAmd.Profiles.Any(Function(p) p.Kind = "picture" AndAlso p.Model.StartsWith("hf-fronyax")) AndAlso onNv.Profiles.Any(Function(p) p.Kind = "picture" AndAlso p.Model = "user-881a04f9"),
+                  "picture: SNOFS INT8 on NVIDIA, its GGUF on AMD")
+            Dim s8 = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", "8gb.json")))
+            Check(s8.Items.All(Function(i) i.NotNvidia Is Nothing AndAlso (i.Kind <> "media" OrElse MediaStudio.Recipes().Any(Function(r) r.Id = i.Id))) AndAlso
+                  s8.Profiles.All(Function(p) s8.Items.Any(Function(i) i.Id = p.Model)), "8 GB setup: GGUF only, every profile has its model")
             Check(MediaStudio.Recipes().Any(Function(r) r.Id = "10eros-max-h3-turbo") AndAlso MediaStudio.Recipes().Any(Function(r) r.Id = "hf-fronyax-krea2-edit-snofs-merge-krea2editsnofsmerge-v15") AndAlso
                   AudioStudio.Models().Any(Function(m) m.Id = "yue2-3b-bf16"), "16 GB setup models are all in the lists")
             Try

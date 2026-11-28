@@ -1,7 +1,7 @@
 {
   "Name": "16 GB graphics card",
   "Vram": 16,
-  "Version": 2,
+  "Version": 3,
   "Items": [
     {
       "Kind": "llm",
@@ -53,20 +53,6 @@
       }
     },
     {
-      "Kind": "media",
-      "Id": "hf-fronyax-krea2-edit-snofs-merge-krea2editsnofsmerge-v15",
-      "Repo": "",
-      "Quant": "Auto",
-      "Variant": "Q6_K",
-      "Name": "krea2EditSNOFSMerge v15 · KREA2 Edit SNOFS Merge",
-      "About": "",
-      "Url": "",
-      "FileName": "",
-      "Family": "",
-      "Triggers": "",
-      "Recommended": true
-    },
-    {
       "Kind": "civitai",
       "Id": "user-60582d14",
       "Repo": "",
@@ -87,6 +73,27 @@
         "FileName": "NoctQ_V1_Q6_K.gguf",
         "Url": "https://civitai.com/models/2958896?modelVersionId=3351925",
         "Name": "⭐ Noct Q - Uncensored Realism (Qwen Image 2.1) · v1.0 Q6_K — for AMD / Intel cards"
+      }
+    },
+    {
+      "Kind": "civitai",
+      "Id": "user-881a04f9",
+      "Repo": "",
+      "Quant": "Auto",
+      "Variant": "",
+      "Name": "⭐ SNOFS (Sex, Nudes, and Other Fun Stuff) Merged · Krea 2 Turbo v1.6",
+      "About": "",
+      "Url": "https://civitai.com/models/2416142?modelVersionId=3474402",
+      "FileName": "snofs_krea_v1_6_turbo_int8_convrot.safetensors",
+      "Family": "",
+      "Triggers": "",
+      "Recommended": true,
+      "VersionId": 3474402,
+      "NotNvidia": {
+        "Kind": "media",
+        "Id": "hf-fronyax-krea2-edit-snofs-merge-krea2editsnofsmerge-v16",
+        "Variant": "Q4_K_M",
+        "Name": "krea2EditSNOFSMerge v16 · KREA2 Edit SNOFS Merge · Q4_K_M — for AMD / Intel cards"
       }
     },
     {
@@ -119,19 +126,6 @@
     }
   ],
   "Profiles": [
-    {
-      "Id": "1c97fc7faf",
-      "Name": "krea 2",
-      "Kind": "picture",
-      "Model": "hf-fronyax-krea2-edit-snofs-merge-krea2editsnofsmerge-v15",
-      "Loras": [],
-      "Triggers": "",
-      "DefaultPrompt": "",
-      "Positive": "",
-      "Negative": "",
-      "Fast": true,
-      "Voice": ""
-    },
     {
       "Id": "b13fcb486d",
       "Name": "Qwen 2.1",
@@ -176,6 +170,19 @@
       "Name": "MiniMax H3",
       "Kind": "video",
       "Model": "singularity-10eros-turbo",
+      "Loras": [],
+      "Triggers": "",
+      "DefaultPrompt": "",
+      "Positive": "",
+      "Negative": "",
+      "Fast": true,
+      "Voice": ""
+    },
+    {
+      "Id": "1c97fc7faf",
+      "Name": "krea 2",
+      "Kind": "picture",
+      "Model": "user-881a04f9",
       "Loras": [],
       "Triggers": "",
       "DefaultPrompt": "",

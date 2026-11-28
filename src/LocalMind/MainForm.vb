@@ -161,6 +161,13 @@ Public Class MainForm
             Case "cast", "characters" : OpenCharacters()
             Case "profiles" : Me.Post(Sub() OpenModelManagerAt("profiles"))
             Case "setup" : Me.Post(Sub() OpenRecommended())
+            Case "welcome"
+                ' the window a new user sees at the first start
+                Me.Post(Sub()
+                            Using f As New SetupForm(Localizer.T("Welcome! Download the recommended models for your PC?"))
+                                f.ShowDialog(Me)
+                            End Using
+                        End Sub)
             Case "box"
                 Me.Post(Sub() Localizer.Box(Me, "Delete Qwen3-8B (Q4_K_M) from disk? The file is 4.7 GB.", "Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning))
             Case "settings-look"
