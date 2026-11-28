@@ -23,6 +23,14 @@ Public Class AudioModel
     <JsonProperty("transcript")> Public Property Transcript As Boolean ' cloning is closer with the words of the recording
     <JsonProperty("dl")> Public Property Downloads As Long
     <JsonProperty("design")> Public Property Design As Boolean         ' "(voice description)Text" designs a voice
+    ''' <summary>Added by the user from Hugging Face (🌐 Browse), not from LocalMind's list.</summary>
+    <JsonProperty("user")> Public Property IsUser As Boolean
+    ''' <summary>Hugging Face repo the files come from (for the list's "From" column).</summary>
+    <JsonIgnore> Public ReadOnly Property Source As String
+        Get
+            Return If(Model?.Repo, "")
+        End Get
+    End Property
 
     <JsonIgnore> Public ReadOnly Property IsMusic As Boolean
         Get
@@ -50,14 +58,57 @@ Public Module AudioStudio
 
     Public Function Models() As List(Of AudioModel)
         If _models Is Nothing Then
+            Dim list As List(Of AudioModel)
             Using s = Assembly.GetExecutingAssembly().GetManifestResourceStream("audio_catalog.json")
                 Using r As New StreamReader(s)
-                    _models = JsonConvert.DeserializeObject(Of List(Of AudioModel))(r.ReadToEnd())
+                    list = JsonConvert.DeserializeObject(Of List(Of AudioModel))(r.ReadToEnd())
                 End Using
             End Using
+            ' + the ones the user added from Hugging Face
+            Try
+                If File.Exists(UserFile) Then
+                    For Each u In If(JsonConvert.DeserializeObject(Of List(Of AudioModel))(File.ReadAllText(UserFile)), New List(Of AudioModel)())
+                        If u?.Model Is Nothing OrElse u.Mmproj Is Nothing OrElse list.Any(Function(x) x.Id = u.Id) Then Continue For
+                        u.IsUser = True
+                        list.Add(u)
+                    Next
+                End If
+            Catch
+            End Try
+            _models = list
         End If
         Return _models
     End Function
+
+    Private ReadOnly Property UserFile As String
+        Get
+            Return Path.Combine(AppPaths.Roaming, "audio_models.json")
+        End Get
+    End Property
+
+    ''' <summary>Adds a music or voice model found on Hugging Face (kept in audio_models.json).</summary>
+    Public Function AddUserModel(m As AudioModel) As AudioModel
+        m.IsUser = True
+        Dim same = Models().FirstOrDefault(Function(x) x.Model.Repo = m.Model.Repo AndAlso x.Model.Path = m.Model.Path AndAlso
+                                                       x.Mmproj.Repo = m.Mmproj.Repo AndAlso x.Mmproj.Path = m.Mmproj.Path)
+        If same IsNot Nothing Then Return same
+        Models().Add(m)
+        SaveUserModels()
+        Return m
+    End Function
+
+    Public Sub RemoveUserModel(m As AudioModel)
+        If m Is Nothing OrElse Not m.IsUser Then Return
+        Models().Remove(m)
+        SaveUserModels()
+    End Sub
+
+    Private Sub SaveUserModels()
+        Try
+            File.WriteAllText(UserFile, JsonConvert.SerializeObject(Models().Where(Function(x) x.IsUser).ToList(), Formatting.Indented))
+        Catch
+        End Try
+    End Sub
 
     Public ReadOnly Property Folder As String
         Get

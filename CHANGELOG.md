@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.26.9
+
+### Added
+- **🌐 Browse Hugging Face** in Model Manager → Music and → Voice:
+  - Search Hugging Face for other uploads and sizes of the music and voice-cloning models LocalMind runs.
+  - Pick the model file, its audio file (mmproj) and which model it works like.
+  - Press **Add and download**. The model joins the list, and your backup keeps it.
+  - Repos without a model file + mmproj pair are made for another program; LocalMind says so.
+- MiniMax Music 3 **Q4_K_M** (compact) and **Q6_K** (balanced) editions by mradermacher are back in the music list,
+  next to ggml-org's Q8 and BF16.
+
 ## 2.26.8
 
 ### Changed

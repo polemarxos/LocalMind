@@ -224,5 +224,47 @@
   "transcript": false,
   "design": false,
   "dl": 0
+ },
+ {
+  "id": "minimax-music3-q4",
+  "name": "MiniMax Music 3 · Q4_K_M compact (songs)",
+  "kind": "music",
+  "about": "MiniMax Music 3 in a smaller edition (Q4_K_M, by mradermacher) for 8–12 GB graphics cards: songs with vocals from a description and lyrics.",
+  "model": {
+   "repo": "mradermacher/MiniMax-Music3-GGUF",
+   "path": "MiniMax-Music3.Q4_K_M.gguf",
+   "size": 5301259072
+  },
+  "mmproj": {
+   "repo": "mradermacher/MiniMax-Music3-GGUF",
+   "path": "MiniMax-Music3.mmproj-Q8_0.gguf",
+   "size": 3706261472
+  },
+  "clone": false,
+  "langs": [],
+  "transcript": false,
+  "design": false,
+  "dl": 0
+ },
+ {
+  "id": "minimax-music3-q6",
+  "name": "MiniMax Music 3 · Q6_K balanced (songs)",
+  "kind": "music",
+  "about": "MiniMax Music 3 (Q6_K, by mradermacher): almost full quality in less memory, for 12–16 GB graphics cards.",
+  "model": {
+   "repo": "mradermacher/MiniMax-Music3-GGUF",
+   "path": "MiniMax-Music3.Q6_K.gguf",
+   "size": 7050130240
+  },
+  "mmproj": {
+   "repo": "mradermacher/MiniMax-Music3-GGUF",
+   "path": "MiniMax-Music3.mmproj-Q8_0.gguf",
+   "size": 3706261472
+  },
+  "clone": false,
+  "langs": [],
+  "transcript": false,
+  "design": false,
+  "dl": 0
  }
 ]

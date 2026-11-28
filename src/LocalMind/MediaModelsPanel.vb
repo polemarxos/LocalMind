@@ -85,6 +85,7 @@ Public Class MediaModelsPanel
         _audioKind = If(kind = "music" OrElse kind = "voice", kind, "")
         chkNsfw.Visible = _audioKind = ""          ' (no uncensored sound models)
         btnCivitai.Visible = _audioKind = ""       ' (Civitai has no voice or music models LocalMind can use)
+        btnHf.Visible = _audioKind <> ""            ' 🌐 more music / voice models from Hugging Face
         Dim target = If(kind = "video", optVideos, If(_audioKind <> "", optMusic, optPictures))
         ' The three kind buttons are no longer on screen (the Model Manager's category bar replaced them), so
         ' Windows does not switch the others off by itself: do it here, or e.g. the video models would stay
@@ -105,6 +106,7 @@ Public Class MediaModelsPanel
 
     Private _audioKind As String = ""
     Private btnCivitai As Button
+    Private btnHf As Button
 
     ' The page on the right always shows the selected row's model (or nothing when the list is empty).
     Private Sub SyncDetails()
@@ -186,7 +188,18 @@ Public Class MediaModelsPanel
                                               AppCore.SaveSettings()
                                               Fill()
                                           End Sub
-        top.Controls.AddRange({cmbShow, txtFilter, chkFit, chkNsfw, btnCivitai})      ' (the kind is chosen above, in the Model Manager)
+        btnHf = Theme.MakeButton(Localizer.T("🌐 Browse Hugging Face"))
+        btnHf.Visible = False
+        AddHandler btnHf.Click, Sub()
+                                    Using f As New HfAudioBrowserForm(If(_audioKind = "music", "music", "voice"))
+                                        f.ShowDialog(Me)
+                                        If f.Added Then
+                                            Fill()
+                                            RaiseEvent Downloaded()
+                                        End If
+                                    End Using
+                                End Sub
+        top.Controls.AddRange({cmbShow, txtFilter, chkFit, chkNsfw, btnCivitai, btnHf})      ' (the kind is chosen above, in the Model Manager)
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False

@@ -702,6 +702,14 @@ Module HarnessMain
 
         If only = "v2262" Then
             Console.WriteLine("== v2.26.2: full backup and restore")
+            ' 🎵 music editions, and models added from Hugging Face
+            Check({"minimax-music3", "minimax-music3-q4", "minimax-music3-q6", "minimax-music3-bf16", "yue2-3b", "yue2-3b-bf16"}.All(Function(id) AudioStudio.Models().Any(Function(m) m.Id = id)),
+                  "all music editions listed")
+            Dim um = AudioStudio.AddUserModel(New AudioModel With {.Id = "hf:test/x.gguf", .Name = "Test", .Kind = "music",
+                     .Model = New MediaFile With {.Repo = "test/x", .Path = "x.gguf", .Size = 1}, .Mmproj = New MediaFile With {.Repo = "test/x", .Path = "mmproj.gguf", .Size = 1}})
+            Check(um.IsUser AndAlso AudioStudio.Models().Where(Function(m) m.Id = "hf:test/x.gguf").Count() = 1, "user music model added")
+            AudioStudio.RemoveUserModel(um)
+            Check(Not AudioStudio.Models().Any(Function(m) m.Id = "hf:test/x.gguf"), "user music model removed")
             ' 🔎 LoRAs added from a file are looked up on Civitai by their hash (an unknown file: looked up once, no link)
             Dim fakeLora = Path.Combine(LoraLibrary.Folder, "lm-test-unknown.safetensors")
             File.WriteAllBytes(fakeLora, Encoding.UTF8.GetBytes("not a real lora " & Guid.NewGuid().ToString()))
