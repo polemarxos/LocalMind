@@ -1461,6 +1461,13 @@ Public Class MainForm
         menuFile.DropDownItems.Insert(idx, New ToolStripSeparator())
         menuFile.DropDownItems.Insert(idx + 1, miBackup)
         menuFile.DropDownItems.Insert(idx + 2, miRestore)
+        ' 📤📥 the models, LoRAs and profiles (with their download links) as a small file: to set up another PC the same way
+        Dim miExportSetup As New ToolStripMenuItem(Localizer.T("📤 Export my setup (models, LoRAs, profiles)…"))
+        AddHandler miExportSetup.Click, Sub() SetupForm.ExportSetup(Me)
+        Dim miImportSetup As New ToolStripMenuItem(Localizer.T("📥 Import a setup…"))
+        AddHandler miImportSetup.Click, Sub() SetupForm.ImportSetup(Me)
+        menuFile.DropDownItems.Insert(idx + 3, miExportSetup)
+        menuFile.DropDownItems.Insert(idx + 4, miImportSetup)
     End Sub
 
     Private Sub RenameSelectedChat(sender As Object, e As EventArgs)

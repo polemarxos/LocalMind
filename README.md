@@ -35,6 +35,10 @@ first time you need it.
 **Characters and the Library.** Save a character with a look and a voice, then call it in the chat with
 `@name`. Everything you generate goes to the Library, together with the prompt that made it.
 
+**Setups.** File → Export my setup saves the list of your models, LoRAs and profiles with their download links.
+On another PC, File → Import a setup shows that list (what's already there, what's too big for that graphics card)
+and downloads the rest.
+
 **Phone and other PCs.** Turn on Share on network and scan the QR code to use the chat from your phone. There's
 also an OpenAI-compatible `/v1` API, so other apps on your network can use your GPU.
 

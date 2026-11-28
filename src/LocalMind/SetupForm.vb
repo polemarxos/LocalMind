@@ -36,6 +36,8 @@ Public Class SetupForm
     ''' <summary>With <paramref name="preset"/>, shows that list (e.g. from a restored backup) instead of the recommended one.</summary>
     ''' <summary>The first start: the app opens only after the user picks the recommended models or "Set up myself".</summary>
     Private ReadOnly _welcome As Boolean
+    ' (a setup file the user opened: no tier list, and it doesn't count as the recommended setup)
+    Private ReadOnly _import As Boolean
 
     ''' <summary>What the user chose: "download" (recommended models), "manual" (set up myself) or "" (closed).</summary>
     Public ReadOnly Property Choice As String
@@ -45,10 +47,12 @@ Public Class SetupForm
     End Property
     Private _choice As String = ""
 
-    Public Sub New(Optional intro As String = Nothing, Optional preset As SetupFile = Nothing, Optional welcome As Boolean = False)
+    Public Sub New(Optional intro As String = Nothing, Optional preset As SetupFile = Nothing, Optional welcome As Boolean = False,
+                   Optional importMode As Boolean = False)
         _preset = preset
         _welcome = welcome
-        Text = Localizer.T("Recommended models")
+        _import = importMode
+        Text = Localizer.T(If(importMode, "Import a setup", "Recommended models"))
         Size = New Size(960, 640)
         MinimumSize = New Size(760, 480)
         StartPosition = FormStartPosition.CenterParent
@@ -69,7 +73,11 @@ Public Class SetupForm
         Dim btnExport = Theme.MakeButton(Localizer.T("💾 Export my setup…"))
         AddHandler btnImport.Click, Sub() ImportFile()
         AddHandler btnExport.Click, Sub() ExportSetup(Me)
-        bar.Controls.AddRange({cmbTier, btnImport, btnExport})
+        If _import Then
+            bar.Controls.Add(btnImport)
+        Else
+            bar.Controls.AddRange({cmbTier, btnImport, btnExport})
+        End If
         head.Controls.Add(lblInfo)
         head.Controls.Add(title)
         head.Controls.Add(bar)
@@ -202,15 +210,29 @@ Public Class SetupForm
         If s Is Nothing Then
             lblInfo.Text = Localizer.T("The list could not be read. Check the internet connection and try again.")
         Else
-            lblInfo.Text = String.Format(Localizer.T("This PC: {0}. {1} — chosen for your graphics card; untick anything you don't want."),
-                                         _hw.Summary, If(String.IsNullOrEmpty(s.Name), Localizer.T("Recommended setup"), s.Name))
+            If _import Then
+                lblInfo.Text = String.Format(Localizer.T("{0}: {1} models and LoRAs, {2} profiles. Ticked ones download; ✔ ones are already here. This PC: {3}."),
+                                             s.Name, s.Items.Count, s.Profiles.Count, _hw.Summary)
+            Else
+                lblInfo.Text = String.Format(Localizer.T("This PC: {0}. {1} — chosen for your graphics card; untick anything you don't want."),
+                                             _hw.Summary, If(String.IsNullOrEmpty(s.Name), Localizer.T("Recommended setup"), s.Name))
+            End If
             For Each it In s.Items
                 Dim installed = SetupLibrary.IsInstalled(it)
                 Dim size = SetupLibrary.SizeOf(it, _hw)
+                ' (a setup from a PC with a bigger graphics card: what can't run here is shown, and not ticked)
+                Dim tooBig = False
+                If Not installed AndAlso it.Kind = "media" Then
+                    Dim r = MediaStudio.Recipes().FirstOrDefault(Function(x) x.Id = it.Id)
+                    Dim v = If(r Is Nothing, Nothing, SetupLibrary.VariantFor(r, it.Variant, _hw))
+                    tooBig = v IsNot Nothing AndAlso MediaStudio.Fit(r, v, _hw) = FitLevel.TooBig
+                End If
+                Dim state = If(installed, Localizer.T("✔ Installed"), If(tooBig, Localizer.T("⚠ Too big for this graphics card"), Localizer.T("New")))
                 Dim li As New ListViewItem({DisplayName(it), Localizer.T(KindText(it)),
                                             If(size > 0, Downloader.FormatBytes(size), If(it.Kind = "llm", Localizer.T("best fit"), "")),
-                                            If(installed, Localizer.T("✔ Installed"), Localizer.T("New")) & If(String.IsNullOrEmpty(it.About), "", "  ·  " & it.About)}) With {
-                    .Tag = it, .Checked = installed OrElse it.Recommended, .ForeColor = If(installed, Theme.CDim, Theme.CText)}
+                                            state & If(String.IsNullOrEmpty(it.About), "", "  ·  " & it.About)}) With {
+                    .Tag = it, .Checked = installed OrElse (it.Recommended AndAlso Not tooBig) OrElse (_import AndAlso Not tooBig),
+                    .ForeColor = If(installed, Theme.CDim, If(tooBig, Color.FromArgb(230, 170, 90), Theme.CText))}
                 lst.Items.Add(li)
             Next
             If (s.Settings IsNot Nothing AndAlso s.Settings.Count > 0) OrElse s.Personas.Count > 0 Then
@@ -295,8 +317,10 @@ Public Class SetupForm
         AppCore.Settings.ShowNsfw = _uncensored
         AppCore.Settings.CivitaiRed = _uncensored
         If _uncensored Then AppCore.Settings.CivitaiRedConfirmed = True
-        AppCore.Settings.SetupTier = Tier
-        AppCore.Settings.SetupVersion = Math.Max(AppCore.Settings.SetupVersion, _setup.Version)
+        If Not _import Then
+            AppCore.Settings.SetupTier = Tier
+            AppCore.Settings.SetupVersion = Math.Max(AppCore.Settings.SetupVersion, _setup.Version)
+        End If
         AppCore.SaveSettings()
         _started = queued > 0
         _choice = "download"
@@ -348,6 +372,33 @@ Public Class SetupForm
     Private Shared Sub Fire(t As Task)
         t.ContinueWith(Sub(x) If x.Exception IsNot Nothing Then Safety.Log(x.Exception.GetBaseException(), "setup download"),
                        TaskScheduler.Default)
+    End Sub
+
+    ''' <summary>
+    ''' 📥 Opens a setup file (made with Export my setup, here or on another PC) and shows what is in it: the models,
+    ''' LoRAs and profiles, which are already here, and which are too big for this graphics card. The ticked ones download.
+    ''' </summary>
+    Public Shared Sub ImportSetup(owner As IWin32Window)
+        Dim s As SetupFile
+        Dim fileName As String
+        Using d As New OpenFileDialog() With {.Filter = Localizer.T("LocalMind setup") & " (*.json)|*.json|*.*|*.*", .Title = Localizer.T("Import a setup")}
+            If d.ShowDialog(owner) <> DialogResult.OK Then Return
+            fileName = d.FileName
+        End Using
+        Try
+            s = SetupLibrary.Parse(File.ReadAllText(fileName))
+        Catch ex As Exception
+            Localizer.Box(owner, Localizer.T("This is not a LocalMind setup file.") & vbCrLf & vbCrLf & ex.Message, "Import a setup", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            Return
+        End Try
+        If s Is Nothing OrElse (s.Items.Count = 0 AndAlso s.Profiles.Count = 0) Then
+            Localizer.Box(owner, Localizer.T("This setup file has no models in it."), "Import a setup", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            Return
+        End If
+        If String.IsNullOrWhiteSpace(s.Name) Then s.Name = Path.GetFileNameWithoutExtension(fileName)
+        Using f As New SetupForm(String.Format(Localizer.T("Import a setup: {0}"), s.Name), s, importMode:=True)
+            f.ShowDialog(owner)
+        End Using
     End Sub
 
     Private Sub ImportFile()

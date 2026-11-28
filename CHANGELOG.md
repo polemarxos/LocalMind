@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.26.35
+
+### Added
+- **File → 📤 Export my setup / 📥 Import a setup.** Export saves your chat, picture, video, music and voice models,
+  your LoRAs, profiles, personas and settings as a small file, with the download link of each, not the models
+  themselves. API keys, PINs and folders are never in it. Import opens such a file, from this PC or another, and
+  lists everything in it:
+  - ✔ what is already on this PC;
+  - the size of each download;
+  - ⚠ what is too big for this graphics card (left unticked).
+
+  Untick what you don't want and press Download selected: the models download in the background, and the profiles,
+  personas and settings are added. (Export was under Models before, and import was hidden in the recommended-models
+  window.)
+
 ## 2.26.34
 
 ### Fixed
