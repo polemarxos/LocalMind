@@ -51,7 +51,7 @@ Public Class SetupForm
         lblInfo.AutoSize = False
         lblInfo.Height = 44
         Dim bar As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 34, .WrapContents = False, .BackColor = Theme.CPanel}
-        cmbTier.Items.AddRange({Localizer.T("8 GB graphics card (or none)"), Localizer.T("16 GB graphics card or more")})
+        cmbTier.Items.AddRange({Localizer.T("8 GB graphics card (or none)"), Localizer.T("12 GB graphics card"), Localizer.T("16 GB graphics card or more")})
         Theme.StyleInput(cmbTier)
         Dim btnImport = Theme.MakeButton(Localizer.T("📂 Open a setup file…"))
         Dim btnExport = Theme.MakeButton(Localizer.T("💾 Export my setup…"))
@@ -92,7 +92,7 @@ Public Class SetupForm
         Controls.Add(head)
         Localizer.Apply(Me)
 
-        cmbTier.SelectedIndex = If(SetupLibrary.TierFor(_hw) = "8gb", 0, 1)
+        cmbTier.SelectedIndex = Array.IndexOf(Tiers, SetupLibrary.TierFor(_hw))
         AddHandler cmbTier.SelectedIndexChanged, Async Sub() Await LoadTierAsync()
         AddHandler Shown, Async Sub()
                               If _preset IsNot Nothing Then ShowSetup(_preset) Else Await LoadTierAsync()
@@ -148,9 +148,11 @@ Public Class SetupForm
         Return rb
     End Function
 
+    Private Shared ReadOnly Tiers As String() = {"8gb", "12gb", "16gb"}
+
     Private ReadOnly Property Tier As String
         Get
-            Return If(cmbTier.SelectedIndex = 0, "8gb", "16gb")
+            Return Tiers(Math.Max(0, cmbTier.SelectedIndex))
         End Get
     End Property
 
@@ -338,7 +340,7 @@ Public Class SetupForm
         Dim tier = SetupLibrary.TierFor(hw)
         Using d As New SaveFileDialog() With {.FileName = "localmind-setup-" & tier & ".json", .Filter = Localizer.T("LocalMind setup") & "|*.json"}
             If d.ShowDialog(owner) <> DialogResult.OK Then Return
-            Dim s = SetupLibrary.ExportInstalled(If(tier = "8gb", "8 GB graphics card", "16 GB graphics card"), hw)
+            Dim s = SetupLibrary.ExportInstalled(tier.Replace("gb", " GB graphics card"), hw)
             File.WriteAllText(d.FileName, SetupLibrary.ToJson(s))
             Dim noLink = SetupLibrary.LorasWithoutLink()
             Localizer.Box(owner, String.Format(Localizer.T("Saved {0} models, {1} profiles, {2} personas and your settings to {3}."),

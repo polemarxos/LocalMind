@@ -73,10 +73,12 @@ End Class
 Public Module SetupLibrary
     Public ReadOnly OnlineBase As String = $"https://raw.githubusercontent.com/{Updater.Repo}/main/setups/"
 
-    ''' <summary>"8gb" for graphics cards under 12 GB (and PCs without one), else "16gb".</summary>
+    ''' <summary>"8gb" for graphics cards under 10 GB (and PCs without one or with under 24 GB of RAM), "12gb" for
+    ''' 10–14 GB, else "16gb".</summary>
     Public Function TierFor(hw As HardwareInfo) As String
         ' (the 16 GB setup's video model also needs about 32 GB of RAM)
-        Return If(hw Is Nothing OrElse hw.VramGB < 12 OrElse (hw.RamBytes > 0 AndAlso hw.RamBytes < 24L * 1024 * 1024 * 1024), "8gb", "16gb")
+        If hw Is Nothing OrElse hw.VramGB < 10 OrElse (hw.RamBytes > 0 AndAlso hw.RamBytes < 24L * 1024 * 1024 * 1024) Then Return "8gb"
+        Return If(hw.VramGB < 14, "12gb", "16gb")
     End Function
 
     ''' <summary>The setup for a tier: the published one when it can be read, else the one built into LocalMind.</summary>

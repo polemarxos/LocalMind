@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.26.24
+
+### Added
+- **Recommended setup for 12 GB graphics cards.** It covers 10–14 GB cards, such as the RTX 3060 12 GB, 4070, 5070
+  and RX 7700 XT. Before, these cards got the 16 GB setup, whose models didn't fit. Uncensored editions:
+  - Chat: Qwen3.8 9B heretic · Q8_0.
+  - Pictures: KREA2 SNOFS Merge v16 · Q4_K_M.
+  - Editing: Noct Q V4 · INT8.
+  - Video: 10Eros Max Turbo · Q4_K_M.
+  - Music: YuE2 · BF16.
+  - Voice: Fish Audio S2 Pro.
+
+  Standard editions:
+  - Chat: Qwen3.5 9B (official) · Q8_0.
+  - Pictures: Krea 2 Turbo · Q5_K_S.
+  - Editing: Qwen-Image 2.1 · INT8 (Q8_0 on AMD).
+  - Video: HyperFlow H3 Flash · Q4_K_M.
+
+  It brings the same profiles and settings, and everything comes from Hugging Face.
+- Which setup a PC gets:
+  - **8 GB setup:** under 10 GB of VRAM, or less than 24 GB of RAM.
+  - **12 GB setup:** 10–14 GB.
+  - **16 GB setup:** 14 GB and up.
+
+  The window's tier list also has "12 GB graphics card".
+
 ## 2.26.23
 
 ### Added

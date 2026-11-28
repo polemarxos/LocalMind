@@ -18,7 +18,7 @@
     <OptionExplicit>On</OptionExplicit>
     <OptionInfer>On</OptionInfer>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>2.26.23</Version>
+    <Version>2.26.24</Version>
 
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
@@ -54,6 +54,7 @@
     <EmbeddedResource Include="Resources\webui.html" LogicalName="webui.html" />
     <EmbeddedResource Include="Resources\catalog.json" LogicalName="catalog.json" />
     <EmbeddedResource Include="Resources\setup-8gb.json" LogicalName="setup-8gb.json" />
+    <EmbeddedResource Include="Resources\setup-12gb.json" LogicalName="setup-12gb.json" />
     <EmbeddedResource Include="Resources\setup-16gb.json" LogicalName="setup-16gb.json" />
   </ItemGroup>
 

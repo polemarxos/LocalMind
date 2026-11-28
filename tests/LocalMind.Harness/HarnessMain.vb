@@ -734,8 +734,14 @@ Module HarnessMain
             Check(Not s16.Items.Any(Function(i) i.Kind = "civitai") AndAlso onAmd.Items.Any(Function(i) i.Id = "noct-q-v4"), "16 GB setup: nothing from Civitai, Noct Q from Hugging Face")
             Check(onAmd.Profiles.Any(Function(p) p.Kind = "picture" AndAlso p.Model.EndsWith("v15")) AndAlso onAmd.Items.Any(Function(i) i.Id.EndsWith("v15") AndAlso i.Variant = "Q6_K") AndAlso
                   onNv.Items.Any(Function(i) i.Id.EndsWith("v16") AndAlso i.Variant = "INT8 ConvRot"), "picture: SNOFS v16 INT8 on NVIDIA, v15 Q6_K on AMD")
+            Dim hw12 As New HardwareInfo() With {.RamBytes = 32L << 30}
+            hw12.Gpus.Add(New GpuDevice With {.Name = "RTX 4070", .Vendor = GpuVendor.Nvidia, .VramBytes = 12L << 30})
+            Dim hw12low As New HardwareInfo() With {.RamBytes = 16L << 30}
+            hw12low.Gpus.Add(New GpuDevice With {.Name = "RTX 4070", .Vendor = GpuVendor.Nvidia, .VramBytes = 12L << 30})
+            nv.RamBytes = 32L << 30
+            Check(SetupLibrary.TierFor(hw12) = "12gb" AndAlso SetupLibrary.TierFor(hw12low) = "8gb" AndAlso SetupLibrary.TierFor(nv) = "16gb", "tiers: 12 GB card → 12gb, low RAM → 8gb, 16 GB → 16gb")
             ' 🛡 Standard content: official models, profiles follow; Uncensored: as made
-            For Each tierFile In {"16gb", "8gb"}
+            For Each tierFile In {"16gb", "12gb", "8gb"}
                 Dim stX = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", tierFile & ".json")))
                 For Each hwX In {nv, amd}
                     Dim std = SetupLibrary.ForThisPc(stX, hwX, False)
@@ -864,7 +870,7 @@ Module HarnessMain
 
         If only = "v226" Then
             Console.WriteLine("== v2.26: recommended setups, pictures of every type")
-            For Each tier In {"8gb", "16gb"}
+            For Each tier In {"8gb", "12gb", "16gb"}
                 Dim f = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", tier & ".json")
                 Dim st = SetupLibrary.Parse(File.ReadAllText(f))
                 Dim missing = st.Items.Where(Function(i) (i.Kind = "media" AndAlso Not MediaStudio.Recipes().Any(Function(r) r.Id = i.Id)) OrElse
