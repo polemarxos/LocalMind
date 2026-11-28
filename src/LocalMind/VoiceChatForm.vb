@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
@@ -150,7 +150,8 @@ Public Class WaveRecorder
     Public Sub Dispose() Implements IDisposable.Dispose
         _running = False
         Try
-            _thread?.Join(500)
+            ' (the buffers are freed only once the microphone thread has stopped reading them)
+            If _thread IsNot Nothing AndAlso _thread.IsAlive AndAlso Not _thread.Join(3000) Then Return
             If _h <> IntPtr.Zero Then
                 waveInReset(_h)
                 For Each hdr In _hdrs
@@ -245,32 +246,49 @@ Public Class VoiceChatForm
         log.ScrollToCaret()
     End Sub
 
-    Private Async Sub OnUtterance(wav As String)
-        If Interlocked.Exchange(_busy, 1) = 1 Then Return
+    ' (raised on the microphone thread: the turn runs on the window's own thread, so nothing races with closing it)
+    Private Sub OnUtterance(wav As String)
+        If IsDisposed OrElse Disposing Then
+            Try : File.Delete(wav) : Catch : End Try
+            Return
+        End If
+        Me.Post(Sub() HandleUtterance(wav))
+    End Sub
+
+    Private Async Sub HandleUtterance(wav As String)
+        If Interlocked.Exchange(_busy, 1) = 1 Then
+            Try : File.Delete(wav) : Catch : End Try
+            Return
+        End If
+        Dim text As String = ""
         Try
-            _rec.Paused = True                       ' don't hear ourselves
+            Dim rec = _rec
+            If rec IsNot Nothing Then rec.Paused = True     ' don't hear ourselves
             SetState("✍ " & Localizer.T("Writing down…"))
-            Dim text = (Await Voice.TranscribeAsync(wav, Nothing, CancellationToken.None)).Trim()
-            If text.Length < 2 Then Return
+            text = If(Await Voice.TranscribeAsync(wav, Nothing, CancellationToken.None), "").Trim()
+            If text.Length < 2 OrElse IsDisposed Then Return
             Append("🧑 " & text, Theme.CDim)
             SetState("🧠 " & Localizer.T("Thinking…"))
-            Dim answer = Await CType(Invoke(Function() _ask(text)), Task(Of String))
+            Dim answer = Await _ask(text)
+            If IsDisposed Then Return
             Append("🤖 " & answer, Theme.CText)
             SetState("🔊 " & Localizer.T("Speaking…"))
             If Not String.IsNullOrEmpty(AppCore.Settings.ReadAloudModel) Then
                 Await Voice.SpeakAiAsync(answer)
             Else
                 Voice.Speak(answer)
-                While Voice.IsSpeaking
+                While Voice.IsSpeaking AndAlso Not IsDisposed
                     Await Task.Delay(150)
                 End While
             End If
         Catch ex As Exception
-            Append("⚠ " & ex.Message, Color.OrangeRed)
+            FailureLog.Write("(voice conversation) " & text, "", ex)
+            If Not IsDisposed Then Append("⚠ " & ex.Message, Color.OrangeRed)
         Finally
             Try : File.Delete(wav) : Catch : End Try
-            If _rec IsNot Nothing AndAlso Not IsDisposed Then
-                _rec.Paused = False
+            Dim rec = _rec
+            If rec IsNot Nothing AndAlso Not IsDisposed Then
+                rec.Paused = False
                 SetState("🎤 " & Localizer.T("Listening…"))
             End If
             Interlocked.Exchange(_busy, 0)

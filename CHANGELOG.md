@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.26.37
+
+### Fixed
+- **Greek answers were read letter by letter.** LocalMind now finds the Greek Windows voice (Windows 10/11 installs
+  it as a newer "OneCore" voice that wasn't looked at). Without a Greek voice it says how to add one, instead of
+  spelling. AI voices without Greek hand Greek answers to one that has it, or to the Windows Greek voice.
+- **Random crashes in voice conversation.** The Windows voice now runs on one thread of its own, each turn runs on
+  the conversation window's thread, and the microphone's memory is freed only after it stops reading it. Errors
+  are logged instead of closing LocalMind.
+
+### Changed
+- **Emoji are not read aloud.** With Windows voices they set the mood of their sentence (😄 brighter, 😢 slower and
+  lower, 😠 firmer, 😮 higher, 🤔 calmer).
+- **Copy diagnostics includes LocalMind's error log and recent crashes from the Windows event log.**
+
 ## 2.26.36
 
 ### Changed

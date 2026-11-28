@@ -1442,5 +1442,6 @@
 "Removed": "Αφαιρέθηκε",
 "What's new:": "Τι νέο υπάρχει:",
 "…and {0} more": "…και {0} ακόμη",
-"LocalMind {0} is available (you have {1}).": "Το LocalMind {0} είναι διαθέσιμο (έχετε το {1})."
+"LocalMind {0} is available (you have {1}).": "Το LocalMind {0} είναι διαθέσιμο (έχετε το {1}).",
+"No Greek Windows voice is installed, so Greek can't be read aloud (an English voice only spells the letters). Add one in Windows Settings → Time & language → Speech → Add voices → Ελληνικά (Greek), or choose a multilingual AI voice (Chatterbox Multilingual) in Settings → Voice.": "Δεν υπάρχει εγκατεστημένη ελληνική φωνή των Windows, οπότε τα ελληνικά δεν μπορούν να διαβαστούν (μια αγγλική φωνή απλώς συλλαβίζει τα γράμματα). Προσθέστε μία στις Ρυθμίσεις των Windows → Ώρα και γλώσσα → Ομιλία → Προσθήκη φωνών → Ελληνικά, ή επιλέξτε μια πολύγλωσση φωνή AI (Chatterbox Multilingual) στις Ρυθμίσεις → Φωνή."
 }

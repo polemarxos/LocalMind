@@ -1,4 +1,5 @@
 ﻿Imports System
+Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
 Imports System.Text
@@ -73,10 +74,57 @@ Public NotInheritable Class DiagnosticsReport
             sb.AppendLine("  (could not read: " & ex.Message & ")")
         End Try
 
+        Section(sb, "Last errors (Data\errors.log)")
+        Try
+            Dim ef = Path.Combine(AppPaths.Roaming, "errors.log")
+            If File.Exists(ef) Then
+                Dim lines = File.ReadAllLines(ef).Where(Function(l) l.Trim() <> "").ToList()
+                For Each l In lines.Skip(Math.Max(0, lines.Count - 25))
+                    sb.AppendLine("  " & If(l.Length > 300, l.Substring(0, 300) & "…", l))
+                Next
+            Else
+                sb.AppendLine("  (none)")
+            End If
+        Catch
+        End Try
+
+        ' crashes that closed LocalMind (Windows keeps them in its Application log)
+        Section(sb, "Crashes (Windows event log)")
+        sb.AppendLine(CrashEvents())
+
         Section(sb, "Last failures")
         Dim fails = FailureLog.LastEntries(3)
         sb.AppendLine(If(String.IsNullOrWhiteSpace(fails), "  (none)", fails.TrimEnd()))
         Return sb.ToString()
+    End Function
+
+    ''' <summary>The last LocalMind crashes Windows recorded (.NET Runtime / Application Error), short.</summary>
+    Private Shared Function CrashEvents() As String
+        If Not OperatingSystem.IsWindows() Then Return "  (Windows only)"
+        Try
+            Dim q = "*[System[(Provider[@Name='.NET Runtime'] or Provider[@Name='Application Error']) and TimeCreated[timediff(@SystemTime) <= 1209600000]]]"
+            Dim psi As New Diagnostics.ProcessStartInfo("wevtutil", $"qe Application /q:""{q}"" /c:40 /rd:true /f:text") With {
+                .UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardOutput = True, .StandardOutputEncoding = Encoding.UTF8}
+            Dim text As String
+            Using p = Diagnostics.Process.Start(psi)
+                text = p.StandardOutput.ReadToEnd()
+                p.WaitForExit(10000)
+            End Using
+            ' one event per "Event[" block; only LocalMind's, the date and the first lines of what went wrong
+            Dim found As New List(Of String)()
+            For Each ev In text.Split({"Event["}, StringSplitOptions.RemoveEmptyEntries)
+                If ev.IndexOf("LocalMind", StringComparison.OrdinalIgnoreCase) < 0 Then Continue For
+                Dim dateLine = ev.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(Function(l) l.Trim().StartsWith("Date:"))
+                Dim i = ev.IndexOf("Description:", StringComparison.Ordinal)
+                Dim desc = If(i >= 0, ev.Substring(i + 12), ev)
+                Dim lines = desc.Split({vbCr, vbLf}, StringSplitOptions.RemoveEmptyEntries).Select(Function(l) l.Trim()).Where(Function(l) l <> "").Take(14)
+                found.Add("  " & If(dateLine?.Trim(), "") & vbLf & String.Join(vbLf, lines.Select(Function(l) "    " & If(l.Length > 200, l.Substring(0, 200) & "…", l))))
+                If found.Count >= 3 Then Exit For
+            Next
+            Return If(found.Count = 0, "  (none in the last 2 weeks)", String.Join(vbLf, found))
+        Catch ex As Exception
+            Return "  (could not read: " & ex.Message & ")"
+        End Try
     End Function
 
     Private Shared Sub Section(sb As StringBuilder, title As String)

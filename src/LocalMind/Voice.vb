@@ -1,4 +1,5 @@
 ﻿Imports System
+Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.IO
 Imports System.Linq
@@ -206,9 +207,16 @@ Public Module Voice
         End Using
     End Function
 
-    '════════════════ Text to speech (SAPI) ════════════════
+    '════════════════ Text to speech (Windows voices) ════════════════
+    ' Every Windows-voice call runs on one speech thread of its own (an STA thread): the voice object is never used
+    ' from two threads at once, which could crash LocalMind in the middle of a voice conversation.
     Private _voice As Object
+    Private _defaultVoice As Object
     Private _speaking As Boolean
+    ' (each Speak gets a number; Stop moves it on, so an older speech ends even if a new one starts right after)
+    Private _speechNo As Integer
+    Private _ttsThread As Thread
+    Private ReadOnly _ttsQueue As New Collections.Concurrent.BlockingCollection(Of Action)()
 
     Public ReadOnly Property IsSpeaking As Boolean
         Get
@@ -216,25 +224,123 @@ Public Module Voice
         End Get
     End Property
 
-    ''' <summary>Installed Windows voices ("Microsoft Stefanos - Greek", …).</summary>
+    Private Sub OnSpeechThread(a As Action)
+        SyncLock _ttsQueue
+            If _ttsThread Is Nothing Then
+                _ttsThread = New Thread(Sub()
+                                            For Each work In _ttsQueue.GetConsumingEnumerable()
+                                                Try
+                                                    work()
+                                                Catch ex As Exception
+                                                    FailureLog.Write("(reading aloud)", "", ex)
+                                                End Try
+                                            Next
+                                        End Sub) With {.IsBackground = True, .Name = "LocalMind speech"}
+                _ttsThread.SetApartmentState(ApartmentState.STA)
+                _ttsThread.Start()
+            End If
+        End SyncLock
+        _ttsQueue.Add(a)
+    End Sub
+
+    ''' <summary>Runs on the speech thread and waits for the result (at most 15 s).</summary>
+    Private Function OnSpeechThread(Of T)(f As Func(Of T)) As T
+        Dim tcs As New TaskCompletionSource(Of T)(TaskCreationOptions.RunContinuationsAsynchronously)
+        OnSpeechThread(Sub()
+                           Try
+                               tcs.TrySetResult(f())
+                           Catch ex As Exception
+                               tcs.TrySetException(ex)
+                           End Try
+                       End Sub)
+        If Not tcs.Task.Wait(15000) Then Throw New TimeoutException("The Windows voice did not answer.")
+        Return tcs.Task.Result
+    End Function
+
+    ' (speech thread only)
+    Private Function GetVoice() As Object
+        If _voice Is Nothing Then
+            _voice = CreateObject("SAPI.SpVoice")
+            _defaultVoice = _voice.Voice
+        End If
+        Return _voice
+    End Function
+
+    ''' <summary>
+    ''' All Windows voices: the classic ones and the newer "OneCore" ones that Windows 10/11 installs with a language
+    ''' (Settings → Time &amp; language → Speech), such as the Greek voice. (speech thread only)
+    ''' </summary>
+    Private Function AllVoiceTokens(v As Object) As List(Of Object)
+        Dim list As New List(Of Object)()
+        Dim seen As New HashSet(Of String)(StringComparer.OrdinalIgnoreCase)
+        Dim add = Sub(tokens As Object)
+                      If tokens Is Nothing Then Return
+                      For i = 0 To CInt(tokens.Count) - 1
+                          Try
+                              Dim t = tokens.Item(i)
+                              If seen.Add(CStr(t.GetDescription())) Then list.Add(t)
+                          Catch
+                          End Try
+                      Next
+                  End Sub
+        Try
+            add(v.GetVoices())
+        Catch
+        End Try
+        For Each key In {"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech_OneCore\Voices", "HKEY_CURRENT_USER\SOFTWARE\Microsoft\Speech_OneCore\Voices"}
+            Try
+                Dim cat = CreateObject("SAPI.SpObjectTokenCategory")
+                cat.SetId(key, False)
+                add(cat.EnumerateTokens())
+            Catch
+            End Try
+        Next
+        Return list
+    End Function
+
+    Private Function IsGreekToken(t As Object) As Boolean
+        Dim desc = "", lang = ""
+        Try : desc = CStr(t.GetDescription()) : Catch : End Try
+        Try : lang = CStr(t.GetAttribute("Language")) : Catch : End Try
+        Return lang.Split(";"c).Any(Function(x) x.Trim().Equals("408", StringComparison.OrdinalIgnoreCase)) OrElse
+               desc.IndexOf("Greek", StringComparison.OrdinalIgnoreCase) >= 0 OrElse desc.Contains("Ελλ")
+    End Function
+
+    ''' <summary>The voice to use: a Greek one for Greek text, else the one chosen in Settings, else Windows' default.</summary>
+    Private Function PickVoice(v As Object, greek As Boolean) As Object
+        Dim tokens = AllVoiceTokens(v)
+        If greek Then Return tokens.FirstOrDefault(AddressOf IsGreekToken)
+        Dim wanted = AppCore.Settings.TtsVoice
+        If Not String.IsNullOrEmpty(wanted) Then
+            Dim t = tokens.FirstOrDefault(Function(x) CStr(x.GetDescription()) = wanted)
+            If t IsNot Nothing Then Return t
+        End If
+        Return _defaultVoice
+    End Function
+
+    ''' <summary>Installed Windows voices ("Microsoft Stefanos - Greek", …), the newer OneCore ones included.</summary>
     Public Function VoiceNames() As String()
         Try
-            Dim v = GetVoice()
-            Dim tokens = v.GetVoices()
-            Dim names As New Collections.Generic.List(Of String)
-            For i = 0 To CInt(tokens.Count) - 1
-                names.Add(CStr(tokens.Item(i).GetDescription()))
-            Next
-            Return names.ToArray()
+            Return OnSpeechThread(Function() AllVoiceTokens(GetVoice()).Select(Function(t) CStr(t.GetDescription())).ToArray())
         Catch
             Return Array.Empty(Of String)()
         End Try
     End Function
 
-    Private Function GetVoice() As Object
-        If _voice Is Nothing Then _voice = CreateObject("SAPI.SpVoice")
-        Return _voice
+    ''' <summary>A Windows voice that speaks Greek is installed.</summary>
+    Public Function HasGreekVoice() As Boolean
+        Try
+            Return OnSpeechThread(Function() AllVoiceTokens(GetVoice()).Any(AddressOf IsGreekToken))
+        Catch
+            Return False
+        End Try
     End Function
+
+    Public ReadOnly Property NoGreekVoiceMessage As String
+        Get
+            Return Localizer.T("No Greek Windows voice is installed, so Greek can't be read aloud (an English voice only spells the letters). Add one in Windows Settings → Time & language → Speech → Add voices → Ελληνικά (Greek), or choose a multilingual AI voice (Chatterbox Multilingual) in Settings → Voice.")
+        End Get
+    End Property
 
     <DllImport("winmm.dll", CharSet:=CharSet.Unicode)>
     Private Function PlaySound(pszSound As String, hmod As IntPtr, fdwSound As UInteger) As Boolean
@@ -243,18 +349,15 @@ Public Module Voice
 
     Private _aiCts As CancellationTokenSource
 
-    ''' <summary>Text made speakable: no code blocks, Markdown symbols or citation marks.</summary>
+    ''' <summary>Text made speakable: no code, Markdown, links, citation marks or emoji.</summary>
     Public Function CleanForSpeech(text As String) As String
-        Dim clean = Regex.Replace(If(text, ""), "```[\s\S]*?```", " (code) ")
-        clean = Regex.Replace(clean, "!\[[^\]]*\]\([^)]*\)", " ")
-        clean = Regex.Replace(clean, "\[([^\]]+)\]\([^)]*\)", "$1")
-        clean = Regex.Replace(clean, "[#*_`>|]+", " ")
-        clean = Regex.Replace(clean, "\[(\w?\d+)\]", "")
-        Return Regex.Replace(clean, "\s+", " ").Trim()
+        Return SpeechText.Plain(text)
     End Function
 
     Public Function IsGreek(text As String) As Boolean
-        Return Regex.Matches(If(text, ""), "[Ͱ-Ͽ]").Count > If(text, "").Length * 0.2
+        Dim t = If(text, "")
+        Dim letters = Regex.Matches(t, "\p{L}").Count
+        Return letters > 0 AndAlso Regex.Matches(t, "[Ͱ-Ͽἀ-῿]").Count > letters * 0.3
     End Function
 
     ''' <summary>Splits text into sentence groups of up to ~240 characters (short pieces start playing sooner).</summary>
@@ -273,20 +376,39 @@ Public Module Voice
         Return list
     End Function
 
+    ''' <summary>The AI voice for this text: the chosen one, or for Greek one that speaks Greek (Nothing = none can).</summary>
+    Private Function AiVoiceFor(greek As Boolean) As AudioModel
+        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = AppCore.Settings.ReadAloudModel AndAlso Not x.IsMusic)
+        If m Is Nothing OrElse Not greek Then Return m
+        If m.Langs.Count = 0 OrElse m.Langs.Contains("el") Then Return m
+        ' (the chosen voice has no Greek: another installed one that has)
+        Return AudioStudio.Models().FirstOrDefault(Function(x) Not x.IsMusic AndAlso x.Langs.Contains("el") AndAlso AudioStudio.IsInstalled(x))
+    End Function
+
     ''' <summary>
     ''' Reads text with an AI voice (Settings: ReadAloudModel + ReadAloudVoice): the next sentence is made while the
-    ''' current one plays, so long answers start quickly.
+    ''' current one plays, so long answers start quickly. Greek text goes to a voice that speaks Greek: another AI
+    ''' voice, else the Windows Greek voice.
     ''' </summary>
     Public Function SpeakAiAsync(text As String, Optional onStatus As Action(Of String) = Nothing) As Task
         StopSpeaking()
-        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = AppCore.Settings.ReadAloudModel AndAlso Not x.IsMusic)
-        If m Is Nothing Then Return Task.CompletedTask
+        Dim clean = SpeechText.Plain(text)
+        Dim greek = IsGreek(clean)
+        Dim m = AiVoiceFor(greek)
+        If m Is Nothing Then
+            ' no AI voice that can read this: the Windows voice (Greek, when installed)
+            Speak(text, allowAi:=False)
+            Return Task.Run(Async Function()
+                                While _speaking
+                                    Await Task.Delay(150)
+                                End While
+                            End Function)
+        End If
         Dim cts As New CancellationTokenSource()
         _aiCts = cts
         Dim ct = cts.Token
-        Dim clean = CleanForSpeech(text)
         Dim saved = VoiceLibrary.Find(AppCore.Settings.ReadAloudVoice)
-        Dim lang = If(IsGreek(clean), "el", If(saved?.Language, "en"))
+        Dim lang = If(greek, "el", If(saved?.Language, "en"))
         _speaking = True
         Return Task.Run(Async Function()
                             Try
@@ -316,12 +438,13 @@ Public Module Voice
     ''' joined), otherwise a Windows voice.
     ''' </summary>
     Public Async Function SpeakToFileAsync(text As String, ct As CancellationToken) As Task(Of String)
-        Dim clean = CleanForSpeech(text)
+        Dim clean = SpeechText.Plain(text)
+        Dim greek = IsGreek(clean)
         Dim out = Path.Combine(Path.GetTempPath(), $"localmind-speak-{Guid.NewGuid():N}.wav")
-        Dim m = AudioStudio.Models().FirstOrDefault(Function(x) x.Id = AppCore.Settings.ReadAloudModel AndAlso Not x.IsMusic)
+        Dim m = AiVoiceFor(greek)
         If m IsNot Nothing Then
             Dim saved = VoiceLibrary.Find(AppCore.Settings.ReadAloudVoice)
-            Dim lang = If(IsGreek(clean), "el", If(saved?.Language, "en"))
+            Dim lang = If(greek, "el", If(saved?.Language, "en"))
             Dim parts As New Collections.Generic.List(Of String)
             For Each piece In Chunks(clean)
                 parts.Add(Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {
@@ -333,21 +456,23 @@ Public Module Voice
             Next
             Return out
         End If
-        Await Task.Run(Sub()
-                           Dim v = CreateObject("SAPI.SpVoice")
-                           Dim fs = CreateObject("SAPI.SpFileStream")
-                           fs.Format.Type = 22                 ' 22 kHz 16-bit mono
-                           fs.Open(out, 3, False)              ' create for write
-                           v.AudioOutputStream = fs
-                           If IsGreek(clean) Then
-                               Dim tokens = v.GetVoices()
-                               For i = 0 To CInt(tokens.Count) - 1
-                                   If CStr(tokens.Item(i).GetDescription()).Contains("Greek") Then v.Voice = tokens.Item(i) : Exit For
-                               Next
-                           End If
-                           v.Speak(clean, 0)
-                           fs.Close()
-                       End Sub, ct)
+        Dim sentences = SpeechText.Prepare(text)
+        Dim ok = Await Task.Run(Function() OnSpeechThread(Function()
+                                                              Dim v = CreateObject("SAPI.SpVoice")
+                                                              Dim tok = PickVoice(v, greek)
+                                                              If greek AndAlso tok Is Nothing Then Return False
+                                                              If tok IsNot Nothing Then v.Voice = tok
+                                                              Dim fs = CreateObject("SAPI.SpFileStream")
+                                                              fs.Format.Type = 22                 ' 22 kHz 16-bit mono
+                                                              fs.Open(out, 3, False)              ' create for write
+                                                              v.AudioOutputStream = fs
+                                                              For Each part In sentences
+                                                                  v.Speak(SpeechText.ToSapiXml(part), 8)   ' SVSFIsXML
+                                                              Next
+                                                              fs.Close()
+                                                              Return True
+                                                          End Function), ct)
+        If Not ok Then Throw New Exception(NoGreekVoiceMessage)
         Return out
     End Function
 
@@ -381,59 +506,51 @@ Public Module Voice
         End Using
     End Sub
 
-    ''' <summary>Reads text aloud (async): the chosen AI voice, or Windows voices (Greek voice for Greek text when installed).</summary>
-    Public Sub Speak(text As String)
-        If Not String.IsNullOrEmpty(AppCore.Settings.ReadAloudModel) AndAlso
+    ''' <summary>
+    ''' Reads text aloud (returns at once): the chosen AI voice, or a Windows voice: the Greek one for Greek text, with
+    ''' each sentence's emoji setting its mood. Throws when the text is Greek and no voice can read Greek.
+    ''' </summary>
+    Public Sub Speak(text As String, Optional allowAi As Boolean = True)
+        If allowAi AndAlso Not String.IsNullOrEmpty(AppCore.Settings.ReadAloudModel) AndAlso
            AudioStudio.Models().Any(Function(x) x.Id = AppCore.Settings.ReadAloudModel) Then
             Dim unused = SpeakAiAsync(text)
             Return
         End If
-        Try
-            Dim v = GetVoice()
-            StopSpeaking()
-            Dim clean = Regex.Replace(If(text, ""), "```[\s\S]*?```", " (code) ")
-            clean = Regex.Replace(clean, "[#*_`>|]+", " ")
-            clean = Regex.Replace(clean, "\[(\w?\d+)\]", "")
-            Dim isGreek = Regex.Matches(clean, "[Ͱ-Ͽ]").Count > clean.Length * 0.2
-            Dim wanted = AppCore.Settings.TtsVoice
-            Dim tokens = v.GetVoices()
-            For i = 0 To CInt(tokens.Count) - 1
-                Dim t = tokens.Item(i)
-                Dim desc = CStr(t.GetDescription())
-                Dim lang = ""
-                Try
-                    lang = CStr(t.GetAttribute("Language"))
-                Catch
-                End Try
-                Dim greekVoice = lang.Split(";"c).Any(Function(x) x.Trim().Equals("408", StringComparison.OrdinalIgnoreCase)) OrElse desc.Contains("Greek")
-                If (isGreek AndAlso greekVoice) OrElse (Not isGreek AndAlso Not String.IsNullOrEmpty(wanted) AndAlso desc = wanted) Then
-                    v.Voice = t
-                    Exit For
-                End If
-            Next
-            _speaking = True
-            v.Speak(clean, 1)   ' SVSFlagsAsync
-            Task.Run(Sub()
-                         Try
-                             v.WaitUntilDone(-1)
-                         Catch
-                         End Try
-                         _speaking = False
-                     End Sub)
-        Catch ex As Exception
-            _speaking = False
-            Throw New Exception("Text-to-speech is not available: " & ex.Message)
-        End Try
+        StopSpeaking()
+        Dim sentences = SpeechText.Prepare(text)
+        If sentences.Count = 0 Then Return
+        Dim greek = IsGreek(String.Join(" ", sentences.Select(Function(p) p.Text)))
+        ' (no Greek voice: say so, rather than an English voice spelling every letter)
+        If greek AndAlso Not HasGreekVoice() Then Throw New Exception(NoGreekVoiceMessage)
+        Dim mine = Interlocked.Increment(_speechNo)
+        _speaking = True
+        OnSpeechThread(Sub()
+                           Try
+                               Dim v = GetVoice()
+                               Dim tok = PickVoice(v, greek)
+                               If tok IsNot Nothing Then v.Voice = tok
+                               For Each part In sentences
+                                   If Volatile.Read(_speechNo) <> mine Then Exit For
+                                   v.Speak(SpeechText.ToSapiXml(part), 1 Or 8)     ' SVSFlagsAsync | SVSFIsXML
+                                   ' (waiting in short steps, so Stop takes effect at once)
+                                   Do Until CBool(v.WaitUntilDone(100))
+                                       If Volatile.Read(_speechNo) <> mine Then
+                                           v.Speak("", 2)                         ' SVSFPurgeBeforeSpeak
+                                           Exit For
+                                       End If
+                                   Loop
+                               Next
+                           Finally
+                               If Volatile.Read(_speechNo) = mine Then _speaking = False
+                           End Try
+                       End Sub)
     End Sub
 
     Public Sub StopSpeaking()
+        Interlocked.Increment(_speechNo)
         Try
             _aiCts?.Cancel()            ' also stops its llama-tts run
             PlaySound(Nothing, IntPtr.Zero, 0)
-        Catch
-        End Try
-        Try
-            If _voice IsNot Nothing Then _voice.Speak("", 2)   ' SVSFPurgeBeforeSpeak
         Catch
         End Try
         _speaking = False

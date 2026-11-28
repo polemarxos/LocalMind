@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Drawing
 Imports System.IO
 Imports System.Linq
@@ -245,6 +245,8 @@ Partial Class MainForm
         End Try
     End Sub
 
+    Private _speakProblemShown As Boolean
+
     Private Sub SpeakAnswer(text As String)
         Try
             If Voice.IsSpeaking Then
@@ -257,6 +259,11 @@ Partial Class MainForm
             End If
         Catch ex As Exception
             SetStatus(ex.Message)
+            ' (e.g. no Greek voice installed: said once, plainly)
+            If Not _speakProblemShown Then
+                _speakProblemShown = True
+                Localizer.Box(Me, ex.Message, "Read aloud", MessageBoxButtons.OK, MessageBoxIcon.Information)
+            End If
         End Try
     End Sub
 

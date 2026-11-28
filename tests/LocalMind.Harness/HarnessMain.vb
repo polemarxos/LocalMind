@@ -149,6 +149,17 @@ Module HarnessMain
                   wn.All(Function(l) Not l.Contains("**") AndAlso Not l.Contains("](") AndAlso l.Length < 130),
                   "update window: short plain lines for every version since 2.26.33", String.Join(" | ", wn.Take(4)))
             Check(Not wn.Any(Function(l) l.Contains("Buttons under every picture")), "…and nothing from 2.26.33 itself")
+            ' 🔊 what the voice reads: no emoji (they set the mood of their sentence), no Markdown
+            Dim sp = SpeechText.Prepare("**Great news!** 🎉 The Space Marines won. Sadly the Ork chief escaped 😢. Hmm 🤔 what next?")
+            Check(sp.Count = 4 AndAlso sp(0).Text = "Great news!" AndAlso sp(0).Mood = "happy" AndAlso sp(1).Mood = "" AndAlso sp(2).Mood = "sad" AndAlso
+                  sp(2).Text = "Sadly the Ork chief escaped." AndAlso sp(3).Mood = "calm" AndAlso
+                  Not sp.Any(Function(p) p.Text.Contains("🎉") OrElse p.Text.Contains("*")),
+                  "emoji set the mood and are not read", String.Join(" | ", sp.Select(Function(p) p.Mood & ":" & p.Text)))
+            Check(SpeechText.Plain("Γεια σου! 😄 Τι κάνεις; 👍") = "Γεια σου! Τι κάνεις;", "Greek kept, emoji gone", SpeechText.Plain("Γεια σου! 😄 Τι κάνεις; 👍"))
+            Check(Voice.IsGreek("Οι Space Marines του Warhammer 40k είναι οι καλύτεροι πολεμιστές.") AndAlso Not Voice.IsGreek("The Space Marines are the best."),
+                  "Greek answers with English names count as Greek")
+            Check(SpeechText.ToSapiXml(New SpeechText.Part With {.Text = "Tom & Jerry <3", .Mood = "sad"}).Contains("Tom &amp; Jerry &lt;3") AndAlso
+                  SpeechText.ToSapiXml(New SpeechText.Part With {.Text = "x", .Mood = "sad"}).Contains("rate speed=""-2"""), "sad sentence: slower and lower, text escaped")
             ' a picture size the AI made up by itself is ignored; one the user asked for is kept
             Dim made = MediaSize.From(New JObject From {{"megapixels", 2}}, "generate me an image of two ultra marines")
             Check(made.Megapixels = 0, "size the AI made up is ignored", made.Megapixels.ToString())
