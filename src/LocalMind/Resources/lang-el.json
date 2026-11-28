@@ -1380,5 +1380,7 @@
 "Choose \"Download selected\" for the recommended models, or \"Set up myself\" to pick models yourself.": "Επιλέξτε «Λήψη επιλεγμένων» για τα προτεινόμενα μοντέλα ή «Θα το ρυθμίσω μόνος μου» για να διαλέξετε μοντέλα μόνοι σας.",
 "Close LocalMind now? This window shows again the next time you open it.": "Κλείσιμο του LocalMind τώρα; Αυτό το παράθυρο θα εμφανιστεί ξανά την επόμενη φορά που θα το ανοίξετε.",
 "First setup": "Πρώτη ρύθμιση",
-"Not enough graphics memory — trying again with less…": "Δεν φτάνει η μνήμη της κάρτας γραφικών — νέα προσπάθεια με λιγότερη…"
+"Not enough graphics memory — trying again with less…": "Δεν φτάνει η μνήμη της κάρτας γραφικών — νέα προσπάθεια με λιγότερη…",
+"The voice and music engine is missing — installing the AI engine again…": "Λείπει η μηχανή φωνής και μουσικής — γίνεται ξανά εγκατάσταση της μηχανής AI…",
+"llama-tts.exe is missing from the AI engine, even after installing it again. Windows Security or another antivirus program may have removed it: allow it in Windows Security → Protection history, then try again.": "Το llama-tts.exe λείπει από τη μηχανή AI, ακόμη και μετά από νέα εγκατάσταση. Μπορεί να το αφαίρεσε η Ασφάλεια των Windows ή άλλο πρόγραμμα προστασίας από ιούς: επιτρέψτε το στην Ασφάλεια των Windows → Ιστορικό προστασίας και δοκιμάστε ξανά."
 }

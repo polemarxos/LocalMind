@@ -230,12 +230,13 @@ Public Class LlamaEngine
     Public Async Function InstallAsync(progress As IProgress(Of (Text As String, Percent As Integer)),
                                        ct As CancellationToken,
                                        Optional v As String = Nothing,
-                                       Optional reloadModel As Boolean = True) As Task(Of String)
+                                       Optional reloadModel As Boolean = True,
+                                       Optional force As Boolean = False) As Task(Of String)
         v = If(v, EffectiveVariant)
         SetState(EngineState.Installing, "Checking llama.cpp releases…")
         Try
             Dim rel = Await FindLatestReleaseAsync(v, ct)
-            If InstalledVersion(v) = rel.Tag AndAlso IsInstalled(v) Then
+            If Not force AndAlso InstalledVersion(v) = rel.Tag AndAlso IsInstalled(v) Then
                 SetState(If(_proc IsNot Nothing, EngineState.Ready, EngineState.Stopped), "Engine up to date (" & rel.Tag & ")")
                 Return rel.Tag
             End If

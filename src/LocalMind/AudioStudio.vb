@@ -261,7 +261,14 @@ Public Module AudioStudio
             Await AppCore.Engine.InstallAsync(New Progress(Of (Text As String, Percent As Integer))(Sub(p) progress?.Invoke(p.Percent, p.Text)), ct)
         End If
         Dim exe = TtsExe()
-        If exe Is Nothing Then Throw New Exception(Localizer.T("This engine build has no llama-tts. Update the engine in Settings → Built-in engine."))
+        If exe Is Nothing AndAlso AppCore.Engine.IsInstalled() Then
+            ' every llama.cpp build has llama-tts: it went missing after the install (an antivirus program, an old or
+            ' unfinished install), so the engine is installed again
+            progress?.Invoke(0, Localizer.T("The voice and music engine is missing — installing the AI engine again…"))
+            Await AppCore.Engine.InstallAsync(New Progress(Of (Text As String, Percent As Integer))(Sub(p) progress?.Invoke(p.Percent, p.Text)), ct, force:=True)
+            exe = TtsExe()
+        End If
+        If exe Is Nothing Then Throw New Exception(Localizer.T("llama-tts.exe is missing from the AI engine, even after installing it again. Windows Security or another antivirus program may have removed it: allow it in Windows Security → Protection history, then try again."))
         If Not IsInstalled(m) Then Await DownloadAsync(m, progress, ct)
 
         Dim out = Path.Combine(MediaStudio.OutputFolder, $"{DateTime.Now:yyyyMMdd-HHmmss}-{m.Id}.wav")

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.26.31
+
+### Fixed
+- **"This engine build has no llama-tts" when making a song or a cloned voice.** Every current llama.cpp build
+  includes llama-tts.exe (checked for CUDA 12, CUDA 13, Vulkan and CPU), so when it's missing it was removed after the
+  install, by an antivirus program or an older, unfinished install. LocalMind now installs the AI engine again by
+  itself and carries on. If the file is still missing after that, the message says to allow it in Windows Security →
+  Protection history.
+
 ## 2.26.30
 
 ### Fixed
