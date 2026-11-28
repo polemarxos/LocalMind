@@ -1249,5 +1249,6 @@
 "Delete this answer": "Διαγραφή αυτής της απάντησης",
 "Delete this answer?": "Διαγραφή αυτής της απάντησης;",
 "Make a profile: a downloaded model with your LoRAs, trigger words and prompts (or, for music and voice, a default style or voice). One profile of each kind is used by the chat.": "Φτιάξτε ένα προφίλ: ένα κατεβασμένο μοντέλο με τα LoRA, τις λέξεις ενεργοποίησης και τα prompt σας (ή, για μουσική και φωνή, ένα προεπιλεγμένο ύφος ή φωνή). Η συνομιλία χρησιμοποιεί ένα προφίλ από κάθε είδος.",
-"Preparing the model file (once)…": "Προετοιμασία του αρχείου μοντέλου (μία φορά)…"
+"Preparing the model file (once)…": "Προετοιμασία του αρχείου μοντέλου (μία φορά)…",
+"Open Models → Recommended models and press Download selected (or pick any model in Get models).": "Ανοίξτε Μοντέλα → Προτεινόμενα μοντέλα και πατήστε Λήψη επιλεγμένων (ή διαλέξτε όποιο μοντέλο θέλετε στη Λήψη μοντέλων)."
 }

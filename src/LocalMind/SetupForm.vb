@@ -38,14 +38,14 @@ Public Class SetupForm
         StartPosition = FormStartPosition.CenterParent
         Theme.ApplyForm(Me)
 
-        Dim head As New Panel() With {.Dock = DockStyle.Top, .Height = 96, .Padding = New Padding(14, 10, 14, 6), .BackColor = Theme.CPanel}
+        Dim head As New Panel() With {.Dock = DockStyle.Top, .Height = 132, .Padding = New Padding(14, 10, 14, 6), .BackColor = Theme.CPanel}
         Dim title = Theme.MakeLabel(If(intro, Localizer.T("Get everything you need in one step")), bold:=True)
         title.Dock = DockStyle.Top
         title.Font = New Font(Theme.BoldFont.FontFamily, 13.0!, FontStyle.Bold)
         lblInfo = Theme.MakeLabel("", dim_:=True)
         lblInfo.Dock = DockStyle.Top
         lblInfo.AutoSize = False
-        lblInfo.Height = 40
+        lblInfo.Height = 44
         Dim bar As New FlowLayoutPanel() With {.Dock = DockStyle.Bottom, .Height = 34, .WrapContents = False, .BackColor = Theme.CPanel}
         cmbTier.Items.AddRange({Localizer.T("8 GB graphics card (or none)"), Localizer.T("16 GB graphics card or more")})
         Theme.StyleInput(cmbTier)

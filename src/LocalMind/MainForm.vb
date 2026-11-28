@@ -679,7 +679,7 @@ Public Class MainForm
                 html = "<div class='logo'>✦</div><h1>" & enc("Welcome to LocalMind") & "</h1>" &
                        "<div class='sub'>" & enc("Your private AI. Everything runs on this PC — nothing is sent to the internet.") & "</div>" &
                        "<div class='steps'>" &
-                       stepHtml(1, "Get a model", "Click ⬇ Get models at the top, press ★ Recommend for my PC, then Download.") &
+                       stepHtml(1, "Get a model", "Open Models → Recommended models and press Download selected (or pick any model in Get models).") &
                        stepHtml(2, "Choose it", "When the download finishes, pick the model in the Model box at the top.") &
                        stepHtml(3, "Start chatting", "Type your message in the box below and press Ctrl+Enter.") &
                        "</div>"
