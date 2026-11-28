@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.26.21
+
+### Changed
+- **The recommended setups no longer need a Civitai key.** Everything downloads from Hugging Face:
+  - **Noct Q V4** (editing) now comes from its creator's own Hugging Face page (Noctaluna). It is a new built-in
+    model, "Noct Q V4 · Qwen Image 2.1 (uncensored)", INT8.
+  - **Pictures on 16 GB:** KREA2 Edit SNOFS Merge **v16 INT8** on NVIDIA, **v15 Q6_K** on AMD / Intel (from
+    Fronyax's Hugging Face). These replace SNOFS Krea 2 Turbo v1.6 from Civitai.
+  - **8 GB:** pictures stay KREA2 Edit SNOFS Merge v16 Q4_K_M, and editing is Noct Q V4 INT8 from Hugging Face.
+    On AMD it runs, but slower than on NVIDIA.
+- The INT8 editions of KREA2 Edit SNOFS Merge v15 and v16 are now in the picture model list.
+
 ## 2.26.20
 
 ### Added

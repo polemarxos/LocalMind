@@ -1,7 +1,7 @@
 {
   "Name": "8 GB graphics card",
   "Vram": 8,
-  "Version": 2,
+  "Version": 3,
   "Items": [
     {
       "Kind": "llm",
@@ -61,21 +61,18 @@
       "Recommended": true
     },
     {
-      "Kind": "civitai",
-      "Id": "user-60582d14",
+      "Kind": "media",
+      "Id": "noct-q-v4",
       "Repo": "",
       "Quant": "Auto",
-      "Variant": "",
-      "Name": "⭐ Noct Q - Uncensored Realism (Qwen Image 2.1) · v1.0 Q4_K_M",
+      "Variant": "INT8 ConvRot",
+      "Name": "Noct Q V4 · Qwen Image 2.1 (uncensored) · INT8",
       "About": "",
-      "Url": "https://civitai.com/models/2958896?modelVersionId=3351925",
-      "FileName": "NoctQ_V1_Q4_K.gguf",
+      "Url": "",
+      "FileName": "",
       "Family": "",
       "Triggers": "",
-      "Recommended": true,
-      "VersionId": 3351925,
-      "Size": 4050916384,
-      "BaseModel": "Qwen 2.1"
+      "Recommended": true
     },
     {
       "Kind": "audio",
@@ -111,7 +108,7 @@
       "Id": "b13fcb486d",
       "Name": "Qwen 2.1",
       "Kind": "edit",
-      "Model": "user-60582d14",
+      "Model": "noct-q-v4",
       "Loras": [],
       "Triggers": "",
       "DefaultPrompt": "",

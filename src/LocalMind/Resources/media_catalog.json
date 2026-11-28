@@ -523,6 +523,87 @@
   "repo": "leejet/Qwen-Image-2.1-GGUF"
  },
  {
+  "id": "noct-q-v4",
+  "name": "Noct Q V4 · Qwen Image 2.1 (uncensored)",
+  "kind": "image",
+  "family": "Qwen-Image",
+  "about": "Qwen Image 2.1 made uncensored by Noctaluna: realistic people, nudes and explicit scenes without a LoRA. Also edits pictures. From the creator's Hugging Face page.",
+  "steps": 30,
+  "cfg": 3.0,
+  "width": 1024,
+  "height": 1024,
+  "input": "optional",
+  "tasks": [
+   "create",
+   "edit",
+   "combine",
+   "inpaint",
+   "pose",
+   "layout",
+   "outline",
+   "restore"
+  ],
+  "refs": 3,
+  "speed": {
+   "label": "⚡ Lightning · 4 steps",
+   "steps": 4,
+   "highSteps": 0,
+   "cfg": 1.0,
+   "extra": "",
+   "loras": [
+    {
+     "name": "speed-qwen-image-2.1-lightning-4step",
+     "high": false,
+     "weight": 1.0,
+     "repo": "lightx2v/Qwen-Image-2.1-Lightning",
+     "path": "pytorch_lora_weights.safetensors",
+     "size": 67144280
+    }
+   ]
+  },
+  "negative": "",
+  "sampler": "euler",
+  "flowShift": 0,
+  "frames": 0,
+  "highSteps": 0,
+  "extra": "",
+  "fps": 0,
+  "uncensored": true,
+  "prefix": "",
+  "variants": [
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "Noctaluna/Noct-Q-Uncensored-Qwen-Image-2.1",
+    "path": "NoctQ_V4_int8_convrot.safetensors",
+    "size": 7256784368
+   }
+  ],
+  "parts": [
+   {
+    "role": "vae",
+    "repo": "Comfy-Org/Qwen-Image-2.1",
+    "path": "vae/qwen_image_2.1_vae_bf16.safetensors",
+    "size": 675509688
+   },
+   {
+    "role": "llm",
+    "repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+    "path": "Qwen3VL-8B-Instruct-Q4_K_M.gguf",
+    "size": 5027784800
+   },
+   {
+    "role": "llm_vision",
+    "edit": true,
+    "repo": "Qwen/Qwen3-VL-8B-Instruct-GGUF",
+    "path": "mmproj-Qwen3VL-8B-Instruct-Q8_0.gguf",
+    "size": 752289728
+   }
+  ],
+  "dl": 249146,
+  "repo": "Noctaluna/Noct-Q-Uncensored-Qwen-Image-2.1"
+ },
+ {
   "id": "qwen-image-2.1-turbo",
   "name": "Qwen-Image 2.1 Turbo",
   "kind": "image",
@@ -50894,6 +50975,13 @@
     "repo": "Fronyax/KREA2_Edit_SNOFS_Merge",
     "path": "krea2EditSNOFSMerge_v15-Q6_K.gguf",
     "size": 11538990112
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "Fronyax/KREA2_Edit_SNOFS_Merge",
+    "path": "krea2EditSNOFSMerge_v15-int8_convrot.safetensors",
+    "size": 13149019592
    }
   ],
   "parts": [
@@ -50947,6 +51035,13 @@
     "repo": "Fronyax/KREA2_Edit_SNOFS_Merge",
     "path": "krea2EditSNOFSMerge_v16-Q4_K_M.gguf",
     "size": 8670860320
+   },
+   {
+    "label": "INT8 ConvRot",
+    "format": "convrot",
+    "repo": "Fronyax/KREA2_Edit_SNOFS_Merge",
+    "path": "krea2EditSNOFSMerge_v16-int8_convrot.safetensors",
+    "size": 13149019592
    }
   ],
   "parts": [

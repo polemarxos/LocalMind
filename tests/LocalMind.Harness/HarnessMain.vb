@@ -731,10 +731,9 @@ Module HarnessMain
             Check(onNv.Items.Any(Function(i) i.Id = "singularity-10eros-turbo") AndAlso onNv.Profiles.Any(Function(p) p.Model = "singularity-10eros-turbo"), "NVIDIA: INT8 video model kept")
             Check(onAmd.Items.Any(Function(i) i.Id = "10eros-max-h3-turbo" AndAlso i.Variant = "Q4_K_M") AndAlso Not onAmd.Items.Any(Function(i) i.Id = "singularity-10eros-turbo") AndAlso
                   onAmd.Profiles.Any(Function(p) p.Kind = "video" AndAlso p.Model = "10eros-max-h3-turbo"), "AMD: GGUF video model, profile follows")
-            Dim noct = onAmd.Items.First(Function(i) i.Kind = "civitai")
-            Check(noct.Id = "user-60582d14" AndAlso noct.VersionId = 3351925 AndAlso noct.FileName.EndsWith(".gguf"), "AMD: Noct Q as GGUF, same profile id")
-            Check(onAmd.Profiles.Any(Function(p) p.Kind = "picture" AndAlso p.Model.StartsWith("hf-fronyax")) AndAlso onNv.Profiles.Any(Function(p) p.Kind = "picture" AndAlso p.Model = "user-881a04f9"),
-                  "picture: SNOFS INT8 on NVIDIA, its GGUF on AMD")
+            Check(Not s16.Items.Any(Function(i) i.Kind = "civitai") AndAlso onAmd.Items.Any(Function(i) i.Id = "noct-q-v4"), "16 GB setup: nothing from Civitai, Noct Q from Hugging Face")
+            Check(onAmd.Profiles.Any(Function(p) p.Kind = "picture" AndAlso p.Model.EndsWith("v15")) AndAlso onAmd.Items.Any(Function(i) i.Id.EndsWith("v15") AndAlso i.Variant = "Q6_K") AndAlso
+                  onNv.Items.Any(Function(i) i.Id.EndsWith("v16") AndAlso i.Variant = "INT8 ConvRot"), "picture: SNOFS v16 INT8 on NVIDIA, v15 Q6_K on AMD")
             Dim s8 = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", "8gb.json")))
             Check(s8.Items.All(Function(i) i.NotNvidia Is Nothing AndAlso (i.Kind <> "media" OrElse MediaStudio.Recipes().Any(Function(r) r.Id = i.Id))) AndAlso
                   s8.Profiles.All(Function(p) s8.Items.Any(Function(i) i.Id = p.Model)), "8 GB setup: GGUF only, every profile has its model")
