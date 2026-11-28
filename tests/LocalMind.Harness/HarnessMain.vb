@@ -740,6 +740,14 @@ Module HarnessMain
             hw12low.Gpus.Add(New GpuDevice With {.Name = "RTX 4070", .Vendor = GpuVendor.Nvidia, .VramBytes = 12L << 30})
             nv.RamBytes = 32L << 30
             Check(SetupLibrary.TierFor(hw12) = "12gb" AndAlso SetupLibrary.TierFor(hw12low) = "8gb" AndAlso SetupLibrary.TierFor(nv) = "16gb", "tiers: 12 GB card → 12gb, low RAM → 8gb, 16 GB → 16gb")
+            Dim b50 As New HardwareInfo()
+            b50.Gpus.Add(New GpuDevice With {.Name = "NVIDIA GeForce RTX 5070 Ti", .Vendor = GpuVendor.Nvidia, .VramBytes = 16L << 30, .ComputeCap = 12})
+            Dim b50old As New HardwareInfo() With {.CudaDriverVersion = 12.8}
+            b50old.Gpus.Add(New GpuDevice With {.Name = "NVIDIA GeForce RTX 5070 Ti", .Vendor = GpuVendor.Nvidia, .VramBytes = 16L << 30, .ComputeCap = 12})
+            Dim a40 As New HardwareInfo() With {.CudaDriverVersion = 12.8}
+            a40.Gpus.Add(New GpuDevice With {.Name = "NVIDIA GeForce RTX 4070", .Vendor = GpuVendor.Nvidia, .VramBytes = 12L << 30, .ComputeCap = 8.9})
+            Check(LlamaEngine.AutoVariant(b50) = "cuda13" AndAlso LlamaEngine.AutoVariant(b50old) = "cuda12" AndAlso LlamaEngine.AutoVariant(a40) = "cuda12",
+                  "RTX 50 → CUDA 13 (CUDA 12 only with a driver too old for 13)", $"{LlamaEngine.AutoVariant(b50)} {LlamaEngine.AutoVariant(b50old)} {LlamaEngine.AutoVariant(a40)}")
             ' 🛡 Standard content: official models, profiles follow; Uncensored: as made
             For Each tierFile In {"16gb", "12gb", "8gb"}
                 Dim stX = SetupLibrary.Parse(File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "setups", tierFile & ".json")))

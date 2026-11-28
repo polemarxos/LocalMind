@@ -85,6 +85,9 @@ Public Class LlamaEngine
             Case GpuVendor.Nvidia
                 Dim nv = hw.Gpus.Where(Function(g) g.Vendor = GpuVendor.Nvidia).ToList()
                 Dim allTuring = nv.Count > 0 AndAlso nv.All(Function(g) g.ComputeCap = 0 OrElse g.ComputeCap >= 7.5)
+                ' RTX 50 (Blackwell): CUDA 13, made for these cards — unless the driver is known to be too old for it
+                Dim rtx50 = nv.Any(Function(g) g.ComputeCap >= 12 OrElse System.Text.RegularExpressions.Regex.IsMatch(If(g.Name, ""), "RTX\s*50\d\d|RTX PRO \d+ Blackwell", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                If rtx50 AndAlso (hw.CudaDriverVersion = 0 OrElse hw.CudaDriverVersion >= 13) Then Return "cuda13"
                 If hw.CudaDriverVersion >= 13 AndAlso allTuring Then Return "cuda13"
                 If hw.CudaDriverVersion = 0 OrElse hw.CudaDriverVersion >= 12.4 Then Return "cuda12"
                 Return "vulkan"   ' driver too old for the CUDA builds

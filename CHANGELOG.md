@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.26.27
+
+### Changed
+- **RTX 50 cards use the CUDA 13 engine by default** when the engine is set to Automatic, for both chat and
+  pictures/video. CUDA 12 is only used when the graphics driver is known to be too old for CUDA 13 (it needs driver
+  580 or newer).
+
 ## 2.26.26
 
 ### Fixed
