@@ -34,6 +34,12 @@ Public Module ChatAgent
     Private ReadOnly AskClone As New Regex("\b(clone|copy|mimic|imitate|use)\b[^.?!\n]{0,40}\bvoice\b|\b(this|that|his|her|the same|my)\s+voice\b|\bvoice\s+(clone|cloning)\b|" &
                                            "(κλών|κλωνοπ|αντέγραψ|μιμήσ|μιμου)[^.?!;\n]{0,40}φων|(αυτή|ίδια|τη|την|του|της|μου)\s+(τη\s+)?φωνή",
                                            RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    ' "generate music about…", "make a song", "φτιάξε ένα τραγούδι"
+    Private ReadOnly AskSong As New Regex("\b(generate|make|create|compose|write|produce|sing|record)\b[^.?!\n]{0,60}\b(song|music|track|tune|ballad|anthem|rap|melody)s?\b|" &
+                                          "(φτιά[χξ]|δημιούργ|κάνε|γράψε|σύνθεσε|συνθεσε|τραγούδησε|βγάλε)[^.?!;\n]{0,60}(τραγούδι|μουσικ|κομμάτι|μελωδ|ραπ|ύμνο)",
+                                          RegexOptions.IgnoreCase Or RegexOptions.Compiled)
+    Private ReadOnly AskInstrumental As New Regex("\binstrumental\b|\bno (vocals|lyrics|singing)\b|\bwithout (vocals|lyrics|singing)\b|ορχηστρικ|χωρίς (φωνή|στίχους)",
+                                                  RegexOptions.IgnoreCase Or RegexOptions.Compiled)
     ' "extend the video by 6 seconds", "continue it", "συνέχισε το βίντεο"
     Private ReadOnly AskExtend As New Regex("\b(extend|continue|lengthen|prolong)\b[^.?!\n]{0,50}\b(video|clip|it|animation)\b|\bmake (it|the video|the clip) longer\b|" &
                                             "(επέκτεινε|συνέχισε|μάκρυνε)[^.?!;\n]{0,50}(βίντεο|κλιπ|το)", RegexOptions.IgnoreCase Or RegexOptions.Compiled)
@@ -49,6 +55,8 @@ Public Module ChatAgent
         Dim offered = tools.Select(Function(t) t("function")?.Value(Of String)("name")).ToList()
         ' The request that comes first in the message ("a picture … then a video of it" starts with the picture);
         ' on a tie: voice, then video, then picture.
+        ' a song "by cloning this voice" is a song sung with that voice, not a spoken clip
+        If offered.Contains("make_song") AndAlso AskSong.IsMatch(text) AndAlso Not AskVideo.IsMatch(text) Then Return "make_song"
         Dim best As String = Nothing, bestAt = Integer.MaxValue
         For Each c In {("clone_voice", AskClone), ("extend_video", AskExtend), ("generate_video", AskVideo), ("generate_image", AskEditPicture), ("generate_image", AskPicture)}
             Dim m = c.Item2.Match(text)
@@ -86,7 +94,8 @@ Public Module ChatAgent
             list.Add(Tool("make_song", "Compose a song with vocals (or an instrumental) with the local music model. Use it only when the user asks for a song or music.",
                 New JObject From {
                     {"style", New JObject From {{"type", "string"}, {"description", "Genre, mood, instruments, voice, tempo, in English"}}},
-                    {"lyrics", New JObject From {{"type", "string"}, {"description", "Lyrics with [verse] and [chorus] tags, in the user's language; empty for instrumental"}}},
+                    {"lyrics", New JObject From {{"type", "string"}, {"description", "Lyrics with [verse] and [chorus] tags, in the language the user asked for (keep names exactly as the user wants them); empty for instrumental"}}},
+                    {"voice", New JObject From {{"type", "string"}, {"description", "The voice that performs the lyrics, only when the user asked for one: 'attached' for the recording the user attached, or a saved voice name"}}},
                     {"persona", PersonaArg()}},
                 {"style"}))
         End If
@@ -314,6 +323,7 @@ Public Module ChatAgent
         Dim doneSteps As New List(Of String)()
         Dim asked = payload.ToList()   ' (the photo / recording the user attached stay with their message as more steps follow)
         Dim seen As New HashSet(Of String)()
+        Dim songWithVoice = False
         Dim stepNo = 0
         Do
             Dim searched = False
@@ -368,6 +378,8 @@ Public Module ChatAgent
                             md.AppendLine().AppendLine().Append(Await ExtendVideoAsync(prompt, MediaSize.From(args, userText), md.ToString(), payload, status, ct))
                             stepsThisRound.Add("video extended")
                         Case "clone_voice"
+                            ' (the song already performed the words in that voice)
+                            If songWithVoice Then Continue For
                             Dim words = If(args.Value(Of String)("text"), args.Value(Of String)("prompt"))
                             ' (a forced call carries the whole message: keep only the words to say)
                             If String.IsNullOrWhiteSpace(words) OrElse words = userText Then words = WordsToSay(userText)
@@ -381,8 +393,28 @@ Public Module ChatAgent
                                 style = w.Prompt
                                 If w.Name IsNot Nothing Then md.AppendLine().AppendLine().Append($"_🎭 {w.Name}:_ {EscapeAlt(style)}")
                             End If
-                            md.AppendLine().AppendLine().Append(Await MakeSongAsync(style, args.Value(Of String)("lyrics"), status, ct))
-                            stepsThisRound.Add("song made")
+                            Dim lyrics = args.Value(Of String)("lyrics")
+                            ' (a forced call carries only the user's words: describe the style and write the lyrics here)
+                            If String.IsNullOrWhiteSpace(style) Then style = If(args.Value(Of String)("prompt"), userText)
+                            If String.IsNullOrWhiteSpace(lyrics) AndAlso Not AskInstrumental.IsMatch(If(userText, "")) Then
+                                lyrics = Await WriteLyricsAsync(userText, opts.Model, status, ct)
+                            End If
+                            ' 🗣 "…by cloning this voice": the recording attached, or a saved voice named
+                            Dim vArg = If(args.Value(Of String)("voice"), "").Trim().TrimStart("@"c)
+                            Dim rec As String = Nothing, vName As String = Nothing
+                            If vArg.Equals("attached", StringComparison.OrdinalIgnoreCase) OrElse AskClone.IsMatch(If(userText, "")) Then rec = LastRecording(asked)
+                            If rec Is Nothing Then
+                                If vArg <> "" AndAlso Not vArg.Equals("attached", StringComparison.OrdinalIgnoreCase) AndAlso VoiceLibrary.Find(vArg) IsNot Nothing Then vName = vArg
+                                If vName Is Nothing Then vName = VoiceLibrary.All().FirstOrDefault(Function(v) Regex.IsMatch(If(userText, ""), "@" & Regex.Escape(v.Name) & "\b", RegexOptions.IgnoreCase))?.Name
+                            End If
+                            If (rec IsNot Nothing OrElse vName IsNot Nothing) AndAlso Not String.IsNullOrWhiteSpace(lyrics) AndAlso CanCloneVoice() Then
+                                md.AppendLine().AppendLine().Append(Await MakeSongWithVoiceAsync(style, lyrics, rec, vName, status, ct))
+                                songWithVoice = True
+                                stepsThisRound.Add("song made with the cloned voice")
+                            Else
+                                md.AppendLine().AppendLine().Append(Await MakeSongAsync(style, lyrics, status, ct))
+                                stepsThisRound.Add("song made")
+                            End If
                         Case "set_persona"
                             Dim isNew As Boolean
                             Dim p = FindOrMakePersona(args.Value(Of String)("name"), isNew)
@@ -754,32 +786,134 @@ Public Module ChatAgent
         Return t
     End Function
 
-    ''' <summary>
-    ''' Speaks the words in the voice of the attached recording (or of a saved voice). The recording is cut to a clean
-    ''' 15-second sample, its words are written down when the model works better with them, and it is kept in
-    ''' the voice library ("saveAs", or "Last chat voice"), so later messages can use it by name.
-    ''' </summary>
-    Public Async Function CloneVoiceAsync(words As String, recording As String, voiceName As String, saveAs As String,
-                                          status As Action(Of String), ct As CancellationToken) As Task(Of String)
-        ' 🗣 the chat's voice profile: its model, and its saved voice when no recording is attached
+    ''' <summary>The voice model that copies voices: the voice profile's, then the read-aloud one, then any.</summary>
+    Private Function CloneModel() As AudioModel
         Dim vprof = ProfileLibrary.ForChatAudio("voice")
-        Dim m = AudioStudio.Models().Where(Function(x) Not x.IsMusic AndAlso x.Clone AndAlso AudioStudio.IsInstalled(x)).
+        Return AudioStudio.Models().Where(Function(x) Not x.IsMusic AndAlso x.Clone AndAlso AudioStudio.IsInstalled(x)).
                     OrderBy(Function(x) If(vprof IsNot Nothing AndAlso x.Id = vprof.Model, 0, If(x.Id = AppCore.Settings.ReadAloudModel, 1, 2))).FirstOrDefault()
-        If vprof IsNot Nothing Then
-            If String.IsNullOrEmpty(recording) AndAlso String.IsNullOrWhiteSpace(voiceName) AndAlso String.IsNullOrWhiteSpace(saveAs) Then voiceName = vprof.Voice
-            If String.IsNullOrWhiteSpace(words) Then words = vprof.DefaultPrompt
-        End If
-        If m Is Nothing Then Return Localizer.T("(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in ⬇ Get models → Voice.)")
-        If String.IsNullOrWhiteSpace(words) Then Return Localizer.T("(Tell me what the voice should say, e.g. clone this voice and say: Good morning!)")
+    End Function
 
+    ''' <summary>Song lyrics written by the chat model from the request (its language and names), with [verse] / [chorus] tags.</summary>
+    Private Async Function WriteLyricsAsync(userText As String, model As String, status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        status?.Invoke(Localizer.T("Writing the lyrics…"))
+        Dim msgs As New List(Of ChatMessage) From {
+            New ChatMessage With {.Role = "system", .Content = "You write song lyrics. Follow the user's request exactly: the language they ask for, and names kept the way they say. " &
+                "Use [verse], [chorus] and [bridge] tags on their own lines; about 2 verses and a chorus. Reply with the lyrics only — no title, no notes."},
+            New ChatMessage With {.Role = "user", .Content = Regex.Replace(If(userText, ""), "\[Attached [^\]]*\]", "").Trim()}}
+        Try
+            Dim r = Await AppCore.Backend.StreamChatAsync(msgs, New ChatRequestOptions With {.Model = model, .Temperature = 0.8, .EnableThinking = False}, Nothing, Nothing, ct)
+            Dim t = Regex.Replace(If(r?.Content, ""), "<think>[\s\S]*?</think>", "").Trim()
+            Return If(t.Length >= 20, t, "")
+        Catch ex As OperationCanceledException
+            Throw
+        Catch
+            Return ""
+        End Try
+    End Function
+
+    ''' <summary>
+    ''' 🎵🗣 A song performed by a copied voice. The music models can't sing in someone else's voice, so the music
+    ''' model makes the backing track (instrumental, as long as the vocals) and the voice model performs the lyrics in
+    ''' the copied voice, section by section; the two are mixed into one song.
+    ''' </summary>
+    Public Async Function MakeSongWithVoiceAsync(style As String, lyrics As String, recording As String, voiceName As String,
+                                                 status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        Dim prof = ProfileLibrary.ForChatAudio("music")
+        Dim mm = If(prof IsNot Nothing, AudioStudio.Models().FirstOrDefault(Function(x) x.Id = prof.Model), Nothing)
+        If mm Is Nothing Then mm = AudioStudio.Models().FirstOrDefault(Function(x) x.IsMusic AndAlso AudioStudio.IsInstalled(x))
+        If mm Is Nothing Then Return Localizer.T("(No music model is downloaded yet — open ⬇ Get models → Music to get one.)")
+        Dim vm = CloneModel()
+        Dim prepared = Await PrepareVoiceAsync(vm, recording, voiceName, Nothing, lyrics, status, ct)
+        If prepared.Problem IsNot Nothing Then Return prepared.Problem
+        If prof IsNot Nothing Then style = ProfileLibrary.Compose(prof, style, "").Prompt
+
+        ' 1. the vocals: each section performed in the copied voice, with a short breath between them
+        Dim sections = SongSections(lyrics)
+        Dim parts As New List(Of String)()
+        For i = 0 To sections.Count - 1
+            Dim k = i
+            parts.Add(Await VideoMaker.SpeakAsync(sections(i), prepared.Name,
+                Sub(p, t) status?.Invoke($"🗣 {Localizer.T("Vocals")} {k + 1}/{sections.Count} — {t}" & If(p > 0, $" ({p}%)", "")), ct))
+        Next
+        Dim vocals = Path.Combine(Path.GetTempPath(), $"localmind-vocals-{Guid.NewGuid():N}.wav")
+        ' (joined by ffmpeg: the voice models write different sample rates)
+        Dim ins As New Text.StringBuilder(), fl As New Text.StringBuilder()
+        For i = 0 To parts.Count - 1
+            ins.Append($"-i ""{parts(i)}"" ")
+            fl.Append($"[{i}:a]aresample=44100,aformat=channel_layouts=mono,apad=pad_dur=1.2[a{i}];")
+        Next
+        For i = 0 To parts.Count - 1
+            fl.Append($"[a{i}]")
+        Next
+        fl.Append($"concat=n={parts.Count}:v=0:a=1[out]")
+        Await VideoTools.FfmpegAsync($"-hide_banner -loglevel error -y {ins}-filter_complex ""{fl}"" -map ""[out]"" -c:a pcm_s16le ""{vocals}""", ct)
+        Dim vInfo = Await VideoTools.InfoAsync(vocals, ct)
+
+        ' 2. the backing track, a little longer than the vocals (an intro and an outro)
+        Const Intro = 6.0
+        Dim secs = CInt(Math.Ceiling(vInfo.Seconds + Intro + 6))
+        status?.Invoke(Localizer.T("Composing…"))
+        Dim music = Await AudioStudio.GenerateAsync(New AudioStudio.AudioRequest With {.Model = mm, .Text = style & ", instrumental, no vocals", .Lyrics = Nothing, .Seconds = secs},
+                                                    Sub(p, t) status?.Invoke($"🎵 {t}" & If(p > 0, $" ({p}%)", "")), ct)
+
+        ' 3. mixed: vocals in after the intro, a touch of room, the music under them
+        status?.Invoke(Localizer.T("Mixing the song…"))
+        Dim out = Path.Combine(MediaStudio.OutputFolder, $"{DateTime.Now:yyyyMMdd-HHmmss}-song-voice.wav")
+        Dim ms = CInt(Intro * 1000)
+        Await VideoTools.FfmpegAsync("-hide_banner -loglevel error -y " &
+            $"-i ""{music}"" -i ""{vocals}"" -filter_complex " &
+            $"""[1:a]aresample=44100,aformat=channel_layouts=stereo,adelay={ms}|{ms},aecho=0.8:0.6:60:0.18,volume=1.5[v];" &
+            "[0:a]aresample=44100,aformat=channel_layouts=stereo,volume=0.6[m];" &
+            "[m][v]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0,alimiter=limit=0.95[out]"" " &
+            $"-map ""[out]"" -c:a pcm_s16le ""{out}""", ct)
+        For Each f In parts.Concat({vocals, music})
+            Try : File.Delete(f) : Catch : End Try
+        Next
+        If Not File.Exists(out) Then Throw New Exception(Localizer.T("Could not mix the song."))
+        MediaStudio.SaveInfo(out, "music", mm.Name & " + " & If(vm?.Name, "") & " · " & prepared.Name, style, lyrics)
+        Return $"[🎵 {EscapeAlt(style)}](https://outputs.localmind/{Uri.EscapeDataString(Path.GetFileName(out))})" & vbCrLf & vbCrLf &
+               $"_{Localizer.T("Voice")}: {prepared.Name} · {If(vm?.Name, "")} — " &
+               Localizer.T("the music models can't sing in a copied voice, so the copied voice performs the lyrics over music made for them") & "_"
+    End Function
+
+    ''' <summary>The lyrics split at their [verse] / [chorus] tags, without the tags (or in pieces of a few lines).</summary>
+    Public Function SongSections(lyrics As String) As List(Of String)
+        Dim list As New List(Of String)()
+        Dim cur As New Text.StringBuilder()
+        Dim lines = 0
+        For Each raw In If(lyrics, "").Replace(vbCr, "").Split(ChrW(10))
+            Dim l = raw.Trim()
+            Dim isTag = Regex.IsMatch(l, "^\[[^\]]{1,30}\]$") OrElse Regex.IsMatch(l, "^\(?(verse|chorus|bridge|intro|outro|hook|pre-chorus)\b[^a-z]*\)?:?$", RegexOptions.IgnoreCase)
+            If isTag OrElse (l = "" AndAlso lines > 0) OrElse lines >= 6 Then
+                If cur.Length > 0 Then list.Add(cur.ToString().Trim())
+                cur.Clear()
+                lines = 0
+                If isTag OrElse l = "" Then Continue For
+            End If
+            If l = "" Then Continue For
+            cur.AppendLine(l)
+            lines += 1
+        Next
+        If cur.Length > 0 Then list.Add(cur.ToString().Trim())
+        Return list.Where(Function(x) x.Length > 0).ToList()
+    End Function
+
+    ''' <summary>
+    ''' The voice to speak with: a saved one, or the attached recording cut to a clean 15-second sample, its words
+    ''' written down when the model works better with them, and kept in the voice library ("saveAs", or
+    ''' "Last chat voice"). Problem is the text to show when there is no voice.
+    ''' </summary>
+    Private Async Function PrepareVoiceAsync(m As AudioModel, recording As String, voiceName As String, saveAs As String, words As String,
+                                             status As Action(Of String), ct As CancellationToken) As Task(Of (Name As String, Problem As String))
+        If m Is Nothing Then Return (Nothing, Localizer.T("(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in ⬇ Get models → Voice.)"))
         Dim name As String
         If String.IsNullOrEmpty(recording) Then
             Dim saved = If(String.IsNullOrWhiteSpace(voiceName), Nothing, VoiceLibrary.Find(voiceName))
             If saved Is Nothing Then saved = If(String.IsNullOrWhiteSpace(saveAs), Nothing, VoiceLibrary.Find(saveAs))
             If saved Is Nothing Then
                 Dim names = VoiceLibrary.All().Select(Function(v) v.Name).ToList()
-                Return Localizer.T("(Attach a recording of the voice (MP3, WAV, M4A…) to your message and ask again.)") &
-                       If(names.Count > 0, "  " & Localizer.T("Saved voices") & ": " & String.Join(", ", names), "")
+                Return (Nothing, Localizer.T("(Attach a recording of the voice (MP3, WAV, M4A…) to your message and ask again.)") &
+                       If(names.Count > 0, "  " & Localizer.T("Saved voices") & ": " & String.Join(", ", names), ""))
             End If
             name = saved.Name
         Else
@@ -810,6 +944,30 @@ Public Module ChatAgent
             VoiceLibrary.Add(name, sample, If(spoken, "").Trim(), If(Voice.IsGreek(words), "el", "en"))
             Try : File.Delete(sample) : Catch : End Try
         End If
+
+        Return (name, Nothing)
+    End Function
+
+    ''' <summary>
+    ''' Speaks the words in the voice of the attached recording (or of a saved voice). The recording is cut to a clean
+    ''' 15-second sample, its words are written down when the model works better with them, and it is kept in
+    ''' the voice library ("saveAs", or "Last chat voice"), so later messages can use it by name.
+    ''' </summary>
+    Public Async Function CloneVoiceAsync(words As String, recording As String, voiceName As String, saveAs As String,
+                                          status As Action(Of String), ct As CancellationToken) As Task(Of String)
+        ' 🗣 the chat's voice profile: its model, and its saved voice when no recording is attached
+        Dim vprof = ProfileLibrary.ForChatAudio("voice")
+        Dim m = CloneModel()
+        If vprof IsNot Nothing Then
+            If String.IsNullOrEmpty(recording) AndAlso String.IsNullOrWhiteSpace(voiceName) AndAlso String.IsNullOrWhiteSpace(saveAs) Then voiceName = vprof.Voice
+            If String.IsNullOrWhiteSpace(words) Then words = vprof.DefaultPrompt
+        End If
+        If m Is Nothing Then Return Localizer.T("(No voice model that can copy a voice is downloaded yet — get Qwen3-TTS, Chatterbox or VoxCPM2 in ⬇ Get models → Voice.)")
+        If String.IsNullOrWhiteSpace(words) Then Return Localizer.T("(Tell me what the voice should say, e.g. clone this voice and say: Good morning!)")
+
+        Dim prepared = Await PrepareVoiceAsync(m, recording, voiceName, saveAs, words, status, ct)
+        If prepared.Problem IsNot Nothing Then Return prepared.Problem
+        Dim name = prepared.Name
 
         Dim wav = Await VideoMaker.SpeakAsync(words, name, Sub(p, t) status?.Invoke(If(p > 0, $"{t} ({p}%)", t)), ct)
         MediaStudio.SaveInfo(wav, "voice", m.Name & " · " & name, words, Nothing)

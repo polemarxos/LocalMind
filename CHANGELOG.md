@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.26.2
+
+### Added
+- **Back up everything (with API keys)** in the File menu saves one `.lmbackup` file with every setting (API keys,
+  PINs and tokens included), profiles, LoRA settings, personas, characters and their pictures, saved voices,
+  prompts, chats and documents. Models are not copied because they are too big. The backup lists them instead.
+- **Restore from backup** in the File menu. LocalMind restarts and puts the backup back before it loads anything.
+  Your current data is kept in a folder ending in `-before-restore`. After the restore, LocalMind offers to download
+  any models from the backup that are missing on this PC.
+- **Songs in a cloned voice.** You can ask "make a song about … by cloning this voice" and attach a recording.
+  LocalMind now makes a song instead of only a spoken clip. The music models can't sing in someone else's voice, so
+  it works like this:
+  - the music model makes the backing track;
+  - the voice model performs the lyrics in the copied voice, section by section;
+  - the two are mixed into one song.
+
+  When you don't give lyrics, the chat model writes them in the language you asked for and keeps names as you
+  wrote them.
+
+### Fixed
+- While music, pictures or video were being made, the status bar said "Engine idle (no model loaded)". It now says
+  the chat model was unloaded to make room and that your request is still running.
+- Music and voice progress now shows the time spent. Some models print no progress for minutes, which made the
+  work look stuck at 2%.
+
 ## 2.26.1
 
 ### Added

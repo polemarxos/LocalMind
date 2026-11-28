@@ -6,6 +6,12 @@ Public Module Program
     Public Sub Main()
         Safety.Install()
         Updater.CleanupOldVersion()
+        ' a backup chosen in "Restore from backup…" goes back first, before any setting is read
+        Try
+            If BackupService.ApplyPendingRestore() Then Environment.SetEnvironmentVariable("LOCALMIND_RESTORED", "1")
+        Catch ex As Exception
+            Safety.Log(ex, "restore")
+        End Try
         Application.SetHighDpiMode(HighDpiMode.SystemAware)
         Application.EnableVisualStyles()
         Application.SetCompatibleTextRenderingDefault(False)

@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.Drawing
 Imports System.IO
@@ -31,7 +31,11 @@ Public Class SetupForm
     End Property
     Private _started As Boolean
 
-    Public Sub New(Optional intro As String = Nothing)
+    Private ReadOnly _preset As SetupFile
+
+    ''' <summary>With <paramref name="preset"/>, shows that list (e.g. from a restored backup) instead of the recommended one.</summary>
+    Public Sub New(Optional intro As String = Nothing, Optional preset As SetupFile = Nothing)
+        _preset = preset
         Text = Localizer.T("Recommended models")
         Size = New Size(960, 640)
         MinimumSize = New Size(760, 480)
@@ -89,7 +93,9 @@ Public Class SetupForm
 
         cmbTier.SelectedIndex = If(SetupLibrary.TierFor(_hw) = "8gb", 0, 1)
         AddHandler cmbTier.SelectedIndexChanged, Async Sub() Await LoadTierAsync()
-        AddHandler Shown, Async Sub() Await LoadTierAsync()
+        AddHandler Shown, Async Sub()
+                              If _preset IsNot Nothing Then ShowSetup(_preset) Else Await LoadTierAsync()
+                          End Sub
     End Sub
 
     Private ReadOnly Property Tier As String

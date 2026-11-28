@@ -229,6 +229,13 @@ Public Module AudioStudio
             Dim psi As New ProcessStartInfo(exe, a.ToString()) With {
                 .UseShellExecute = False, .CreateNoWindow = True, .RedirectStandardOutput = True, .RedirectStandardError = True,
                 .WorkingDirectory = Path.GetDirectoryName(exe), .StandardOutputEncoding = Encoding.UTF8, .StandardErrorEncoding = Encoding.UTF8}
+            ' (some models print no progress for minutes: the time spent keeps showing so it doesn't look stuck)
+            Dim clock = Stopwatch.StartNew()
+            Dim lastPct = 0, lastText = ""
+            Dim report = Sub(p As Integer, t As String)
+                             lastPct = p : lastText = t
+                             progress?.Invoke(p, $"{t} · {CInt(clock.Elapsed.TotalMinutes)}:{clock.Elapsed.Seconds:00}")
+                         End Sub
             Dim frameRx As New Regex("(\d+)\s*/\s*(\d+)\s*(frames|codes|tokens)", RegexOptions.IgnoreCase)
             Dim onLine = Sub(line As String)
                              If line Is Nothing Then Return
@@ -238,9 +245,9 @@ Public Module AudioStudio
                              Dim mm = frameRx.Match(line)
                              If mm.Success Then
                                  Dim i = CDbl(mm.Groups(1).Value), n = Math.Max(1.0, CDbl(mm.Groups(2).Value))
-                                 progress?.Invoke(CInt(Math.Min(95, i * 95 / n)), $"{If(m.IsMusic, "Composing", "Speaking")}… {mm.Value}")
+                                 report(CInt(Math.Min(95, i * 95 / n)), $"{If(m.IsMusic, "Composing", "Speaking")}… {mm.Value}")
                              ElseIf line.Contains("decod", StringComparison.OrdinalIgnoreCase) OrElse line.Contains("vocoder", StringComparison.OrdinalIgnoreCase) Then
-                                 progress?.Invoke(96, "Making the audio…")
+                                 report(96, "Making the audio…")
                              End If
                          End Sub
             _proc = New Process() With {.StartInfo = psi}
@@ -250,12 +257,21 @@ Public Module AudioStudio
             AppCore.Engine.AssignToJob(_proc)
             _proc.BeginOutputReadLine()
             _proc.BeginErrorReadLine()
-            progress?.Invoke(2, If(m.IsMusic, "Composing…", "Speaking…"))
+            report(2, If(m.IsMusic, "Composing…", "Speaking…"))
+            Dim beatStop As New CancellationTokenSource()
+            Dim beat = Task.Run(Async Function()
+                                    While Not beatStop.IsCancellationRequested
+                                        Try : Await Task.Delay(1000, beatStop.Token) : Catch : Exit While : End Try
+                                        report(lastPct, lastText)
+                                    End While
+                                End Function)
             Try
                 Await _proc.WaitForExitAsync(ct)
             Catch ex As OperationCanceledException
                 Try : _proc.Kill(True) : Catch : End Try
                 Throw
+            Finally
+                beatStop.Cancel()
             End Try
             Dim code = _proc.ExitCode
             _proc = Nothing

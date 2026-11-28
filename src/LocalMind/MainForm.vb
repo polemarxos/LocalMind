@@ -263,6 +263,7 @@ Public Class MainForm
             ApplyFeatures()
         End If
 
+        If OfferRestoredModels() Then Return
         If Not Settings.FirstRunDone Then
             Settings.FirstRunDone = True
             AppCore.SaveSettings()
@@ -427,7 +428,12 @@ Public Class MainForm
         Me.Post(Sub()
                         If Settings.Backend <> BackendKind.BuiltIn Then Return
                         ShowEngineState(state, message)
-                        If Not String.IsNullOrEmpty(message) Then SetStatus(message)
+                        If _isGenerating AndAlso (state = EngineState.Stopped OrElse state = EngineState.NotInstalled) Then
+                            ' the chat model steps aside so music, pictures or video get the graphics card: not "idle"
+                            SetStatus(Localizer.T("Chat model unloaded to free the graphics card — working on your request…"))
+                        ElseIf Not String.IsNullOrEmpty(message) Then
+                            SetStatus(message)
+                        End If
                         If _isGenerating AndAlso state = EngineState.Loading AndAlso _streamMsgId IsNot Nothing Then
                             Js($"setStatusText('{_streamMsgId}', {JsonConvert.SerializeObject("⏳ " & message)});")
                         End If
@@ -444,6 +450,11 @@ Public Class MainForm
             End If
             If AudioStudio.IsBusy Then
                 SetConnLabel("◌ Making sound…", Color.Gold)
+                lblConnection.ToolTipText = ""
+                Return
+            End If
+            If _isGenerating AndAlso state = EngineState.Stopped Then
+                SetConnLabel("◌ Working…", Color.Gold)
                 lblConnection.ToolTipText = ""
                 Return
             End If
@@ -849,6 +860,7 @@ Public Class MainForm
             sw.Stop()
             _flushTimer.Stop()
             _isGenerating = False
+            If Settings.Backend = BackendKind.BuiltIn Then ShowEngineState(AppCore.Engine.State, AppCore.Engine.StateMessage)
             Dim busyOff = Js("setBusy(false)")
             btnSend.Enabled = True
             btnStop.Enabled = False
@@ -1294,6 +1306,13 @@ Public Class MainForm
         AddHandler miClear.Click, AddressOf ClearAllHistory
         menuFile.DropDownItems.Insert(idx, New ToolStripSeparator())
         menuFile.DropDownItems.Insert(idx + 1, miClear)
+        Dim miBackup As New ToolStripMenuItem(Localizer.T("Back up everything (with API keys)…"))
+        AddHandler miBackup.Click, Sub() BackupEverything()
+        Dim miRestore As New ToolStripMenuItem(Localizer.T("Restore from backup…"))
+        AddHandler miRestore.Click, Sub() RestoreBackup()
+        menuFile.DropDownItems.Insert(idx, New ToolStripSeparator())
+        menuFile.DropDownItems.Insert(idx + 1, miBackup)
+        menuFile.DropDownItems.Insert(idx + 2, miRestore)
     End Sub
 
     Private Sub RenameSelectedChat(sender As Object, e As EventArgs)

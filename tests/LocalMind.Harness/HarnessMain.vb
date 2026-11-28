@@ -700,6 +700,58 @@ Module HarnessMain
             CastLibrary.Save(castList)
         End If
 
+        If only = "v2262" Then
+            Console.WriteLine("== v2.26.2: full backup and restore")
+            ' 🎵 "generate music … by cloning this voice" is a song, sung with that voice
+            Dim offeredTools As New JArray(
+                New JObject From {{"function", New JObject From {{"name", "make_song"}}}},
+                New JObject From {{"function", New JObject From {{"name", "clone_voice"}}}},
+                New JObject From {{"function", New JObject From {{"name", "generate_video"}}}})
+            Dim ask = "generate music about Warhammer 40k Space marines with Greek Lyrics. do not convert to greek names and factions of Space Marines by cloning this voice i attach here"
+            Check(ChatAgent.RequestedTool(ask, offeredTools) = "make_song", "music with a cloned voice → make_song", ChatAgent.RequestedTool(ask, offeredTools))
+            Check(ChatAgent.RequestedTool("clone this voice and say: good morning", offeredTools) = "clone_voice", "a spoken clip stays clone_voice")
+            Check(ChatAgent.RequestedTool("φτιάξε ένα τραγούδι για τη θάλασσα", offeredTools) = "make_song", "Greek song request")
+            Dim secs = ChatAgent.SongSections("[verse]" & vbLf & "line one" & vbLf & "line two" & vbLf & vbLf & "[chorus]" & vbLf & "For the Emperor" & vbLf & "[verse]" & vbLf & "three")
+            Check(secs.Count = 3 AndAlso secs(1) = "For the Emperor" AndAlso Not secs.Any(Function(x) x.Contains("[")), "lyrics split at their tags", String.Join(" | ", secs))
+            Dim root = AppPaths.Roaming
+            AppCore.Settings.CivitaiApiKey = "test-key-123"
+            AppCore.SaveSettings()
+            Directory.CreateDirectory(Path.Combine(root, "Voices"))
+            File.WriteAllText(Path.Combine(root, "Voices", "bk-test.txt"), "voice")
+            Directory.CreateDirectory(Path.Combine(root, "LibraryThumbs"))
+            File.WriteAllText(Path.Combine(root, "LibraryThumbs", "skip.jpg"), "x")
+            Dim zip = Path.Combine(Path.GetTempPath(), "lm-test" & BackupService.Extension)
+            Dim st As New SetupFile With {.Name = "test"}
+            Dim n = BackupService.Export(zip, st)
+            Dim names As List(Of String)
+            Using z = System.IO.Compression.ZipFile.OpenRead(zip)
+                names = z.Entries.Select(Function(e) e.FullName).ToList()
+            End Using
+            Check(n > 0 AndAlso names.Contains("settings.json") AndAlso names.Contains("Voices/bk-test.txt") AndAlso names.Contains("_setup/setup.json") AndAlso
+                  Not names.Any(Function(x) x.StartsWith("LibraryThumbs")), "backup has settings, voices and the model list, no thumbnails", String.Join(",", names.Take(12)))
+            Check(BackupService.Inspect(zip).Value(Of String)("app") = "LocalMind", "backup is recognised")
+            ' change things, then restore
+            File.WriteAllText(Path.Combine(root, "Voices", "bk-test.txt"), "changed")
+            Dim js = File.ReadAllText(Path.Combine(root, "settings.json")).Replace("test-key-123", "other")
+            File.WriteAllText(Path.Combine(root, "settings.json"), js)
+            BackupService.ScheduleRestore(zip)
+            Check(BackupService.ApplyPendingRestore(), "restore runs")
+            Check(File.ReadAllText(Path.Combine(root, "settings.json")).Contains("test-key-123"), "API key is back")
+            Check(File.ReadAllText(Path.Combine(root, "Voices", "bk-test.txt")) = "voice", "files are back")
+            Check(File.ReadAllText(Path.Combine(root.TrimEnd(Path.DirectorySeparatorChar) & "-before-restore", "Voices", "bk-test.txt")) = "changed", "old data kept")
+            Dim ps = BackupService.TakePendingSetup()
+            Check(ps IsNot Nothing AndAlso ps.Name = "test" AndAlso BackupService.TakePendingSetup() Is Nothing, "model list offered once")
+            Dim bad = Path.Combine(Path.GetTempPath(), "lm-bad.zip")
+            If File.Exists(bad) Then File.Delete(bad)
+            Using z = System.IO.Compression.ZipFile.Open(bad, System.IO.Compression.ZipArchiveMode.Create)
+                z.CreateEntry("x.txt")
+            End Using
+            Dim refused = False
+            Try : BackupService.ScheduleRestore(bad) : Catch ex As InvalidDataException : refused = True : End Try
+            Check(refused, "a zip that isn't a backup is refused")
+            Return
+        End If
+
         If only = "v226" Then
             Console.WriteLine("== v2.26: recommended setups, pictures of every type")
             For Each tier In {"8gb", "16gb"}

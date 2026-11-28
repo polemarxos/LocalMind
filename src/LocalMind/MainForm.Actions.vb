@@ -1,4 +1,4 @@
-Imports System
+﻿Imports System
 Imports System.Collections.Generic
 Imports System.IO
 Imports System.Linq
@@ -162,4 +162,65 @@ Partial Class MainForm
         End Using
         _modelsDirty = True
     End Sub
+
+    ' ---------- full backup / restore ----------
+
+    ''' <summary>💾 Saves every setting (API keys included), profiles, personas, characters, voices and chats in one file.</summary>
+    Private Sub BackupEverything()
+        If Localizer.Box(Me, Localizer.T("The backup contains your API keys, PINs and chats. Keep it private and don't send it to anyone.") & vbCrLf & vbCrLf &
+                             Localizer.T("Models are not copied (they are too big); the backup lists them so they can be downloaded again after a restore."),
+                         "Back up everything", MessageBoxButtons.OKCancel, MessageBoxIcon.Information) <> DialogResult.OK Then Return
+        Using d As New SaveFileDialog() With {.FileName = "localmind-backup-" & DateTime.Now.ToString("yyyy-MM-dd") & BackupService.Extension,
+                                              .Filter = Localizer.T("LocalMind backup") & "|*" & BackupService.Extension}
+            If d.ShowDialog(Me) <> DialogResult.OK Then Return
+            Try
+                If _session IsNot Nothing AndAlso _session.Messages.Count > 0 Then AppCore.History.Save(_session)
+                Cursor = Cursors.WaitCursor
+                Dim setup = SetupLibrary.ExportInstalled(Localizer.T("My models"), HardwareInfo.Current())
+                Dim n = BackupService.Export(d.FileName, setup)
+                Cursor = Cursors.Default
+                Localizer.Box(Me, String.Format(Localizer.T("Saved {0} files and a list of {1} models to {2}."), n, setup.Items.Count, d.FileName), "Back up everything")
+            Catch ex As Exception
+                Cursor = Cursors.Default
+                Localizer.Box(Me, ex.Message, "Back up everything", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End Try
+        End Using
+    End Sub
+
+    ''' <summary>📂 Puts a backup back: LocalMind restarts and restores it before loading anything.</summary>
+    Private Sub RestoreBackup()
+        Using d As New OpenFileDialog() With {.Filter = Localizer.T("LocalMind backup") & "|*" & BackupService.Extension & ";*.zip"}
+            If d.ShowDialog(Me) <> DialogResult.OK Then Return
+            Try
+                Dim m = BackupService.Inspect(d.FileName)
+                Dim made = m.Value(Of String)("created")
+                Dim when_ As DateTime
+                Dim info = If(DateTime.TryParse(made, when_), when_.ToString("g"), made) & " (LocalMind " & m.Value(Of String)("version") & ")"
+                If Localizer.Box(Me, String.Format(Localizer.T("Restore the backup from {0}?"), info) & vbCrLf & vbCrLf &
+                                     Localizer.T("Your current settings, profiles, personas, characters and chats are replaced. A copy of them is kept in the folder ending in -before-restore.") & vbCrLf & vbCrLf &
+                                     Localizer.T("LocalMind restarts to finish."),
+                                 "Restore from backup", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) <> DialogResult.OK Then Return
+                BackupService.ScheduleRestore(d.FileName)
+                RestartApp()
+            Catch ex As Exception
+                Localizer.Box(Me, ex.Message, "Restore from backup", MessageBoxButtons.OK, MessageBoxIcon.Warning)
+            End Try
+        End Using
+    End Sub
+
+    ''' <summary>After a restore: offers the models in the backup that aren't on this PC. True when it showed something.</summary>
+    Private Function OfferRestoredModels() As Boolean
+        If Environment.GetEnvironmentVariable("LOCALMIND_RESTORED") <> "1" Then Return False
+        Environment.SetEnvironmentVariable("LOCALMIND_RESTORED", Nothing)
+        Dim setup = BackupService.TakePendingSetup()
+        If setup Is Nothing OrElse setup.Items.All(Function(it) SetupLibrary.IsInstalled(it)) Then
+            Localizer.Box(Me, Localizer.T("The backup was restored."), "Restore from backup")
+            Return True
+        End If
+        Using f As New SetupForm(Localizer.T("The backup was restored. Download the models it uses?"), setup)
+            f.ShowDialog(Me)
+        End Using
+        _modelsDirty = True
+        Return True
+    End Function
 End Class
