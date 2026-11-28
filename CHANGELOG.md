@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.26.36
+
+### Changed
+- **Shorter update notes.** The update window lists one plain line per change (for every version you skipped), and
+  the release notes on GitHub do the same, with the full details here.
+
 ## 2.26.35
 
 ### Added

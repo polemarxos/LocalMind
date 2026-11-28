@@ -1436,5 +1436,11 @@
 "{0}: {1} models and LoRAs, {2} profiles. Ticked ones download; ✔ ones are already here. This PC: {3}.": "{0}: {1} μοντέλα και LoRA, {2} προφίλ. Όσα είναι επιλεγμένα θα κατέβουν· όσα έχουν ✔ υπάρχουν ήδη. Αυτός ο υπολογιστής: {3}.",
 "⚠ Too big for this graphics card": "⚠ Πολύ μεγάλο για αυτή την κάρτα γραφικών",
 "📤 Export my setup (models, LoRAs, profiles)…": "📤 Εξαγωγή της ρύθμισής μου (μοντέλα, LoRA, προφίλ)…",
-"📥 Import a setup…": "📥 Εισαγωγή ρύθμισης…"
+"📥 Import a setup…": "📥 Εισαγωγή ρύθμισης…",
+"Fixed": "Διόρθωση",
+"Changed": "Αλλαγή",
+"Removed": "Αφαιρέθηκε",
+"What's new:": "Τι νέο υπάρχει:",
+"…and {0} more": "…και {0} ακόμη",
+"LocalMind {0} is available (you have {1}).": "Το LocalMind {0} είναι διαθέσιμο (έχετε το {1})."
 }

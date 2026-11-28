@@ -1,4 +1,6 @@
-Imports System
+﻿Imports System
+Imports System.Text.RegularExpressions
+Imports System.Collections.Generic
 Imports System.Diagnostics
 Imports System.IO
 Imports System.IO.Compression
@@ -63,6 +65,74 @@ Public Module Updater
                 End Using
             End Using
         End Using
+    End Function
+
+    '──────────────── what's new (the update window) ────────────────
+    Private ReadOnly KindWords As New Dictionary(Of String, String)(StringComparer.OrdinalIgnoreCase) From {
+        {"Added", "New"}, {"Changed", "Changed"}, {"Fixed", "Fixed"}, {"Removed", "Removed"}}
+
+    ''' <summary>
+    ''' The changes since <paramref name="since"/>, one short plain line each ("New: Buttons under every picture"), newest
+    ''' first: the bold title of each change in CHANGELOG.md.
+    ''' </summary>
+    Public Function WhatsNew(changelog As String, since As Version) As List(Of String)
+        Dim result As New List(Of String)()
+        If String.IsNullOrEmpty(changelog) Then Return result
+        Dim take = False
+        Dim kind = "Changed"
+        For Each raw In changelog.Split({vbCrLf, vbLf}, StringSplitOptions.None)
+            Dim h = Regex.Match(raw, "^##\s+v?(\d+\.\d+(\.\d+)?)\b")
+            If h.Success Then
+                Dim v As Version = Nothing
+                take = Version.TryParse(h.Groups(1).Value, v) AndAlso New Version(v.Major, v.Minor, Math.Max(0, v.Build)) > since
+                kind = "Changed"
+                Continue For
+            End If
+            If Not take Then Continue For
+            Dim k = Regex.Match(raw, "^###\s+(\w+)")
+            If k.Success Then
+                kind = If(KindWords.ContainsKey(k.Groups(1).Value), KindWords(k.Groups(1).Value), k.Groups(1).Value)
+                Continue For
+            End If
+            If raw.StartsWith("- ") Then result.Add(Localizer.T(kind) & ": " & ChangeTitle(raw.Substring(2)))
+        Next
+        Return result
+    End Function
+
+    Private Function ChangeTitle(item As String) As String
+        Dim b = Regex.Match(item, "^\*\*(.+?)\*\*")
+        Dim t = If(b.Success, b.Groups(1).Value, item)
+        t = Regex.Replace(t, "\[([^\]]*)\]\([^)]*\)", "$1").Replace("**", "").Replace("`", "")
+        t = Regex.Replace(t, "\s+", " ").Trim()
+        If Not b.Success Then t = Regex.Split(t, "(?<=[.!?])\s")(0)
+        t = t.TrimEnd("."c).Trim()
+        Return If(t.Length <= 110, t, t.Substring(0, 107).TrimEnd() & "…")
+    End Function
+
+    ''' <summary>The release notes as plain lines (for when CHANGELOG.md can't be read): the "- " lines without links.</summary>
+    Public Function PlainNotes(notes As String) As List(Of String)
+        Dim result As New List(Of String)()
+        For Each raw In If(notes, "").Split({vbCrLf, vbLf}, StringSplitOptions.None)
+            Dim t = raw.Trim()
+            If Not t.StartsWith("- ") Then Continue For
+            t = Regex.Replace(t.Substring(2), "\[([^\]]*)\]\([^)]*\)", "$1").Replace("**", "").Replace("`", "").Trim()
+            If t <> "" Then result.Add(t)
+        Next
+        Return result
+    End Function
+
+    ''' <summary>What changed since this version, read from CHANGELOG.md on GitHub (all the versions skipped too).</summary>
+    Public Async Function WhatsNewAsync(info As UpdateInfo, ct As CancellationToken) As Task(Of List(Of String))
+        Try
+            Using cts = CancellationTokenSource.CreateLinkedTokenSource(ct)
+                cts.CancelAfter(TimeSpan.FromSeconds(10))
+                Dim log = Await Downloader.Http.GetStringAsync($"https://raw.githubusercontent.com/{Repo}/main/CHANGELOG.md", cts.Token)
+                Dim lines = WhatsNew(log, CurrentVersion)
+                If lines.Count > 0 Then Return lines
+            End Using
+        Catch
+        End Try
+        Return PlainNotes(info?.Notes)
     End Function
 
     ''' <summary>Downloads the update and swaps the exe. Returns the path of the new exe to start.</summary>

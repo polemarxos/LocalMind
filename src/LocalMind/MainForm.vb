@@ -281,10 +281,13 @@ Public Class MainForm
                                                MessageBoxButtons.OK, MessageBoxIcon.Information)
                 Return
             End If
-            Dim notes = If(info.Notes, "")
-            If notes.Length > 700 Then notes = notes.Substring(0, 700) & "…"
-            If Localizer.Box(Me, $"LocalMind {info.Tag} is available (you have {Updater.CurrentVersion})." & vbCrLf & vbCrLf &
-                               notes & vbCrLf & vbCrLf & "Update now? LocalMind will restart; your chats and models are kept.",
+            ' what's new: one short line per change, for every version since this one (no Markdown marks or links)
+            Dim changes = Await Updater.WhatsNewAsync(info, CancellationToken.None)
+            Dim shown = changes.Take(12).Select(Function(c) "•  " & c).ToList()
+            If changes.Count > 12 Then shown.Add("•  " & String.Format(Localizer.T("…and {0} more"), changes.Count - 12))
+            Dim notes = If(shown.Count = 0, "", Localizer.T("What's new:") & vbCrLf & String.Join(vbCrLf, shown))
+            If Localizer.Box(Me, String.Format(Localizer.T("LocalMind {0} is available (you have {1})."), info.Tag, Updater.CurrentVersion) & vbCrLf & vbCrLf &
+                               notes & vbCrLf & vbCrLf & Localizer.T("Update now? LocalMind will restart; your chats and models are kept."),
                                "Update available", MessageBoxButtons.YesNo, MessageBoxIcon.Information) <> DialogResult.Yes Then Return
             If Not AppPaths.IsPortable Then
                 ModelManagerForm.OpenUrl(If(info.PageUrl, Updater.ReleasesPage))

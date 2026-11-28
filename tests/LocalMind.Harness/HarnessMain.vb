@@ -142,6 +142,13 @@ Module HarnessMain
             Dim vidHtml = MarkdownRenderer.ToHtml("[🎬 clip](https://outputs.localmind/clip.mp4)")
             Check(vidHtml.Contains("<video") AndAlso vidHtml.Contains("download?f=clip.mp4""") AndAlso Not vidHtml.Contains("as=mp3"), "video: ⬇ Download and Save as…")
             Check(Not MarkdownRenderer.ToHtml("![x](https://example.com/a.png)").Contains("media-bar"), "pictures from the web get no buttons")
+            ' 🆕 the update window: one short plain line per change since the version you have
+            Dim clog = File.ReadAllText(Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "CHANGELOG.md")))
+            Dim wn = Updater.WhatsNew(clog, New Version(2, 26, 33))
+            Check(wn.Count >= 4 AndAlso wn.Contains("New: File → 📤 Export my setup / 📥 Import a setup") AndAlso
+                  wn.All(Function(l) Not l.Contains("**") AndAlso Not l.Contains("](") AndAlso l.Length < 130),
+                  "update window: short plain lines for every version since 2.26.33", String.Join(" | ", wn.Take(4)))
+            Check(Not wn.Any(Function(l) l.Contains("Buttons under every picture")), "…and nothing from 2.26.33 itself")
             ' a picture size the AI made up by itself is ignored; one the user asked for is kept
             Dim made = MediaSize.From(New JObject From {{"megapixels", 2}}, "generate me an image of two ultra marines")
             Check(made.Megapixels = 0, "size the AI made up is ignored", made.Megapixels.ToString())
